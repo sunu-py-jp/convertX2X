@@ -37,6 +37,7 @@ final class PdfConverter implements InputConverter {
 
     @Override
     public <T> T convert(byte[] input, ConversionOptions options, InputConverter.PageEncoder<T> encoder) throws Exception {
+        BundledPdfFonts.ensureInstalled();
         // The PDF stays open while the shared encoder consumes its pages synchronously.
         try (PDDocument document = Loader.loadPDF(input)) {
             if (document.isEncrypted()) {

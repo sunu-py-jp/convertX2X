@@ -5,6 +5,7 @@ import org.apache.poi.hslf.usermodel.HSLFSlideShow;
 import org.apache.poi.openxml4j.opc.OPCPackage;
 import org.apache.poi.poifs.filesystem.FileMagic;
 import org.apache.poi.poifs.filesystem.POIFSFileSystem;
+import org.apache.poi.sl.draw.Drawable;
 import org.apache.poi.sl.usermodel.SlideShow;
 import org.apache.poi.xslf.usermodel.XMLSlideShow;
 
@@ -75,6 +76,8 @@ final class PptConverter implements InputConverter {
             BufferedImage image = new BufferedImage(size.width(), size.height(), BufferedImage.TYPE_INT_RGB);
             Graphics2D graphics = PageRendering.graphics(image);
             try {
+                graphics.setRenderingHint(Drawable.FONT_HANDLER, BundledPptFontManager.instance());
+                graphics.setRenderingHint(Drawable.DRAW_FACTORY, new PptFontDrawFactory());
                 graphics.scale(size.scale(), size.scale());
                 slides.getSlides().get(index).draw(graphics);
                 return image;

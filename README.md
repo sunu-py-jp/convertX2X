@@ -88,3 +88,5 @@ AzuriteとCore Toolsを使ったHTTP・Queue・別Storageの連携テスト、Pl
 プロジェクトのコードは [MIT License](LICENSE) です。独立して利用できるよう、各機能にもライセンス本文を配置します。
 
 依存ライブラリやサンプル資料には、それぞれの提供元のライセンスが適用されます。PowerPoint / PDF to Imagesに用意したPowerPointテンプレートの出典と利用条件は [サンプルのREADME](functions/ppt-pdf-to-images/samples/templates/README.md) を参照してください。
+
+PowerPoint / PDF to Imagesに同梱する日本語フォントNoto Sans CJK JP・Noto Serif CJK JPはSIL Open Font License 1.1です。取得元・著作権表示・ライセンス原文は [フォントのREADME](functions/ppt-pdf-to-images/src/main/resources/fonts/noto/README.md) を参照してください。

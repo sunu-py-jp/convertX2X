@@ -375,7 +375,11 @@ Blob保存とQueue送信は単一トランザクションではありません�
 
 このプロジェクトの `functionTimeout` は10分です。Azureの同期HTTPには別途約230秒の応答制約があるため、時間のかかる資料には非同期を使用します。クライアントやプロキシの設定により、さらに短いタイムアウトになる場合もあります。[Functionsのタイムアウト](https://learn.microsoft.com/en-us/azure/azure-functions/functions-scale#function-app-timeout-duration)
 
-POIによる描画はPowerPoint本体と完全には一致しません。日本語を含め、資料で使用するフォントを実行環境に用意し、実資料で確認してください。標準JARにフォントは同梱していません。暗号化された資料には対応していません。
+POIによる描画はPowerPoint本体と完全には一致しません。暗号化された資料には対応していません。
+
+日本語の代替フォントとして、Noto Sans CJK JP（ゴシック）とNoto Serif CJK JP（明朝）のRegular・BoldをJARに同梱しています。元のフォントが実行環境で利用できる場合や、PDFにフォントが埋め込まれている場合は、それを優先します。見つからない日本語フォントは、ゴシック・明朝と通常・太字に応じて同梱フォントで補います。代替によって字幅や改行が変わる場合があるため、配置先の環境でも実資料で確認してください。
+
+同梱フォント4ファイルは合計約79.75MiB（圧縮前）です。PDFの代替はAdobe-Japan1、または日本語フォント名を識別できるCIDフォントを対象とし、文字コード情報自体が欠落したPDFの復元は行いません。
 
 ## 8. 検証とプロジェクト構成
 
@@ -415,6 +419,7 @@ HTTPとQueueはこの共通入口を使い、Blob保存・Playground・設定も
 | [src/main/java/com/slide2image/conversion](src/main/java/com/slide2image/conversion) | HTTP・Queue共通の文書変換 |
 | [src/main/java/com/slide2image/jobs](src/main/java/com/slide2image/jobs) | QueueのJSON契約、Storage登録、状態管理 |
 | [src/main/resources/playground](src/main/resources/playground) | 簡易UI |
+| [src/main/resources/fonts/noto](src/main/resources/fonts/noto/README.md) | 同梱する日本語フォント・取得元・ライセンス |
 | [scripts](scripts) | ローカル起動、Azure設定、E2E |
 | [examples](examples) | 外部システム向けJSON・Java送信例 |
 | [docs/direct-queue.md](docs/direct-queue.md) | 直接Queue連携の詳細 |
@@ -424,5 +429,7 @@ HTTPとQueueはこの共通入口を使い、Blob保存・Playground・設定も
 このプロジェクトのコードは [MIT License](LICENSE) です。ライセンス本文は配布JARの `META-INF/LICENSE` にも含めます。
 
 Apache POI・PDFBoxなどの依存ライブラリ、Maven Wrapper、ダウンロードしたPowerPointテンプレートには、それぞれの提供元のライセンスが適用されます。テンプレートの出典と利用条件は [samples/templates/README.md](samples/templates/README.md) を参照してください。
+
+同梱するNoto Sans CJK JP・Noto Serif CJK JPはSIL Open Font License 1.1です。固定バージョン、取得元、SHA-256、著作権表示とライセンス原文は [フォントのREADME](src/main/resources/fonts/noto/README.md) にまとめ、フォントと一緒にJARへ含めます。
 
 同梱するMaven Wrapperのライセンス本文とNOTICEは [third-party/maven-wrapper](third-party/maven-wrapper/README.md) に配置しています。
