@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "jobId": "e4e92483-9bce-4e42-b19b-df7c84c9af66",
+  "input": {
+    "container": "documents-incoming",
+    "blobName": "incoming/e4e92483-9bce-4e42-b19b-df7c84c9af66/presentation.pptx"
+  },
+  "output": {
+    "container": "images-created",
+    "prefix": "exports/pages",
+    "mode": "images"
+  },
+  "filename": "presentation.pptx"
+}

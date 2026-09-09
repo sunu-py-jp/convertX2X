@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "jobId": "f6603efc-2fa8-4466-8d09-6d7c3ed94c18",
+  "input": {
+    "container": "documents-incoming",
+    "blobName": "incoming/f6603efc-2fa8-4466-8d09-6d7c3ed94c18/presentation.pptx"
+  },
+  "output": {
+    "container": "images-created",
+    "prefix": "exports/slides"
+  },
+  "filename": "presentation.pptx"
+}

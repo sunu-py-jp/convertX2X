@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "jobId": "4b2e32cc-15fb-47b5-9ce3-d825c7a95c67",
+  "input": {
+    "storage": "source",
+    "container": "documents-incoming",
+    "blobName": "incoming/4b2e32cc-15fb-47b5-9ce3-d825c7a95c67/presentation.pptx"
+  },
+  "output": {
+    "storage": "archive",
+    "container": "images-created",
+    "prefix": "exports/slides"
+  },
+  "filename": "presentation.pptx",
+  "options": {
+    "format": "png",
+    "width": 1600,
+    "page": 1
+  }
+}

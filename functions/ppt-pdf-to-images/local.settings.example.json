@@ -1,0 +1,12 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "FUNCTIONS_WORKER_RUNTIME": "java",
+    "AzureWebJobsStorage": "",
+    "CONVERSION_STORAGE_CONNECTION_STRING": "",
+    "CONVERSION_QUEUE_CONNECTION_STRING": "UseDevelopmentStorage=true",
+    "JAVA_OPTS": "-Djava.awt.headless=true",
+    "AzureWebJobs.ProcessConversion.Disabled": "true",
+    "AzureWebJobs.PoisonConversion.Disabled": "true"
+  }
+}
