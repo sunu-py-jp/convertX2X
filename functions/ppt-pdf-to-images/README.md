@@ -424,3 +424,5 @@ HTTPとQueueはこの共通入口を使い、Blob保存・Playground・設定も
 このプロジェクトのコードは [MIT License](LICENSE) です。ライセンス本文は配布JARの `META-INF/LICENSE` にも含めます。
 
 Apache POI・PDFBoxなどの依存ライブラリ、Maven Wrapper、ダウンロードしたPowerPointテンプレートには、それぞれの提供元のライセンスが適用されます。テンプレートの出典と利用条件は [samples/templates/README.md](samples/templates/README.md) を参照してください。
+
+同梱するMaven Wrapperのライセンス本文とNOTICEは [third-party/maven-wrapper](third-party/maven-wrapper/README.md) に配置しています。
