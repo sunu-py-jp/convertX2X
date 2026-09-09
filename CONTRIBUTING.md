@@ -3,6 +3,8 @@
 convertX2Xは、変換機能ごとに利用できるAzure Functionsプロジェクトのコレクションです。
 変更するときは、対象機能のREADMEを読み、その機能の手順で動作を確認してください。
 
+初めて作業する場合は [開発者マニュアル](docs/README.md) から進めてください。[共通の作業手順](docs/development.md) と、[Excel](docs/excel2md.md) / [PowerPoint・PDF](docs/ppt-pdf-to-images.md) の実装・変更箇所を案内しています。
+
 ## 機能の置き場所
 
 - 独立した入出力や実行環境を持つ、まとまった変換機能を `functions/<変換名>/` に配置します。
@@ -11,6 +13,7 @@ convertX2Xは、変換機能ごとに利用できるAzure Functionsプロジェ�
 - 依存関係、実行環境、起動手順は機能内で管理します。
 - 別の機能をビルドしたり起動したりしないと使えない構成は避けます。
 - 既存の文書画像変換は `functions/ppt-pdf-to-images/` にあります。
+- ExcelからMarkdownへの変換は `functions/excel2md/` にあり、`ExcelMarkdownService` をHTTP・Queueから共有します。
 - PPT・PPTX・PDFは、この1つのプロジェクト内で入力形式別のクラスとして実装します。
 - 提供予定だけのディレクトリや、変換を行わないstubは追加しません。
 

@@ -1,0 +1,56 @@
+{
+  "expectedHeadings": [
+    "01_文章と書式", "02_罫線の表", "03_表示値と数式", "04_画像",
+    "05_基本図形", "06_グループと接続", "07_未対応と加工", "08_画像だけ"
+  ],
+  "minimumTables": 7,
+  "requiredText": [
+    "日本語の文章です。漢字・ひらがな・カタカナ・全角記号をそのまま残します。",
+    "左のセル　右のセル：罫線がないため表にはしません。",
+    "**セル全体の太字**",
+    "通常の文字と**部分太字**の文字",
+    "**太字の中に**通常文字**を明示します**",
+    "担当：山田 花子",
+    "[Apache POI 公式サイト](https://poi.apache.org/)",
+    "[HTTPリンク](http://example.com/guide)",
+    "[メール窓口](mailto:help@example.com)",
+    "[**太字のリンク**](https://example.com/bold)",
+    "[https://example.com/blank-label](https://example.com/blank-label)",
+    "内部リンクは表示文字のみ",
+    "ファイルリンクは表示文字のみ",
+    "不正なリンクは表示文字のみ",
+    "&lt;script&gt;window.",
+    "セル内の1行目\nセル内の2行目",
+    "結合セルの文章は左上だけを出力します。",
+    "上限 | 下限",
+    "通常と**重要**の混在",
+    "[表のリンク<br>2行目](https://example.com/table)",
+    "| **商品名** | **個数** | **単位** |\n| --- | --- | --- |",
+    "結合した見出し",
+    "スタイルだけの表",
+    "単一セルの囲みは文章",
+    "閉じていない罫線",
+    "下線だけでは表にしません",
+    "00042", "12,345.67", "¥12,800", "12.5%", "2026/09/09", "13:45",
+    "(1,234)", "1.23E+06", "TRUE", "#DIV/0!", "999", "¥12,345", "=1+2",
+    "[数式の公式リンク](https://poi.apache.org/spreadsheet/)",
+    "[保存されたリンク表示](https://example.com/cached)",
+    "動的なリンク表示",
+    "セル内画像: 未対応"
+  ],
+  "forbiddenText": [
+    "DELETE_PARTIAL_TOKEN", "DELETE_CELL_TOKEN", "DELETE_LINK_TOKEN", "DELETE_URL_TOKEN",
+    "DELETE_FORMULA_URL_TOKEN", "DELETE_FORMULA_LABEL_TOKEN", "DELETE_FORMULA_CACHE_TOKEN",
+    "DELETE_TABLE_TOKEN", "HIDDEN_ROW_TOKEN", "HIDDEN_COLUMN_TOKEN", "HIDDEN_TABLE_ROW_TOKEN",
+    "HIDDEN_SHEET_TOKEN", "VERY_HIDDEN_SHEET_TOKEN", "DELETED_SHEET_TOKEN", "987654321",
+    "SHAPE_SECRET_REMOVED", "javascript:alert(1)", "file:///not-fetched/manual.pdf",
+    "https://example.invalid/not-fetched.png"
+  ],
+  "requiredWarningCodes": [
+    "BORDER_NOT_TABLE", "TABLE_MERGE_FLATTENED", "CONDITIONAL_FORMATTING_UNEVALUATED",
+    "LINK_UNSUPPORTED", "DYNAMIC_HYPERLINK_UNSUPPORTED", "FORMULA_CACHE_MISSING",
+    "CELL_IMAGE_UNSUPPORTED", "GRAPHIC_FRAME_UNSUPPORTED", "SHAPE_UNSUPPORTED",
+    "DRAWING_EFFECTS_SIMPLIFIED", "IMAGE_EFFECTS_IGNORED", "IMAGE_FORMAT_ATTACHMENT",
+    "DRAWING_TEXT_APPROXIMATED"
+  ]
+}

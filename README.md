@@ -9,12 +9,15 @@
 | 機能 | 入力 | 出力 | 呼び出し方 | 実装 |
 | --- | --- | --- | --- | --- |
 | [PowerPoint / PDF to Images](functions/ppt-pdf-to-images/README.md) | PowerPoint（PPTX・PPT）、PDF | PNG・JPEG、全ページZIP、ページごとの画像Blob | 同期HTTP・非同期HTTP・直接Queue | Java 21 / Apache POI / PDFBox |
+| [Excel to Markdown](functions/excel2md/README.md) | Excel（XLSX・XLS） | Markdown、埋め込み画像、基本図形PNG、変換情報 | 同期HTTP・非同期HTTP・直接Queue | Java 21 / Apache POI / Java2D |
 
-現在の実装は **PowerPoint / PDF to Images** です。新しい変換機能は、実装と検証ができた段階でこの一覧へ追加します。
+変換機能ごとに独立したFunction Appへ配置できます。新しい変換機能は、実装と検証ができた段階でこの一覧へ追加します。
+
+開発・保守をする場合は [開発者マニュアル](docs/README.md) を参照してください。共通の開発環境・テスト・デプロイ手順と、各変換の実装・拡張箇所をまとめています。
 
 ## まず試す
 
-PowerPoint / PDF to Imagesをローカルで起動するには、JDK 21、Azure Functions Core Tools v4、Python 3を用意します。Mavenは機能フォルダ内のWrapperを使います。
+PowerPoint / PDF to Imagesをローカルで起動・検証するには、JDK 21、Azure Functions Core Tools v4、Python 3.10以上を用意します。Mavenは機能フォルダ内のWrapperを使います。
 
 ```bash
 cd functions/ppt-pdf-to-images
@@ -36,6 +39,17 @@ python3 scripts/run_local.py
 - [別Storageを使うJSON例](functions/ppt-pdf-to-images/examples/queue-request-cross-account.json)
 - [JavaからBlobへアップロードしてQueueへ送る例](functions/ppt-pdf-to-images/examples/QueueProducer.java)
 
+Excel to Markdownも同じツールで起動できます。
+
+```bash
+cd functions/excel2md
+python3 scripts/run_local.py
+```
+
+[Excel Playground](http://localhost:7072/api/playground)でExcelを選ぶと、Markdownと画像をZIPで受け取れます。シート名をH1、直接セル罫線から検出した範囲を表にし、太字・リンクを保持、取消線の文字を除外します。貼り付け画像を抽出し、基本図形を簡易PNG化します。グラフの描画は対象外です。
+
+既定の入力上限は20MiB・50シートです。非同期ではQueue `excel2md-jobs` を使い、Markdown・変換情報・画像を個別のBlobへ保存します。[Excelの起動・API・設定・制約](functions/excel2md/README.md)と[直接Queueの依頼形式](functions/excel2md/docs/direct-queue.md)を参照してください。
+
 ## リポジトリ構成
 
 ```text
@@ -43,27 +57,21 @@ convertX2X/
 ├── README.md
 ├── CONTRIBUTING.md
 ├── LICENSE
+├── docs/                  # 開発者マニュアル
 └── functions/
-    └── ppt-pdf-to-images/
-        ├── README.md
-        ├── LICENSE
-        ├── pom.xml / mvnw / .mvn/
-        ├── host.json
-        ├── local.settings.example.json
-        ├── src/
-        ├── scripts/
-        ├── docs/
-        ├── examples/
-        └── samples/
+    ├── ppt-pdf-to-images/  # PowerPoint / PDF → 画像
+    └── excel2md/           # Excel → Markdown・画像
 ```
 
 各機能のフォルダには、変換処理、Azure Functionsの入口、設定例、テスト、利用手順をまとめます。機能ごとに使用言語やビルド方法を選べるため、リポジトリ全体に共通のMaven親プロジェクトは置いていません。
+
+Excel to Markdownの公開変換クラスは `ExcelMarkdownService` です。HTTPとQueueが同じクラスを使い、本文・罫線表の処理と画像・図形の処理を内部で分けています。別の変換プロジェクトを実行時に参照しません。
 
 PowerPoint / PDF to Imagesは、1つのFunction AppでHTTPの入口とQueue `conversion-jobs` を共有します。Azureに依存しない `ConversionService` が入力内容に応じて `PptConverter`（PPT・PPTX）または `PdfConverter`（PDF）を選びます。形式ごとの描画を分け、上限・同時実行制御・画像エンコード・ZIP・ページごとの出力は共通化しています。
 
 ここでの提供単位は、まとまった変換機能を単独でデプロイできるFunctionsプロジェクトです。既存の文書画像変換に入力形式を追加する場合は、このプロジェクト内のコンバーターを拡張します。Maven Centralなどに公開したJavaライブラリはまだありません。
 
-リポジトリ名とAzure上のFunction App名は別です。PowerPoint / PDF to Imagesの既定のローカル成果物名は `slide2image-local` で、実際のAzureアプリ名は配置先に合わせて設定します。
+リポジトリ名とAzure上のFunction App名は別です。既定のローカル成果物名は `slide2image-local` と `excel2md-local` で、実際のAzureアプリ名は配置先に合わせて設定します。
 
 ## 検証する
 
@@ -90,3 +98,5 @@ AzuriteとCore Toolsを使ったHTTP・Queue・別Storageの連携テスト、Pl
 依存ライブラリやサンプル資料には、それぞれの提供元のライセンスが適用されます。PowerPoint / PDF to Imagesに用意したPowerPointテンプレートの出典と利用条件は [サンプルのREADME](functions/ppt-pdf-to-images/samples/templates/README.md) を参照してください。
 
 PowerPoint / PDF to Imagesに同梱する日本語フォントNoto Sans CJK JP・Noto Serif CJK JPはSIL Open Font License 1.1です。取得元・著作権表示・ライセンス原文は [フォントのREADME](functions/ppt-pdf-to-images/src/main/resources/fonts/noto/README.md) を参照してください。
+
+Excel to Markdownにも図形文字のため同じフォントとライセンスを同梱しています。[Excel機能のフォント出典](functions/excel2md/src/main/resources/fonts/noto/README.md)を参照してください。

@@ -2,6 +2,8 @@
 
 [convertX2X](../../README.md) のPowerPoint／PDF→画像変換Functionです。以下のコマンドは、この機能のフォルダで実行します。
 
+開発・保守向けの構成と変更箇所は [PowerPoint / PDFの開発者ガイド](../../docs/ppt-pdf-to-images.md)、環境構築・検証・デプロイは [共通の作業手順](../../docs/development.md) を参照してください。
+
 ```bash
 cd functions/ppt-pdf-to-images
 ```
@@ -22,7 +24,7 @@ PlaygroundはHTML・CSS・JavaScriptだけの簡易UIです。非同期HTTPも�
 
 ## 1. ローカルで試す
 
-必要なものはJDK 21、Azure Functions Core Tools v4、Python 3です。Mavenは同梱のWrapperを使用します。初回ビルドにはインターネット接続が必要です。非同期を試す場合は、追加でAzuriteまたはAzure Storageを用意します。
+必要なものはJDK 21、Azure Functions Core Tools v4、Python 3.10以上です。Mavenは同梱のWrapperを使用します。初回ビルドにはインターネット接続が必要です。非同期を試す場合は、追加でAzuriteまたはAzure Storageを用意します。
 
 ### 同期変換とPlayground
 

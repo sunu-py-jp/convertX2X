@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "jobId": "fc2e587d-9369-4a90-8b03-815589d5d4a3",
+  "input": {
+    "container": "excel-inputs",
+    "blobName": "requests/fc2e587d-9369-4a90-8b03-815589d5d4a3/sample.xlsx"
+  },
+  "output": {
+    "container": "excel-results",
+    "prefix": "markdown"
+  },
+  "filename": "sample.xlsx"
+}
