@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>概要と変換ルール | office2md API</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+  <script src="../assets/app.js" defer></script>
+</head>
+<body data-page="office-overview">
+<a class="skip-link" href="#main-content">本文へ移動</a>
+<div id="site-header"></div>
+<aside id="sidebar" class="sidebar" aria-label="APIナビゲーション"></aside>
+<div id="menu-overlay" class="menu-overlay" hidden></div>
+<main id="main-content" class="main-content" tabindex="-1">
+<div class="page-layout">
+<article class="article">
+<p class="eyebrow">Office → Markdown</p>
+<h1>概要と変換ルール</h1>
+<p class="lead">Excel・Word・PowerPointの内容を、Markdown・画像・変換情報へ取り出します。</p>
+<h2 id="overview">できること</h2>
+<p>Excel・Word・PowerPointを、文章として扱えるMarkdownと、埋め込み画像・図形の画像に変換します。Java 21 / Apache POIを使う独立したAzure Functionsアプリです。同期HTTP・非同期HTTP・直接Queueは同じ変換コアを利用します。</p>
+<div class="cards"><a class="card" href="http.html#convert"><h3>同期HTTP</h3><p>ファイルを送信し、その応答でZIPを受け取る。</p></a><a class="card" href="jobs.html#submit"><h3>非同期HTTP</h3><p>ジョブを登録し、状態を確認して成果物を取得する。</p></a><a class="card" href="queue.html#message"><h3>直接Queue</h3><p>外部システムからBlob参照のJSONを投入する。</p></a></div>
+<h2 id="formats">対応形式と読み取る構造</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">項目</th><th scope="col">Excel</th><th scope="col">Word</th><th scope="col">PowerPoint</th></tr></thead><tbody><tr><td>拡張子</td><td><code>.xlsx / .xls</code></td><td><code>.docx</code></td><td><code>.pptx</code></td></tr><tr><td>見出し</td><td>内容がある表示シートごとにH1。H2以下は作らない</td><td>明示的な見出しスタイル・outlineのH1〜H6を保持</td><td>表示スライドごとにH1。タイトルがなければスライド番号</td></tr><tr><td>読む順序</td><td>シート順、セル・図形の位置順</td><td>本文XMLの順序。印刷ページを復元しない</td><td>タイトルを優先し、その後は上→下・左→右</td></tr><tr><td>表</td><td>直接セル罫線から閉じた矩形の表を検出</td><td>罫線がなくてもネイティブ表を変換</td><td>罫線がなくてもネイティブ表を変換</td></tr><tr><td>除外</td><td>非表示シート・行・列、結合の続き</td><td>削除・移動元・非表示文字・コメント・ヘッダー・フッター</td><td>非表示スライド・図形、ノート・コメント・ヘッダー・フッター</td></tr></tbody></table></div>
+<div class="callout warning"><p>旧形式のWord <code>.doc</code> とPowerPoint <code>.ppt</code>、PDF、マクロ有効形式・テンプレート、暗号化ファイルは対象外です。拡張子だけでなく、実際のファイル内容も検査します。</p>
+</div>
+<h2 id="text-tables">文字・表・変更履歴</h2>
+<p>本文と表の太字・HTTP/HTTPS/mailtoリンクを保持します。取消線の文字は出力から除去し、リンクや図形altにも復活させません。箇条書きと番号は元の表示を優先し、Markdown閲覧側の再採番を防ぐため番号をエスケープした文字列として出す場合があります。</p>
+<p>表は明示ヘッダーがなければ空のヘッダーを追加し、元の全行を残します。Excelでは、検出範囲と有効なExcelテーブル定義が一致する場合だけ先頭行をヘッダーにします。結合セルはアンカーに文字を一度出し、続きは空欄です。Wordの入れ子表など、表現できない構造は文字や警告として残します。</p>
+<p>Wordは挿入・移動先を保持し、削除・移動元を除外します。参照された脚注・文末脚注だけを <code>[^footnote-N]</code> / <code>[^endnote-N]</code> として末尾へまとめます。削除された段落記号による段落連結や、結合セルの変更履歴からの構造復元は対象外です。</p>
+<h2 id="artifacts">返されるファイル</h2>
+<pre><code>document.md
+report.json
+images/image-0001.png
+images/image-0002.jpg
+images/diagram-0001.png</code></pre>
+<div class="table-wrap"><table><thead><tr><th scope="col">ファイル</th><th scope="col">内容</th></tr></thead><tbody><tr><td><code>document.md</code></td><td>UTF-8 Markdown。画像は <code>images/...</code> の相対パスで参照</td></tr><tr><td><code>report.json</code></td><td>変換情報・警告・元の位置と出力の対応・画像一覧</td></tr><tr><td><code>images/image-NNNN.*</code></td><td>埋め込み画像。非対応の画像形式は元ファイルの添付になる場合がある</td></tr><tr><td><code>images/diagram-NNNN.png</code></td><td>対応する図形を個別に描画した画像</td></tr></tbody></table></div>
+<p>同期のZIPには画像がなくてもMarkdownとreportが入ります。非同期では各ファイルを個別Blobとして保存し、ZIPは取得時に生成します。同一カテゴリの同じ画像データは共有しますが、配置ごとのMarkdown参照と説明は残ります。</p>
+<h2 id="report">report.json の構造</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">フィールド</th><th scope="col">意味</th></tr></thead><tbody><tr><td><code>specVersion</code></td><td><code>2</code></td></tr><tr><td><code>source</code></td><td>入力の <code>filename / sha256 / format</code></td></tr><tr><td><code>sectionKind</code></td><td><code>sheet / document / slide</code></td></tr><tr><td><code>sectionCount</code></td><td>出力に含むExcelシート数・PowerPointスライド数。Wordは文書数（通常1）</td></tr><tr><td><code>warnings / information</code></td><td>コード・対象位置・説明。除外や近似の詳細を確認する</td></tr><tr><td><code>blocks</code></td><td>元の <code>section / range</code> と出力ブロックの対応。項目は形式で異なる</td></tr><tr><td><code>assets</code></td><td>生成パス・MIME型・サイズ・SHA-256</td></tr></tbody></table></div>
+<h2 id="drawings">図形は個別の画像へ</h2>
+<p>グループの子要素も個別に画像化します。横並び・重なり・接続を理由に一枚へ合成しません。通常のテキストや表はMarkdownに残し、図形内の文字は画像に含めます。図形の文字を本文に二重出力しません。</p>
+<p>Excelは長方形・角丸・楕円・線・一部矢印・テキストボックスをJava2Dで近似描画します。Wordの図形文字は代表書式による簡易描画で、図形内リンクの別出力は未対応です。PowerPointはPOIの描画範囲に依存します。グラフ・SmartArt・数式オブジェクトの描画は対象外です。</p>
+<p>Excel・Wordの埋め込み画像は原本を取り出し、切り抜き・回転・反転を再現しません。PowerPointでは、回転・切り抜き付きPNG/JPEGを描画画像へ変換します。利用可能な元フォントを優先し、不足時は同梱Noto Sans/Serif・Regular/Boldへ置換します。完全に同じ字幅・改行位置を保証するものではありません。</p>
+<h2 id="coordinates">座標・サイズ・基準の説明</h2>
+<pre><code>![長方形、時計回り0度、申請、基準=スライド左上、外接矩形 X=20pt、Y=100pt、幅=120pt、高さ=40pt](images/diagram-0001.png)</code></pre>
+<div class="table-wrap"><table><thead><tr><th scope="col">形式</th><th scope="col">座標の意味</th></tr></thead><tbody><tr><td>Excel</td><td>シート左上。セルの幅・高さから算出するため、Excelの表示と丸めの差が出る場合がある</td></tr><tr><td>PowerPoint</td><td>スライド左上</td></tr><tr><td>Word</td><td>本文内のローカル座標と、浮動図形の水平・垂直基準・保存オフセットを区別する。ページ絶対位置は未算出</td></tr></tbody></table></div>
+<p>右がXの正、下がYの正、単位はpt（1/72インチ）、小数3桁まで表示します。外接矩形は回転・反転・グループ変形後の範囲で、線幅やPNGの余白は含みません。回転前の寸法やPNGのピクセル数とは別です。不明な位置は仮の0座標で補わず「不明」「未算出」とします。説明は保存値から定型生成し、LLMやOCRは使いません。</p>
+<div class="callout"><p>座標は説明用です。MarkdownやPlaygroundは画像を文書の流れに並べるため、元資料の横並び・重なり・回り込みを再現しません。Excelで表と重なる図形は表の後、Wordは本文XML順に配置します。</p>
+</div>
+<h2 id="external">数式・外部参照は実行しない</h2>
+<p>Excelの数式は関数名にかかわらず再計算しません。保存済みの値があれば古い値やエラーもそのまま扱い、欠落を外部取得で補いません。XLSXでキャッシュがなければ式をエスケープして残し、<code>FORMULA_CACHE_MISSING</code> を記録します。式全体が <code>IMAGE(...)</code> なら画像を取得せず未対応表示にします。</p>
+<p>外部画像・外部ブック・データ接続を取得／更新せず、WordのフィールドやPowerPointのリンクも実行しません。許可された通常リンクは、閲覧者がクリックした時だけ開きます。Queue・Blobへの通信は管理者が設定したStorage接続で行います。元ファイルをOffice等で開いた時の動作は、そのアプリ側のものです。</p>
+<h2 id="playground">Playground と関連資料</h2>
+<p>ローカル既定URLは <code>http://localhost:7072/api/playground</code> です。匿名で画面を開けますが、Azureの変換APIにはホストキーが必要です。入力HTMLを実行せず、画像は成果物内だけを表示します。「待機を停止」は通信の停止であり、ジョブのキャンセルではありません。</p>
+<p><a href="../../../functions/office2md/samples/README.md">サンプルと再生成手順</a>・<a href="../../../docs/office2md.md">開発者ガイド</a>・<a href="settings.html#limits">全上限</a></p>
+
+<footer class="page-footer"><p>最終確認：2026-09-13。<a href="../../../functions/office2md/docs/usage.md">利用ガイド</a>と<a href="../../../functions/office2md/src/main/java/com/convertx2x/office2md/ConversionFunctions.java">HTTP実装</a>に基づく資料です。</p></footer>
+</article>
+<aside class="toc" aria-label="このページの目次"><p class="toc-title">このページの内容</p><nav id="page-toc"></nav></aside>
+</div>
+</main>
+</body>
+</html>

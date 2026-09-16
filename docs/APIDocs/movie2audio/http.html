@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Movie2AudioのAPIリファレンス。動画ファイル・許可済みHTTPS URLからAACを再エンコードせずM4Aへ抽出。">
+<title>ファイルを送って抽出 · Movie2Audio API</title>
+<link rel="stylesheet" href="../assets/styles.css">
+<script src="../assets/app.js" defer></script>
+</head>
+<body data-page="movie-http">
+<a class="skip-link" href="#main-content">本文へ移動</a>
+<div id="site-header"></div>
+<aside id="sidebar" class="sidebar" aria-label="APIナビゲーション"></aside>
+<div id="menu-overlay" class="menu-overlay" hidden></div>
+<main id="main-content" class="main-content" tabindex="-1">
+<div class="page-layout">
+<article class="article">
+<p class="eyebrow">Movie → AAC</p>
+<h1>ファイルを送って抽出</h1>
+<p class="lead">動画ファイルのバイト列をPOSTし、最初のAAC音声トラックをaudio.m4aとして受け取ります。</p>
+
+<h2 id="convert">POST /api/convert</h2>
+<div class="endpoint"><span class="method post">POST</span><code>/api/convert</code></div>
+<p>動画をHTTPのボディに直接入れます。ファイル名・抽出範囲・音声トラック番号・出力形式を指定するパラメーターはありません。</p>
+<div class="table-wrap"><table><thead><tr><th scope="col">項目</th><th scope="col">指定</th></tr></thead><tbody><tr><td>ボディ</td><td>空でない動画の生バイト列。既定上限100MiB</td></tr><tr><td><code>Content-Type</code></td><td><code>application/octet-stream</code> を推奨</td></tr><tr><td><code>x-functions-key</code></td><td>AzureではFunction認証キーが必要。複数APIを使う場合はアプリのホストキー</td></tr></tbody></table></div>
+<p><code>multipart/*</code> と <code>application/json</code>は <code>415 RAW_BODY_REQUIRED</code> です。ファイルは <code>application/octet-stream</code>、URLのJSONは <a href="url.html">/convert-url</a> を使います。Base64文字列は動画ファイルの代わりにはなりません。<code>filename</code> など未知のクエリは処理に利用しません。</p>
+<h2 id="example">curl の例</h2>
+<pre><code class="language-shell">curl --fail-with-body \
+  -H &#x27;Content-Type: application/octet-stream&#x27; \
+  --data-binary @sample.mp4 \
+  &#x27;http://localhost:7073/api/convert&#x27; \
+  --output audio.m4a</code></pre>
+<p>AzureではURLを配置先に変更します。実行するシェルの環境変数 <code>FUNCTIONS_HOST_KEY</code> にホストキーを設定し、ヘッダーへ渡します。</p>
+<pre><code class="language-shell">curl --fail-with-body \
+  -H &quot;x-functions-key: $FUNCTIONS_HOST_KEY&quot; \
+  -H &#x27;Content-Type: application/octet-stream&#x27; \
+  --data-binary @sample.mp4 \
+  &#x27;https://YOUR_FUNCTION_APP.azurewebsites.net/api/convert&#x27; \
+  --output audio.m4a</code></pre>
+<p>Core Toolsでのローカル起動は通常、Functionキー認証を強制しません。Azureホストが返す認証エラーやリクエスト容量エラーは、アプリのエラー形式と異なる場合があります。</p>
+<h2 id="response">成功レスポンス</h2>
+<pre><code class="language-http">HTTP/1.1 200 OK
+Content-Type: audio/mp4
+Content-Disposition: attachment; filename=&quot;audio.m4a&quot;
+X-Audio-Codec: aac
+X-Audio-Mode: copy
+X-Content-Type-Options: nosniff
+Cache-Control: no-store
+
+&lt;M4Aのバイト列&gt;</code></pre>
+<p><code>X-Audio-Codec: aac</code> は出力音声のコーデック、<code>X-Audio-Mode: copy</code> は再エンコードを行わなかったことを示します。元の動画のファイル名に関係なく、出力のファイル名は <code>audio.m4a</code> です。</p>
+<h2 id="streaming">ストリーミングの範囲</h2>
+<p>動画のアップロードは上限付きストリームで一時ディスクへ保存します。FFmpegが音声を抽出し、M4A全体を検証した後、完成したファイルを読み取りストリームで返します。入力動画・出力音声の全体をアプリのメモリーへ読み込む必要はありません。</p>
+<p>音声の抽出中から応答するライブ変換ではありません。元のAACを保持した通常のM4Aに <code>faststart</code> を適用し、抽出が完了してから送信します。受信側はHTTP本文をストリームとして読み、保存・再生・次の処理へ渡せます。</p>
+<p>アプリは <code>Content-Length</code> を付けません。出力ファイルの読み出し中の期限超過やエラーはストリームを中断し、開始済みの応答をJSONエラーへ差し替えません。転送中のキャンセルはアプリへ伝搬した時点で処理します。利用側ではステータスだけでなく、本文の読み取りが正常終了したことを確認してください。</p>
+<h2 id="speech">利用側の例：Azure Speech Fast Transcription</h2>
+<p>抽出に成功した <code>audio.m4a</code> を、利用側からFastへ送信する例です。Movie2Audio自身はSpeechを呼び出しません。実行するシェルの <code>SPEECH_ENDPOINT</code> にSpeechリソースのエンドポイント（例：<code>https://YOUR_SPEECH_RESOURCE.cognitiveservices.azure.com</code>）、<code>SPEECH_KEY</code> にそのキーを設定してください。Movie2Audio用の <code>FUNCTIONS_HOST_KEY</code> はSpeechには渡しません。</p>
+<pre><code class="language-shell">curl --fail-with-body \
+  &quot;${SPEECH_ENDPOINT%/}/speechtotext/transcriptions:transcribe?api-version=2025-10-15&quot; \
+  -H &quot;Ocp-Apim-Subscription-Key: $SPEECH_KEY&quot; \
+  --form 'audio=@audio.m4a;type=audio/mp4' \
+  --form 'definition={&quot;locales&quot;:[&quot;ja-JP&quot;]}' \
+  --output transcript.json</code></pre>
+<p>Fastのリクエストは <code>multipart/form-data</code> です。<code>Content-Type</code> は境界文字列とともにcurlが生成します。成功時の文字起こし結果を <code>transcript.json</code> に保存します。利用可能なリージョン・音声サイズ・時間上限は<a href="https://learn.microsoft.com/en-us/azure/ai-services/speech-service/fast-transcription-create">Fastの公式資料</a>を確認してください。</p>
+<p>AAC音声の再エンコード、サンプリングレート変更、モノラル化は行いません。Fastは既定でチャンネルをまとめ、設定により左右を個別に認識できます。M4Aには <code>-movflags +faststart</code> を適用して再生情報を先頭側へ配置し、<a href="https://learn.microsoft.com/en-us/answers/questions/2133748/what-input-formats-does-batch-speech-to-text-suppo">Microsoft社員が案内するMP4の読み込み上の注意</a>に対応しています。</p>
+<div class="callout"><strong>Azure Speech実サービスでの受け入れ・文字起こしは未検証です。</strong><br>現行の<a href="https://learn.microsoft.com/en-us/azure/ai-services/speech-service/batch-transcription-audio-data">対応形式一覧</a>はAAC、<a href="https://techcommunity.microsoft.com/blog/azure-ai-foundry-blog/fast-transcription-public-preview-in-azure-ai-speech/4108720">Microsoftの2024年のFast紹介</a>はM4Aを掲載しています。この送信例はFast用です。短音声RESTやリアルタイムのSpeech SDKとは入力条件が異なります。</div>
+<h2 id="audio-selection">どの音声が選ばれるか</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">動画の音声構成</th><th scope="col">動作</th></tr></thead><tbody><tr><td>第1音声AAC、第2音声AAC</td><td>第1音声だけを抽出</td></tr><tr><td>第1音声MP3、第2音声AAC</td><td>422で拒否。第2音声は選ばない</td></tr><tr><td>音声なし</td><td><code>422 NO_AUDIO_STREAM</code></td></tr><tr><td>AAC音声のみ、動画なし</td><td><code>422 NO_VIDEO_STREAM</code></td></tr></tbody></table></div>
+<h2 id="errors">失敗レスポンス</h2>
+<pre><code class="language-json">{
+  &quot;error&quot;: {
+    &quot;code&quot;: &quot;UNSUPPORTED_AUDIO_CODEC&quot;,
+    &quot;message&quot;: &quot;The first audio stream must use AAC. Audio is not re-encoded.&quot;
+  }
+}</code></pre>
+<p>上の例は送信開始前のHTTP 422です。アプリのエラーコードで判定し、音声ファイルとして保存しないでください。<a href="settings.html#errors">設定・エラー一覧</a>にサイズ超過・同時実行・タイムアウトもまとめています。</p>
+<h2 id="storage">保存場所と返却方法</h2>
+<p>一時ディスクへ入力と出力を保存し、完成済みM4Aを読み取りストリームで送信します。ファイル全体をメモリーへ載せませんが、ストリームのバッファとFFmpegは同じインスタンスのメモリーを使います。</p>
+<p>出力ファイルの読み取りストリームが正常終了・エラー・伝搬したキャンセル・期限超過で閉じたら、作業ファイルを削除します。このAPIではBlobへ保存しません。出力先SASを渡して保存する場合は、<a href="storage.html">/convert-to-blob</a> を使います。1つのNode.jsプロセスで入力受信からこの読み取りストリームが閉じるまで1件ずつ処理し、競合は <code>503 CONVERSION_BUSY</code> です。<a href="settings.html#runtime">実行・同時処理の設定</a>を参照してください。</p>
+
+<p>ジョブIDを受け取って後から結果を取得する場合は <a href="jobs.html">非同期HTTP</a>、他システムから登録済みBlobを処理する場合は <a href="queue.html">直接Queue</a> を使います。SAS保存APIは同期専用です。</p>
+<footer class="page-footer"><p>最終確認：2026-09-15。<a href="../../../functions/movie2audio/docs/usage.md">利用ガイド</a> · <a href="../../movie2audio.md">開発者向け実装ガイド</a></p></footer>
+</article>
+<aside class="toc" aria-label="このページの目次"><p class="toc-title">このページの内容</p><nav id="page-toc"></nav></aside>
+</div>
+</main>
+</body>
+</html>

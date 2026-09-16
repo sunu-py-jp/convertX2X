@@ -1,9 +1,9 @@
 # convertX2Xへの機能追加・変更
 
 convertX2Xは、変換機能ごとに利用できるAzure Functionsプロジェクトのコレクションです。
-変更するときは、対象機能のREADMEを読み、その機能の手順で動作を確認してください。
+変更するときは、対象機能のREADMEからDocsへ進み、利用ガイドと開発者ガイドの手順で動作を確認してください。
 
-初めて作業する場合は [開発者マニュアル](docs/README.md) から進めてください。[共通の作業手順](docs/development.md) と、[Excel](docs/excel2md.md) / [PowerPoint・PDF](docs/ppt-pdf-to-images.md) の実装・変更箇所を案内しています。
+初めて作業する場合は [開発者マニュアル](docs/README.md) から進めてください。[共通の作業手順](docs/development.md) と、[Office → Markdown](docs/office2md.md) / [PowerPoint・PDF](docs/ppt-pdf-to-images.md) / [Movie → AAC](docs/movie2audio.md) の実装・変更箇所を案内しています。
 
 ## 機能の置き場所
 
@@ -13,16 +13,19 @@ convertX2Xは、変換機能ごとに利用できるAzure Functionsプロジェ�
 - 依存関係、実行環境、起動手順は機能内で管理します。
 - 別の機能をビルドしたり起動したりしないと使えない構成は避けます。
 - 既存の文書画像変換は `functions/ppt-pdf-to-images/` にあります。
-- ExcelからMarkdownへの変換は `functions/excel2md/` にあり、`ExcelMarkdownService` をHTTP・Queueから共有します。
-- PPT・PPTX・PDFは、この1つのプロジェクト内で入力形式別のクラスとして実装します。
+- Excel・Word・PowerPointからMarkdownへの変換は `functions/office2md/` にあり、`OfficeMarkdownService` をHTTP・Queueから共有します。
+- 動画からAAC音声の抽出は `functions/movie2audio/` にあり、Node.jsで実装した `src/ffmpeg.js` の抽出処理を同期HTTPとQueueワーカーから共有します。入力・出力はストリームで扱い、完成したM4Aを返すかBlobへ保存します。非同期HTTPは入力をBlobへ保存して同じQueueへ登録します。同梱FFmpegの出典・ライセンス・ビルド方法も機能内で管理します。
+- 各機能で対応する入力形式は、そのプロジェクト内の形式別コンバーターで実装します。
 - 提供予定だけのディレクトリや、変換を行わないstubは追加しません。
 
 ルートREADMEは機能のカタログです。実装と検証が済んだ機能だけを追加し、
-対応形式と機能READMEへのリンクを載せます。詳細な設定は機能READMEで説明します。
+対応形式とDocsへのリンクを載せます。各機能のREADMEも短い概要とDocsへの案内に留めます。
 
-## 機能READMEに書くこと
+## READMEとDocsの役割
 
-そのディレクトリだけを見て、利用者が起動から結果の取得まで進めるようにします。
+READMEには用途・対応形式・呼び出し方式とDocsへのリンクを載せます。リクエスト例、設定表、ビルドや配置の手順はDocs側へまとめます。各機能の `docs/usage.md` を起点に、利用者が起動から結果の取得まで進めるようにします。
+
+Docsには以下の内容を記載します。直接Queueの契約は機能内の `docs/direct-queue.md`、HTMLのAPI資料はリポジトリの `docs/APIDocs/`、実装の保守手順は `docs/` の開発者ガイドで管理します。
 
 | 項目 | 記載内容 |
 | --- | --- |
@@ -60,7 +63,7 @@ convertX2Xは、変換機能ごとに利用できるAzure Functionsプロジェ�
 - 接続文字列、キー、トークンなどをソース、README、テスト結果へ書き込みません。
 - 実際の秘密情報を含む設定ファイルは `.gitignore` の対象にします。
 - 設定のexampleには仮値を使い、実際の認証情報は含めません。
-- 設定を追加したら、読み込み処理・example・READMEの名前と既定値を揃えます。
+- 設定を追加したら、読み込み処理・example・利用ガイド・API資料の名前と既定値を揃えます。
 - 不要な秘密情報をURL、コマンド引数、ログに出さないようにします。
 
 ## 検証と変更の説明

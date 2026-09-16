@@ -1,0 +1,243 @@
+import assert from 'node:assert/strict';
+import { copyFile, lstat, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { setTimeout as delay } from 'node:timers/promises';
+import test from 'node:test';
+import { ConversionError } from '../src/errors.js';
+import { extractAudio, loadBundledFfmpeg, prepareBundledFfmpeg, runProcess } from '../src/ffmpeg.js';
+
+const FIXTURES = fileURLToPath(new URL('./fixtures/', import.meta.url));
+const LIMITS = { maxInputBytes: 100 * 1024 * 1024, maxOutputBytes: 100 * 1024 * 1024, timeoutSeconds: 10 };
+
+async function workspace(t) {
+  const directory = await mkdtemp(path.join(tmpdir(), 'movie2audio-test-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  return directory;
+}
+
+function deadline(t, milliseconds = 5000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(new ConversionError(504, 'CONVERSION_TIMEOUT',
+    'Audio extraction exceeded the request time limit.')), milliseconds);
+  t.after(() => clearTimeout(timer));
+  return controller.signal;
+}
+
+function code(expected, status) {
+  return error => {
+    assert.equal(error.code, expected);
+    if (status) assert.equal(error.status, status);
+    return true;
+  };
+}
+
+async function exists(target) {
+  try { await lstat(target); return true; } catch (error) {
+    if (error.code === 'ENOENT') return false;
+    throw error;
+  }
+}
+
+function topLevelBoxes(bytes) {
+  const boxes = [];
+  let offset = 0;
+  while (offset < bytes.length) {
+    assert.ok(bytes.length - offset >= 8, 'Complete MP4 box header');
+    let size = bytes.readUInt32BE(offset);
+    let header = 8;
+    if (size === 1) {
+      assert.ok(bytes.length - offset >= 16, 'Complete extended MP4 box header');
+      size = Number(bytes.readBigUInt64BE(offset + 8));
+      header = 16;
+    } else if (size === 0) size = bytes.length - offset;
+    assert.ok(Number.isSafeInteger(size) && size >= header && size <= bytes.length - offset,
+      'Valid MP4 box size');
+    boxes.push(bytes.toString('ascii', offset + 4, offset + 8));
+    offset += size;
+  }
+  return boxes;
+}
+
+async function packetHashes(input, signal) {
+  const runtime = await loadBundledFfmpeg();
+  const result = await runProcess(runtime.ffprobe, ['-v', 'error', '-protocol_whitelist', 'file',
+    '-select_streams', 'a:0', '-show_packets', '-show_data_hash', 'sha256',
+    '-show_entries', 'packet=data_hash', '-of', 'json', input], { signal });
+  assert.equal(result.exitCode, 0);
+  return JSON.parse(result.stdout).packets.map(packet => packet.data_hash);
+}
+
+for (const container of ['mp4', 'mkv', 'avi', 'ts']) {
+  test(`extracts AAC from ${container} with M4A metadata before audio`, async t => {
+    const directory = await workspace(t);
+    const input = path.join(FIXTURES, `aac-video.${container}`);
+    const output = path.join(directory, 'audio.m4a');
+    assert.deepEqual(await extractAudio(input, output, { limits: LIMITS, signal: deadline(t) }),
+      { codec: 'aac', sampleRate: 48000, channels: 1 });
+    const bytes = await readFile(output);
+    assert.ok(bytes.length > 1000 && bytes.length < (await lstat(input)).size);
+    const boxes = topLevelBoxes(bytes);
+    assert.ok(boxes.includes('moov') && boxes.includes('mdat'));
+    assert.ok(boxes.indexOf('moov') < boxes.indexOf('mdat'));
+  });
+}
+
+test('preserves every compressed AAC packet without re-encoding', async t => {
+  const directory = await workspace(t);
+  const input = path.join(FIXTURES, 'aac-video.mp4');
+  const output = path.join(directory, 'audio.m4a');
+  const signal = deadline(t);
+  await extractAudio(input, output, { limits: LIMITS, signal });
+  const before = await packetHashes(input, signal);
+  assert.equal(before.length, 48);
+  assert.deepEqual(await packetHashes(output, signal), before);
+});
+
+for (const [fixture, expected] of [
+  ['silent-video.mp4', 'NO_AUDIO_STREAM'],
+  ['pcm-video.mkv', 'UNSUPPORTED_AUDIO_CODEC'],
+  ['first-pcm-second-aac.mkv', 'UNSUPPORTED_AUDIO_CODEC'],
+  ['audio-only.m4a', 'NO_VIDEO_STREAM'],
+  ['audio-with-cover.m4a', 'NO_VIDEO_STREAM'],
+]) {
+  test(`rejects ${fixture} as ${expected}`, async t => {
+    const directory = await workspace(t);
+    const output = path.join(directory, 'audio.m4a');
+    await assert.rejects(extractAudio(path.join(FIXTURES, fixture), output,
+      { limits: LIMITS, signal: deadline(t) }), code(expected, 422));
+    assert.equal(await exists(output), false);
+  });
+}
+
+test('rejects empty, broken, truncated and local-file playlist inputs', async t => {
+  const directory = await workspace(t);
+  const fixture = await readFile(path.join(FIXTURES, 'aac-video.mp4'));
+  for (const bytes of [Buffer.alloc(0), Buffer.from('not media'), fixture.subarray(0, 120),
+    Buffer.from("ffconcat version 1.0\nfile '/etc/passwd'\n"),
+    Buffer.from('#EXTM3U\n#EXTINF:1\nhttps://example.com/video.ts\n')]) {
+    const input = path.join(directory, 'input');
+    const output = path.join(directory, 'audio.m4a');
+    await writeFile(input, bytes);
+    await assert.rejects(extractAudio(input, output, { limits: LIMITS, signal: deadline(t) }),
+      code('INVALID_MEDIA', 422));
+    assert.equal(await exists(output), false);
+  }
+});
+
+test('enforces byte limits and removes partial output', async t => {
+  const directory = await workspace(t);
+  const input = path.join(FIXTURES, 'aac-video.mp4');
+  const output = path.join(directory, 'audio.m4a');
+  await assert.rejects(extractAudio(input, output,
+    { limits: { ...LIMITS, maxInputBytes: 100 }, signal: deadline(t) }), code('INPUT_TOO_LARGE', 413));
+  await assert.rejects(extractAudio(input, output,
+    { limits: { ...LIMITS, maxOutputBytes: 100 }, signal: deadline(t) }), code('OUTPUT_TOO_LARGE', 413));
+  assert.equal(await exists(output), false);
+});
+
+test('rejects an aborted operation before creating output', async t => {
+  const directory = await workspace(t);
+  const output = path.join(directory, 'audio.m4a');
+  const reason = new ConversionError(504, 'CONVERSION_TIMEOUT', 'Timed out.');
+  await assert.rejects(extractAudio(path.join(FIXTURES, 'aac-video.mp4'), output,
+    { limits: LIMITS, signal: AbortSignal.abort(reason) }), error => error === reason);
+  assert.equal(await exists(output), false);
+});
+
+test('does not follow input symlinks or overwrite/delete existing outputs', async t => {
+  const directory = await workspace(t);
+  const input = path.join(FIXTURES, 'aac-video.mp4');
+  const link = path.join(directory, 'input.mp4');
+  const output = path.join(directory, 'audio.m4a');
+  await symlink(input, link);
+  await assert.rejects(extractAudio(link, output, { limits: LIMITS }), code('INVALID_MEDIA'));
+  await writeFile(output, 'keep me');
+  await assert.rejects(extractAudio(input, output, { limits: LIMITS }), code('STORAGE_ERROR'));
+  assert.equal(await readFile(output, 'utf8'), 'keep me');
+  const outputLink = path.join(directory, 'link.m4a');
+  await symlink(output, outputLink);
+  await assert.rejects(extractAudio(input, outputLink, { limits: LIMITS }), code('STORAGE_ERROR'));
+  assert.equal(await readFile(outputLink, 'utf8'), 'keep me');
+});
+
+test('prepares reusable private executables with no network protocols or encoders', async t => {
+  const runtime = await loadBundledFfmpeg();
+  assert.equal(await loadBundledFfmpeg(), runtime);
+  for (const target of [runtime.directory, runtime.ffmpeg, runtime.ffprobe]) {
+    assert.equal((await lstat(target)).mode & 0o777, 0o700);
+  }
+  const signal = deadline(t);
+  const protocols = await runProcess(runtime.ffmpeg, ['-hide_banner', '-protocols'], { signal });
+  assert.equal(protocols.exitCode, 0);
+  assert.equal(protocols.stdout, 'Supported file protocols:\nInput:\n  file\nOutput:\n  file\n');
+  const encoders = await runProcess(runtime.ffmpeg, ['-hide_banner', '-encoders'], { signal });
+  assert.equal(encoders.exitCode, 0);
+  assert.ok(!encoders.stdout.includes('aac'));
+  const license = await runProcess(runtime.ffmpeg, ['-hide_banner', '-L'], { signal });
+  assert.ok(license.stdout.includes('Lesser General Public'));
+});
+
+test('rejects a bundle whose SHA256 does not match', async t => {
+  const directory = await workspace(t);
+  const platform = process.platform === 'darwin' ? 'macos-aarch64' : 'linux-x86_64';
+  const resources = path.join(directory, platform);
+  await mkdir(resources);
+  await copyFile(path.join(FIXTURES, 'aac-video.mp4'), path.join(resources, 'ffmpeg'));
+  await writeFile(path.join(resources, 'ffmpeg.sha256'), `${'0'.repeat(64)}\n`);
+  await assert.rejects(prepareBundledFfmpeg(directory), code('FFMPEG_UNAVAILABLE', 503));
+});
+
+test('does not pass environment secrets to child processes', async t => {
+  const result = await runProcess('/usr/bin/env', [], { signal: deadline(t) });
+  assert.equal(result.exitCode, 0);
+  assert.deepEqual(result.stdout.trim().split('\n').sort(), ['LANG=C', 'LC_ALL=C']);
+});
+
+for (const stream of ['stdout', 'stderr']) {
+  test(`terminates processes that exceed the ${stream} bound`, async t => {
+    await assert.rejects(runProcess(process.execPath, ['-e',
+      `setInterval(() => process.${stream}.write('x'.repeat(65536)), 1)`],
+    { signal: deadline(t) }), code('INVALID_MEDIA', 422));
+  });
+}
+
+test('terminates a process as its output exceeds the file bound', async t => {
+  const directory = await workspace(t);
+  const output = path.join(directory, 'audio.m4a');
+  await assert.rejects(runProcess(process.execPath, ['-e',
+    "const fs = require('node:fs'); setInterval(() => fs.appendFileSync(process.argv[1], Buffer.alloc(4096)), 1)",
+    output], { outputPath: output, maxOutputBytes: 100, signal: deadline(t) }), code('OUTPUT_TOO_LARGE', 413));
+});
+
+test('abort terminates the process group including descendants', async t => {
+  const directory = await workspace(t);
+  const pidFile = path.join(directory, 'child.pid');
+  const reason = new ConversionError(504, 'CONVERSION_TIMEOUT', 'Timed out.');
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(reason), 300);
+  t.after(() => clearTimeout(timer));
+  const start = Date.now();
+  await assert.rejects(runProcess(process.execPath, ['-e',
+    "const child = require('node:child_process').spawn(process.execPath, ['-e', 'setInterval(() => {}, 1000)']);"
+      + "require('node:fs').writeFileSync(process.argv[1], String(child.pid)); setInterval(() => {}, 1000)",
+    pidFile], { signal: controller.signal }), error => error === reason);
+  assert.ok(Date.now() - start < 3000);
+  const pid = Number(await readFile(pidFile, 'utf8'));
+  let alive = true;
+  for (let attempt = 0; attempt < 100; attempt++) {
+    try { process.kill(pid, 0); } catch (error) { if (error.code === 'ESRCH') { alive = false; break; } throw error; }
+    if (process.platform === 'linux') {
+      const stat = await readFile(`/proc/${pid}/stat`, 'utf8').catch(() => '');
+      if (!stat || stat.slice(stat.lastIndexOf(')') + 2).startsWith('Z ')) { alive = false; break; }
+    }
+    await delay(10);
+  }
+  assert.equal(alive, false, 'The descendant cannot survive a cancelled conversion');
+});
+
+test('maps process startup failures to FFMPEG_UNAVAILABLE without raw diagnostics', async t => {
+  await assert.rejects(runProcess('/does/not/exist', [], { signal: deadline(t) }),
+    code('FFMPEG_UNAVAILABLE', 503));
+});

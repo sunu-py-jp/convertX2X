@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>直接Queue連携 | office2md API</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+  <script src="../assets/app.js" defer></script>
+</head>
+<body data-page="office-queue">
+<a class="skip-link" href="#main-content">本文へ移動</a>
+<div id="site-header"></div>
+<aside id="sidebar" class="sidebar" aria-label="APIナビゲーション"></aside>
+<div id="menu-overlay" class="menu-overlay" hidden></div>
+<main id="main-content" class="main-content" tabindex="-1">
+<div class="page-layout">
+<article class="article">
+<p class="eyebrow">Office → Markdown</p>
+<h1>直接Queue連携</h1>
+<p class="lead">外部システムから、アップロード済みOfficeファイルのBlob参照だけをQueueへ送信します。</p>
+<h2 id="flow">外部システムから直接依頼する</h2>
+<p>HTTPでジョブを登録せず、OfficeファイルをBlobへ保存し、制御Storageの <code>office2md-jobs</code> QueueへJSONを送ります。ワーカーが状態を作成し、同期HTTPと同じ変換処理を呼びます。状態Blobを送信側で作成する必要はありません。</p>
+<ol class="steps"><li>新しいUUIDと、そのUUIDを含む入力Blobパスを決める。</li><li>ファイルをBlobへアップロードして完了を確認する。</li><li>次のJSONをBase64で1回だけエンコードしてQueueへ送る。</li><li>状態を確認し、成功状態が指す成果物だけを取得する。</li></ol>
+<h2 id="message">QueueメッセージのJSON</h2>
+<pre><code>{
+  &quot;version&quot;: 1,
+  &quot;jobId&quot;: &quot;fc2e587d-9369-4a90-8b03-815589d5d4a3&quot;,
+  &quot;input&quot;: {
+    &quot;storage&quot;: &quot;source&quot;,
+    &quot;container&quot;: &quot;office-inputs&quot;,
+    &quot;blobName&quot;: &quot;requests/fc2e587d-9369-4a90-8b03-815589d5d4a3/sample.docx&quot;
+  },
+  &quot;output&quot;: {
+    &quot;storage&quot;: &quot;archive&quot;,
+    &quot;container&quot;: &quot;markdown-results&quot;,
+    &quot;prefix&quot;: &quot;converted&quot;
+  },
+  &quot;filename&quot;: &quot;sample.docx&quot;
+}</code></pre>
+<p>この例は入力用source・出力用archiveの登録が必要です。同じStorageを使う場合は各storageを省略します。<a href="#storage">Storage登録</a>を参照してください。</p>
+<div class="table-wrap"><table><thead><tr><th scope="col">フィールド</th><th scope="col">必須・既定値</th><th scope="col">制約</th></tr></thead><tbody><tr><td><code>version</code></td><td>必須</td><td><code>1</code> の整数。文字列や小数は不可</td></tr><tr><td><code>jobId</code></td><td>必須</td><td>ハイフン付きUUID。大文字は小文字へ正規化</td></tr><tr><td><code>input</code></td><td>必須</td><td>オブジェクト</td></tr><tr><td><code>input.storage</code></td><td>省略/null: <code>default</code></td><td>入力用の登録名</td></tr><tr><td><code>input.container</code></td><td>必須</td><td>入力コンテナー</td></tr><tr><td><code>input.blobName</code></td><td>必須</td><td>既存Blob名。1,024文字以内</td></tr><tr><td><code>output</code></td><td>必須</td><td>オブジェクト</td></tr><tr><td><code>output.storage</code></td><td>省略/null: <code>default</code></td><td>出力用の登録名</td></tr><tr><td><code>output.container</code></td><td>必須</td><td>出力コンテナー。なければ非公開で作成</td></tr><tr><td><code>output.prefix</code></td><td>省略/null: 空文字</td><td>512文字以内。前後の空白と末尾の / を正規化</td></tr><tr><td><code>filename</code></td><td>省略/null/空白: 入力Blob末尾名</td><td>パス部分を除き制御文字を置換。255文字以内、対応拡張子が必要</td></tr></tbody></table></div>
+<p>コンテナー名は3〜63文字の小文字英数字とハイフンで、先頭・末尾は英数字、連続ハイフン不可です。Blob名とprefixに制御文字や <code>.</code> / <code>..</code> のパス区間は指定できません。登録名は <code>[a-z][a-z0-9_]{0,31}</code> で、空文字は既定名にならず不正です。</p>
+<div class="callout warning"><p>JSON本体はUTF-8で48 KiB以下です。未知フィールド・重複キー・余分なJSON・型の暗黙変換は拒否します。<code>options</code>、<code>output.mode</code>、接続文字列、SAS、任意URL、ファイル本体を入れる契約はありません。</p>
+</div>
+<h2 id="encoding">Base64は1回だけ</h2>
+<p>ホストの <code>messageEncoding</code> は <code>base64</code> です。Java SDKを使う場合はエンコード設定を有効にし、sendMessageにはJSON文字列をそのまま渡します。</p>
+<pre><code>QueueClient queue = new QueueClientBuilder()
+    .connectionString(controlStorageConnection)
+    .queueName(&quot;office2md-jobs&quot;)
+    .messageEncoding(QueueMessageEncoding.BASE64)
+    .buildClient();
+queue.sendMessage(requestJson);</code></pre>
+<p>このコードは設定例の抜粋です。JSONを手動でBase64化してからSDKでもエンコードすると二重になり、処理できません。実行可能な送信例は <a href="../../../functions/office2md/examples/QueueProducer.java">QueueProducer.java</a>、準備と実行手順は <a href="../../../functions/office2md/docs/direct-queue.md">元の直接Queueガイド</a>を参照してください。</p>
+<h2 id="storage">Storageと認証の境界</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">用途</th><th scope="col">設定・使用場所</th></tr></thead><tbody><tr><td>制御Storage</td><td><code>CONVERSION_STORAGE_CONNECTION_STRING</code>。Queueと状態Blobの保存先</td></tr><tr><td>既定の入力・出力</td><td><code>storage: &quot;default&quot;</code>。制御Storageを利用</td></tr><tr><td>別Storageの入力</td><td><code>CONVERSION_INPUT_STORAGE_SOURCE</code> に接続文字列を登録し、<code>input.storage: &quot;source&quot;</code></td></tr><tr><td>別Storageの出力</td><td><code>CONVERSION_OUTPUT_STORAGE_ARCHIVE</code> に接続文字列を登録し、<code>output.storage: &quot;archive&quot;</code></td></tr></tbody></table></div>
+<p>入力と出力の登録は別々です。出力専用に登録したStorageを入力として指定できません。環境変数の接尾辞は大文字、JSONの登録名は小文字です。DEFAULTは追加登録できません。登録名はアプリの参照先制限であり、アカウントキーそのものの権限を細分化するものではありません。</p>
+<p>送信側には入力Blobの書き込みとQueueへの送信権限、ワーカーには入力Blobの読み取りと制御Storageの状態・Queue操作権限が必要です。出力側はコンテナー作成・Blob書き込みに加えて、HTTP結果取得・ZIP化用の読み取り権限も必要です。接続設定は<a href="settings.html#storage">設定ページ</a>を参照してください。</p>
+<h2 id="locations">状態と成果物の保存先</h2>
+<pre><code>制御Storage / office2md-jobs コンテナー
+└── {jobId}/status.json
+
+出力Storage / {output.container}
+└── {output.prefix}/{jobId}/results/{attemptId}/
+    ├── document.md
+    ├── report.json
+    └── images/...</code></pre>
+<p>prefixが空なら、その区間を省きます。attemptIdは試行ごとのUUIDです。保存先を推測してBlob一覧から集めず、成功状態のresult.artifactsを正として取得します。全ファイルを保存できた試行だけを公開し、ZIPは保存しません。</p>
+<pre><code>job:     id, status, filename, createdAt, updatedAt,
+         sectionCount, warningCount, errorCode, errorMessage
+request: 正規化した投入リクエスト
+result:  storage, container, sectionCount, warningCount,
+         artifacts: [{path, blobName, contentType, sizeBytes, eTag}, ...]</code></pre>
+<p>これはStorage内の状態レコードです。<code>job.status == &quot;succeeded&quot;</code> になったら、result.storage・containerと各artifact.blobNameを使います。初回処理前はstatus.jsonが存在しない場合があるため、404だけで即失敗と判断しません。</p>
+<h2 id="retrieve">HTTPからも結果を取得できる</h2>
+<p>直接Queueで作られたジョブも、<a href="jobs.html#status">GET /api/jobs/{id}</a>と成果物APIを使えます。返される <code>resultUrl / reportUrl / archiveUrl / assetsBaseUrl</code> への各HTTPリクエストに、<code>x-functions-key</code> ヘッダーでFunction Appのホストキーを渡します。HTTP状態APIには内部のBlob保存先を公開しません。Storageの資格情報とFunctionsの認証キーは別物です。</p>
+<h2 id="retries">再送・競合・失敗</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">状況</th><th scope="col">扱い</th></tr></thead><tbody><tr><td>同じID・正規化後に同じ依頼</td><td>同一ジョブとして処理。成功済み・失敗済みの終端状態を維持</td></tr><tr><td>同じIDで入力や保存先を変更</td><td><code>JOB_ID_CONFLICT</code>。元のジョブを上書きしない</td></tr><tr><td>変換不能・上限超過等</td><td>ジョブをfailedにして理由を記録</td></tr><tr><td>一時的な処理・Storageエラー</td><td>Queueで再試行。上限後は <code>office2md-jobs-poison</code> へ</td></tr><tr><td>構文が壊れたJSON等</td><td>ジョブを特定できず状態を作れない場合がある</td></tr></tbody></table></div>
+<p>新しい変換ではjobIdと入力Blobパスを両方変えてください。投入後の入力を上書きすると、再試行が別の内容を読む可能性があります。入力のETag検査は1回のダウンロード中の変更を防ぐもので、再試行全体での不変性を代替しません。</p>
+<p>入力アップロード後にQueue送信が失敗した場合は、元の入力を保持したまま同じJSONを再送します。完成成果物も変更しないでください。リースで同じジョブの配送を直列化しますが、全ジョブのFIFO順序やアプリ全体の同時実行1は保証しません。失敗試行を含むBlobの保持・清掃は運用側で決めます。</p>
+
+<footer class="page-footer"><p>最終確認：2026-09-13。<a href="../../../functions/office2md/docs/usage.md">利用ガイド</a>と<a href="../../../functions/office2md/src/main/java/com/convertx2x/office2md/ConversionFunctions.java">HTTP実装</a>に基づく資料です。</p></footer>
+</article>
+<aside class="toc" aria-label="このページの目次"><p class="toc-title">このページの内容</p><nav id="page-toc"></nav></aside>
+</div>
+</main>
+</body>
+</html>

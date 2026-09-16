@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="PowerPoint・PDFから画像への変換API。実装に基づく入出力、呼び出し方法、設定の資料です。">
+  <title>非同期HTTPのジョブAPI | convertX2X API資料</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+  <script src="../assets/app.js" defer></script>
+</head>
+<body data-page="images-jobs">
+<a class="skip-link" href="#main-content">本文へ移動</a>
+<div id="site-header"></div>
+<aside id="sidebar" class="sidebar" aria-label="APIナビゲーション"></aside>
+<div id="menu-overlay" class="menu-overlay" hidden></div>
+<main id="main-content" class="main-content" tabindex="-1">
+  <div class="page-layout">
+    <article class="article">
+
+      <p class="eyebrow">非同期HTTP</p>
+      <h1>受け付け・状態確認・結果取得</h1>
+      <p class="lead">ファイルを送ってジョブIDを受け取り、完了後に結果をダウンロードします。HTTP受付も直接Queue依頼も、同じ状態確認APIと結果取得APIを使えます。</p>
+
+      <h2 id="prerequisites">利用条件と処理の流れ</h2>
+      <ol class="steps">
+        <li>管理者が <code>CONVERSION_STORAGE_CONNECTION_STRING</code> とQueueトリガーの派生設定を用意する。</li>
+        <li><code>POST /api/jobs</code> でファイルを登録する。</li>
+        <li>返された <code>statusUrl</code> を <code>Retry-After</code> に従って確認する。</li>
+        <li><code>succeeded</code> になったら <code>resultUrl</code> を取得する。</li>
+      </ol>
+      <p>すべてのAPIはFunction認証です。Azure上で複数のAPIへ同じキーを使う場合は、<code>x-functions-key</code> にFunction AppのHostキーを渡します。Storageのキーとは別の認証です。</p>
+      <div class="callout"><p>非同期が未設定なら、このページの全APIは <code>503 ASYNC_DISABLED</code> を返します。追加の入出力Storage登録だけでは有効になりません。<a href="settings.html#async-switch">有効化の設定</a>を参照してください。</p></div>
+
+      <h2 id="submit-job">POST /api/jobs — ジョブを登録する</h2>
+      <div class="endpoint"><span class="method post">POST</span><code>/api/jobs</code></div>
+      <p>本文にPPTX・PPT・PDFの生バイト列を送り、<code>Content-Type: application/octet-stream</code> を指定します。<code>filename</code>・<code>format</code>・<code>page</code>・<code>width</code> は<a href="http.html#parameters">同期HTTPと同じクエリ</a>です。</p>
+      <p>受付時に容量・オプション・基本シグネチャを検査し、入力Blobと初期状態を保存してからQueueへ送ります。文書構造やページ数の詳細な検査・描画はワーカーが行うため、202は変換成功の保証ではありません。</p>
+      <pre><code>BASE_URL='https://YOUR_FUNCTION_APP.azurewebsites.net'
+FUNCTION_KEY='YOUR_FUNCTION_KEY'
+
+curl --fail-with-body \
+  -H "x-functions-key: $FUNCTION_KEY" \
+  -H 'Content-Type: application/octet-stream' \
+  --data-binary @slides.pptx \
+  "$BASE_URL/api/jobs?filename=slides.pptx" \
+  --dump-header job-headers.txt \
+  --output job.json</code></pre>
+      <p>成功時は <code>202 Accepted</code>、<code>Location</code> に状態確認先、<code>Retry-After: 3</code> を返します。JSONの <code>statusUrl</code> も同じ確認先です。</p>
+      <pre><code>{
+  "job": {
+    "id": "f6603efc-2fa8-4466-8d09-6d7c3ed94c18",
+    "status": "queued",
+    "filename": "slides.pptx",
+    "options": { "width": null, "format": "png", "page": null },
+    "createdAt": "2026-09-13T00:00:00Z",
+    "updatedAt": "2026-09-13T00:00:00Z",
+    "pageCount": null,
+    "errorCode": null,
+    "errorMessage": null
+  },
+  "statusUrl": "/api/jobs/f6603efc-2fa8-4466-8d09-6d7c3ed94c18"
+}</code></pre>
+      <p>ジョブIDはサーバーがUUIDとして採番します。HTTPから指定した出力コンテナーや <code>output.mode</code> を渡す機能はありません。保存先や個別画像保存を指定する場合は<a href="queue.html">直接Queue</a>を使います。</p>
+      <p>同じPOSTをもう一度送ると新しいジョブになります。レスポンス受領に失敗しただけで既存ジョブが取り消されることはありません。入力保存とQueue送信は単一トランザクションではなく、送信エラー時に入力や状態が残る場合があります。</p>
+
+      <h2 id="get-job">GET /api/jobs/{id} — 状態を確認する</h2>
+      <div class="endpoint"><span class="method get">GET</span><code>/api/jobs/{id}</code></div>
+      <p><code>id</code> はハイフン付きUUIDです。既存ジョブなら200とJSON、<code>Retry-After: 3</code> を返します。<code>statusUrl</code> や <code>resultUrl</code> は同一ホストの相対パスで、設定したルート接頭辞を引き継ぎます。</p>
+      <pre><code>JOB_ID='f6603efc-2fa8-4466-8d09-6d7c3ed94c18'
+
+curl --fail-with-body \
+  -H "x-functions-key: $FUNCTION_KEY" \
+  "$BASE_URL/api/jobs/$JOB_ID"</code></pre>
+      <div class="table-wrap"><table>
+        <thead><tr><th><code>job.status</code></th><th>意味</th><th>呼び出し側の次の操作</th></tr></thead>
+        <tbody>
+          <tr><td><code>queued</code></td><td>受付済み</td><td>待って状態を再取得</td></tr>
+          <tr><td><code>running</code></td><td>処理中、または一時エラー後の再試行待ち</td><td>待って状態を再取得</td></tr>
+          <tr><td><code>succeeded</code></td><td>結果の保存が完了</td><td><code>resultUrl</code> からダウンロード</td></tr>
+          <tr><td><code>failed</code></td><td>変換失敗、または再試行上限に到達</td><td><code>errorCode</code>・<code>errorMessage</code> を確認</td></tr>
+        </tbody>
+      </table></div>
+      <p>状態の進み方は通常 <code>queued → running → succeeded / failed</code> です。ポーリング間隔によって途中の状態を観測できないことがあります。ページごとの進捗率や残り時間は返しません。</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th><code>job</code> の項目</th><th>内容</th></tr></thead>
+        <tbody>
+          <tr><td><code>id</code> / <code>status</code></td><td>ジョブのUUIDと状態</td></tr>
+          <tr><td><code>filename</code> / <code>options</code></td><td>正規化した入力名と、<code>width</code>・<code>format</code>・<code>page</code></td></tr>
+          <tr><td><code>createdAt</code> / <code>updatedAt</code></td><td>UTCのISO 8601日時</td></tr>
+          <tr><td><code>pageCount</code></td><td>成功時の出力画像枚数。1ページ指定なら1。成功前は <code>null</code>。</td></tr>
+          <tr><td><code>errorCode</code> / <code>errorMessage</code></td><td>失敗時のコードと説明。通常は <code>null</code>。</td></tr>
+        </tbody>
+      </table></div>
+      <p>成功したレスポンスは、上記の <code>job</code> と <code>statusUrl</code> に <code>resultUrl</code> が加わります。失敗状態を確認した場合でも、状態API自体のHTTPステータスは200です。</p>
+      <pre><code>{
+  "job": {
+    "id": "f6603efc-2fa8-4466-8d09-6d7c3ed94c18",
+    "status": "succeeded",
+    "filename": "slides.pptx",
+    "options": { "width": null, "format": "png", "page": null },
+    "createdAt": "2026-09-13T00:00:00Z",
+    "updatedAt": "2026-09-13T00:00:08Z",
+    "pageCount": 3,
+    "errorCode": null,
+    "errorMessage": null
+  },
+  "statusUrl": "/api/jobs/f6603efc-2fa8-4466-8d09-6d7c3ed94c18",
+  "resultUrl": "/api/jobs/f6603efc-2fa8-4466-8d09-6d7c3ed94c18/result"
+}</code></pre>
+      <p>例の日時は形式説明用です。処理時間の目安ではありません。状態APIは内部のBlob保存先や接続情報を返しません。</p>
+
+      <h2 id="get-result">GET /api/jobs/{id}/result — 結果を取得する</h2>
+      <div class="endpoint"><span class="method get">GET</span><code>/api/jobs/{id}/result</code></div>
+      <p>成功状態が指す保存済みの結果を返します。このGETが変換をやり直したり、新しいZIPを作ったりすることはありません。</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>登録時の条件</th><th>200の本文</th><th><code>Content-Type</code></th></tr></thead>
+        <tbody>
+          <tr><td>HTTP受付、またはQueueの <code>zip</code>／全ページ</td><td>画像をまとめたZIP</td><td><code>application/zip</code></td></tr>
+          <tr><td>HTTP受付、またはQueueの <code>zip</code>／1ページ指定</td><td>画像1枚</td><td><code>image/png</code> / <code>image/jpeg</code></td></tr>
+          <tr><td>直接Queueの <code>images</code></td><td><code>manifest.json</code></td><td><code>application/json</code></td></tr>
+        </tbody>
+      </table></div>
+      <p>どの結果にも <code>Content-Disposition: attachment</code>、<code>X-Page-Count</code>、<code>Cache-Control: no-store</code>、<code>X-Content-Type-Options: nosniff</code> が付きます。</p>
+      <pre><code># HTTPで全ページを登録したジョブの結果
+curl --fail-with-body \
+  -H "x-functions-key: $FUNCTION_KEY" \
+  "$BASE_URL/api/jobs/$JOB_ID/result" \
+  --dump-header result-headers.txt \
+  --output slides.zip</code></pre>
+      <div class="callout"><p><strong>個別画像モードの結果は画像ではなくJSONです。</strong> manifest内のStorage登録名・コンテナー・Blob名を使い、出力Storageの読み取り権限で画像を取得します。この機能に <code>/images/{name}</code> や <code>/archive</code> のHTTP APIはありません。<a href="queue.html#manifest">manifestの形式</a>を確認してください。</p></div>
+
+      <h2 id="job-errors">状態・結果取得でのエラー</h2>
+      <div class="table-wrap"><table>
+        <thead><tr><th>条件</th><th>応答</th></tr></thead>
+        <tbody>
+          <tr><td>UUIDの形式が不正</td><td><code>400 INVALID_JOB_ID</code></td></tr>
+          <tr><td>状態が見つからない</td><td><code>404 JOB_NOT_FOUND</code></td></tr>
+          <tr><td>結果取得時に未完了、または失敗済み</td><td><code>409 JOB_NOT_READY</code></td></tr>
+          <tr><td>非同期機能が無効</td><td><code>503 ASYNC_DISABLED</code>、<code>Retry-After: 3</code></td></tr>
+        </tbody>
+      </table></div>
+      <p>直接Queueの登録直後は、ワーカーが状態をまだ作成しておらず404になる場合があります。しばらく待って再確認してください。HTTP受付で返されたジョブは、Queue送信より前に初期状態を保存しています。</p>
+      <p>キャンセル・削除・Webhook通知のAPIはありません。Playgroundで待機を停止しても、受付済みの処理は継続します。再試行と保持期間については<a href="queue.html#retry">Queueの運用</a>を参照してください。</p>
+
+      <footer class="page-footer">
+        <p>最終確認：2026-09-13。READMEとHTTP・設定・変換・ジョブ処理の実装を照合しています。</p>
+        <p><a href="../../../functions/ppt-pdf-to-images/docs/usage.md">利用ガイド</a> · <a href="../../ppt-pdf-to-images.md">開発者ガイド</a></p>
+      </footer>
+    </article>
+    <aside class="toc" aria-label="このページの目次"><p class="toc-title">このページの内容</p><nav id="page-toc"></nav></aside>
+  </div>
+</main>
+</body>
+</html>

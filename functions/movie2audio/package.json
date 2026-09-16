@@ -1,0 +1,24 @@
+{
+  "name": "@convertx2x/movie2audio",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.js",
+  "engines": {
+    "node": "^22.0.0 || ^24.0.0"
+  },
+  "scripts": {
+    "postinstall": "node scripts/patch-sdk.mjs",
+    "start": "python3 scripts/run_local.py",
+    "test": "node --test test/*.test.js",
+    "package": "node scripts/package.mjs"
+  },
+  "dependencies": {
+    "@azure/functions": "4.16.2",
+    "@azure/storage-blob": "12.33.0",
+    "@azure/storage-queue": "12.31.0",
+    "busboy": "1.6.0",
+    "ipaddr.js": "2.5.0"
+  },
+  "license": "MIT"
+}

@@ -1,0 +1,42 @@
+{
+  "version": "9.0.1",
+  "sourceSha256": "cf38e0e28c7e5605942c4a77755349b0145804a397af37eb1fb4c77cb237f635",
+  "target": "linux-x86_64",
+  "configure": [
+    "--disable-autodetect",
+    "--disable-network",
+    "--disable-everything",
+    "--disable-doc",
+    "--disable-ffplay",
+    "--disable-avdevice",
+    "--disable-debug",
+    "--disable-asm",
+    "--disable-iamf",
+    "--enable-small",
+    "--enable-protocol=file",
+    "--enable-demuxer=mov,matroska,avi,mpegts,flv",
+    "--enable-muxer=ipod",
+    "--enable-parser=aac,aac_latm",
+    "--enable-decoder=aac",
+    "--enable-bsf=aac_adtstoasc",
+    "--extra-ldflags=-static -Wl,-z,stack-size=8388608"
+  ],
+  "build": {
+    "image": "alpine:3.22.2@sha256:4b7ce07002c69e8f3d704a9c5d6fd3053be500b7f1c69fc0d80990c2ad8dd412",
+    "compiler": "cc (Alpine 14.2.0) 14.2.0",
+    "packages": [
+      "gcc-14.2.0-r6 x86_64 {gcc} (GPL-2.0-or-later AND LGPL-2.1-or-later) [installed]",
+      "musl-1.2.5-r12 x86_64 {musl} (MIT) [installed]"
+    ]
+  },
+  "binaries": {
+    "ffmpeg": {
+      "sha256": "ba91048cbdd12bff06929e0d5b0e7d7446463e9c5c7c2a29d30b7bf6ebd07fdc",
+      "bytes": 2603576
+    },
+    "ffprobe": {
+      "sha256": "0131407302627a05d076a7a89bcc3fbf9dced30c4be9557c264e5b06d3005a8e",
+      "bytes": 2427416
+    }
+  }
+}

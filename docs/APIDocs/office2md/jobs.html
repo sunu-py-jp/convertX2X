@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>非同期HTTP | office2md API</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+  <script src="../assets/app.js" defer></script>
+</head>
+<body data-page="office-jobs">
+<a class="skip-link" href="#main-content">本文へ移動</a>
+<div id="site-header"></div>
+<aside id="sidebar" class="sidebar" aria-label="APIナビゲーション"></aside>
+<div id="menu-overlay" class="menu-overlay" hidden></div>
+<main id="main-content" class="main-content" tabindex="-1">
+<div class="page-layout">
+<article class="article">
+<p class="eyebrow">Office → Markdown</p>
+<h1>非同期HTTP</h1>
+<p class="lead">ファイルを登録してジョブIDを受け取り、完了後にMarkdown・report・画像・ZIPを取得します。</p>
+<h2 id="flow">処理の流れ</h2>
+<ol class="steps"><li><a href="#submit">ファイルをPOSTして登録</a>し、ジョブIDとstatusUrlを保存する。</li><li><a href="#status">statusUrlをポーリング</a>し、succeededまたはfailedを待つ。</li><li>成功時だけ返されるURLで、<a href="#result">Markdown</a>・<a href="#report">report</a>・<a href="#asset">画像</a>・<a href="#archive">ZIP</a>を取得する。</li></ol>
+<div class="callout"><p>すべてのジョブAPIにはStorage設定とFunction認証が必要です。Storage接続が未設定なら <code>503 ASYNC_DISABLED</code>、<code>Retry-After: 3</code> を返します。キーは各リクエストの <code>x-functions-key</code> ヘッダーへ渡します。</p>
+</div>
+<h2 id="submit">POST /api/jobs</h2>
+<div class="endpoint"><span class="method post">POST</span><code>/api/jobs?filename=sample.docx</code></div>
+<p>ボディ・ファイル名・Content-Typeは<a href="http.html#request">同期APIと同じ</a>です。入力と状態を保存してからQueueへ依頼し、変換完了を待たず202を返します。ジョブIDはサーバーがUUIDで生成します。受付時点では本文の変換が成功することまでは確認していません。</p>
+<p>入力ファイルがあるディレクトリで、実行するシェルの環境変数 <code>FUNCTIONS_HOST_KEY</code> にホストキーを設定し、URLを配置先に変更して実行します。</p>
+<pre><code>curl --fail-with-body \
+  -H &quot;x-functions-key: $FUNCTIONS_HOST_KEY&quot; \
+  -H &#x27;Content-Type: application/octet-stream&#x27; \
+  --data-binary @sample.docx \
+  &#x27;https://YOUR_FUNCTION_APP.azurewebsites.net/api/jobs?filename=sample.docx&#x27;</code></pre>
+<pre><code>HTTP/1.1 202 Accepted
+Content-Type: application/json; charset=utf-8
+Location: /api/jobs/fc2e587d-9369-4a90-8b03-815589d5d4a3
+Retry-After: 3
+Cache-Control: no-store
+
+{
+  &quot;job&quot;: {
+    &quot;id&quot;: &quot;fc2e587d-9369-4a90-8b03-815589d5d4a3&quot;,
+    &quot;status&quot;: &quot;queued&quot;,
+    &quot;filename&quot;: &quot;sample.docx&quot;,
+    &quot;createdAt&quot;: &quot;2026-09-13T00:00:00Z&quot;,
+    &quot;updatedAt&quot;: &quot;2026-09-13T00:00:00Z&quot;,
+    &quot;sectionCount&quot;: null,
+    &quot;warningCount&quot;: null,
+    &quot;errorCode&quot;: null,
+    &quot;errorMessage&quot;: null
+  },
+  &quot;statusUrl&quot;: &quot;/api/jobs/fc2e587d-9369-4a90-8b03-815589d5d4a3&quot;
+}</code></pre>
+<p>HTTP受付での保存先は制御Storageの <code>office2md-jobs</code> コンテナーです。入力は <code>{jobId}/input</code>、状態は <code>{jobId}/status.json</code>、成果物は <code>{jobId}/results/{attemptId}/...</code> になります。HTTPから入力・出力Storageや保存先を指定する機能はありません。必要な場合は<a href="queue.html#message">直接Queue</a>を使います。</p>
+<h2 id="status">GET /api/jobs/{id}</h2>
+<div class="endpoint"><span class="method get">GET</span><code>/api/jobs/{id}</code></div>
+<p>状態取得は200 JSON、<code>Retry-After: 3</code> を返します。statusUrlは同一アプリ内の相対URLです。<code>job.status</code> がfailedでも状態取得自体のHTTPコードは200です。</p>
+<div class="table-wrap"><table><thead><tr><th scope="col">状態</th><th scope="col">意味</th><th scope="col">次の操作</th></tr></thead><tbody><tr><td><code>queued</code></td><td>登録済み。ワーカーの開始待ち</td><td>3秒を目安に待って状態取得</td></tr><tr><td><code>running</code></td><td>変換・成果物保存中。再試行中もこの状態になる場合がある</td><td>完了を待つ</td></tr><tr><td><code>succeeded</code></td><td>全成果物の保存が完了</td><td>返されたURLから取得</td></tr><tr><td><code>failed</code></td><td>変換不能、上限超過、または再試行上限後の失敗</td><td>errorCode/errorMessageを確認。再変換は新規ジョブ</td></tr></tbody></table></div>
+<pre><code>{
+  &quot;job&quot;: {
+    &quot;id&quot;: &quot;fc2e587d-9369-4a90-8b03-815589d5d4a3&quot;,
+    &quot;status&quot;: &quot;succeeded&quot;,
+    &quot;filename&quot;: &quot;sample.docx&quot;,
+    &quot;createdAt&quot;: &quot;2026-09-13T00:00:00Z&quot;,
+    &quot;updatedAt&quot;: &quot;2026-09-13T00:00:05Z&quot;,
+    &quot;sectionCount&quot;: 1,
+    &quot;warningCount&quot;: 2,
+    &quot;errorCode&quot;: null,
+    &quot;errorMessage&quot;: null
+  },
+  &quot;statusUrl&quot;: &quot;/api/jobs/fc2e587d-9369-4a90-8b03-815589d5d4a3&quot;,
+  &quot;resultUrl&quot;: &quot;/api/jobs/fc2e587d-9369-4a90-8b03-815589d5d4a3/result&quot;,
+  &quot;reportUrl&quot;: &quot;/api/jobs/fc2e587d-9369-4a90-8b03-815589d5d4a3/report&quot;,
+  &quot;archiveUrl&quot;: &quot;/api/jobs/fc2e587d-9369-4a90-8b03-815589d5d4a3/archive&quot;,
+  &quot;assetsBaseUrl&quot;: &quot;/api/jobs/fc2e587d-9369-4a90-8b03-815589d5d4a3/images/&quot;
+}</code></pre>
+<div class="table-wrap"><table><thead><tr><th scope="col">jobフィールド</th><th scope="col">意味</th></tr></thead><tbody><tr><td><code>id / filename</code></td><td>UUIDと入力の表示ファイル名</td></tr><tr><td><code>createdAt / updatedAt</code></td><td>UTCのISO 8601日時</td></tr><tr><td><code>sectionCount / warningCount</code></td><td>成功時の件数。成功前・失敗時はnull</td></tr><tr><td><code>errorCode / errorMessage</code></td><td>失敗理由。通常はnull</td></tr></tbody></table></div>
+<p>HTTP状態APIはStorageのコンテナー名、Blobパス、接続情報を公開しません。存在しないジョブは <code>404 JOB_NOT_FOUND</code>、UUID形式が不正なら <code>400 INVALID_JOB_ID</code> です。直接Queueの依頼はワーカーが初めて状態を作るまで404になり得ます。</p>
+<h2 id="result">GET /api/jobs/{id}/result</h2>
+<div class="endpoint"><span class="method get">GET</span><code>/api/jobs/{id}/result</code></div>
+<p>完成した <code>document.md</code> を返します。<code>Content-Type: text/markdown; charset=utf-8</code>、ダウンロード名は <code>document.md</code> です。ZIPではありません。</p>
+<h2 id="report">GET /api/jobs/{id}/report</h2>
+<div class="endpoint"><span class="method get">GET</span><code>/api/jobs/{id}/report</code></div>
+<p>完成した <code>report.json</code> を <code>application/json; charset=utf-8</code> で返します。<a href="index.html#report">reportのフィールド</a>を参照してください。画像を取得する場合はassets配列のpathを使います。</p>
+<h2 id="asset">GET /api/jobs/{id}/images/{assetName}</h2>
+<div class="endpoint"><span class="method get">GET</span><code>/api/jobs/{id}/images/{assetName}</code></div>
+<p>完成結果の画像・添付ファイルを1件取得します。例えば <code>assets[].path = images/diagram-0001.png</code> なら、<code>assetsBaseUrl</code> に <code>diagram-0001.png</code> を連結します。成功結果の一覧に含まれないファイルは取得できません。</p>
+<div class="table-wrap"><table><thead><tr><th scope="col">拡張子</th><th scope="col">Content-Type</th></tr></thead><tbody><tr><td><code>.png</code></td><td><code>image/png</code></td></tr><tr><td><code>.jpg / .jpeg</code></td><td><code>image/jpeg</code></td></tr><tr><td><code>.gif</code></td><td><code>image/gif</code></td></tr><tr><td><code>.bmp / .dib</code></td><td><code>image/bmp</code></td></tr><tr><td><code>.wmf / .emf</code></td><td><code>image/wmf / image/emf</code></td></tr><tr><td>その他</td><td><code>application/octet-stream</code></td></tr></tbody></table></div>
+<p>assetNameは先頭が英数字、続きは英数字・ピリオド・アンダースコア・ハイフンで合計200文字以内です。<code>..</code> を含む名前や結果にない名前は <code>404 ARTIFACT_NOT_FOUND</code> です。サブディレクトリを指定するルートはありません。</p>
+<h2 id="archive">GET /api/jobs/{id}/archive</h2>
+<div class="endpoint"><span class="method get">GET</span><code>/api/jobs/{id}/archive</code></div>
+<p>完成したMarkdown・report・全画像を読み出して、その場で <code>document.zip</code> を作ります。応答は <code>application/zip</code> です。ZIPをBlobへ常時保存する仕組みではありません。</p>
+<h2 id="download-errors">取得の共通条件とエラー</h2>
+<p>成果物エンドポイントはすべて成功済みのジョブが対象です。queued・running・failedは <code>409 JOB_NOT_READY</code>、ジョブ不在は404です。成果物は <code>Content-Disposition: attachment</code>、<code>Cache-Control: no-store</code>、<code>X-Content-Type-Options: nosniff</code> 付きで返します。</p>
+<p><code>X-Section-Count / X-Warning-Count</code> は同期変換だけのレスポンスヘッダーです。非同期では状態JSONの <code>job.sectionCount / job.warningCount</code>、またはreportを参照します。</p>
+<p>保存時から変更された成果物は <code>409 RESULT_CHANGED</code> になります。出力Blobを編集せず、新しいジョブで変換してください。変換が成功していても、ZIP化や取得時の容量上限で413になる場合があります。</p>
+<h2 id="retry">再送・キャンセル・保持期間</h2>
+<p>POST /jobsにはクライアント指定IDや冪等キーがありません。同じファイルを再POSTすると別ジョブになるため、応答を受け取ったらIDを保存してください。ジョブのキャンセル・削除APIはありません。Playgroundの待機停止もサーバー処理を取り消しません。入力・状態・成果物・失敗試行の清掃は運用側で行います。</p>
+<p>ワーカーの一時的な失敗はQueueの再試行に従います。アプリ側の継続できない変換エラーはfailedとなり、以後の同一依頼配送で再変換しません。<a href="queue.html#retries">直接Queueの再送契約</a>も参照してください。</p>
+
+<footer class="page-footer"><p>最終確認：2026-09-13。<a href="../../../functions/office2md/docs/usage.md">利用ガイド</a>と<a href="../../../functions/office2md/src/main/java/com/convertx2x/office2md/ConversionFunctions.java">HTTP実装</a>に基づく資料です。</p></footer>
+</article>
+<aside class="toc" aria-label="このページの目次"><p class="toc-title">このページの内容</p><nav id="page-toc"></nav></aside>
+</div>
+</main>
+</body>
+</html>

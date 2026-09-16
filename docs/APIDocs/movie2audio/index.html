@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Movie2AudioのAPIリファレンス。動画ファイル・許可済みHTTPS URLからAACを再エンコードせずM4Aへ抽出。">
+<title>動画から、AAC音声だけを。 · Movie2Audio API</title>
+<link rel="stylesheet" href="../assets/styles.css">
+<script src="../assets/app.js" defer></script>
+</head>
+<body data-page="movie-overview">
+<a class="skip-link" href="#main-content">本文へ移動</a>
+<div id="site-header"></div>
+<aside id="sidebar" class="sidebar" aria-label="APIナビゲーション"></aside>
+<div id="menu-overlay" class="menu-overlay" hidden></div>
+<main id="main-content" class="main-content" tabindex="-1">
+<div class="page-layout">
+<article class="article">
+<p class="eyebrow">Movie → AAC</p>
+<h1>動画から、AAC音声だけを。</h1>
+<p class="lead">動画ファイル、または許可したHTTPS URLを受け取り、最初のAAC音声トラックをM4Aで返します。音声の再エンコードは行いません。</p>
+
+<div class="hero-meta"><span class="pill accent">AAC stream copy</span><span class="pill">HTTP・Queue</span><span class="pill">Node.js 22 / 24・FFmpeg</span></div>
+<h2 id="overview">抽出の流れ</h2>
+<div class="flow" aria-label="動画から音声を抽出する流れ"><span>動画 / HTTPS URL</span><b aria-hidden="true">→</b><span>一時ファイル</span><b aria-hidden="true">→</b><span>AACをコピー</span><b aria-hidden="true">→</b><span>audio.m4a</span></div>
+<p>同梱FFprobeで入力内容を確認し、同梱FFmpegで音声トラックを抽出します。音声のビットレート・サンプリングレート・チャンネル数を変更しません。アップロードとURL取得は同じ変換処理・上限・出力形式を使います。</p>
+<div class="callout"><strong>AACは音声コーデック、M4Aは格納形式です。</strong><br>出力は <code>audio.m4a</code>（<code>audio/mp4</code>）。音声パケットをコピーしますが、元の動画コンテナー・メタデータをそのまま返す処理ではありません。</div>
+<h2 id="speech">Azure Speechへの前処理として</h2>
+<p>入力をストリームで一時ディスクへ保存し、抽出を完了したM4AをHTTPストリームで返します。AACのサンプリングレート・チャンネル数を保持し、<code>faststart</code> でM4Aの再生情報を先頭側へ配置します。抽出と送信は順番に行います。<a href="http.html#streaming">ストリーミングの範囲</a>を参照してください。</p>
+<p>現行の<a href="https://learn.microsoft.com/en-us/azure/ai-services/speech-service/batch-transcription-audio-data">対応形式一覧</a>にはAAC、<a href="https://techcommunity.microsoft.com/blog/azure-ai-foundry-blog/fast-transcription-public-preview-in-azure-ai-speech/4108720">Microsoftの2024年のFast紹介</a>にはM4Aが掲載されています。Azure Speech実サービスでの受け入れ・文字起こしは未検証です。</p>
+<h2 id="formats">入力の条件</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">項目</th><th scope="col">仕様</th></tr></thead><tbody><tr><td>動画コンテナー</td><td>MP4・MOV、Matroska、AVI、MPEG-TS、FLV系。拡張子ではなく内容を確認</td></tr><tr><td>動画ストリーム</td><td>必須。カバー画像のみの音声ファイルは動画として扱わない</td></tr><tr><td>音声ストリーム</td><td>最初の音声トラックがAACであること。後続のAACトラックに自動で切り替えない</td></tr><tr><td>AAC以外</td><td><code>422 UNSUPPORTED_AUDIO_CODEC</code>。AACへの再エンコードは行わない</td></tr><tr><td>対象外</td><td>Webページ・HLS/DASHプレイリスト・DRMコンテンツ。一般的なFFmpegの全機能は提供しない</td></tr></tbody></table></div>
+<p>動画から動画・字幕・データトラックを除き、入力メタデータとチャプターを引き継がずに音声1トラックを出力します。破損したファイルや、同梱FFmpegの限られた解析範囲で読み取れないファイルは拒否します。</p>
+<h2 id="endpoints">利用するAPI</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">メソッド / パス</th><th scope="col">入力</th><th scope="col">結果</th></tr></thead><tbody><tr><td><code>POST /api/convert</code></td><td>動画ファイルの生バイト列</td><td><a href="http.html">audio.m4aを同じレスポンスで返す</a></td></tr><tr><td><code>POST /api/convert-url</code></td><td><code>{"url":"https://…"}</code></td><td><a href="url.html">許可済みURLを取得してaudio.m4aを返す</a></td></tr><tr><td><code>POST /api/convert-to-blob</code></td><td>動画またはURL + 出力先SAS</td><td><a href="storage.html">Blob保存後に201 JSONを返す</a></td></tr><tr><td><code>POST /api/jobs</code><br><code>POST /api/jobs-url</code></td><td>動画 / URL</td><td><a href="jobs.html">202で受付・状態確認後にM4Aを取得</a></td></tr><tr><td>Queue <code>movie2audio-jobs</code></td><td>入出力Blobを指定するJSON</td><td><a href="queue.html">登録済みStorageへM4Aを保存</a></td></tr><tr><td><code>GET /api/capabilities</code></td><td>なし / 匿名</td><td><a href="settings.html#capabilities">適用中の上限・URL機能の有効状態</a></td></tr></tbody></table></div>
+<p>同期HTTP・非同期HTTP・直接Queueの3経路が、同じFFmpeg処理を使います。同期のダウンロードAPIは音声を返し、SAS保存APIは保存完了後に結果JSONを返します。非同期はジョブIDで状態と音声を取得します。</p>
+<h2 id="quickstart">ローカルで試す</h2>
+<p>Node.js 22または24・npm・Python 3.10以上・Azure Functions Core Tools v4を用意し、リポジトリルートから起動します。FFmpegは同梱済みです。対応環境はLinux x64とmacOS Apple Siliconです。</p>
+<pre><code class="language-shell">cd functions/movie2audio
+npm ci
+npm start</code></pre>
+<p><a href="http://localhost:7073/api/playground">Movie2Audio Playground</a>へアクセスするか、別のターミナルで動画を送ります。</p>
+<pre><code class="language-shell">curl --fail-with-body \
+  -H &#x27;Content-Type: application/octet-stream&#x27; \
+  --data-binary @sample.mp4 \
+  &#x27;http://localhost:7073/api/convert&#x27; \
+  --output audio.m4a</code></pre>
+<h2 id="limits">既定の上限</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">入力</th><th scope="col">出力</th><th scope="col">処理期限</th><th scope="col">同時実行</th></tr></thead><tbody><tr><td>100MiB</td><td>100MiB</td><td>180秒（受付・各処理試行・結果取得ごと）</td><td>Node.jsプロセスごとに1件</td></tr></tbody></table></div>
+<p>上限は<a href="settings.html#environment">環境変数</a>で変更できます。URL取得は <code>CONVERSION_URL_ALLOWED_HOSTS</code>、Blob保存は <code>CONVERSION_OUTPUT_ALLOWED_HOSTS</code> の設定時だけ有効です。非同期HTTP・直接Queueは <code>CONVERSION_STORAGE_CONNECTION_STRING</code> の設定時だけ有効です。これらを未設定でも、ファイルをアップロードして音声を受け取る同期APIを利用できます。</p>
+<p>Azure Functions上の性能や処理時間は、動画の長さ・構造・ネットワーク・配置環境によって変わります。メモリー4GBだから100MiBを必ず180秒以内に処理できる、という保証はありません。</p>
+
+<footer class="page-footer"><p>最終確認：2026-09-15。<a href="../../../functions/movie2audio/docs/usage.md">利用ガイド</a> · <a href="../../movie2audio.md">開発者向け実装ガイド</a></p></footer>
+</article>
+<aside class="toc" aria-label="このページの目次"><p class="toc-title">このページの内容</p><nav id="page-toc"></nav></aside>
+</div>
+</main>
+</body>
+</html>

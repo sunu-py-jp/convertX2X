@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "jobId": "f6603efc-2fa8-4466-8d09-6d7c3ed94c18",
+  "input": {
+    "storage": "source",
+    "container": "videos-incoming",
+    "blobName": "incoming/f6603efc-2fa8-4466-8d09-6d7c3ed94c18/meeting.mp4"
+  },
+  "output": {
+    "storage": "archive",
+    "container": "audio-created",
+    "prefix": "exports/meetings"
+  },
+  "filename": "meeting.mp4"
+}

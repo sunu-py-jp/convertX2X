@@ -1,0 +1,37 @@
+{
+  "version": "9.0.1",
+  "sourceSha256": "cf38e0e28c7e5605942c4a77755349b0145804a397af37eb1fb4c77cb237f635",
+  "target": "macos-aarch64",
+  "configure": [
+    "--disable-autodetect",
+    "--disable-network",
+    "--disable-everything",
+    "--disable-doc",
+    "--disable-ffplay",
+    "--disable-avdevice",
+    "--disable-debug",
+    "--disable-asm",
+    "--disable-iamf",
+    "--enable-small",
+    "--enable-protocol=file",
+    "--enable-demuxer=mov,matroska,avi,mpegts,flv",
+    "--enable-muxer=ipod",
+    "--enable-parser=aac,aac_latm",
+    "--enable-decoder=aac",
+    "--enable-bsf=aac_adtstoasc"
+  ],
+  "build": {
+    "os": "macOS-14.6.1-arm64-arm-64bit-Mach-O",
+    "compiler": "Apple clang version 15.0.0 (clang-1500.3.9.4)"
+  },
+  "binaries": {
+    "ffmpeg": {
+      "sha256": "08ae4f79d4ee705b1fd2c194ba2829b07f06ee0ca81ff0f3cb6336293605ab00",
+      "bytes": 2376568
+    },
+    "ffprobe": {
+      "sha256": "6c6b3de30781574beb554a899015be1bd4da46e96dceecd5d83cd767d7f94731",
+      "bytes": 2216216
+    }
+  }
+}

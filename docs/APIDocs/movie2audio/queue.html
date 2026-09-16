@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Movie2AudioのAPIリファレンス。動画ファイル・許可済みHTTPS URLからAACを再エンコードせずM4Aへ抽出。">
+<title>外部システムから直接Queueへ依頼する · Movie2Audio API</title>
+<link rel="stylesheet" href="../assets/styles.css">
+<script src="../assets/app.js" defer></script>
+</head>
+<body data-page="movie-queue">
+<a class="skip-link" href="#main-content">本文へ移動</a>
+<div id="site-header"></div>
+<aside id="sidebar" class="sidebar" aria-label="APIナビゲーション"></aside>
+<div id="menu-overlay" class="menu-overlay" hidden></div>
+<main id="main-content" class="main-content" tabindex="-1">
+<div class="page-layout">
+<article class="article">
+<p class="eyebrow">Movie → AAC</p>
+<h1>外部システムから直接Queueへ依頼する</h1>
+<p class="lead">動画をBlobへ保存し、Queueには入出力の参照をJSONで送ります。HTTP受付・Playgroundを経由せず、他システムから同じAAC抽出処理を実行できます。</p>
+<h2 id="flow">送信側の手順</h2>
+<ol class="steps"><li>新しいUUIDを作り、AAC音声を含む動画を一意な入力Blobへ保存する。</li><li>制御用Storageの <code>movie2audio-jobs</code> Queueへ、version付きJSONをBase64で1回だけエンコードして送る。</li><li>状態API、または制御用Blobの状態を確認し、成功した試行のaudio.m4aを取得する。</li></ol>
+<p><code>CONVERSION_STORAGE_CONNECTION_STRING</code> を設定した場合だけワーカーを登録します。Queueと状態Blobは制御用Storageに置き、入出力は同じStorageまたは事前に登録した別Storageを指定できます。ファイル本体・SAS URL・接続文字列・キーをQueueへ入れません。</p>
+<h2 id="request-json">依頼JSON</h2>
+<pre><code class="language-json">{
+  "version": 1,
+  "jobId": "f6603efc-2fa8-4466-8d09-6d7c3ed94c18",
+  "input": {
+    "storage": "default",
+    "container": "videos-incoming",
+    "blobName": "incoming/f6603efc-2fa8-4466-8d09-6d7c3ed94c18/meeting.mp4"
+  },
+  "output": {
+    "storage": "default",
+    "container": "audio-created",
+    "prefix": "exports/meetings"
+  },
+  "filename": "meeting.mp4"
+}</code></pre>
+<div class="table-wrap"><table><thead><tr><th>フィールド</th><th>仕様</th></tr></thead><tbody><tr><td><code>version</code></td><td>必須。整数1</td></tr><tr><td><code>jobId</code></td><td>必須。通常のハイフン付きUUID</td></tr><tr><td><code>input</code> / <code>output</code></td><td>必須。以下の指定を持つオブジェクト</td></tr><tr><td><code>input.storage</code> / <code>output.storage</code></td><td>事前登録したStorage名。省略・null時はdefault</td></tr><tr><td><code>input.container</code></td><td>入力コンテナー</td></tr><tr><td><code>input.blobName</code></td><td>アップロード済みの動画Blob名</td></tr><tr><td><code>output.container</code></td><td>M4A保存先。未作成なら非公開で作成</td></tr><tr><td><code>output.prefix</code></td><td>任意の保存先接頭辞。省略・null時は空</td></tr><tr><td><code>filename</code></td><td>任意の入力表示名。省略・null・空白時は入力Blobの末尾名。正規化後は最大255文字。出力名はaudio.m4a固定</td></tr></tbody></table></div>
+<p>出力形式・音声選択・ビットレートの <code>options</code> やZIPモードはありません。最初のAACトラックをそのままM4Aにします。<a href="../../../functions/movie2audio/examples/queue-request.json">既定StorageのJSON</a>と<a href="../../../functions/movie2audio/examples/queue-request-cross-account.json">別StorageのJSON</a>を利用できます。</p>
+<h2 id="encoding">JSON検証とBase64</h2>
+<p>Base64デコード後のJSONは正しいUTF-8で最大48KiBです。未知のキー・重複キー・末尾の追加JSON・不正な型は拒否します。UUIDだけの旧式メッセージは受け付けません。動画本体をBase64化して含める形式でもありません。</p>
+<p>コンテナー名は3〜63文字の小文字英数字・単独ハイフンで先頭末尾は英数字です。Blob名は最大1024文字、prefixは前後空白と末尾スラッシュの正規化後で最大512文字です。制御文字・<code>.</code> / <code>..</code> 区間・バックスラッシュ・<code>?</code>・<code>#</code>・<code>://</code> を拒否します。登録Storage内のBlob名を指定する仕組みで、任意URLを取得する指示にはなりません。</p>
+<p>Node.jsの <code>@azure/storage-queue</code> では、送信前にJSONをBase64化します。別のSDKでBase64自動エンコードを有効にした場合は、未エンコードのJSON文字列を渡してください。二重にエンコードしないでください。</p>
+<pre><code class="language-javascript">import { QueueClient } from '@azure/storage-queue';
+import { readFile } from 'node:fs/promises';
+
+const queue = new QueueClient(
+  process.env.CONVERSION_STORAGE_CONNECTION_STRING,
+  'movie2audio-jobs'
+);
+const json = await readFile('queue-request.json', 'utf8');
+await queue.sendMessage(Buffer.from(json, 'utf8').toString('base64'));</code></pre>
+<p>同梱の <a href="../../../functions/movie2audio/examples/QueueProducer.mjs">QueueProducer.mjs</a> で動画アップロードとQueue投入を実行できます。入力アップロード・権限・運用の手順は<a href="../../../functions/movie2audio/docs/direct-queue.md">直接Queueの開発者ガイド</a>を参照してください。送信元にはBlobへ入力を保存する権限とQueueへメッセージを追加する権限が必要です。</p>
+<h2 id="storage-aliases">別Storageの登録</h2>
+<div class="table-wrap"><table><thead><tr><th>環境変数</th><th>役割</th><th>JSON</th></tr></thead><tbody><tr><td><code>CONVERSION_STORAGE_CONNECTION_STRING</code></td><td>制御用と既定の入出力</td><td><code>storage: "default"</code></td></tr><tr><td><code>CONVERSION_INPUT_STORAGE_SOURCE</code></td><td>追加の入力用接続</td><td><code>input.storage: "source"</code></td></tr><tr><td><code>CONVERSION_OUTPUT_STORAGE_ARCHIVE</code></td><td>追加の出力用接続</td><td><code>output.storage: "archive"</code></td></tr></tbody></table></div>
+<p>登録名は <code>[a-z][a-z0-9_]{0,31}</code>、環境変数の接尾辞は大文字です。<code>default</code> は予約名です。入力・出力の登録は別で、入力用登録を出力用としては利用できません。接続設定はサーバー側に置き、Queueでは登録名だけを渡します。</p>
+<p>登録はアカウント単位で、コンテナーの許可リストではありません。接続が持つ実際の権限も、入力の読み取り、出力の保存・コンテナー作成に合わせて設定してください。結果APIを使う場合、出力側には読み取り権限も必要です。Queueへの投入権限は、この登録範囲へ処理を依頼できる権限として扱います。</p>
+<p>登録Storageの接続設定を使うこの経路では、同期SAS保存用の <code>CONVERSION_OUTPUT_ALLOWED_HOSTS</code> は使いません。APIごとの役割を分け、呼び出し元が任意の接続先を追加できない形にしています。</p>
+<h2 id="paths">入力・状態・音声の保存場所</h2>
+<div class="table-wrap"><table><thead><tr><th>対象</th><th>保存先</th></tr></thead><tbody><tr><td>入力</td><td><code>input.storage / input.container / input.blobName</code></td></tr><tr><td>状態</td><td>制御用Storageのmovie2audio-jobsコンテナー、<code>{jobId}/status.json</code></td></tr><tr><td>出力</td><td><code>output.storage / output.container / {prefix}/{jobId}/results/{attemptUUID}/audio.m4a</code></td></tr></tbody></table></div>
+<p>空のprefixなら先頭の <code>{prefix}/</code> は付きません。ワーカーが試行ごとに <code>attemptUUID</code> を生成し、成功した試行だけを状態の <code>result</code> として公開します。パスを推測せず、状態に保存された情報を使ってください。</p>
+<p>状態Blobは <code>job</code>・<code>request</code>・<code>result</code> を持ちます。<code>request</code> は正規化済みの依頼で、<code>result</code> は成功時に次のような記録を持ちます。</p>
+<pre><code class="language-json">{
+  "storage": "default",
+  "container": "audio-created",
+  "blobName": "exports/meetings/f6603efc-2fa8-4466-8d09-6d7c3ed94c18/results/8a21634b-dcb8-445c-b30e-aa615169aa4a/audio.m4a",
+  "contentType": "audio/mp4",
+  "filename": "audio.m4a",
+  "sizeBytes": 9323,
+  "etag": "\"0x8DD123456789ABC\""
+}</code></pre>
+<p>HTTP状態APIは内部のrequest/resultやStorage参照を返さず、ジョブと取得用URLだけを返します。<a href="jobs.html#get-result">結果API</a>からM4Aを受け取るか、内部resultを使って自分のStorage読み取り権限でBlobを取得します。</p>
+<h2 id="retry">重複配送・再試行・保持</h2>
+<ul><li>同じID・同じ正規化済み依頼が成功済み／失敗済みなら変換を繰り返しません。同じIDで異なる依頼を送っても既存状態や結果を上書きしません。</li><li>状態Blobの更新可能なリースでジョブを排他制御します。途中で止まった処理は後続の試行へ引き継げます。変換処理が常に1回だけ実行されるという保証ではありません。</li><li>入力Blobは依頼ごとに一意にし、処理完了まで上書き・削除しないでください。新たな変換や条件を変更した再実行には新しいUUIDを使います。</li><li>不正動画・AAC以外・上限超過・未登録Storageなどは失敗状態になります。Storageの一時障害や実行枠の競合は再試行します。</li><li><code>maxDequeueCount=10</code>、失敗時の <code>visibilityTimeout=1分</code>。上限後は <code>movie2audio-jobs-poison</code> で失敗状態にします。</li><li>不正JSON・不正UUIDなど依頼を解析できない場合は、対応する状態Blobを作れません。直接投入直後の404と区別し、継続する404はQueue・ワーカー・poisonの状態を確認します。</li></ul>
+<p>Queueは厳密なFIFOではありません。プロセス内は同期とQueue合わせて1件、水平スケール時は複数インスタンスが並列に動作します。実行枠の数とアプリ全体の最大インスタンス数は別の設定です。</p>
+<p>入力・状態・結果・未完了の試行のBlobは自動削除しません。保持期間とライフサイクル管理を運用側で決めます。新しいコンテナーは非公開で作成し、既存コンテナーの公開設定は変更しません。</p>
+<footer class="page-footer"><p>最終確認：2026-09-15。<a href="../../../functions/movie2audio/docs/usage.md">利用ガイド</a> · <a href="../../movie2audio.md">開発者向け実装ガイド</a></p></footer>
+</article>
+<aside class="toc" aria-label="このページの目次"><p class="toc-title">このページの内容</p><nav id="page-toc"></nav></aside>
+</div>
+</main>
+</body>
+</html>

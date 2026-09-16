@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="PowerPoint・PDFから画像への変換API。実装に基づく入出力、呼び出し方法、設定の資料です。">
+  <title>設定・制限・エラー | convertX2X API資料</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+  <script src="../assets/app.js" defer></script>
+</head>
+<body data-page="images-settings">
+<a class="skip-link" href="#main-content">本文へ移動</a>
+<div id="site-header"></div>
+<aside id="sidebar" class="sidebar" aria-label="APIナビゲーション"></aside>
+<div id="menu-overlay" class="menu-overlay" hidden></div>
+<main id="main-content" class="main-content" tabindex="-1">
+  <div class="page-layout">
+    <article class="article">
+
+      <p class="eyebrow">設定・制限・運用</p>
+      <h1>設定とエラーの読み方</h1>
+      <p class="lead">入力・ページ数・画素数・出力容量は環境変数で設定します。非同期の有効化には、アプリ設定とFunctionsホストのQueue設定の両方が必要です。</p>
+
+      <h2 id="limits">変換上限</h2>
+      <div class="table-wrap"><table>
+        <thead><tr><th>環境変数</th><th>既定値</th><th>適用対象</th></tr></thead>
+        <tbody>
+          <tr><td><code>CONVERSION_MAX_INPUT_BYTES</code></td><td><code>20971520</code>（20 MiB）</td><td>入力ファイルのバイト数</td></tr>
+          <tr><td><code>CONVERSION_MAX_PAGES</code></td><td><code>50</code></td><td>入力文書全体のページ数。1ページだけの指定でも適用。</td></tr>
+          <tr><td><code>CONVERSION_MAX_PIXELS_PER_PAGE</code></td><td><code>16000000</code></td><td>出力画像1枚の幅×高さ。描画バッファ作成前に検査。</td></tr>
+          <tr><td><code>CONVERSION_MAX_OUTPUT_BYTES</code></td><td><code>104857600</code>（100 MiB）</td><td>画像・ZIP・個別画像保存の出力容量</td></tr>
+        </tbody>
+      </table></div>
+      <p>これらはPOI・PDFBoxやメモリー4GBプランの仕様上限ではなく、このアプリが設ける上限です。HTTP・Queueとも同じ設定を使います。MiBは1,048,576バイトです。</p>
+      <p>空・未設定なら既定値を使用します。指定する値は正の整数で、不正な数値は起動エラーになります。ページ数は32ビット整数、入力・出力バイト数と画素数はJava配列に収まる値として最大2,147,483,639まで検査します。この数値まで実際に処理できることを保証するものではありません。</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>出力方式</th><th>出力容量上限の意味</th></tr></thead>
+        <tbody>
+          <tr><td>1ページ画像</td><td>エンコードした画像1枚に適用</td></tr>
+          <tr><td>全ページZIP</td><td>各エンコード画像と最終ZIPに、それぞれ適用</td></tr>
+          <tr><td>直接Queueの <code>images</code></td><td>各画像に加え、全画像＋manifestの合計にも適用</td></tr>
+        </tbody>
+      </table></div>
+      <p>上限を超える部分だけを切り捨てて成功扱いにはしません。失敗時はエラー、非同期では失敗状態になります。</p>
+
+      <h2 id="async-switch">非同期のオン・オフ</h2>
+      <div class="table-wrap"><table>
+        <thead><tr><th>設定</th><th>制御用接続なし</th><th>制御用接続あり</th></tr></thead>
+        <tbody>
+          <tr><td><code>CONVERSION_STORAGE_CONNECTION_STRING</code></td><td>空・未設定：同期だけ有効</td><td>Blob・Queueを利用できる接続設定</td></tr>
+          <tr><td><code>CONVERSION_QUEUE_CONNECTION_STRING</code></td><td><code>UseDevelopmentStorage=true</code></td><td>制御用接続と同じ値</td></tr>
+          <tr><td><code>AzureWebJobs.ProcessConversion.Disabled</code></td><td><code>true</code></td><td><code>false</code></td></tr>
+          <tr><td><code>AzureWebJobs.PoisonConversion.Disabled</code></td><td><code>true</code></td><td><code>false</code></td></tr>
+        </tbody>
+      </table></div>
+      <p>制御用接続の空白を除いた値が空でなければ、アプリの非同期機能は有効になります。接続できるかを検証してから有効にする方式ではないため、設定誤りや権限不足は実際のStorage操作でエラーになります。</p>
+      <p>QueueバインドはJava起動前に初期化されます。無効時のエミュレーター形式の値は、バインドを構築できるようにするためのもので、無効化フラグと組み合わせてリスナーを止めます。</p>
+      <p>ローカルの <code>scripts/run_local.py</code> とAzure向けの <code>scripts/configure_azure_async.py</code> が、この派生設定を生成します。Azureで制御用接続だけを追加・削除して終わらせず、派生設定も一緒に更新してください。<a href="../../../functions/ppt-pdf-to-images/docs/usage.md">設定スクリプトの使い方</a>を参照してください。</p>
+
+      <h2 id="storage-and-runtime">Storageと実行環境</h2>
+      <div class="table-wrap"><table>
+        <thead><tr><th>設定</th><th>用途</th></tr></thead>
+        <tbody>
+          <tr><td><code>CONVERSION_INPUT_STORAGE_&lt;登録名の大文字&gt;</code></td><td>追加の入力用Storage。例：<code>CONVERSION_INPUT_STORAGE_SOURCE</code></td></tr>
+          <tr><td><code>CONVERSION_OUTPUT_STORAGE_&lt;登録名の大文字&gt;</code></td><td>追加の出力用Storage。例：<code>CONVERSION_OUTPUT_STORAGE_ARCHIVE</code></td></tr>
+          <tr><td><code>AzureWebJobsStorage</code></td><td>Functionsホスト用。ローカル起動では空なら制御用接続を補完。本番はFunction App側で有効な設定を用意。</td></tr>
+          <tr><td><code>FUNCTIONS_WORKER_RUNTIME</code></td><td><code>java</code></td></tr>
+          <tr><td><code>JAVA_OPTS</code></td><td>起動スクリプト・Maven設定では <code>-Djava.awt.headless=true</code> を使用。</td></tr>
+        </tbody>
+      </table></div>
+      <p>実行環境はJava 21／Functions v4です。入出力の追加登録だけでは非同期は有効になりません。登録名と実Storage権限の違いは<a href="queue.html#storage-aliases">Storage登録</a>を確認してください。</p>
+
+      <h2 id="local-settings">ローカル設定例</h2>
+      <p>作業ディレクトリは <code>functions/ppt-pdf-to-images</code> です。初回はJDK 21、Core Tools v4、Python 3.10以上が必要です。Maven Wrapperは同梱されています。</p>
+      <pre><code>cd functions/ppt-pdf-to-images
+cp local.settings.example.json local.settings.json
+python3 scripts/run_local.py</code></pre>
+      <p><code>local.settings.json</code> がなければexampleを使います。同じ名前の設定が環境変数にあれば、環境変数を優先します。実際のキーを含む設定ファイルはGitへ保存しません。</p>
+      <pre><code># 入力100 MiB・文書300ページへ変更して起動
+CONVERSION_MAX_INPUT_BYTES=104857600 \
+CONVERSION_MAX_PAGES=300 \
+python3 scripts/run_local.py</code></pre>
+      <p>非同期をローカルで試す場合は、別途Azuriteを起動し、<code>CONVERSION_STORAGE_CONNECTION_STRING=UseDevelopmentStorage=true</code> を設定します。起動スクリプトの実行はAzureへのデプロイではありません。</p>
+
+      <h2 id="concurrency">同時実行・メモリー・タイムアウト</h2>
+      <div class="table-wrap"><table>
+        <thead><tr><th>設定・動作</th><th>このプロジェクトの値</th></tr></thead>
+        <tbody>
+          <tr><td>Functions実行時間 <code>functionTimeout</code></td><td>10分</td></tr>
+          <tr><td>Queue <code>batchSize</code> / <code>newBatchThreshold</code></td><td>1 / 0</td></tr>
+          <tr><td><code>dynamicConcurrencyEnabled</code></td><td><code>false</code></td></tr>
+          <tr><td>HTTP <code>maxConcurrentRequests</code> / <code>maxOutstandingRequests</code></td><td>1 / 8</td></tr>
+          <tr><td>Queue <code>visibilityTimeout</code> / <code>maxDequeueCount</code></td><td>1分 / 10</td></tr>
+          <tr><td>共通変換サービスの同時実行</td><td>1件。競合時は待ち続けず <code>503 CONVERSION_BUSY</code>。</td></tr>
+        </tbody>
+      </table></div>
+      <p>ホストのHTTP待機上限を超えたリクエストは429となる設定です。HTTP経路・プロキシ・クライアントの応答タイムアウトは、Functionsの実行時間上限とは別に考慮します。</p>
+      <p>複数インスタンスが動けば、各インスタンスは並列処理します。1件ずつの変換設定は、アプリ全体で1件だけにする分散ロックではありません。Azure上のスケール設定も含めて調整してください。</p>
+      <p>入力バイト列、文書モデル、描画画像、ZIP結果はプロセスのメモリーを使います。画像は1枚ずつ処理・解放しますが、ZIP方式はZIP全体をメモリーに保持します。<code>images</code> モードは画像を順次Blobへ保存します。待機中の入力はBlobに置かれます。</p>
+      <p>入力サイズが同じでも、埋め込み画像・ページ数・フォント・描画内容で時間とピークメモリーは変わります。設定値の引き上げ時は、配置先で実際の資料を測定してください。</p>
+
+      <h2 id="error-body">エラーレスポンスの形式</h2>
+      <p>アプリが捕捉したHTTPエラーは、ステータスコードと次のJSONを返します。プログラムでは <code>error.code</code> を使い、メッセージ文字列への完全一致には依存しないでください。</p>
+      <pre><code>{
+  "error": {
+    "code": "INVALID_PAGE",
+    "message": "The requested page does not exist."
+  }
+}</code></pre>
+      <p>これは存在しないページを指定した場合の実装上の形式です。説明文は現在英語です。認証、ホストの429、タイムアウトなど、アプリに到達する前後の応答はこのJSON形式とは限りません。</p>
+      <p>非同期の変換エラーは <code>job.errorCode</code> と <code>job.errorMessage</code> に記録します。<code>GET /api/jobs/{id}</code> が成功して失敗状態を返す場合、HTTPステータスは200です。</p>
+
+      <h2 id="errors">主なエラーコード</h2>
+      <div class="table-wrap"><table>
+        <thead><tr><th>ステータス</th><th>コード</th><th>内容・対応</th></tr></thead>
+        <tbody>
+          <tr><td>400</td><td><code>EMPTY_INPUT</code></td><td>ファイル本文が空。生バイト列を送る。</td></tr>
+          <tr><td>400</td><td><code>INVALID_FILENAME</code></td><td>入力名の末尾名が不正・長すぎる。</td></tr>
+          <tr><td>400</td><td><code>INVALID_OPTIONS</code></td><td>HTTPのpage/widthの解析失敗や0以下、未対応format。</td></tr>
+          <tr><td>400</td><td><code>INVALID_PAGE</code></td><td>文書に存在しないページなど。元文書の1始まり番号を指定。</td></tr>
+          <tr><td>400</td><td><code>INVALID_JOB_ID</code></td><td>UUIDの形式が不正。</td></tr>
+          <tr><td>400相当</td><td><code>INVALID_QUEUE_MESSAGE</code></td><td>Queue JSONの形式・型・フィールド・上限が不正。HTTP受付の本文にはQueue JSONを送らない。</td></tr>
+          <tr><td>400相当</td><td><code>UNKNOWN_INPUT_STORAGE</code> / <code>UNKNOWN_OUTPUT_STORAGE</code></td><td>依頼のStorage登録名が、その役割で利用できない。ジョブの失敗に記録。</td></tr>
+          <tr><td>404</td><td><code>JOB_NOT_FOUND</code></td><td>状態がない。直接Queue投入直後なら初期状態作成を待つ。</td></tr>
+          <tr><td>409</td><td><code>JOB_NOT_READY</code></td><td>成功前・失敗済みのジョブから結果を取得した。</td></tr>
+          <tr><td>409相当</td><td><code>JOB_ID_CONFLICT</code></td><td>直接Queueで同じIDに異なる依頼を送った。元ジョブは維持する。</td></tr>
+          <tr><td>413</td><td><code>INPUT_TOO_LARGE</code></td><td>HTTP受付で入力容量上限を超過。</td></tr>
+          <tr><td>413</td><td><code>INPUT_LIMIT_EXCEEDED</code></td><td>変換コア・Blob読み取りで入力容量上限を超過。</td></tr>
+          <tr><td>413</td><td><code>PAGE_LIMIT_EXCEEDED</code></td><td>入力文書全体のページ数が上限を超過。</td></tr>
+          <tr><td>413</td><td><code>PIXEL_LIMIT_EXCEEDED</code></td><td>出力画像の画素数が上限を超過。widthの縮小などを検討。</td></tr>
+          <tr><td>413</td><td><code>OUTPUT_LIMIT_EXCEEDED</code></td><td>画像・ZIP・個別画像＋manifestの出力上限を超過。</td></tr>
+          <tr><td>415</td><td><code>RAW_BODY_REQUIRED</code></td><td><code>multipart/*</code> を送った。<code>application/octet-stream</code> の生本文へ変更。</td></tr>
+          <tr><td>415</td><td><code>UNSUPPORTED_DOCUMENT</code></td><td>対応しない内容形式。</td></tr>
+          <tr><td>422</td><td><code>EMPTY_DOCUMENT</code></td><td>ページを含まない文書。</td></tr>
+          <tr><td>422</td><td><code>INVALID_DOCUMENT</code></td><td>破損や、描画できない内容・寸法。</td></tr>
+          <tr><td>422</td><td><code>ENCRYPTED_DOCUMENT</code></td><td>暗号化資料は対象外。</td></tr>
+          <tr><td>422相当</td><td><code>INPUT_NOT_FOUND</code></td><td>Queue依頼の入力Blobが見つからない。ジョブの失敗に記録。</td></tr>
+          <tr><td>503</td><td><code>ASYNC_DISABLED</code></td><td>非同期の設定がない。</td></tr>
+          <tr><td>503</td><td><code>CONVERSION_BUSY</code></td><td>共通変換サービスが処理中。</td></tr>
+          <tr><td>500</td><td><code>INTERNAL_ERROR</code></td><td>Storage操作などを含む予期しないHTTP処理エラー。</td></tr>
+        </tbody>
+      </table></div>
+      <p>「相当」は内部例外の分類です。直接Queueへ投入した処理にはHTTPレスポンスがありません。特に依頼そのものの解析失敗は、ジョブ状態を作成できずログ・poison Queueで確認する場合があります。</p>
+      <p>一時エラーの再試行上限後は、ジョブ状態の <code>errorCode</code> に <code>PROCESSING_FAILED</code> を記録します。503のHTTP応答には <code>Retry-After: 3</code> が付きます。400・413・415・422は入力や設定を修正してから再依頼してください。</p>
+
+      <h2 id="public-and-private">公開範囲とデータ保持</h2>
+      <p>Playground画面・静的アセット・<code>GET /api/playground/config</code> は匿名です。変換・ジョブ登録・状態確認・結果取得はFunction認証です。公開設定に含めるのは非同期の有効状態、入力容量上限、ページ数上限だけです。</p>
+      <p>Storageの接続文字列や生の依頼JSONはHTTPエラーへ出力しません。状態APIは内部Blob参照を隠しますが、直接Queueの個別画像モードの結果manifestには取得用のStorage登録名・Blob参照が入ります。</p>
+      <p>Blobは自動削除しません。入力、状態、結果、送信失敗や処理失敗で残った試行を含め、運用側で保持期間と削除方法を設定します。</p>
+
+      <footer class="page-footer">
+        <p>最終確認：2026-09-13。READMEとHTTP・設定・変換・ジョブ処理の実装を照合しています。</p>
+        <p><a href="../../../functions/ppt-pdf-to-images/docs/usage.md">利用ガイド</a> · <a href="../../ppt-pdf-to-images.md">開発者ガイド</a></p>
+      </footer>
+    </article>
+    <aside class="toc" aria-label="このページの目次"><p class="toc-title">このページの内容</p><nav id="page-toc"></nav></aside>
+  </div>
+</main>
+</body>
+</html>

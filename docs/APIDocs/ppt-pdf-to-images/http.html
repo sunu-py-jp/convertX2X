@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="PowerPoint・PDFから画像への変換API。実装に基づく入出力、呼び出し方法、設定の資料です。">
+  <title>同期HTTPで画像へ変換 | convertX2X API資料</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+  <script src="../assets/app.js" defer></script>
+</head>
+<body data-page="images-http">
+<a class="skip-link" href="#main-content">本文へ移動</a>
+<div id="site-header"></div>
+<aside id="sidebar" class="sidebar" aria-label="APIナビゲーション"></aside>
+<div id="menu-overlay" class="menu-overlay" hidden></div>
+<main id="main-content" class="main-content" tabindex="-1">
+  <div class="page-layout">
+    <article class="article">
+
+      <p class="eyebrow">同期HTTP</p>
+      <h1>ファイルを送り、画像を受け取る</h1>
+      <p class="lead">1回のPOSTで変換とダウンロードを行います。全ページはZIP、ページを指定した場合は画像1枚を返します。</p>
+
+      <h2 id="convert">POST /api/convert — 同期変換</h2>
+      <div class="endpoint"><span class="method post">POST</span><code>/api/convert</code></div>
+      <p><strong>認証：</strong>Function認証。Azure上では <code>x-functions-key</code> に利用可能なキーを渡します。アプリ用Storageが未設定でも利用できます。既定のルート接頭辞は <code>/api</code> です。</p>
+      <div class="callout"><p><strong>本文はファイルの生バイト列です。</strong> <code>Content-Type: application/octet-stream</code> と <code>--data-binary</code> を使用してください。PDFもこのContent-Typeで送ります。multipartやJSON、Base64文字列では送りません。</p></div>
+
+      <h2 id="request-headers">リクエストヘッダー</h2>
+      <div class="table-wrap"><table>
+        <thead><tr><th>ヘッダー</th><th>指定</th></tr></thead>
+        <tbody>
+          <tr><td><code>Content-Type</code></td><td><code>application/octet-stream</code>。<code>multipart/*</code> はアプリが415で拒否します。他のContent-TypeはJava workerのバインドで処理できない場合があります。</td></tr>
+          <tr><td><code>x-functions-key</code></td><td>Azure上のFunctionキー。複数APIを同じキーで使う場合はHostキーを使用します。masterキーは不要です。</td></tr>
+          <tr><td><code>x-file-name</code></td><td>任意。クエリに <code>filename</code> がないとき、入力名として使います。</td></tr>
+        </tbody>
+      </table></div>
+      <p>Core Toolsの通常のローカル起動ではFunctionキー認証を強制しません。ローカルで成功しても、Azure上の認証が不要という意味ではありません。</p>
+
+      <h2 id="parameters">クエリパラメーター</h2>
+      <div class="table-wrap"><table>
+        <thead><tr><th>名前</th><th>型・値</th><th>省略時</th><th>意味</th></tr></thead>
+        <tbody>
+          <tr><td><code>filename</code></td><td>文字列</td><td><code>x-file-name</code>、なければ <code>document</code></td><td>出力名の元になる名前。ファイル内容の判定には使いません。</td></tr>
+          <tr><td><code>format</code></td><td><code>png</code> / <code>jpeg</code></td><td><code>png</code></td><td><code>jpg</code> は指定できません。大文字・小文字は区別しません。</td></tr>
+          <tr><td><code>page</code></td><td>1以上の整数</td><td>全ページ</td><td>1始まりのページ番号。範囲や複数ページは指定できません。</td></tr>
+          <tr><td><code>width</code></td><td>1以上の整数、px</td><td>元の物理寸法を96dpi</td><td>明示した横幅へ拡縮し、縦横比を保ちます。</td></tr>
+        </tbody>
+      </table></div>
+      <p><code>filename</code> はパスの末尾名へ正規化した後に検査します。HTTPでは最大200文字で、制御文字、空の末尾名、<code>.</code>、<code>..</code> は使えません。明示した値が空白だけなら既定名になります。</p>
+      <p><code>page=</code>、<code>page=all</code>、<code>width=0</code> は有効な指定ではありません。全ページや自動寸法にする場合は、そのパラメーターを省略してください。整数は32ビット整数の範囲で解析し、実際に描画できる寸法は画素数上限でも制限します。</p>
+      <p>未定義のクエリは現在の実装では無視します。<code>output.mode=images</code> を付けても個別Blob保存には切り替わりません。個別保存は<a href="queue.html#save-modes">直接Queueの契約</a>です。</p>
+
+      <h2 id="request-examples">実行例</h2>
+      <p>以下の <code>BASE_URL</code> と <code>FUNCTION_KEY</code> は仮値です。<code>BASE_URL</code> には末尾の <code>/api</code> を含めず、実際の接続先を設定してください。</p>
+      <pre><code>BASE_URL='https://YOUR_FUNCTION_APP.azurewebsites.net'
+FUNCTION_KEY='YOUR_FUNCTION_KEY'
+
+# PowerPointの全ページをPNGのZIPへ
+curl --fail-with-body \
+  -H "x-functions-key: $FUNCTION_KEY" \
+  -H 'Content-Type: application/octet-stream' \
+  --data-binary @slides.pptx \
+  "$BASE_URL/api/convert?filename=slides.pptx" \
+  --dump-header response-headers.txt \
+  --output slides.zip
+
+# PDFの2ページ目を幅1600pxのJPEGへ
+curl --fail-with-body \
+  -H "x-functions-key: $FUNCTION_KEY" \
+  -H 'Content-Type: application/octet-stream' \
+  --data-binary @document.pdf \
+  "$BASE_URL/api/convert?filename=document.pdf&amp;page=2&amp;format=jpeg&amp;width=1600" \
+  --output document-page-0002.jpeg</code></pre>
+      <p>入力名に日本語・空白・<code>&amp;</code> などを含める場合は、クエリ値をURLエンコードします。PDFの <code>page=2</code> は文書内の2枚目を表し、紙面に印字されたページ番号とは別です。</p>
+
+      <h2 id="response">成功レスポンス</h2>
+      <p>成功時は <code>200 OK</code> とバイナリ本文を返します。JSONにBase64を詰めたレスポンスではありません。</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>ヘッダー</th><th>値</th></tr></thead>
+        <tbody>
+          <tr><td><code>Content-Type</code></td><td><code>application/zip</code>、<code>image/png</code>、<code>image/jpeg</code></td></tr>
+          <tr><td><code>Content-Disposition</code></td><td><code>attachment; filename="slides.zip"</code> など</td></tr>
+          <tr><td><code>X-Page-Count</code></td><td>変換したページ数。単一ページの指定では <code>1</code>。</td></tr>
+          <tr><td><code>Cache-Control</code></td><td><code>no-store</code></td></tr>
+          <tr><td><code>X-Content-Type-Options</code></td><td><code>nosniff</code></td></tr>
+        </tbody>
+      </table></div>
+      <pre><code>HTTP/1.1 200 OK
+Content-Type: application/zip
+Content-Disposition: attachment; filename="slides.zip"
+X-Page-Count: 3
+Cache-Control: no-store
+X-Content-Type-Options: nosniff
+
+（ZIPのバイト列）</code></pre>
+      <p>ファイル名とZIP内の連番は<a href="index.html#filenames">出力名のルール</a>を参照してください。変換開始時に文書全体のページ数を検査するため、1ページだけの指定でも文書全体のページ上限は適用されます。</p>
+
+      <h2 id="failure">失敗と再試行</h2>
+      <p>アプリが返す失敗は <code>{"error":{"code":"...","message":"..."}}</code> のJSONです。たとえば、存在しないページは <code>400 INVALID_PAGE</code>、上限超過は413、暗号化・破損資料は422です。</p>
+      <p>同じ共通変換サービスが処理中なら <code>503 CONVERSION_BUSY</code> と <code>Retry-After: 3</code> を返します。時間を空けて再送してください。詳細なコードは<a href="settings.html#errors">エラー一覧</a>にあります。</p>
+      <div class="callout warning"><p>同期レスポンスは処理完了まで返りません。Functionsホストの実行時間上限とHTTP経路の応答タイムアウトは別です。処理時間が読みにくい資料には<a href="jobs.html">非同期HTTP</a>を利用してください。</p></div>
+
+      <footer class="page-footer">
+        <p>最終確認：2026-09-13。READMEとHTTP・設定・変換・ジョブ処理の実装を照合しています。</p>
+        <p><a href="../../../functions/ppt-pdf-to-images/docs/usage.md">利用ガイド</a> · <a href="../../ppt-pdf-to-images.md">開発者ガイド</a></p>
+      </footer>
+    </article>
+    <aside class="toc" aria-label="このページの目次"><p class="toc-title">このページの内容</p><nav id="page-toc"></nav></aside>
+  </div>
+</main>
+</body>
+</html>

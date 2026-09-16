@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="convertX2XのAPIリファレンス。PowerPoint・PDFの画像変換、OfficeからMarkdownへの変換、動画からAAC音声の抽出を利用する方法。">
+  <title>はじめに · convertX2X API Docs</title>
+  <link rel="stylesheet" href="assets/styles.css">
+  <script src="assets/app.js" defer></script>
+</head>
+<body data-page="home">
+  <a class="skip-link" href="#main-content">本文へ移動</a>
+  <div id="site-header"></div>
+  <aside id="sidebar" class="sidebar" aria-label="APIナビゲーション"></aside>
+  <div id="menu-overlay" class="menu-overlay" hidden></div>
+  <main id="main-content" class="main-content" tabindex="-1">
+    <div class="page-layout">
+      <article class="article">
+        <noscript>本文はJavaScriptなしでも読めます。機能別の資料へは下のリンクから移動できます。左メニュー・検索・コピーにはJavaScriptを有効にしてください。</noscript>
+        <p class="eyebrow">Developer reference</p>
+        <h1>ファイル変換を、APIから。</h1>
+        <p class="lead">PowerPoint・PDFを画像へ。Office文書をMarkdownへ。動画をAAC音声へ。<br>用途に合うAPIを選び、ファイル変換を実行できます。</p>
+        <div class="hero-meta"><span class="pill accent">3つの変換機能</span><span class="pill">同期HTTP / 非同期HTTP / 直接Queue</span><span class="pill">Java 21 / Node.js 22・24</span></div>
+
+        <h2 id="features">変換機能を選ぶ</h2>
+        <p>各機能は独立したFunction Appです。利用する機能のベースURLへリクエストを送ります。</p>
+        <div class="cards">
+          <div class="card">
+            <span class="card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8" cy="8" r="1.5"/><path d="m3 18 5-6 4 4 4-7 5 7"/></svg></span>
+            <h3>PowerPoint / PDF → 画像</h3>
+            <p class="card-label">ppt-pdf-to-images</p>
+            <p>元のページ寸法に合わせてPNG・JPEGへ変換。全ページのZIPや、ページごとの画像Blobを取得できます。</p>
+            <div class="tags"><span>PPTX</span><span>PPT</span><span>PDF</span><span>PNG / JPEG</span></div>
+            <a class="card-link" href="ppt-pdf-to-images/index.html">画像変換のAPIを見る</a>
+          </div>
+          <div class="card">
+            <span class="card-icon blue" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14 3H5v18h14V8Z"/><path d="M14 3v5h5M8 12h8M8 16h6"/></svg></span>
+            <h3>Office → Markdown</h3>
+            <p class="card-label">office2md</p>
+            <p>本文・表・リンクと埋め込み画像を抽出。図形は個別に画像化し、説明に文字・回転・座標を残します。</p>
+            <div class="tags"><span>XLSX / XLS</span><span>DOCX</span><span>PPTX</span><span>Markdown</span></div>
+            <a class="card-link" href="office2md/index.html">Markdown変換のAPIを見る</a>
+          </div>
+          <div class="card">
+            <span class="card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M11 5 6 9H3v6h3l5 4Z"/><path d="M15 8a6 6 0 0 1 0 8M18 5a10 10 0 0 1 0 14"/></svg></span>
+            <h3>Movie → AAC</h3>
+            <p class="card-label">movie2audio</p>
+            <p>動画または許可済みHTTPS URLから、最初のAAC音声トラックを抽出。M4Aを返すか、書き込み用SASで指定したBlobへ保存します。</p>
+            <div class="tags"><span>動画</span><span>HTTPS URL</span><span>AAC / M4A</span><span>HTTP / Queue</span></div>
+            <a class="card-link" href="movie2audio/index.html">音声抽出のAPIを見る</a>
+          </div>
+        </div>
+
+        <h2 id="quickstart">最初のリクエスト</h2>
+        <p>ローカルでは対象の機能を起動し、ファイル本体をPOSTするだけで試せます。以下はOffice文書をMarkdownへ変換する例です。</p>
+        <ol class="steps">
+          <li><h3>変換機能を起動する</h3><p>リポジトリのルートから実行します。以下のOffice変換はJDK 21・Python 3.10以上・Azure Functions Core Tools v4が必要です。Movie → AACはNode.js 22または24・npm・Python 3.10以上・Core Tools v4で起動します。</p><pre><code class="language-shell">cd functions/office2md
+python3 scripts/run_local.py</code></pre></li>
+          <li><h3>ファイルのバイト列を送る</h3><p>別のターミナルで、<code>sample.pptx</code> の場所を指定します。<code>filename</code> には元の拡張子を含めてください。</p><div class="endpoint"><span class="method post">POST</span><code>/api/convert</code></div><pre><code class="language-shell">curl --fail-with-body \
+  -H 'Content-Type: application/octet-stream' \
+  --data-binary @sample.pptx \
+  'http://localhost:7072/api/convert?filename=sample.pptx' \
+  --output document.zip</code></pre></li>
+          <li><h3>ZIPを展開して結果を確認する</h3><p><code>document.md</code>・<code>report.json</code> と、画像があれば <code>images/</code> が入ります。Markdownと画像フォルダーの相対位置を保って利用します。</p></li>
+        </ol>
+        <div class="callout"><strong><code>/api/convert</code> の入力は生のファイルデータです。</strong><br><code>Content-Type: application/octet-stream</code> と <code>--data-binary</code> を使います。Movie → AACのURL入力は専用の <code>/api/convert-url</code> へJSONを送ります。<a href="movie2audio/storage.html">Blob保存API <code>/api/convert-to-blob</code></a> は、動画URLのJSONまたは動画と設定JSONのmultipartに対応します。Base64ファイル入力は提供していません。</div>
+
+        <h2 id="invocation">呼び出し方を選ぶ</h2>
+        <p>全機能が同期HTTP・非同期HTTP・直接Queueに対応します。Movie → AACはファイルまたはURLを受け付け、非同期では完成したM4AをBlobへ保存します。同期APIではM4AのダウンロードまたはSAS指定先への保存を選べます。</p>
+        <div class="table-wrap"><table><thead><tr><th>方法</th><th>使い方</th><th>アプリ用Storage</th></tr></thead><tbody>
+          <tr><td>同期HTTP</td><td>ファイルを送信し、同じリクエストのレスポンスで成果物を受け取る</td><td>不要</td></tr>
+          <tr><td><a href="movie2audio/storage.html">Movie → AACのBlob保存</a></td><td>動画と保存先SASを送り、保存完了後に結果JSONを受け取る</td><td>保存先のSASと許可ホスト設定</td></tr>
+          <tr><td>非同期HTTP</td><td>ジョブIDを受領し、状態を確認してから結果をダウンロードする</td><td>必要</td></tr>
+          <tr><td>直接Queue</td><td>入力をBlobへ保存し、参照を含むJSONをQueueへ送る</td><td>必要</td></tr>
+        </tbody></table></div>
+        <div class="flow" aria-label="直接Queueの処理の流れ"><span>入力Blob</span><b aria-hidden="true">→</b><span>依頼JSONをQueueへ</span><b aria-hidden="true">→</b><span>共通の変換処理</span><b aria-hidden="true">→</b><span>成果物Blob</span></div>
+        <p>各機能の非同期は <code>CONVERSION_STORAGE_CONNECTION_STRING</code> を設定した場合だけ有効になります。外部システムから直接Queueへ依頼でき、Playgroundを使う必要はありません。</p>
+        <p class="small"><a href="ppt-pdf-to-images/jobs.html">画像変換の非同期HTTP</a> · <a href="office2md/jobs.html">Markdown変換の非同期HTTP</a> · <a href="movie2audio/jobs.html">音声抽出の非同期HTTP</a></p>
+
+        <h2 id="authentication">ベースURLと認証</h2>
+        <div class="table-wrap"><table><thead><tr><th>機能</th><th>ローカルのベースURL</th><th>Queue名</th></tr></thead><tbody>
+          <tr><td>PowerPoint / PDF → 画像</td><td><code>http://localhost:7071</code></td><td><code>conversion-jobs</code></td></tr>
+          <tr><td>Office → Markdown</td><td><code>http://localhost:7072</code></td><td><code>office2md-jobs</code></td></tr>
+          <tr><td>Movie → AAC</td><td><code>http://localhost:7073</code></td><td><code>movie2audio-jobs</code></td></tr>
+        </tbody></table></div>
+        <p>Azureでは配置先の <code>https://&lt;function-app&gt;.azurewebsites.net</code> などに置き換え、変換・ジョブAPIへ <code>x-functions-key</code> ヘッダーを付けます。複数のエンドポイントで使う場合はFunction AppのHostキーを利用します。</p>
+        <pre><code class="language-shell">BASE_URL='https://&lt;function-app&gt;.azurewebsites.net'
+# FUNCTION_KEY は実行環境で設定しておきます。
+curl --fail-with-body \
+  -H "x-functions-key: $FUNCTION_KEY" \
+  -H 'Content-Type: application/octet-stream' \
+  --data-binary @sample.pptx \
+  "$BASE_URL/api/convert?filename=sample.pptx" \
+  --output document.zip</code></pre>
+        <p class="small">この例のURLはOffice → Markdownの配置先です。ローカルのCore Toolsは通常、Functionキー認証を強制しません。直接QueueはAzure Storage側の認証を使い、FunctionキーをQueueへ入れる必要はありません。</p>
+
+        <h2 id="contracts">機能ごとの違い</h2>
+        <p>URLのパスが同じでも、受付オプションと結果の形式は機能ごとに異なります。</p>
+        <div class="table-wrap"><table><thead><tr><th>項目</th><th>画像変換</th><th>Office → Markdown</th><th>Movie → AAC</th></tr></thead><tbody>
+          <tr><td>同期レスポンス</td><td>全ページZIP、または指定ページの画像</td><td>Markdown・report・画像のZIP</td><td>AAC音声の <code>audio.m4a</code></td></tr>
+          <tr><td>変換パラメーター</td><td><code>filename</code> / <code>format</code> / <code>page</code> / <code>width</code></td><td><code>filename</code>。ページ・範囲指定なし</td><td>なし。URL入力APIは <code>url</code> のみ</td></tr>
+          <tr><td>Queueの成果物</td><td>画像・ZIP、または画像とmanifestを個別保存</td><td>Markdown・report・画像を個別保存</td><td>M4Aを個別Blobへ保存</td></tr>
+          <tr><td>既定の入力上限</td><td>20MiB / 文書全体50ページ</td><td>20MiB / 50シート・スライド。Wordは1文書</td><td>100MiB / 処理期限180秒</td></tr>
+        </tbody></table></div>
+        <div class="callout"><strong>この資料の対象</strong><br>現在の実装で利用できる3機能を掲載しています。HTML → PowerPointは保留中、PDF → Markdownは未実装のため、利用可能なAPIには含めていません。</div>
+
+        <h2 id="next">目的別のリファレンス</h2>
+        <div class="table-wrap"><table><thead><tr><th>やりたいこと</th><th>画像変換</th><th>Office → Markdown</th><th>Movie → AAC</th></tr></thead><tbody>
+          <tr><td>ファイルを送信する</td><td><a href="ppt-pdf-to-images/http.html">同期HTTP</a></td><td><a href="office2md/http.html">同期HTTP</a></td><td><a href="movie2audio/http.html">同期HTTP</a></td></tr>
+          <tr><td>URLから取得する</td><td>—</td><td>—</td><td><a href="movie2audio/url.html">HTTPS URL入力</a></td></tr>
+          <tr><td>ジョブの状態と結果を取得する</td><td><a href="ppt-pdf-to-images/jobs.html">非同期HTTP</a></td><td><a href="office2md/jobs.html">非同期HTTP</a></td><td><a href="movie2audio/jobs.html">非同期HTTP</a></td></tr>
+          <tr><td>外部システムからQueueに送る</td><td><a href="ppt-pdf-to-images/queue.html">直接Queue</a></td><td><a href="office2md/queue.html">直接Queue</a></td><td><a href="movie2audio/queue.html">直接Queue</a></td></tr>
+          <tr><td>制限値やエラーを調べる</td><td><a href="ppt-pdf-to-images/settings.html">設定とエラー</a></td><td><a href="office2md/settings.html">設定とエラー</a></td><td><a href="movie2audio/settings.html">設定とエラー</a></td></tr>
+        </tbody></table></div>
+        <footer class="page-footer"><span>最終確認 2026-09-15 · 実装と照合したAPI仕様</span><a href="../README.md">開発者マニュアル ↗</a></footer>
+      </article>
+      <aside class="toc" aria-label="このページの目次"><p class="toc-title">このページの内容</p><nav id="page-toc"></nav></aside>
+    </div>
+  </main>
+</body>
+</html>

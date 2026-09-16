@@ -5,7 +5,7 @@
 対象は [`functions/ppt-pdf-to-images`](../functions/ppt-pdf-to-images/) です。PPTX・PPT・PDFをPNG／JPEGへ変換する、独立したAzure Functionsアプリです。
 変換コアはAzureに依存しませんが、Maven Central向けの独立ライブラリとしては公開していません。
 
-起動・デプロイ・HTTP API・設定の一覧は[機能README](../functions/ppt-pdf-to-images/README.md)、QueueのJSON契約・認証・保存先は[直接Queue連携](../functions/ppt-pdf-to-images/docs/direct-queue.md)を参照してください。
+起動・デプロイ・HTTP API・設定の一覧は[利用ガイド](../functions/ppt-pdf-to-images/docs/usage.md)、QueueのJSON契約・認証・保存先は[直接Queue連携](../functions/ppt-pdf-to-images/docs/direct-queue.md)を参照してください。
 
 ## 責務とソースの対応
 
@@ -105,7 +105,7 @@ POIの描画はPowerPoint本体と完全には一致せず、フォント代替�
 2. `supports()`は軽い内容判定に留め、詳細な解析・暗号化の扱い・文書の解放を`convert()`に実装します。ページをすべて画像へ展開して保持せず、描画関数を渡します。
 3. 寸法は`PageRendering`で計算し、共通側のページ検証・エンコード・ZIP／コールバックを再利用します。通常、形式追加だけでHTTPやStorage実装を複製する必要はありません。
 4. 出力形式を追加する場合は、`ConversionOptions`を使う検証、HTTP解析、Queue JSON解析、エンコーダー、`AzureJobStore.ImageBatch`のMIME・拡張子検証、Playgroundの選択肢も確認します。
-5. [pom.xml](../functions/ppt-pdf-to-images/pom.xml)の依存関係、必要な配布物・ライセンスを確認し、対応形式と制限を機能READMEへ反映します。
+5. [pom.xml](../functions/ppt-pdf-to-images/pom.xml)の依存関係、必要な配布物・ライセンスを確認し、対応形式と制限を利用ガイド・API資料へ反映します。READMEの概要も必要に応じて更新します。
 
 ## 変更に対応する検証
 
@@ -115,7 +115,7 @@ POIの描画はPowerPoint本体と完全には一致せず、フォント代替�
 | フォント・文字配置 | [JapanesePptFontTest](../functions/ppt-pdf-to-images/src/test/java/com/slide2image/conversion/JapanesePptFontTest.java)・[BundledPdfFontsTest](../functions/ppt-pdf-to-images/src/test/java/com/slide2image/conversion/BundledPdfFontsTest.java)：日本語4書体、埋め込み優先、非埋め込みCID、mapper初期化 |
 | HTTP・設定 | [ConversionFunctionsTest](../functions/ppt-pdf-to-images/src/test/java/com/slide2image/ConversionFunctionsTest.java)：入力・オプション、非同期無効時、応答、設定・ログへの秘密情報流出防止 |
 | Queue契約・状態遷移 | [ConversionJobRequestTest](../functions/ppt-pdf-to-images/src/test/java/com/slide2image/jobs/ConversionJobRequestTest.java)・[AzureJobServiceTest](../functions/ppt-pdf-to-images/src/test/java/com/slide2image/jobs/AzureJobServiceTest.java)・[BlobStorageProfilesTest](../functions/ppt-pdf-to-images/src/test/java/com/slide2image/jobs/BlobStorageProfilesTest.java)：JSON、旧状態との互換、重複、競合、保存失敗、manifest公開順序 |
-| 実Storage・実ホスト | [AzureJobStoreIntegrationTest](../functions/ppt-pdf-to-images/src/test/java/com/slide2image/jobs/AzureJobStoreIntegrationTest.java)・[test_async_e2e.py](../functions/ppt-pdf-to-images/scripts/test_async_e2e.py)。接続を用意して明示実行する手順は機能READMEを参照 |
+| 実Storage・実ホスト | [AzureJobStoreIntegrationTest](../functions/ppt-pdf-to-images/src/test/java/com/slide2image/jobs/AzureJobStoreIntegrationTest.java)・[test_async_e2e.py](../functions/ppt-pdf-to-images/scripts/test_async_e2e.py)。接続を用意して明示実行する手順は利用ガイドを参照 |
 | Playground | [test_playground_e2e.py](../functions/ppt-pdf-to-images/scripts/test_playground_e2e.py)：実ブラウザーで同期／非同期・エラー・ダウンロードを確認 |
 
 新形式では、正常資料に加えて「似たシグネチャの別形式」「破損・暗号化」「混在寸法」「選択ページ」「上限直前・超過」を追加してください。

@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Movie2AudioのAPIリファレンス。動画ファイル・許可済みHTTPS URLからAACを再エンコードせずM4Aへ抽出。">
+<title>抽出した音声をBlobへ保存 · Movie2Audio API</title>
+<link rel="stylesheet" href="../assets/styles.css">
+<script src="../assets/app.js" defer></script>
+</head>
+<body data-page="movie-storage">
+<a class="skip-link" href="#main-content">本文へ移動</a>
+<div id="site-header"></div>
+<aside id="sidebar" class="sidebar" aria-label="APIナビゲーション"></aside>
+<div id="menu-overlay" class="menu-overlay" hidden></div>
+<main id="main-content" class="main-content" tabindex="-1">
+<div class="page-layout">
+<article class="article">
+<p class="eyebrow">Movie → AAC → Blob</p>
+<h1>抽出した音声をBlobへ保存</h1>
+<p class="lead">動画ファイルまたはHTTPS URLと、書き込み先のBlob SAS URLを受け取り、完成したM4Aを指定先へ保存します。保存完了後にJSONを返す同期APIです。</p>
+<div class="hero-meta"><span class="pill accent">POST /convert-to-blob</span><span class="pill">単一Blob SAS</span><span class="pill">既存Blobは上書きしない</span></div>
+<h2 id="overview">保存の流れ</h2>
+<div class="flow" aria-label="動画から音声を抽出しBlobへ保存する流れ"><span>動画 + 保存先SAS</span><b aria-hidden="true">→</b><span>AACを抽出</span><b aria-hidden="true">→</b><span>BlobへPUT</span><b aria-hidden="true">→</b><span>201 JSON</span></div>
+<p>入力を一時ファイルに保存し、共通のFFmpeg処理で最初のAAC音声を再エンコードせずにM4Aへコピーします。音声と容量を検証した完成済みファイルをストリームで送信し、Blobの作成成功を確認してから応答します。Queue受付・バックグラウンドジョブではありません。</p>
+<div class="callout"><strong>SAS URLに認証情報が含まれます。</strong><br>接続文字列、Storageのアカウントキー、任意の認証ヘッダーを追加で渡す必要はありません。Function Appを呼び出す <code>x-functions-key</code> は別の認証情報で、保存先へ転送しません。</div>
+<h2 id="enable">保存先を管理者が許可する</h2>
+<p>Function Appの環境変数に、保存を許可するAzure Blobのホスト名を設定します。未設定・空値では、このAPIは <code>503 OUTPUT_STORAGE_DISABLED</code> です。</p>
+<pre><code class="language-text">CONVERSION_OUTPUT_ALLOWED_HOSTS=exampleaccount.blob.core.windows.net</code></pre>
+<p>Azure公開クラウドの <code>&lt;account&gt;.blob.core.windows.net</code> を完全一致で許可します。最大32件、設定全体8192文字。ワイルドカード、IP、カスタムドメイン、Private Endpoint、<code>dfs</code> エンドポイントは対象外です。コンテナーはあらかじめ作成してください。</p>
+<p>URL入力には、取得先を <code>CONVERSION_URL_ALLOWED_HOSTS</code> でも許可します。入力と出力は独立した設定で、同じStorageアカウントでも必要な側へそれぞれ設定します。動画を直接アップロードする場合、入力URLの許可設定は不要です。</p>
+<h2 id="json">URL入力：application/json</h2>
+<div class="endpoint"><span class="method post">POST</span><code>/api/convert-to-blob</code></div>
+<p>次のJSONを <code>storage-request.json</code> として保存します。<code>sasUrl</code> は発行済みの完全なSAS URLへ置き換えます。下の <code>EXPIRY_UTC</code> と <code>SIGNATURE</code> は構造を示すダミーで、そのままでは使えません。</p>
+<pre><code class="language-json">{
+  "input": {
+    "url": "https://media.example.com/videos/sample.mp4"
+  },
+  "output": {
+    "sasUrl": "https://exampleaccount.blob.core.windows.net/results/jobs/job-123/audio.m4a?sv=2023-11-03&amp;sr=b&amp;sp=c&amp;spr=https&amp;se=EXPIRY_UTC&amp;sig=SIGNATURE"
+  }
+}</code></pre>
+<p>JSONをコマンドラインへ展開せず、ファイルからボディへ読み込ませます。Azureでは環境変数 <code>FUNCTIONS_HOST_KEY</code> にFunction Appのホストキーを用意します。</p>
+<pre><code class="language-shell">curl --fail-with-body \
+  -H "x-functions-key: $FUNCTIONS_HOST_KEY" \
+  -H 'Content-Type: application/json' \
+  --data-binary @storage-request.json \
+  'https://YOUR_FUNCTION_APP.azurewebsites.net/api/convert-to-blob' \
+  --output stored-result.json</code></pre>
+<p>JSON全体は最大32KiBです。<code>input.url</code> と <code>output.sasUrl</code> は、それぞれ最大8192文字です。</p>
+<p><code>input.url</code> は既存の<a href="url.html#accepted">URL入力の条件</a>に従います。入力URLにも読み取り用SASを付けられます。保存先SASを入力側の認証に流用することはありません。</p>
+<h2 id="multipart">ファイル入力：multipart/form-data</h2>
+<p>動画を直接送る場合は、JSONに <code>input</code> を含めず、次の内容を <code>storage-request.json</code> として保存します。</p>
+<pre><code class="language-json">{
+  "output": {
+    "sasUrl": "https://exampleaccount.blob.core.windows.net/results/jobs/job-123/audio.m4a?sv=2023-11-03&amp;sr=b&amp;sp=c&amp;spr=https&amp;se=EXPIRY_UTC&amp;sig=SIGNATURE"
+  }
+}</code></pre>
+<pre><code class="language-shell">curl --fail-with-body \
+  -H "x-functions-key: $FUNCTIONS_HOST_KEY" \
+  --form 'request=@storage-request.json;type=application/json' \
+  --form 'file=@sample.mp4;type=application/octet-stream' \
+  'https://YOUR_FUNCTION_APP.azurewebsites.net/api/convert-to-blob' \
+  --output stored-result.json</code></pre>
+<p>パートは <code>request</code>（JSONファイル）と <code>file</code>（動画）の各1つです。<code>request=@…</code> と <code>file=@…</code> は、それぞれJSONと動画をファイルパートとして送ります。ファイル名のないテキストフィールドは受け付けません。境界文字列を含む <code>Content-Type</code> はcurlに生成させてください。</p>
+<p>余分なフィールド、同じフィールドの重複、JSONの重複キー・余分なキーは拒否します。元のファイル名は保存先に使わず、<code>sasUrl</code> のパスが保存名を決めます。ローカルではURLを <code>http://localhost:7073/api/convert-to-blob</code> へ置き換えられます。</p>
+<p><code>request</code> のJSONファイルは最大16KiB、動画は <code>CONVERSION_MAX_INPUT_BYTES</code> 以下、multipart本文全体は同上限 + 64KiB以下です。JSONは生のUTF-8として検証します。動画を100MiBちょうど送る場合は、境界文字列やJSON分も収まるよう、Functionsホストの <code>FUNCTIONS_REQUEST_BODY_SIZE_LIMIT</code> を入力上限 + 64KiB以上（既定入力なら <code>104923136</code>）に設定してください。</p>
+<h2 id="sas">受け付けるSASの条件</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">項目</th><th scope="col">条件</th></tr></thead><tbody>
+<tr><td>対象URL</td><td>許可済みAzure Blobホスト、HTTPS、443番ポート。既存コンテナー内の単一Blobの完全なパス</td></tr>
+<tr><td>リソース <code>sr</code></td><td><code>b</code> のみ。コンテナー・ディレクトリ・アカウント全体のSASは拒否</td></tr>
+<tr><td>権限 <code>sp</code></td><td><code>c</code>、<code>w</code>、<code>cw</code> のみ。新規作成に必要な <code>c</code> を推奨。読み取り・一覧・削除などを含むSASは拒否</td></tr>
+<tr><td>プロトコル <code>spr</code></td><td><code>https</code> が必須</td></tr>
+<tr><td>バージョン <code>sv</code></td><td><code>2019-12-12</code> 以降</td></tr>
+<tr><td>有効期限 <code>se</code></td><td>未来のUTC日時が必須。抽出とアップロードが終わるまで有効な短い期間で発行</td></tr>
+<tr><td>署名 <code>sig</code></td><td>必須。アプリは制約を検証し、署名と最終的なアクセス可否はAzure Storageが検証</td></tr>
+<tr><td>その他</td><td>対応するSASフィールドだけを許可。保存済みアクセスポリシー参照 <code>si</code>、未知・重複クエリ、URL内認証、フラグメントを拒否。任意のPUTヘッダーや接続先IPは指定不可</td></tr>
+</tbody></table></div>
+<p>可能ならMicrosoft Entra IDで発行するユーザー委任SASを使います。サービスSASも単一Blob・上記制約を満たすものだけを受け付けます。SASの発行は呼び出し元システムの役割です。<a href="https://learn.microsoft.com/en-us/azure/storage/common/storage-sas-overview">MicrosoftのSASの説明</a>と<a href="https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blob-user-delegation-sas-create-cli">ユーザー委任SASの発行例</a>を参照してください。</p>
+<p>SASをFunctionのURLクエリやログへ入れず、HTTPSリクエストのボディで渡します。JSONファイルは秘密情報としてアクセスを制限し、リポジトリに登録しないでください。Movie2AudioはSASを応答・アプリログに出しません。呼び出し側や前段サービスでもリクエスト本文を記録しない設定にしてください。</p>
+<h2 id="response">成功レスポンス：201 Created</h2>
+<pre><code class="language-json">{
+  "status": "succeeded",
+  "output": {
+    "blobUrl": "https://exampleaccount.blob.core.windows.net/results/jobs/job-123/audio.m4a",
+    "bytes": 9323,
+    "contentType": "audio/mp4",
+    "etag": "\"0x8DD123456789ABC\""
+  },
+  "audio": {
+    "codec": "aac",
+    "mode": "copy"
+  }
+}</code></pre>
+<p><code>Content-Type: application/json</code>、<code>Cache-Control: no-store</code> で返します。<code>blobUrl</code> はSASクエリを除いた識別用URLで、読み取り権限を付与するURLではありません。必要な読み取り権限は利用側で別に用意します。<code>etag</code> はStorageが返した作成結果です。有効なETagを取得できない場合は、このフィールドを省略します。</p>
+<p>上の例では、コンテナーは <code>results</code>、Blob名は <code>jobs/job-123/audio.m4a</code> です。アプリはフォルダー名・ジョブID・接尾辞を追加しません。保存内容は常にM4Aで、BlobのContent-Typeを <code>audio/mp4</code> に設定します。</p>
+<h2 id="overwrite">既存ファイルと再試行</h2>
+<p>書き込みは <code>Put Blob</code>、<code>x-ms-blob-type: BlockBlob</code>、<code>If-None-Match: *</code> で行います。既存Blobの上書きはせず、Storageの前提条件エラーを <code>409 OUTPUT_BLOB_EXISTS</code> として返します。呼び出し側で依頼ごとに一意なBlob名を選び、そのBlob専用のSASを発行してください。</p>
+<p>アップロード中の通信切断やタイムアウトでは、Storage側で保存が完了している可能性があります。アプリは自動リトライ、HEADによる存在確認、失敗時のBlob削除をしません。結果が不明なときは保存先を利用側の権限で確認し、同じ名前への再送が409になっても、前回の成果物と同一だと決めつけないでください。</p>
+<h2 id="security">接続と処理の境界</h2>
+<p>ホスト許可リストとSASの範囲を検証し、DNSの全結果が公開IPであることを確認します。実接続にも検証済みIPを使い、元のホスト名に対するTLS証明書検証を維持します。リダイレクト、プロキシ、Cookie、任意の認証ヘッダー、自動リトライは使いません。</p>
+<p>入力・抽出・出力は既存APIと同じ上限とNode.jsプロセス内1件の実行枠を共有します。既定180秒、最大210秒の共通期限にBlobへのアップロード完了も含みます。完成済みM4Aは一時ディスクからストリームでPUTし、成功・失敗後に一時ファイルを削除します。保存先に接続できるStorageのネットワーク設定も必要です。</p>
+<h2 id="errors">失敗レスポンス</h2>
+<p>エラーは既存APIと同じ <code>{"error":{"code":"...","message":"..."}}</code> です。入力・抽出のエラーは<a href="settings.html#errors">共通の一覧</a>、保存先の設定・SAS・競合・通信エラーは以下で判定します。</p>
+<div class="table-wrap"><table><thead><tr><th scope="col">HTTP</th><th scope="col">code</th><th scope="col">内容</th></tr></thead><tbody>
+<tr><td>400</td><td><code>INVALID_STORAGE_REQUEST</code></td><td>JSONの構造、必須・余分なキー、URL文字列が不正</td></tr>
+<tr><td>400</td><td><code>INVALID_MULTIPART</code></td><td>パート構造が不正。requestとfileを各1つのファイルパートで送る</td></tr>
+<tr><td>400</td><td><code>INVALID_OUTPUT_SAS_URL</code></td><td>出力URL・SASの対象、権限、期限などが条件外</td></tr>
+<tr><td>403</td><td><code>OUTPUT_HOST_NOT_ALLOWED</code> / <code>OUTPUT_ADDRESS_NOT_ALLOWED</code></td><td>保存先が許可外ホストまたは公開IPではない</td></tr>
+<tr><td>403</td><td><code>OUTPUT_AUTH_FAILED</code></td><td>StorageがSASやアクセス制限を拒否</td></tr>
+<tr><td>409</td><td><code>OUTPUT_BLOB_EXISTS</code></td><td>保存先Blobが既に存在するため作成できない</td></tr>
+<tr><td>413</td><td><code>REQUEST_TOO_LARGE</code> / <code>INPUT_TOO_LARGE</code> / <code>OUTPUT_TOO_LARGE</code></td><td>リクエスト、動画または音声が上限を超過</td></tr>
+<tr><td>415</td><td><code>STORAGE_REQUEST_TYPE_REQUIRED</code></td><td>application/jsonまたはmultipart/form-dataを指定</td></tr>
+<tr><td>422</td><td><code>OUTPUT_REDIRECT_NOT_ALLOWED</code></td><td>保存先のリダイレクトを拒否</td></tr>
+<tr><td>502</td><td><code>OUTPUT_UPLOAD_FAILED</code></td><td>保存成功を確認できない。DNS・TLS・通信・Storage応答を確認</td></tr>
+<tr><td>503</td><td><code>OUTPUT_STORAGE_DISABLED</code></td><td>出力許可ホストが未設定</td></tr>
+<tr><td>504</td><td><code>CONVERSION_TIMEOUT</code></td><td>入力受信からアップロード完了までの期限を超過</td></tr>
+</tbody></table></div>
+<p>Azure Storage実サービスでの保存検証は、ローカルの入力検証・接続設定のテスト・テスト用受信先への転送検証とは別に行ってください。</p>
+
+<p>ジョブIDを受け取って後から結果を取得する場合は <a href="jobs.html">非同期HTTP</a>、他システムから登録済みBlobを処理する場合は <a href="queue.html">直接Queue</a> を使います。SAS保存APIは同期専用です。</p>
+<footer class="page-footer"><p>最終確認：2026-09-15。<a href="../../../functions/movie2audio/docs/usage.md">利用ガイド</a> · <a href="../../movie2audio.md">開発者向け実装ガイド</a></p></footer>
+</article>
+<aside class="toc" aria-label="このページの目次"><p class="toc-title">このページの内容</p><nav id="page-toc"></nav></aside>
+</div>
+</main>
+</body>
+</html>

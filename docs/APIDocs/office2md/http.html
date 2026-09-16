@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>同期HTTP | office2md API</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+  <script src="../assets/app.js" defer></script>
+</head>
+<body data-page="office-http">
+<a class="skip-link" href="#main-content">本文へ移動</a>
+<div id="site-header"></div>
+<aside id="sidebar" class="sidebar" aria-label="APIナビゲーション"></aside>
+<div id="menu-overlay" class="menu-overlay" hidden></div>
+<main id="main-content" class="main-content" tabindex="-1">
+<div class="page-layout">
+<article class="article">
+<p class="eyebrow">Office → Markdown</p>
+<h1>同期HTTP</h1>
+<p class="lead">Officeファイルを一度のHTTPリクエストで変換し、Markdown・画像・reportをZIPで受け取ります。</p>
+<h2 id="convert">POST /api/convert</h2>
+<div class="endpoint"><span class="method post">POST</span><code>/api/convert?filename=sample.docx</code></div>
+<p>ファイル本体をリクエストの生バイト列として送ります。処理が完了すると <code>document.zip</code> を返します。変換用のStorage接続は不要です。AzureのFunctionsホスト用Storageは<a href="settings.html#storage">別途設定</a>します。</p>
+<h2 id="request">リクエスト</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">項目</th><th scope="col">必須</th><th scope="col">指定内容</th></tr></thead><tbody><tr><td>ボディ</td><td>必須</td><td>空でないOfficeファイルの生バイト列。Base64・JSON・multipartではない</td></tr><tr><td><code>filename</code></td><td>指定を推奨</td><td>クエリに実際の拡張子を含む名前。<code>.xlsx / .xls / .docx / .pptx</code></td></tr><tr><td><code>x-file-name</code></td><td>代替</td><td>filenameクエリが存在しない場合のファイル名ヘッダー</td></tr><tr><td><code>Content-Type</code></td><td>推奨</td><td><code>application/octet-stream</code></td></tr><tr><td><code>x-functions-key</code></td><td>Azure上で必須</td><td>Function認証用キー。非同期も使う場合はアプリ共通のホストキー</td></tr></tbody></table></div>
+<div class="callout warning"><p>filenameを省略し、代替ヘッダーもなければ <code>workbook.xlsx</code> として扱います。Word・PowerPointは実際の拡張子を必ず指定してください。</p>
+</div>
+<p>ファイル名はパス部分を除いた末尾名を使います。HTTP受付では200文字以内で、制御文字や <code>.</code> / <code>..</code> は受け付けません。クエリにfilenameがあればヘッダーより優先し、空値の場合は既定名へ戻ります。</p>
+<p>ページ・横幅・画像形式・変換ルールを指定するオプションはありません。<code>page / width / format</code> など未知のクエリは現在のHTTP実装では無視されます。部分変換が行われたと判断しないでください。<code>multipart/*</code> のボディは <code>415 RAW_BODY_REQUIRED</code> です。</p>
+<h2 id="example">curl の例</h2>
+<p>ローカル起動後、入力ファイルがあるディレクトリで実行します。</p>
+<pre><code>curl --fail-with-body \
+  -H &#x27;Content-Type: application/octet-stream&#x27; \
+  --data-binary @sample.docx \
+  &#x27;http://localhost:7072/api/convert?filename=sample.docx&#x27; \
+  -o document.zip</code></pre>
+<p>AzureではURLを配置先に変更し、実行するシェルの環境変数 <code>FUNCTIONS_HOST_KEY</code> にホストキーを設定してから実行します。キーは <code>x-functions-key</code> ヘッダーに渡します。名前に日本語や空白がある場合はクエリ値をURLエンコードします。</p>
+<pre><code>curl --fail-with-body \
+  -H &quot;x-functions-key: $FUNCTIONS_HOST_KEY&quot; \
+  -H &#x27;Content-Type: application/octet-stream&#x27; \
+  --data-binary @sample.pptx \
+  &#x27;https://YOUR_FUNCTION_APP.azurewebsites.net/api/convert?filename=sample.pptx&#x27; \
+  -o document.zip</code></pre>
+<h2 id="response">成功レスポンス</h2>
+<pre><code>HTTP/1.1 200 OK
+Content-Type: application/zip
+Content-Disposition: attachment; filename=&quot;document.zip&quot;
+X-Section-Count: 1
+X-Warning-Count: 0
+X-Content-Type-Options: nosniff
+Cache-Control: no-store
+
+&lt;ZIPのバイト列&gt;</code></pre>
+<div class="table-wrap"><table><thead><tr><th scope="col">ヘッダー</th><th scope="col">意味</th></tr></thead><tbody><tr><td><code>X-Section-Count</code></td><td>含まれるシート・スライド数、Wordは文書数</td></tr><tr><td><code>X-Warning-Count</code></td><td>reportのwarnings件数。informationの件数は含まない</td></tr><tr><td><code>Content-Disposition</code></td><td>ダウンロードファイル名はdocument.zip</td></tr></tbody></table></div>
+<p>ZIPには <code>document.md</code>、<code>report.json</code>、必要な <code>images/...</code> が入ります。<a href="index.html#artifacts">成果物の説明</a>を参照してください。警告があっても変換が成功すれば200です。警告とHTTPエラーを区別してください。</p>
+<h2 id="errors">失敗レスポンス</h2>
+<pre><code>HTTP/1.1 415 Unsupported Media Type
+Content-Type: application/json; charset=utf-8
+
+{
+  &quot;error&quot;: {
+    &quot;code&quot;: &quot;RAW_BODY_REQUIRED&quot;,
+    &quot;message&quot;: &quot;Send the file bytes directly as the request body, not multipart/form-data&quot;
+  }
+}</code></pre>
+<p>アプリ由来のエラーは <code>error.code / error.message</code> を返します。代表例は空ボディ400、入力上限413、対象外形式415、読み取れない文書422、処理内部エラー500です。<a href="settings.html#errors">エラー一覧</a>を参照してください。Azureホストの認証・タイムアウトのエラーはこのJSON形式と異なる場合があります。</p>
+<h2 id="timing">同期処理の容量と時間</h2>
+<p>ZIPは上限付きのメモリーバッファで作成します。HTTPストリーミングではありません。ファイルサイズだけで所要時間は判定できず、同じサイズでも文字・表・図形数で負荷が変わります。時間のかかる資料は<a href="jobs.html#submit">非同期HTTP</a>を利用します。</p>
+<p>1つのJavaプロセスでは変換を1件ずつ実行します。複数インスタンスでは並列に動作します。<code>functionTimeout</code> の設定は、同期HTTP接続が同じ時間まで維持される保証ではありません。</p>
+<h2 id="capabilities">GET /api/capabilities</h2>
+<div class="endpoint"><span class="method get">GET</span><code>/api/capabilities</code></div>
+<p>認証なしで、非同期の有効状態・対応形式・適用中の11種類の上限を取得できます。<code>GET /api/playground/config</code> も同じJSONを返します。接続文字列やStorage登録名は返しません。</p>
+<p><code>asyncEnabled</code> は制御Storage接続が設定されているかを示します。Storageへの疎通やQueueリスナーの稼働を確認するヘルスチェックではありません。</p>
+<pre><code>{
+  &quot;asyncEnabled&quot;: false,
+  &quot;supportedFormats&quot;: [
+    &quot;xlsx&quot;,
+    &quot;xls&quot;,
+    &quot;docx&quot;,
+    &quot;pptx&quot;
+  ],
+  &quot;maxInputBytes&quot;: 20971520,
+  &quot;maxSections&quot;: 50,
+  &quot;maxReadItems&quot;: 200000,
+  &quot;maxTableCells&quot;: 1000000,
+  &quot;maxMarkdownBytes&quot;: 20971520,
+  &quot;maxImages&quot;: 200,
+  &quot;maxImageBytes&quot;: 20971520,
+  &quot;maxOutputBytes&quot;: 104857600,
+  &quot;maxShapes&quot;: 1000,
+  &quot;maxGroupDepth&quot;: 16,
+  &quot;maxImagePixels&quot;: 20000000
+}</code></pre>
+<h2 id="public-ui">公開される画面用エンドポイント</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">GETパス</th><th scope="col">内容</th></tr></thead><tbody><tr><td><code>/api/playground</code></td><td>匿名のPlayground画面。末尾スラッシュ付きは正規パスへ302</td></tr><tr><td><code>/api/playground/config</code></td><td>上のcapabilitiesと同じ公開設定</td></tr><tr><td><code>/api/playground/assets/app.js</code></td><td>画面のJavaScript</td></tr><tr><td><code>/api/playground/assets/style.css</code></td><td>画面のCSS</td></tr></tbody></table></div>
+<p>上記以外の画面アセット名は404です。APIの既定ルート接頭辞は <code>/api</code> です。ホスト設定を変更した場合は、変更後の接頭辞を使います。</p>
+
+<footer class="page-footer"><p>最終確認：2026-09-13。<a href="../../../functions/office2md/docs/usage.md">利用ガイド</a>と<a href="../../../functions/office2md/src/main/java/com/convertx2x/office2md/ConversionFunctions.java">HTTP実装</a>に基づく資料です。</p></footer>
+</article>
+<aside class="toc" aria-label="このページの目次"><p class="toc-title">このページの内容</p><nav id="page-toc"></nav></aside>
+</div>
+</main>
+</body>
+</html>

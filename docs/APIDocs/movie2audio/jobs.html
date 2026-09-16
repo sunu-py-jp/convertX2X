@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Movie2AudioのAPIリファレンス。動画ファイル・許可済みHTTPS URLからAACを再エンコードせずM4Aへ抽出。">
+<title>非同期HTTPで受付・結果を取得する · Movie2Audio API</title>
+<link rel="stylesheet" href="../assets/styles.css">
+<script src="../assets/app.js" defer></script>
+</head>
+<body data-page="movie-jobs">
+<a class="skip-link" href="#main-content">本文へ移動</a>
+<div id="site-header"></div>
+<aside id="sidebar" class="sidebar" aria-label="APIナビゲーション"></aside>
+<div id="menu-overlay" class="menu-overlay" hidden></div>
+<main id="main-content" class="main-content" tabindex="-1">
+<div class="page-layout">
+<article class="article">
+<p class="eyebrow">Movie → AAC</p>
+<h1>非同期HTTPで受付・結果を取得する</h1>
+<p class="lead">動画をStorageへ保存してQueueへ登録し、202とジョブIDを返します。ワーカーが抽出したM4Aは、状態APIと結果APIから取得できます。</p>
+<div class="flow"><span>動画を受付</span><b aria-hidden="true">→</b><span>Blob + Queue</span><b aria-hidden="true">→</b><span>AACを抽出</span><b aria-hidden="true">→</b><span>M4Aを取得</span></div>
+<h2 id="enable">有効化と認証</h2>
+<p>Function Appに <code>CONVERSION_STORAGE_CONNECTION_STRING</code> を設定すると非同期機能を有効にします。未設定・空値ではジョブAPIを無効にし、Queueトリガーを登録しません。URL入力も使う場合は <code>CONVERSION_URL_ALLOWED_HOSTS</code> が必要です。<code>AzureWebJobsStorage</code> はFunctionsホスト用の別設定です。</p>
+<p>受付・状態・結果のすべてにFunction認証を使います。Azureでは同じアプリのホストキーを <code>x-functions-key</code> で渡します。ジョブIDは利用者別のアクセス制御ではなく、このアプリを呼べるキーは他のジョブも参照できます。</p>
+<h2 id="submit-file">POST /api/jobs：動画ファイルを受付</h2>
+<div class="endpoint"><span class="method post">POST</span><code>/api/jobs</code></div>
+<p>ボディは動画の生バイト列です。multipartやBase64ではなく、同期の <a href="http.html">/convert</a> と同じ形式で送ります。入力上限を検証して動画をBlobへ保存し、ジョブをQueueへ登録してから202を返します。音声の有無やAAC形式はワーカーが検証します。</p>
+<pre><code class="language-shell">curl --fail-with-body \
+  -H "x-functions-key: $FUNCTIONS_HOST_KEY" \
+  -H 'Content-Type: application/octet-stream' \
+  --data-binary @sample.mp4 \
+  'https://YOUR_FUNCTION_APP.azurewebsites.net/api/jobs' \
+  --output accepted.json</code></pre>
+<p>入力の表示名は <code>?filename=sample.mp4</code>、次に <code>x-file-name</code> ヘッダーを使い、未指定時は <code>video.bin</code> です。両受付APIで共通です。パス成分を除く表示名として扱い、保存先やFFmpegの引数には使いません。日本語名はクエリ値をURLエンコードしてください。</p>
+<h2 id="submit-url">POST /api/jobs-url：動画URLを受付</h2>
+<div class="endpoint"><span class="method post">POST</span><code>/api/jobs-url</code></div>
+<pre><code class="language-shell">curl --fail-with-body \
+  -H "x-functions-key: $FUNCTIONS_HOST_KEY" \
+  -H 'Content-Type: application/json' \
+  --data-binary '{"url":"https://media.example.com/videos/sample.mp4"}' \
+  'https://YOUR_FUNCTION_APP.azurewebsites.net/api/jobs-url' \
+  --output accepted.json</code></pre>
+<p>JSONは <code>url</code> だけを持つオブジェクトで、最大16KiBです。取得先の許可ホスト・公開IP検証などは <a href="url.html">同期URL入力</a> と共通です。URLからのダウンロードと入力Blob保存は受付リクエスト中に完了します。QueueにはURLやSASを残さず、保存済みBlobの参照を送ります。短時間で失効するURLでも、受付後のキュー待機によって再取得が必要になることはありません。</p>
+<h2 id="accepted">受付レスポンス</h2>
+<p><code>202 Accepted</code> は受付完了で、抽出成功を意味しません。レスポンスの <code>job.id</code> と <code>statusUrl</code> を保存してください。本文は <code>{"job":{…},"statusUrl":"/api/jobs/{id}"}</code> の形です。</p>
+<pre><code class="language-json">{
+  "job": {
+    "id": "f6603efc-2fa8-4466-8d09-6d7c3ed94c18",
+    "status": "queued",
+    "filename": "video.bin",
+    "createdAt": "2026-09-15T00:00:00.000Z",
+    "updatedAt": "2026-09-15T00:00:00.000Z",
+    "sizeBytes": null,
+    "errorCode": null,
+    "errorMessage": null
+  },
+  "statusUrl": "/api/jobs/f6603efc-2fa8-4466-8d09-6d7c3ed94c18"
+}</code></pre>
+<p>日時とIDは形式例です。受付応答には状態確認先の <code>Location</code> と <code>Retry-After: 3</code> ヘッダーも付きます。</p>
+<div class="table-wrap"><table><thead><tr><th>jobの項目</th><th>意味</th></tr></thead><tbody><tr><td><code>id</code></td><td>UUID形式のジョブID</td></tr><tr><td><code>status</code></td><td><code>queued</code> / <code>running</code> / <code>succeeded</code> / <code>failed</code></td></tr><tr><td><code>filename</code></td><td>入力の表示名。出力名は常にaudio.m4a</td></tr><tr><td><code>createdAt</code> / <code>updatedAt</code></td><td>作成・更新時刻</td></tr><tr><td><code>sizeBytes</code></td><td>成功したM4Aのバイト数。成功前はnull</td></tr><tr><td><code>errorCode</code> / <code>errorMessage</code></td><td>失敗時の安全なエラー情報。通常はnull</td></tr></tbody></table></div>
+<p>受付応答を受信できなかった場合も、ジョブが登録済みの可能性があります。HTTP受付を再送すると別のジョブを作成します。呼び出し元でIDを固定して重複依頼を管理したい場合は <a href="queue.html">直接Queue</a> を使います。</p>
+<h2 id="get-status">GET /api/jobs/{id}：状態確認</h2>
+<div class="endpoint"><span class="method get">GET</span><code>/api/jobs/{id}</code></div>
+<pre><code class="language-shell">curl --fail-with-body \
+  -H "x-functions-key: $FUNCTIONS_HOST_KEY" \
+  'https://YOUR_FUNCTION_APP.azurewebsites.net/api/jobs/JOB_ID'</code></pre>
+<p>同じ <code>job</code> と <code>statusUrl</code> を返し、成功した場合にだけ <code>resultUrl</code>（<code>/api/jobs/{id}/result</code>）を加えます。状態Blob内部のStorage登録名・コンテナー・Blob名・接続情報は返しません。<code>failed</code> も状態API自体は正常なJSON応答なので、HTTPステータスだけでなく <code>job.status</code> を確認します。</p>
+<p>3秒程度の間隔で確認し、<code>succeeded</code> または <code>failed</code> で終了します。直接Queueへ送った直後は、ワーカーによる状態作成前のため404になる場合があります。</p>
+<h2 id="get-result">GET /api/jobs/{id}/result：音声取得</h2>
+<div class="endpoint"><span class="method get">GET</span><code>/api/jobs/{id}/result</code></div>
+<pre><code class="language-shell">curl --fail-with-body \
+  -H "x-functions-key: $FUNCTIONS_HOST_KEY" \
+  'https://YOUR_FUNCTION_APP.azurewebsites.net/api/jobs/JOB_ID/result' \
+  --output audio.m4a</code></pre>
+<p>成功した試行のBlobを読み出し、<code>Content-Type: audio/mp4</code>、<code>Content-Disposition: attachment; filename="audio.m4a"</code> で返します。ZIPにはしません。SAS URLへリダイレクトするAPIではなく、Function認証を使って音声本文を受け取れます。状態が成功前なら409、対象ジョブがなければ404です。</p>
+<p>ストリームの読み取り途中で接続が切れることがあるため、本文が正常に読み終わったことも確認してください。結果取得を繰り返しても変換は再実行しません。成功状態の公開直後でも、ワーカーの後片付け中などで <code>503 CONVERSION_BUSY</code> になることがあります。このコードの場合は3秒程度待って取得を再試行します。ジョブの受付を再送する必要はありません。</p>
+<h2 id="errors">ジョブAPIの主なエラー</h2>
+<div class="table-wrap"><table><thead><tr><th>HTTP</th><th>code</th><th>意味・対処</th></tr></thead><tbody><tr><td>503</td><td><code>ASYNC_DISABLED</code></td><td>制御用Storage接続が未設定</td></tr><tr><td>400</td><td><code>INVALID_JOB_ID</code></td><td>UUID形式ではないID</td></tr><tr><td>404</td><td><code>JOB_NOT_FOUND</code></td><td>状態がない。直接Queue投入直後は作成前の場合あり</td></tr><tr><td>409</td><td><code>JOB_NOT_READY</code></td><td>結果取得時にまだ成功状態ではない</td></tr><tr><td>404</td><td><code>RESULT_NOT_FOUND</code></td><td>成功結果のBlobが見つからない</td></tr><tr><td>409</td><td><code>RESULT_CHANGED</code></td><td>成功記録後に結果が変更された。Storageの状態を確認</td></tr><tr><td>503</td><td><code>CONVERSION_BUSY</code></td><td>実行枠を使用中。状態・結果取得は時間を空けて再試行</td></tr><tr><td>503</td><td><code>JOB_STORAGE_ERROR</code> / <code>STORAGE_UNAVAILABLE</code></td><td>Storage処理が完了できない。接続・権限・サービス状態を確認</td></tr></tbody></table></div>
+<p>受付時の入力形式・サイズ・URL関連のエラーは <a href="settings.html#errors">共通エラー</a>を使います。ワーカー内のメディア不備はHTTP受付エラーではなく <code>job.status: "failed"</code> と <code>job.errorCode</code> へ記録します。失敗理由が <code>PROCESSING_FAILED</code> の場合は再試行上限後の状態などを確認します。</p>
+<h2 id="storage">保存先と保持期間</h2>
+<div class="table-wrap"><table><thead><tr><th>対象</th><th>既定の保存場所</th></tr></thead><tbody><tr><td>Queue</td><td><code>movie2audio-jobs</code></td></tr><tr><td>入力</td><td>同名コンテナーの <code>{jobId}/input</code></td></tr><tr><td>状態</td><td>同名コンテナーの <code>{jobId}/status.json</code></td></tr><tr><td>出力</td><td>同名コンテナーの <code>{jobId}/results/{attemptUUID}/audio.m4a</code></td></tr></tbody></table></div>
+<p>HTTP受付は制御用Storageに入出力を保存します。別アカウントの入力・保存先を選ぶ場合は <a href="queue.html#storage-aliases">直接Queueの登録Storage指定</a> を使います。SAS URLを都度指定したい場合は同期の <a href="storage.html">/convert-to-blob</a> です。</p>
+<p>ローカルの作業ファイルは処理後に削除します。Storageの入力・状態・結果・途中で失敗した試行のBlobは自動削除しません。必要な保持期間に合わせてStorageのライフサイクル管理を設定します。</p>
+<h2 id="execution">実行期限とスケール</h2>
+<p>入力上限・出力上限・AACコピーの仕様は同期と共通です。既定180秒の期限は、HTTP受付、Queueの各処理試行、結果の取得処理にそれぞれ適用します。Queue内での待機時間はこの期限と別です。</p>
+<p>Node.jsプロセス内は同期変換とQueue処理を合わせて1件です。Queue設定は <code>batchSize=1</code>、<code>newBatchThreshold=0</code>、動的同時実行は無効です。スケールアウトすれば別インスタンスで並列に処理でき、厳密なFIFO順序は保証しません。インスタンス全体を1つに制限する場合は配置先プラン側でも設定します。</p>
+<p>一時的なStorage障害・競合は再試行し、最大10回の後は <code>movie2audio-jobs-poison</code> で失敗状態にします。不正動画や上限超過などは失敗として終了します。<a href="queue.html#retry">重複配送と再試行</a>を参照してください。</p>
+<h2 id="playground">Playgroundで試す</h2>
+<p><a href="http://localhost:7073/api/playground">Playground</a> で「キューで実行」を選ぶと、この受付・状態・結果APIを順番に使います。Storage未設定時は選択できません。画面は3秒おきに確認し、最大15分で待機を終了します。画面を閉じたり待機を終えたりしても、受付済みのジョブはキャンセルしません。表示されたIDで後から状態を確認できます。</p>
+<footer class="page-footer"><p>最終確認：2026-09-15。<a href="../../../functions/movie2audio/docs/usage.md">利用ガイド</a> · <a href="../../movie2audio.md">開発者向け実装ガイド</a></p></footer>
+</article>
+<aside class="toc" aria-label="このページの目次"><p class="toc-title">このページの内容</p><nav id="page-toc"></nav></aside>
+</div>
+</main>
+</body>
+</html>

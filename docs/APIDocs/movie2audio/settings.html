@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Movie2AudioのAPIリファレンス。動画ファイル・許可済みHTTPS URLからAACを再エンコードせずM4Aへ抽出。">
+<title>設定・上限・エラー · Movie2Audio API</title>
+<link rel="stylesheet" href="../assets/styles.css">
+<script src="../assets/app.js" defer></script>
+</head>
+<body data-page="movie-settings">
+<a class="skip-link" href="#main-content">本文へ移動</a>
+<div id="site-header"></div>
+<aside id="sidebar" class="sidebar" aria-label="APIナビゲーション"></aside>
+<div id="menu-overlay" class="menu-overlay" hidden></div>
+<main id="main-content" class="main-content" tabindex="-1">
+<div class="page-layout">
+<article class="article">
+<p class="eyebrow">Movie → AAC</p>
+<h1>設定・上限・エラー</h1>
+<p class="lead">環境変数で入力・出力・処理時間とURLの取得先を指定します。未設定時は100MiB・180秒、ファイル入力のみで動作します。</p>
+
+<h2 id="environment">環境変数</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">名前</th><th scope="col">既定値</th><th scope="col">意味</th></tr></thead><tbody><tr><td><code>CONVERSION_MAX_INPUT_BYTES</code></td><td><code>104857600</code></td><td>入力動画の上限100MiB。URL取得にも適用</td></tr><tr><td><code>CONVERSION_MAX_OUTPUT_BYTES</code></td><td><code>104857600</code></td><td>出力M4Aの上限100MiB</td></tr><tr><td><code>CONVERSION_TIMEOUT_SECONDS</code></td><td><code>180</code></td><td>同期処理、ジョブ受付、Queueの各試行、結果取得にそれぞれ適用する期限。Queue待機は別。1〜210秒</td></tr><tr><td><code>CONVERSION_URL_ALLOWED_HOSTS</code></td><td>空</td><td>完全一致のDNSホスト名をカンマ区切り。空ならURL機能無効</td></tr><tr><td><code>CONVERSION_OUTPUT_ALLOWED_HOSTS</code></td><td>空</td><td>Azure Blobの完全一致ホスト名をカンマ区切り。空ならBlob保存API無効。入力の許可ホストとは独立</td></tr><tr><td><code>CONVERSION_STORAGE_CONNECTION_STRING</code></td><td>空</td><td>制御用Storageの接続文字列。設定すると非同期HTTP・直接Queueを有効化</td></tr><tr><td><code>CONVERSION_INPUT_STORAGE_{NAME}</code></td><td>なし</td><td>追加の入力用Storage接続。<a href="queue.html#storage-aliases">登録名の指定</a></td></tr><tr><td><code>CONVERSION_OUTPUT_STORAGE_{NAME}</code></td><td>なし</td><td>追加の出力用Storage接続。結果APIを使う場合は読み取り権限も必要</td></tr><tr><td><code>AzureWebJobsStorage</code></td><td>配置環境で指定</td><td>Functionsホスト用。非同期機能の有効化とは別</td></tr><tr><td><code>FUNCTIONS_WORKER_RUNTIME</code></td><td><code>node</code></td><td>Node.jsワーカーを使用</td></tr></tbody></table></div>
+<p>バイト数は正の整数で <code>2147483639</code> 以下です。数値設定の未設定・空値は既定値を使い、不正値は起動時に拒否します。許可ホスト設定は最大32件・全体8192文字で、ワイルドカードやIPアドレスは指定できません。</p>
+<p>ローカルは <code>local.settings.json</code> の <code>Values</code>、AzureはFunction Appの環境変数へ設定します。アプリの上限を変更しても、Azureホストや前段サービスのボディ上限は自動変更されません。</p>
+<p>アップロードを100MiB超へ拡大する場合、ホストの <code>FUNCTIONS_REQUEST_BODY_SIZE_LIMIT</code>（既定 <code>104857600</code> バイト）も合わせて設定します。ホストが先に拒否した応答は本アプリのJSON形式ではありません。既定値の根拠は <a href="https://learn.microsoft.com/en-us/azure/azure-functions/node-http-stream#enable-streams">Microsoft Learn</a> を参照してください。Node.jsのHTTPストリーミングはアプリ起動時に有効にしています。</p>
+<h2 id="runtime">実行環境と同時処理</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">項目</th><th scope="col">仕様</th></tr></thead><tbody><tr><td>ランタイム</td><td>Node.js 22 / 24、Functions v4モデル。同梱FFmpeg / FFprobe 9.0.1</td></tr><tr><td>対応環境</td><td>Linux x64（静的muslビルド）、macOS Apple Silicon</td></tr><tr><td>Node.jsプロセス内</td><td>同期処理・非同期受付・Queue処理・結果取得で共有する実行枠は1件。HTTP競合は503 CONVERSION_BUSY、Queue競合は再試行</td></tr><tr><td>host.json</td><td>HTTP同時実行1件、待機込み8件、functionTimeout 4分。QueueはbatchSize 1、newBatchThreshold 0、maxDequeueCount 10、visibilityTimeout 1分。動的同時実行は無効</td></tr><tr><td>実際のアプリ期限</td><td>既定180秒。共通の単一期限で入力受信・URL取得・解析・コピー・HTTP応答へのファイル読み出し、またはBlob保存完了を制限</td></tr><tr><td>保存</td><td>OSの一時ディレクトリ。完成済みM4Aをストリームで返し、ファイル読み取りストリームが閉じたときに削除</td></tr><tr><td>Storage / Queue</td><td>同期SAS保存と、登録接続を使う非同期は別の経路。非同期のQueueと制御コンテナーはmovie2audio-jobs。入出力・状態の保持期間は運用側で設定</td></tr></tbody></table></div>
+<p>出力ファイルの読み出し完了は、クライアントの受信完了を意味しません。その後にSDK・ホストのバッファから転送されるデータは、アプリの180秒タイマーの対象外です。転送中のキャンセルはアプリへ伝搬した時点で処理します。</p>
+<p>プロセス内の同時実行制御は複数インスタンス全体の制御ではありません。スケールアウト時は各インスタンスで並列に処理できます。<code>functionTimeout</code> はHTTP接続の維持時間や所要時間を保証しません。</p>
+<p>FFmpegは起動時にダウンロードせず、同梱ファイルのチェックサムを確認して所有者のみ利用可能な一時ディレクトリへ展開します。ユーザーがFFmpegの引数や実行パスを指定するAPIはありません。</p>
+<h2 id="capabilities">GET /api/capabilities</h2>
+<div class="endpoint"><span class="method get">GET</span><code>/api/capabilities</code></div>
+<p><code>GET /api/playground/config</code> も同じ公開設定JSONを返します。以下は既定値です。どちらも匿名で、許可ホスト一覧・キー・接続情報は返しません。</p>
+<pre><code class="language-json">{
+  &quot;urlEnabled&quot;: false,
+  &quot;asyncEnabled&quot;: false,
+  &quot;maxInputBytes&quot;: 104857600,
+  &quot;maxOutputBytes&quot;: 104857600,
+  &quot;timeoutSeconds&quot;: 180,
+  &quot;outputFormat&quot;: &quot;m4a&quot;,
+  &quot;audioCodec&quot;: &quot;aac&quot;,
+  &quot;audioMode&quot;: &quot;copy&quot;
+}</code></pre>
+<p>公開設定には <code>asyncEnabled</code> を追加しています。登録StorageやSAS保存先の一覧は含めません。</p>
+<p><code>urlEnabled</code> は入力許可ホスト設定、<code>asyncEnabled</code> は制御用Storage接続設定の有無を示します。取得先への接続やFFmpeg実行のヘルスチェックではありません。</p>
+<h2 id="public-ui">Playgroundの公開エンドポイント</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">GETパス</th><th scope="col">内容</th></tr></thead><tbody><tr><td><code>/api/playground</code></td><td>匿名のPlayground。末尾スラッシュ付きは正規パスへ302</td></tr><tr><td><code>/api/playground/config</code></td><td>capabilitiesと同じ公開設定</td></tr><tr><td><code>/api/playground/assets/app.js</code></td><td>画面用JavaScript</td></tr><tr><td><code>/api/playground/assets/style.css</code></td><td>画面用CSS</td></tr></tbody></table></div>
+<p>上記以外のアセット名は404です。変換・ジョブ受付・状態・結果APIはFunction認証、画面と公開設定は匿名です。既定のパス接頭辞は <code>/api</code> で、<code>host.json</code> のルート設定を変更した場合は読み替えます。</p>
+<p>Playgroundは同期／キュー実行を選択でき、非同期は3秒おきに状態を確認して音声を取得します。画面の待機上限は15分で、受付済みジョブの期限やキャンセルを変更しません。</p>
+<h2 id="errors">エラーレスポンス</h2>
+<pre><code class="language-json">{
+  &quot;error&quot;: {
+    &quot;code&quot;: &quot;INPUT_TOO_LARGE&quot;,
+    &quot;message&quot;: &quot;The video exceeds the input size limit.&quot;
+  }
+}</code></pre>
+<p>送信開始前のアプリ由来のエラーは <code>error.code</code> と <code>error.message</code> を持ちます。HTTPステータスとコードで判定してください。Azureホストの認証・容量・タイムアウトエラーはこの形式と異なる場合があります。</p>
+<div class="table-wrap"><table><thead><tr><th scope="col">HTTP</th><th scope="col">code</th><th scope="col">原因</th></tr></thead><tbody><tr><td>400</td><td><code>EMPTY_INPUT</code></td><td>リクエストや取得動画が空</td></tr><tr><td>400</td><td><code>INVALID_CONTENT_LENGTH</code></td><td>Content-Lengthが非負の整数ではない</td></tr><tr><td>400</td><td><code>INVALID_URL_REQUEST</code> / <code>INVALID_URL</code></td><td>URL JSONまたはURL構文が不正</td></tr><tr><td>403</td><td><code>URL_HOST_NOT_ALLOWED</code> / <code>URL_ADDRESS_NOT_ALLOWED</code></td><td>許可外ホストまたは公開IPではない取得先</td></tr><tr><td>413</td><td><code>INPUT_TOO_LARGE</code> / <code>OUTPUT_TOO_LARGE</code></td><td>設定した動画入力・M4A出力の上限超過</td></tr><tr><td>413</td><td><code>REQUEST_TOO_LARGE</code></td><td>URL JSONは16KiB、Blob保存JSONは32KiB、multipartのJSONファイルは16KiBを超過。multipart全体にも入力上限 + 64KiBの制限あり</td></tr><tr><td>415</td><td><code>RAW_BODY_REQUIRED</code> / <code>JSON_BODY_REQUIRED</code></td><td>入力APIに合わないContent-Type</td></tr><tr><td>422</td><td><code>NO_VIDEO_STREAM</code> / <code>NO_AUDIO_STREAM</code></td><td>動画または音声ストリームがない</td></tr><tr><td>422</td><td><code>UNSUPPORTED_AUDIO_CODEC</code></td><td>最初の音声トラックがAACではない</td></tr><tr><td>422</td><td><code>INVALID_MEDIA</code> / <code>EMPTY_OUTPUT</code></td><td>未対応・破損ファイル、抽出失敗、空の成果物</td></tr><tr><td>422</td><td><code>URL_REDIRECT_NOT_ALLOWED</code> / <code>URL_ENCODING_NOT_SUPPORTED</code></td><td>リダイレクトまたは圧縮レスポンス</td></tr><tr><td>500</td><td><code>STORAGE_ERROR</code> / <code>OUTPUT_MISSING</code> / <code>INTERNAL_ERROR</code></td><td>一時ファイルや処理内部の問題</td></tr><tr><td>502</td><td><code>URL_FETCH_FAILED</code></td><td>取得先の非200応答、DNS・TLS・接続エラーなど</td></tr><tr><td>503</td><td><code>URL_FETCH_DISABLED</code></td><td>URL許可ホスト未設定</td></tr><tr><td>503</td><td><code>CONVERSION_BUSY</code></td><td>同じNode.jsプロセスで別の処理または送信が実行中</td></tr><tr><td>503</td><td><code>FFMPEG_UNAVAILABLE</code></td><td>非対応環境や同梱バイナリ準備・実行の問題</td></tr><tr><td>504</td><td><code>CONVERSION_TIMEOUT</code></td><td>入力受信からHTTP応答へのファイル読み出し、またはBlob保存完了までの共通期限超過</td></tr></tbody></table></div>
+<p>ジョブAPIのエラーと状態の読み方は <a href="jobs.html">非同期HTTP</a>、再試行・poison・重複配送は <a href="queue.html#retry">直接Queue</a> を参照してください。状態APIでは <code>failed</code> も正常なJSON応答です。</p>
+<p>子プロセスの待機中に実行が中断された場合は <code>503 CONVERSION_INTERRUPTED</code> です。503には <code>Retry-After: 3</code> を付けます。<code>CONVERSION_BUSY</code> は時間を空けて再試行できますが、設定不足や実行環境の問題は修正が必要です。<a href="url.html#errors">URL固有の対処</a>も参照してください。</p>
+<p>レスポンス送信開始後のエラーはJSONでは返せません。出力ファイルの読み出し中の期限超過やエラーではストリームを中断します。利用側は応答本文の正常終了も確認します。<a href="http.html#streaming">返却方法の詳細</a>を参照してください。</p>
+<p><a href="storage.html#errors">Blob保存固有のエラー</a>、<a href="storage.html#sas">受け付けるSAS</a>と<a href="storage.html#overwrite">再試行時の扱い</a>も参照してください。</p>
+<h2 id="maintenance">ビルドと保守</h2>
+<pre><code class="language-shell">cd functions/movie2audio
+npm ci
+npm test
+npm run package</code></pre>
+<p><code>dist/</code> に実行用ソース・アセット・本番用依存とFFmpegのソース・ライセンス一式を作成します。配置先はLinux x64 / Node.js 24の独立したFunction Appです。ビルド・テストはAzureへ公開しません。FFmpegの再ビルド、ソース・ライセンス・manifestの管理は <a href="../../../functions/movie2audio/third-party/ffmpeg/README.md">同梱FFmpegのREADME</a>を参照してください。アプリのMITライセンスと同梱FFmpegのライセンスはそれぞれ保持します。</p>
+
+<footer class="page-footer"><p>最終確認：2026-09-15。<a href="../../../functions/movie2audio/docs/usage.md">利用ガイド</a> · <a href="../../movie2audio.md">開発者向け実装ガイド</a></p></footer>
+</article>
+<aside class="toc" aria-label="このページの目次"><p class="toc-title">このページの内容</p><nav id="page-toc"></nav></aside>
+</div>
+</main>
+</body>
+</html>

@@ -1,0 +1,11 @@
+local.settings.json
+local.settings.example.json
+.git*
+.nvmrc
+dist/
+.package-*/
+target/
+test/
+scripts/run_local.py
+scripts/package.mjs
+scripts/test*

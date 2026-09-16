@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Movie2AudioのAPIリファレンス。動画ファイル・許可済みHTTPS URLからAACを再エンコードせずM4Aへ抽出。">
+<title>HTTPS URLから抽出 · Movie2Audio API</title>
+<link rel="stylesheet" href="../assets/styles.css">
+<script src="../assets/app.js" defer></script>
+</head>
+<body data-page="movie-url">
+<a class="skip-link" href="#main-content">本文へ移動</a>
+<div id="site-header"></div>
+<aside id="sidebar" class="sidebar" aria-label="APIナビゲーション"></aside>
+<div id="menu-overlay" class="menu-overlay" hidden></div>
+<main id="main-content" class="main-content" tabindex="-1">
+<div class="page-layout">
+<article class="article">
+<p class="eyebrow">Movie → AAC</p>
+<h1>HTTPS URLから抽出</h1>
+<p class="lead">事前に許可したホストの直接ファイルURLを送り、取得した動画からAACを抽出します。</p>
+
+<h2 id="enable">URL入力を有効にする</h2>
+<p>Function Appの環境変数に取得先ホストを設定します。未設定・空値ではURL入力を無効にし、<code>503 URL_FETCH_DISABLED</code> を返します。アップロードAPIは引き続き利用できます。</p>
+<pre><code class="language-text">CONVERSION_URL_ALLOWED_HOSTS=media.example.com,exampleaccount.blob.core.windows.net</code></pre>
+<p>ホスト名はサブドメインを含めて完全一致です。ワイルドカード・IPアドレス・スキーム・パスを含めず、最大32件をカンマで区切ります。<code>example.com</code> の設定だけでは <code>media.example.com</code> へのアクセスは許可されません。</p>
+<h2 id="request">POST /api/convert-url</h2>
+<div class="endpoint"><span class="method post">POST</span><code>/api/convert-url</code></div>
+<pre><code class="language-json">{
+  &quot;url&quot;: &quot;https://media.example.com/videos/sample.mp4&quot;
+}</code></pre>
+<div class="table-wrap"><table><thead><tr><th scope="col">項目</th><th scope="col">仕様</th></tr></thead><tbody><tr><td><code>Content-Type</code></td><td><code>application/json</code> が必須</td></tr><tr><td><code>url</code></td><td>空でない文字列。最大8192文字。先頭・末尾の空白は不可</td></tr><tr><td>JSON全体</td><td>最大16KiB。url以外のキー、重複キー、複数のJSON値を拒否</td></tr><tr><td>認証</td><td>Azureでは <code>x-functions-key</code> が必要</td></tr></tbody></table></div>
+<h2 id="example">curl の例</h2>
+<pre><code class="language-shell">curl --fail-with-body \
+  -H &#x27;Content-Type: application/json&#x27; \
+  --data-binary &#x27;{&quot;url&quot;:&quot;https://media.example.com/videos/sample.mp4&quot;}&#x27; \
+  &#x27;http://localhost:7073/api/convert-url&#x27; \
+  --output audio.m4a</code></pre>
+<p>Azureでは呼び出し先をFunction AppのURLへ置き換え、キーをヘッダーで渡します。返却形式はファイル入力と同じ <code>audio.m4a</code> です。取得・抽出を完了したファイルをHTTPストリームで送信します。<a href="http.html#response">レスポンスの全ヘッダー</a>を参照してください。</p>
+<p>抽出結果をBlobへ直接保存する場合は、入力URLと出力先SASを <a href="storage.html#json">/convert-to-blob</a> へ送ります。この <code>/convert-url</code> APIは引き続き音声ファイルを返します。</p>
+<h2 id="accepted">受け付けるURL</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">条件</th><th scope="col">扱い</th></tr></thead><tbody><tr><td>HTTPS / 443番ポート</td><td>必須。ポートの省略と明示的な443を許可</td></tr><tr><td>URL内のユーザー名・パスワード / #fragment</td><td>拒否</td></tr><tr><td>署名付きクエリ</td><td>利用可能。URL自体を秘密情報として扱う</td></tr><tr><td>リダイレクト</td><td>追跡しない。最終的な直接ファイルURLを指定</td></tr><tr><td>圧縮レスポンス</td><td>Content-Encodingは未指定またはidentityのみ</td></tr><tr><td>Webページ・再生リスト</td><td>動画ファイルの取得APIではないため対象外</td></tr><tr><td>Cookie・任意の認証ヘッダー</td><td>指定機能なし。クライアント側のCookieやFunctionキーを取得先に転送しない</td></tr></tbody></table></div>
+<h2 id="boundaries">外部取得の境界</h2>
+<p>許可ホストをDNSで解決し、結果の全IPが公開インターネットのアドレスであることを検査します。内部・ループバック・リンクローカル・予約済みアドレス、Azureのプラットフォーム用アドレスなどを拒否します。検証したIPを使って接続します。</p>
+<p>取得処理はプロキシ・Cookie・自動リトライを利用せず、実際に読み取るバイト数を入力上限までに制限します。URL本文の受信・動画の取得・抽出・HTTP応答へのファイル読み出しは合算で既定180秒です。サイズ検証後も際限なくリモートのボディを読み捨てることはありません。</p>
+<p>FFmpegにはURLを渡さず、取得済みの一時ファイルだけを渡します。同梱FFmpegのネットワーク機能も無効です。アプリのエラーやログには入力URLや署名情報を出しません。</p>
+<h2 id="errors">URLに関するエラー</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">HTTP</th><th scope="col">code</th><th scope="col">対処</th></tr></thead><tbody><tr><td>400</td><td><code>INVALID_URL_REQUEST</code></td><td>JSONの形・url文字列・余分なキーを確認</td></tr><tr><td>400</td><td><code>INVALID_URL</code></td><td>HTTPS、443、URL内認証、フラグメント、文字列長を確認</td></tr><tr><td>403</td><td><code>URL_HOST_NOT_ALLOWED</code></td><td>管理者が許可したホストの直接URLを使用</td></tr><tr><td>403</td><td><code>URL_ADDRESS_NOT_ALLOWED</code></td><td>取得先が公開IPに解決されるか確認</td></tr><tr><td>413</td><td><code>REQUEST_TOO_LARGE</code> / <code>INPUT_TOO_LARGE</code></td><td>JSONは16KiB以下、動画は設定した入力上限以下にする</td></tr><tr><td>415</td><td><code>JSON_BODY_REQUIRED</code></td><td>Content-Typeをapplication/jsonにする</td></tr><tr><td>422</td><td><code>URL_REDIRECT_NOT_ALLOWED</code></td><td>リダイレクト先の最終URLを使う</td></tr><tr><td>422</td><td><code>URL_ENCODING_NOT_SUPPORTED</code></td><td>取得先から圧縮していないファイル本体を返す</td></tr><tr><td>502</td><td><code>URL_FETCH_FAILED</code></td><td>DNS・TLS・接続・取得先のHTTP応答を確認。取得先の非200も含む</td></tr><tr><td>503</td><td><code>URL_FETCH_DISABLED</code></td><td>CONVERSION_URL_ALLOWED_HOSTSを設定</td></tr><tr><td>504</td><td><code>CONVERSION_TIMEOUT</code></td><td>取得・抽出・HTTP応答へのファイル読み出しが期限内に終わる入力を使う</td></tr></tbody></table></div>
+<p>出力ファイルの読み出し中に期限超過やエラーが起きた場合はストリームを中断します。転送中のキャンセルはアプリへ伝搬した時点で処理します。HTTPステータスだけでなく本文の読み取り完了を確認してください。<a href="http.html#streaming">ストリーミングの範囲</a>も参照してください。</p>
+<p>取得した動画自体がAAC抽出の条件を満たさない場合は、ファイル入力と同じ変換エラーになります。<a href="settings.html#errors">共通のエラー一覧</a>を参照してください。</p>
+
+<p>ジョブIDを受け取って後から結果を取得する場合は <a href="jobs.html">非同期HTTP</a>、他システムから登録済みBlobを処理する場合は <a href="queue.html">直接Queue</a> を使います。SAS保存APIは同期専用です。</p>
+<footer class="page-footer"><p>最終確認：2026-09-15。<a href="../../../functions/movie2audio/docs/usage.md">利用ガイド</a> · <a href="../../movie2audio.md">開発者向け実装ガイド</a></p></footer>
+</article>
+<aside class="toc" aria-label="このページの目次"><p class="toc-title">このページの内容</p><nav id="page-toc"></nav></aside>
+</div>
+</main>
+</body>
+</html>

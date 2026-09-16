@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="PowerPoint・PDFから画像への変換API。実装に基づく入出力、呼び出し方法、設定の資料です。">
+  <title>PowerPoint・PDF → 画像 | convertX2X API資料</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+  <script src="../assets/app.js" defer></script>
+</head>
+<body data-page="images-overview">
+<a class="skip-link" href="#main-content">本文へ移動</a>
+<div id="site-header"></div>
+<aside id="sidebar" class="sidebar" aria-label="APIナビゲーション"></aside>
+<div id="menu-overlay" class="menu-overlay" hidden></div>
+<main id="main-content" class="main-content" tabindex="-1">
+  <div class="page-layout">
+    <article class="article">
+
+      <p class="eyebrow">PPT / PPTX / PDF → PNG / JPEG</p>
+      <h1>PowerPoint・PDFを画像へ</h1>
+      <p class="lead">ファイルを受け取り、ページ単位で画像化します。同期HTTP、非同期HTTP、外部システムからの直接Queue依頼が、同じ変換処理と上限を使います。</p>
+
+      <h2 id="choose-route">呼び出し方を選ぶ</h2>
+      <div class="cards">
+        <a class="card" href="http.html#convert"><h3>同期HTTP</h3><p>POSTのレスポンスで画像またはZIPを受け取ります。アプリ用Storageの設定は不要です。</p></a>
+        <a class="card" href="jobs.html#submit-job"><h3>非同期HTTP</h3><p>ファイルをPOSTしてジョブIDを受け取り、状態と結果を別のAPIで取得します。</p></a>
+        <a class="card" href="queue.html#request-json"><h3>直接Queue</h3><p>入力をBlobへ保存し、JSONで依頼します。入出力Storageと、ZIP／個別画像の保存を指定できます。</p></a>
+      </div>
+      <p>非同期HTTPと直接Queueには <code>CONVERSION_STORAGE_CONNECTION_STRING</code> の設定が必要です。Playgroundを使わずに、外部システムだけで連携できます。</p>
+
+      <h2 id="supported-input">対応するファイル</h2>
+      <div class="table-wrap"><table>
+        <thead><tr><th>入力</th><th>変換処理</th><th>出力</th></tr></thead>
+        <tbody>
+          <tr><td>PowerPoint <code>.pptx</code> / <code>.ppt</code></td><td>Apache POIでスライドを描画</td><td>PNGまたはJPEG</td></tr>
+          <tr><td>PDF <code>.pdf</code></td><td>PDFBoxでページを描画</td><td>PNGまたはJPEG</td></tr>
+        </tbody>
+      </table></div>
+      <p>形式は入力内容から判定します。<code>filename</code> の拡張子だけを変更しても、別形式のファイルを変換できるようにはなりません。暗号化されたファイルは対象外です。</p>
+      <p>これは画像化のAPIです。Markdown、OCR結果、編集可能な図形、変換レポートの生成は契約にありません。出力の背景は白です。</p>
+
+      <h2 id="output-rules">ページ指定と出力の関係</h2>
+      <div class="table-wrap"><table>
+        <thead><tr><th>呼び出し・指定</th><th>全ページ：<code>page</code> 省略</th><th>1ページ：<code>page</code> 指定</th></tr></thead>
+        <tbody>
+          <tr><td>同期HTTP</td><td>画像をまとめたZIP</td><td>指定した画像1枚</td></tr>
+          <tr><td>非同期HTTP</td><td>ZIPをBlobへ保存</td><td>指定した画像1枚をBlobへ保存</td></tr>
+          <tr><td>直接Queue：<code>output.mode="zip"</code>（既定）</td><td>ZIPをBlobへ保存</td><td>指定した画像1枚をBlobへ保存</td></tr>
+          <tr><td>直接Queue：<code>output.mode="images"</code></td><td>各ページの画像と <code>manifest.json</code></td><td>指定ページの画像と <code>manifest.json</code></td></tr>
+        </tbody>
+      </table></div>
+      <div class="callout"><p><strong>ページ指定なしは、入力が1ページでもZIPです。</strong> <code>page=1</code> を明示した場合に画像1枚を返します。<code>images</code> モードの結果取得APIは画像一覧のJSONを返し、画像本体はBlobから取得します。</p></div>
+
+      <h2 id="dimensions">画像の寸法</h2>
+      <p><code>width</code> を省略すると、元のページの物理寸法を96dpiで画像化します。PowerPointの幅10インチ・高さ7.5インチは960×720pxです。PDFはページごとのCropBox、90度／270度の回転、UserUnitを反映します。</p>
+      <p><code>width</code> を指定した場合だけ、横幅をそのピクセル数に合わせ、縦横比を保って高さを決めます。各辺は整数ピクセルへ丸めます。ページごとにサイズが違うPDFも処理できます。</p>
+      <p>描画前に1ページ当たりの画素数を検査します。幅・高さが大きいページは、ファイル容量が小さくても上限エラーになる場合があります。<a href="settings.html#limits">上限の一覧</a>を参照してください。</p>
+
+      <h2 id="filenames">出力名とZIPの中身</h2>
+      <div class="table-wrap"><table>
+        <thead><tr><th>指定例</th><th>出力名</th><th>内容</th></tr></thead>
+        <tbody>
+          <tr><td><code>filename=slides.pptx</code></td><td><code>slides.zip</code></td><td><code>page-0001.png</code>、<code>page-0002.png</code>、…</td></tr>
+          <tr><td><code>filename=slides.pptx&amp;page=2</code></td><td><code>slides-page-0002.png</code></td><td>2ページ目のPNG</td></tr>
+          <tr><td><code>filename=slides.pptx&amp;format=jpeg</code></td><td><code>slides.zip</code></td><td><code>page-0001.jpeg</code>、<code>page-0002.jpeg</code>、…</td></tr>
+          <tr><td>直接Queueの個別画像保存</td><td><code>page-0002.png</code> など</td><td>元のページ番号を保持。ファイル名の前置きなし</td></tr>
+        </tbody>
+      </table></div>
+      <p>ZIP名と単一画像名は、入力名の末尾の拡張子を除き、英数字・<code>_</code>・<code>-</code> 以外を <code>_</code> に置換して作ります。元の名前部分は最大100文字です。HTTPで名前を省略した場合は <code>document</code> が使われます。JPEGの拡張子は <code>.jpeg</code> です。</p>
+
+      <h2 id="quality">描画と日本語フォント</h2>
+      <p>POIの描画はPowerPoint本体と完全には一致しません。元のフォントが利用できる場合、またはPDFにフォントが埋め込まれている場合は、そのフォントを優先します。不足する日本語フォントは、同梱のNoto Sans CJK JP／Noto Serif CJK JPのRegular・Boldで補います。</p>
+      <p>代替フォントによって文字幅や改行位置が変わることがあります。PDFの代替は日本語として識別できる対象フォント向けで、失われた文字コード情報を復元する機能ではありません。</p>
+
+      <h2 id="playground">GET /api/playground — 操作画面</h2>
+      <div class="endpoint"><span class="method get">GET</span><code>/api/playground</code></div>
+      <p>匿名で取得できる簡易UIです。同期／非同期、PNG／JPEG、全ページ／1ページを選べます。画像幅は元寸法から自動設定します。末尾に <code>/</code> が付くURLは、末尾なしのパスへ302で移動します。</p>
+      <p>ローカル起動の既定URLは <code>http://localhost:7071/api/playground</code> です。キーは画面のメモリで保持し、URLやブラウザの永続ストレージへ保存しません。</p>
+
+      <h2 id="playground-assets">GET /api/playground/assets/{name} — 静的ファイル</h2>
+      <div class="endpoint"><span class="method get">GET</span><code>/api/playground/assets/{name}</code></div>
+      <p>匿名で <code>style.css</code> と <code>app.js</code> を配信します。それ以外の名前は404です。独立したフロントエンドサーバーは必要ありません。</p>
+
+      <h2 id="playground-config">GET /api/playground/config — 公開設定</h2>
+      <div class="endpoint"><span class="method get">GET</span><code>/api/playground/config</code></div>
+      <p>認証なしで、次の3項目だけを返します。接続文字列・Storageの登録名・キーは含みません。</p>
+      <pre><code>{
+  "asyncEnabled": false,
+  "maxInputBytes": 20971520,
+  "maxPages": 50
+}</code></pre>
+      <p>この機能に <code>/api/capabilities</code> はありません。公開設定はすべての上限や対応形式を列挙するAPIではありません。</p>
+
+      <footer class="page-footer">
+        <p>最終確認：2026-09-13。READMEとHTTP・設定・変換・ジョブ処理の実装を照合しています。</p>
+        <p><a href="../../../functions/ppt-pdf-to-images/docs/usage.md">利用ガイド</a> · <a href="../../ppt-pdf-to-images.md">開発者ガイド</a></p>
+      </footer>
+    </article>
+    <aside class="toc" aria-label="このページの目次"><p class="toc-title">このページの内容</p><nav id="page-toc"></nav></aside>
+  </div>
+</main>
+</body>
+</html>
