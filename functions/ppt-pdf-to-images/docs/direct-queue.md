@@ -25,10 +25,10 @@ HTTP API を使わず、外部のアプリから Azure Storage Queue `conversion
 
 | フィールド | 内容 |
 | --- | --- |
-| `version` | `1`。 |
+| `version` | `1` または `2`。以下の基本例はversion 1。拡張は末尾を参照。 |
 | `jobId` | 依頼ごとの UUID。別の変換には新しい UUID を使います。 |
 | `input.container` / `input.blobName` | アップロード済みの入力 Blob のコンテナー名とパス。 |
-| `output.container` / `output.prefix` | 出力先のコンテナー名とプレフィックス。`prefix` は省略または `null` なら空文字。未作成の出力コンテナーはワーカーが非公開で作成します。 |
+| `output.container` / `output.prefix` | 出力先のコンテナー名とプレフィックス。`prefix` は省略または `null` なら空文字。既定では未作成の出力コンテナーを非公開で作成します。`CONVERSION_CREATE_RESOURCES=false` では事前作成が必要です。 |
 | `output.mode` | `zip` または `images`。省略または `null` なら `zip`。`images` はページごとの画像 Blob と一覧の `manifest.json` を保存します。 |
 | `filename` | 任意の表示用ファイル名。省略時は入力 Blob の末尾の名前を使用します。 |
 | `options` | 任意。省略時は元のページ寸法を 96 dpi で、全ページを PNG に画像化します。まとめ方は `output.mode` に従います。 |
@@ -61,7 +61,7 @@ Queue クライアントには **`QueueMessageEncoding.BASE64`** を設定しま
 
 ## 状態と結果の取得
 
-Queue と状態 Blob は、常に `CONVERSION_STORAGE_CONNECTION_STRING` の Storage アカウントに置かれます。外部の送信側が事前に状態ファイルを作る必要はありません。
+Queueと状態Blobは、接続文字列またはMI設定で登録した制御用Storageに置かれます。外部の送信側が事前に状態ファイルを作る必要はありません。
 
 状態はコンテナー `conversion-jobs` の **`{jobId}/status.json`** に保存されます。Queue 登録直後はまだ存在しないことがあるため、初回の `404` は未作成として待って再取得します。取得・ポーリングには Blob SDK を利用できます。
 
@@ -155,3 +155,50 @@ python3 scripts/test_async_e2e.py
 ```
 
 この検証は専用の Azurite と Functions を起動し、既存の HTTP→Queue 経路に加えて、直接 Queue への JSON 登録、状態 Blob のポーリング、指定出力先の ZIP と画像寸法、同一依頼の再送、別アカウント間の入力・出力を確認します。`images` モードでは 3 形式の入力、JPEG の単ページ指定、別アカウントの保存先、manifest と個別画像の整合性、ZIP が作られないこと、重複配信で画像が増えないこと、HTTP からの manifest 取得も検証します。接続設定は隔離したテスト用の環境変数と権限を制限した一時設定ファイルだけで扱います。
+
+## Version 2：入力版・付加情報・結果通知
+
+`version: 1` の既存依頼は引き続き使用できます。以下の拡張は `version: 2` を指定します。未知のキー・重複キー・型違いは引き続き拒否し、新しいフィールドをversion 1へ混ぜることはできません。
+
+- `input.expectedETag`：任意。原本のETagを引用符も含めて指定し、不一致は `INPUT_VERSION_MISMATCH`。省略時も実際に読み取ったETagを記録します。
+- `metadata`：任意の文字列マップ。最大16項目、キー64文字・値512文字・全体8KiB以下。IDやrevisionの引き継ぎに使い、秘密情報は含めません。
+- `notification.queue`：任意。管理者が登録した結果Queueのエイリアス。未登録先は拒否します。
+
+```json
+{
+  "version": 2,
+  "jobId": "b6812181-8d03-4cb0-841a-225798074cf9",
+  "input": {
+    "storage": "source",
+    "container": "documents-incoming",
+    "blobName": "originals/slides.pptx",
+    "expectedETag": "\"0x8EXAMPLE\""
+  },
+  "output": {
+    "storage": "archive",
+    "container": "converted-results",
+    "prefix": "exports",
+    "mode": "images",
+    "naming": "page-number"
+  },
+  "metadata": {
+    "documentId": "document-123",
+    "revision": "7"
+  },
+  "notification": {
+    "queue": "completed"
+  }
+}
+```
+
+画像のversion 2では `output.naming` に `padded`（既定の `page-0001.png`）または `page-number`（`1.png`）を指定できます。`page-number` は個別画像モードで使います。元のページ番号と順序はManifestで確認してください。
+
+`source`・`archive`・`completed` は事前登録が必要です。ETagは例をそのまま使わず、実際の原本から取得します。入力版が一致しても、その結果を最新として採用できるかは利用側で現在のrevisionと照合してください。
+
+結果通知はversion 1のイベントで、`eventId`、`jobId`、`status`、`input`（実際の`eTag`）、`metadata`、`result`、`error`、`completedAt`を持ちます。失敗の `error` は固定の `code` と `retryable: false` を返します。ここでfalseはジョブが終端状態である意味です。一時障害の内部再試行中とは区別し、再実行が必要なら新しいjobIdを使います。
+
+通知送信待ちは保存し、失敗時は通知だけを再送します。通知は重複し得るため、受信側でeventIdを照合します。イベントのJSONにはBase64を1回適用します。不正JSONなどjobId・通知先を確定できない依頼には通知できません。
+
+成果物にはサイズ・SHA-256と実際の入力版を記録します。ETagは内容のハッシュではありません。再試行は別の保存先を使い、全出力が揃ってから成功状態を確定します。保存先を推測したり、Blob一覧から途中成果物を拾ったりしないでください。
+
+Managed Identity、結果Queueの登録、リソース事前作成、保持期間は[共通の配置・運用手順](../../../docs/development.md#8-managed-identity閉域storage結果通知)を参照してください。保持機能は既定で無効です。有効時は所有成果物のみを清掃し、状態の保持を終了すると同じjobIdの重複判定も終了します。期限を過ぎて清掃済みの結果取得は `410 JOB_RESULT_EXPIRED` です。

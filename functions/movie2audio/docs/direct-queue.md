@@ -1,6 +1,6 @@
 # Movie2Audioを直接Queueから実行する
 
-動画ファイルをBlobへ保存し、`movie2audio-jobs` Queueへ入出力の参照をJSONで送ります。HTTP受付やPlaygroundを経由せず、同じAAC抽出処理を利用できます。成果物は `audio.m4a` で、ZIPにはしません。
+動画ファイルをBlobへ保存し、`movie2audio-jobs` Queueへ入出力の参照をJSONで送ります。HTTP受付やPlaygroundを経由せず、同じAAC抽出処理を利用できます。既定の成果物は `audio.m4a` です。version 2では `audio.wav` も選択でき、ZIPにはしません。
 
 ## 接続設定と役割
 
@@ -42,7 +42,7 @@ Functions側で `CONVERSION_STORAGE_CONNECTION_STRING` を設定すると、非�
 }
 ```
 
-必須項目は整数の `version: 1`、UUIDの `jobId`、`input.container`・`input.blobName`、`output.container` です。`storage` の省略時は `default`、`prefix` の省略時は空です。`filename` は任意の表示名で、出力名やFFmpegの引数には使いません。`options` や `output.mode` は受け付けません。
+必須項目は整数の `version: 1`、UUIDの `jobId`、`input.container`・`input.blobName`、`output.container` です。`storage` の省略時は `default`、`prefix` の省略時は空です。`filename` は任意の表示名で、出力名やFFmpegの引数には使いません。version 1では `options` を受け付けません。version 2の音声オプションは末尾を参照してください。`output.mode` は両バージョンとも使用しません。
 
 Base64デコード後のJSONは正しいUTF-8で最大48KiBです。重複キー、未知のキー、末尾の追加JSON、不正な型を拒否します。コンテナー名は3〜63文字の小文字英数字・単独ハイフンで先頭末尾は英数字です。Blob名とprefixには制御文字や `.` / `..` のパス区間などを指定できません。ファイル本体をJSONへ含めないでください。
 
@@ -122,7 +122,7 @@ Storageから直接読む場合、成功状態の `result.storage`・`container`
 {output.prefix}/{jobId}/results/{attemptUUID}/audio.m4a
 ```
 
-`attemptUUID` はワーカーが試行ごとに作ります。成功した試行のM4Aだけを `result` で公開します。`result` は保存先に加え、`contentType: "audio/mp4"`、`filename: "audio.m4a"`、`sizeBytes`、`etag` を持ちます。パスを推測して未完了の試行を取得せず、成功状態の記録を使ってください。
+`attemptUUID` はワーカーが試行ごとに作ります。成功した試行の音声だけを `result` で公開します。`result` は保存先に加え、`contentType`、`filename`、`sizeBytes`、`etag` を持ちます。既定は `audio/mp4`・`audio.m4a`、version 2でWAVを指定した場合は `audio/wav`・`audio.wav` です。パスを推測して未完了の試行を取得せず、成功状態の記録を使ってください。
 
 ## 重複・再試行・運用
 
@@ -130,10 +130,61 @@ Storageから直接読む場合、成功状態の `result.storage`・`container`
 
 更新されるBlobリースで同じジョブを排他制御し、試行ごとの保存パスと条件付き書き込みを使います。途中でホストが停止した場合などは再試行できますが、変換自体が常に1回しか走らないことは保証しません。公開される成功結果の一貫性と、処理回数の保証は別です。
 
-不正動画、AAC以外、サイズ上限超過などは失敗として記録します。一時的なStorage障害・実行競合は再試行します。設定は `maxDequeueCount=10`、失敗時の `visibilityTimeout=1分`。上限を超えたメッセージは `movie2audio-jobs-poison` で失敗状態にします。不正JSONやUUIDなど、そもそも有効な依頼として解析できないものは状態Blobを作れません。継続する404の場合はQueueとpoison、ワーカーの状態を確認します。
+不正動画、選択モードで未対応の音声、サイズ上限超過などは失敗として記録します。一時的なStorage障害・実行競合は再試行します。設定は `maxDequeueCount=10`、失敗時の `visibilityTimeout=1分`。上限を超えたメッセージは `movie2audio-jobs-poison` で失敗状態にします。不正JSONやUUIDなど、そもそも有効な依頼として解析できないものは状態Blobを作れません。継続する404の場合はQueueとpoison、ワーカーの状態を確認します。
 
 `batchSize=1`、`newBatchThreshold=0`、動的同時実行を無効にし、Node.jsプロセス内の実行枠は同期HTTPと共有します。水平スケールすると別インスタンスで並列に処理できます。Queueは厳密なFIFOではありません。既定180秒の期限はQueueの各試行に適用し、Queueで待つ時間は含みません。
 
-入力・状態・結果・未完了の試行のBlobは自動削除しません。保持期間とStorageのライフサイクル管理は運用側で決めます。作業用のローカル一時ファイルは処理後に削除します。新規コンテナーは非公開で作成し、既存コンテナーの公開設定は変更しません。
+既定ではBlobを自動削除しません。保持設定を有効にすると、アプリが所有する入力コピー・成果物・試行出力を清掃します。外部原本は対象外です。作業用のローカル一時ファイルは処理後に削除します。新規コンテナーは非公開で作成し、既存コンテナーの公開設定は変更しません。
 
 詳細は[非同期HTTP](../../../docs/APIDocs/movie2audio/jobs.html)と[Queue API資料](../../../docs/APIDocs/movie2audio/queue.html)を参照してください。
+
+## Version 2：入力版・付加情報・結果通知
+
+`version: 1` の既存依頼は引き続き使用できます。以下の拡張は `version: 2` を指定します。未知のキー・重複キー・型違いは引き続き拒否し、新しいフィールドをversion 1へ混ぜることはできません。
+
+- `input.expectedETag`：任意。原本のETagを引用符も含めて指定し、不一致は `INPUT_VERSION_MISMATCH`。省略時も実際に読み取ったETagを記録します。
+- `metadata`：任意の文字列マップ。最大16項目、キー64文字・値512文字・全体8KiB以下。IDやrevisionの引き継ぎに使い、秘密情報は含めません。
+- `notification.queue`：任意。管理者が登録した結果Queueのエイリアス。未登録先は拒否します。
+
+```json
+{
+  "version": 2,
+  "jobId": "b6812181-8d03-4cb0-841a-225798074cf9",
+  "input": {
+    "storage": "source",
+    "container": "documents-incoming",
+    "blobName": "originals/video.mkv",
+    "expectedETag": "\"0x8EXAMPLE\""
+  },
+  "output": {
+    "storage": "archive",
+    "container": "converted-results",
+    "prefix": "exports"
+  },
+  "metadata": {
+    "documentId": "document-123",
+    "revision": "7"
+  },
+  "notification": {
+    "queue": "completed"
+  },
+  "options": {
+    "mode": "transcode",
+    "format": "wav",
+    "sampleRate": 16000,
+    "channels": 1
+  }
+}
+```
+
+Movieのversion 2では `options` に音声形式を指定できます。既定は `mode: "copy"`・`format: "m4a"`。`transcode` ではM4A/AACまたはWAV/16bit PCMを選べます。`sampleRate` と `channels` は省略時に元の値を維持します。copyではレート・チャンネル変更を指定できません。WAVの成果物は `audio.wav`・`audio/wav` です。
+
+`source`・`archive`・`completed` は事前登録が必要です。ETagは例をそのまま使わず、実際の原本から取得します。入力版が一致しても、その結果を最新として採用できるかは利用側で現在のrevisionと照合してください。
+
+結果通知はversion 1のイベントで、`eventId`、`jobId`、`status`、`input`（実際の`eTag`）、`metadata`、`result`、`error`、`completedAt`を持ちます。失敗の `error` は固定の `code` と `retryable: false` を返します。ここでfalseはジョブが終端状態である意味です。一時障害の内部再試行中とは区別し、再実行が必要なら新しいjobIdを使います。
+
+通知送信待ちは保存し、失敗時は通知だけを再送します。通知は重複し得るため、受信側でeventIdを照合します。イベントのJSONにはBase64を1回適用します。不正JSONなどjobId・通知先を確定できない依頼には通知できません。
+
+成果物にはサイズ・SHA-256と実際の入力版を記録します。ETagは内容のハッシュではありません。再試行は別の保存先を使い、全出力が揃ってから成功状態を確定します。保存先を推測したり、Blob一覧から途中成果物を拾ったりしないでください。
+
+Managed Identity、結果Queueの登録、リソース事前作成、保持期間は[共通の配置・運用手順](../../../docs/development.md#8-managed-identity閉域storage結果通知)を参照してください。保持機能は既定で無効です。有効時は所有成果物のみを清掃し、状態の保持を終了すると同じjobIdの重複判定も終了します。期限を過ぎて清掃済みの結果取得は `410 JOB_RESULT_EXPIRED` です。

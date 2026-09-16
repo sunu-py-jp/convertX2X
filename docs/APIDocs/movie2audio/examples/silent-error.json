@@ -1,0 +1,6 @@
+{
+  "error": {
+    "code": "NO_AUDIO_STREAM",
+    "message": "The video does not contain an audio stream."
+  }
+}

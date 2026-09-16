@@ -131,7 +131,7 @@ test('closing the SDK proxy destroys the handler file stream, removes files and 
     allowedHosts: new Set(), urlEnabled: false };
   const handlers = createHandlers(config, { temporaryRoot,
     extract: async (input, output) => { await writeFile(output, Buffer.alloc(64 * CHUNK)); } });
-  const request = () => ({ headers: new Headers({ 'content-type': 'application/octet-stream' }),
+  const request = () => ({ url: 'http://localhost/api/convert', headers: new Headers({ 'content-type': 'application/octet-stream' }),
     body: new Response(Buffer.from('test video')).body });
   const first = await handlers.convert(request(), {});
   assert.equal(first.status, 200);

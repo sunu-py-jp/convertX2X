@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>実際の変換例 | office2md API</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+  <script src="../assets/app.js" defer></script>
+</head>
+<body data-page="office-examples">
+<a class="skip-link" href="#main-content">本文へ移動</a>
+<div id="site-header"></div>
+<aside id="sidebar" class="sidebar" aria-label="APIナビゲーション"></aside>
+<div id="menu-overlay" class="menu-overlay" hidden></div>
+<main id="main-content" class="main-content" tabindex="-1">
+<div class="page-layout">
+<article class="article">
+<p class="eyebrow">Office → Markdown / Actual examples</p>
+<h1>実際の変換例</h1>
+<p class="lead">複数シートのExcel、変更履歴を含むWord、グループ図形を含むPowerPointを、実際のAPIとPlaygroundで変換しました。入力・変換結果・警告をまとめて確認できます。</p>
+<p>すべてこのリポジトリで作成したオリジナル資料です。掲載画像は実行後のPlaygroundを撮影したもので、変換結果の文章や図を補正していません。出力ZIPには <code>document.md</code>・<code>report.json</code>・<code>images/</code> が入っています。</p>
+<div class="cards example-index"><a class="card" href="#excel"><h3>Excel：13シートの包括例</h3><p>文章、7個の表、数式キャッシュ、図形・画像、非表示・未対応要素を一度に確認。</p></a><a class="card" href="#word"><h3>Word：変更履歴と脚注</h3><p>見出し、罫線なしの結合表、番号、脚注、回転図形と画像。</p></a><a class="card" href="#powerpoint"><h3>PowerPoint：表と個別図形</h3><p>4表示＋1非表示スライド。グループの図形・接続線・リンク・日本語を抽出。</p></a></div>
+<div class="callout"><p>このページは<strong>同期HTTP</strong>の実行例です。非同期HTTP・直接Queueも同じ変換コアを使いますが、ここでQueue経由の動作やAzure上の性能を測定したものではありません。Markdownでは元資料の横並び・重なりを再現せず、位置情報を図形のaltテキストへ残します。</p></div>
+<section class="sample-case" aria-labelledby="excel">
+<h2 id="excel">Excel：文章・表・図形・未対応要素を含む13シート</h2>
+<p>13シートから、出力内容のある8シートを残します。非表示2シートと空・取消線のみ・罫線のみの3シートは除外されます。7個の罫線表、部分太字・リンク・取消線、結合セル、保存済みの数式結果、画像の重複、入れ子グループ・回転・接続線・未対応グラフを同じファイルに含めています。</p>
+<p class="sample-meta">HTTP 200 · 入力 151,182 bytes · ZIP 301,579 bytes · 8 出力シート · 34 アセット · 警告 17 件</p>
+<div class="sample-links"><a href="examples/excel-complex/input.xlsx" download>入力 XLSX</a><a href="examples/excel-complex/result.zip" download>実際の出力 ZIP</a><a href="examples/excel-complex/output/document.md" download>document.md</a><a href="examples/excel-complex/output/report.json">report.json</a><a href="examples/excel-complex/run.json">実行記録・SHA-256</a></div>
+<div class="screenshot-grid">
+<figure class="example-figure"><a href="examples/excel-complex/screenshots/section-01.png"><img src="examples/excel-complex/screenshots/section-01.png" alt="Excelの文章・部分太字・リンク・取消線除去後の実際のMarkdownプレビュー" loading="lazy"></a><figcaption>文章シートの実出力。シート名がH1になり、部分太字・リンクが残り、取消線の文字は除外されています。 画像をクリックすると原寸で表示します。</figcaption></figure>
+<figure class="example-figure"><a href="examples/excel-complex/screenshots/tables-detail.png"><img src="examples/excel-complex/screenshots/tables-detail.png" alt="Excelの閉じた罫線が複数のMarkdown表になった実際の結果" loading="lazy"></a><figcaption>表シートの先頭790pxを撮影。横並びだった表も文書の順序で並び、結合セルの続きは空欄です。<a href="examples/excel-complex/screenshots/section-02.png">シート全体</a>。 画像をクリックすると原寸で表示します。</figcaption></figure>
+<figure class="example-figure"><a href="examples/excel-complex/screenshots/group-detail.png"><img src="examples/excel-complex/screenshots/group-detail.png" alt="Excelグループ内の角丸図形、楕円、埋め込み画像が個別画像として並ぶ実際の結果" loading="lazy"></a><figcaption>グループシートの先頭1000px。図形・線は個別画像として並び、合成しません。<a href="examples/excel-complex/screenshots/section-06.png">入れ子・重なりを含むシート全体</a>。 画像をクリックすると原寸で表示します。</figcaption></figure>
+<figure class="example-figure"><a href="examples/excel-complex/screenshots/section-07.png"><img src="examples/excel-complex/screenshots/section-07.png" alt="Excelのグラフや未対応図形の代替表示、縦書きの近似、加工画像の実変換結果" loading="lazy"></a><figcaption>未対応要素も含む出力。グラフは描画されず、星形の代替文、縦書きの横書き近似、切り抜き前の原本画像が見えます。 画像をクリックすると原寸で表示します。</figcaption></figure>
+</div>
+<p>数式は再計算しません。<code>1+2</code> に意図的に保存したキャッシュ <code>999</code> は、出力も <code>999</code> です。<code>IMAGE</code> 関数の画像は取得せず未対応表示になります。34アセットにはPNG/JPEGとBMP添付を含み、同一画像の複数配置では画像ファイルを共有します。</p>
+<details class="sample-details"><summary>実際のMarkdown抜粋：表</summary><pre><code>|  |  |  |  |
+| --- | --- | --- | --- |
+| **項目** | **数量** |  | **備考** |
+| 売上 | 12 |  | 通常と**重要**の混在 |
+|  |  |  |  |
+| 予算 | 0 |  | 上限 \| 下限 |
+| 取消線 |  |  | 残る説明 |
+| リンク |  |  | [表のリンク&lt;br&gt;2行目](https://example.com/table) |
+
+|  |  |  |
+| --- | --- | --- |
+| **別の表** | **値** | **状態** |
+| 東日本 | 100 | OK |
+| 西日本 | 200 | OK |
+| 合計 | 300 | 完了 |
+
+|  |  |  |
+| --- | --- | --- |
+| **片側罫線** | **値** | **備考** |
+| 中段 | 2 |  |
+| 最終行 | 3 | 閉じた格子 |
+
+|  |  |
+| --- | --- |
+| **可視の項目** | **値** |
+| 表示される行 | 42 |
+| 末尾 | 43 |
+
+|  |  |  |
+| --- | --- | --- |
+| **結合した見出し** |  |  |
+| A項目 | 10 | 完了 |
+| B項目 | 20 | 確認中 |
+| C項目 | 30 | 完了 |
+
+| **商品名** | **個数** | **単位** |
+| --- | --- | --- |
+| りんご | 3 | 個 |
+| みかん | 5 | 個 |
+| バナナ | 2 | 本 |
+
+スタイルだけの表　値　備考  
+データA　10　直接罫線なし  
+データB　20　文章として出力  
+データC　30
+
+**単一セルの囲みは文章**　**閉じていない罫線**　**値**　**備考**  
+途中の行　10　文章として保持  
+最終の行　20　右下の外周が欠ける
+
+下線だけでは表にしません
+
+条件付き書式の見た目は再評価せず、通常の保存値と直接書式を使います。  
+100</code></pre></details>
+<details class="sample-details"><summary>実際のMarkdown抜粋：数式キャッシュと外部画像</summary><pre><code>保存キャッシュ999（数式は1\+2）　999  
+数式の通貨表示　¥12,345
+
+キャッシュなしの数式　=1\+2
+
+リンク先と表示が文字列リテラル　[数式の公式リンク](https://poi.apache.org/spreadsheet/)  
+リンク先は固定、表示は保存値　[保存されたリンク表示](https://example.com/cached)  
+リンク先が動的ならリンク化しない　動的なリンク表示
+
+IMAGE関数は取得しない　\[セル内画像: 未対応\]
+
+取消線がある数値も除外</code></pre></details>
+<details class="sample-details"><summary>実際のreport.json抜粋：未対応・近似の警告</summary><pre><code>[
+  {
+    &quot;code&quot;: &quot;TABLE_MERGE_FLATTENED&quot;,
+    &quot;section&quot;: &quot;02_罫線の表&quot;,
+    &quot;range&quot;: &quot;A20:C23&quot;,
+    &quot;message&quot;: &quot;Markdown表はセル結合を再現できないため、結合の続きは空欄です。&quot;
+  },
+  {
+    &quot;code&quot;: &quot;CELL_IMAGE_UNSUPPORTED&quot;,
+    &quot;section&quot;: &quot;03_表示値と数式&quot;,
+    &quot;range&quot;: &quot;C26&quot;,
+    &quot;message&quot;: &quot;IMAGE関数の画像は取得しません。&quot;
+  },
+  {
+    &quot;code&quot;: &quot;GRAPHIC_FRAME_UNSUPPORTED&quot;,
+    &quot;section&quot;: &quot;07_未対応と加工&quot;,
+    &quot;range&quot;: &quot;E4:Q15&quot;,
+    &quot;message&quot;: &quot;グラフ・SmartArtなどの描画は未対応です。&quot;
+  },
+  {
+    &quot;code&quot;: &quot;DRAWING_TEXT_APPROXIMATED&quot;,
+    &quot;section&quot;: &quot;07_未対応と加工&quot;,
+    &quot;range&quot;: &quot;N20:Q30&quot;,
+    &quot;message&quot;: &quot;縦書き・縦方向の文字組みは横書きに近似します。&quot;
+  },
+  {
+    &quot;code&quot;: &quot;IMAGE_EFFECTS_IGNORED&quot;,
+    &quot;section&quot;: &quot;07_未対応と加工&quot;,
+    &quot;range&quot;: &quot;A33:G44&quot;,
+    &quot;message&quot;: &quot;元画像を抽出します。切り抜き前の領域を含み、切り抜き・回転・反転・画像効果は反映しません。配置は代替テキストに記録します。&quot;
+  }
+]</code></pre></details>
+<figure class="example-figure"><a href="examples/excel-complex/screenshots/warnings.png"><img src="examples/excel-complex/screenshots/warnings.png" alt="Excel変換が返した17件の警告を展開したPlaygroundの実際の表示" loading="lazy"></a><figcaption>17件の警告を展開して撮影。条件付き書式・動的リンク・グラフ・加工画像など、変換で省略または近似した内容を記録しています。 画像をクリックすると原寸で表示します。</figcaption></figure>
+<p><a href="examples/excel-complex/screenshots/overview.png">Playground全体</a> · <a href="examples/excel-complex/screenshots/markdown-source.png">Markdownタブの画面</a>。入力の3か所の説明ラベルは、現在の「図形ごとの出力」に合わせています。数式・図形・書式等の構造は元の包括サンプルと同じです。</p>
+</section>
+<section class="sample-case" aria-labelledby="word">
+<h2 id="word">Word：変更履歴・結合表・脚注・回転図形</h2>
+<p>H1/H2の明示的な見出し、太字とリンク、取消線、挿入・削除の変更履歴、罫線なしの結合表、3から始まる番号、脚注、15度回転した日本語の図形、埋め込みPNGを含む文書です。</p>
+<p class="sample-meta">HTTP 200 · 入力 10,457 bytes · ZIP 24,100 bytes · 1 文書 · 2 アセット · 警告 1 件</p>
+<div class="sample-links"><a href="examples/word-complex/input.docx" download>入力 DOCX</a><a href="examples/word-complex/result.zip" download>実際の出力 ZIP</a><a href="examples/word-complex/output/document.md" download>document.md</a><a href="examples/word-complex/output/report.json">report.json</a><a href="examples/word-complex/run.json">実行記録・SHA-256</a></div>
+<div class="screenshot-grid">
+<figure class="example-figure"><a href="examples/word-complex/screenshots/section-01.png"><img src="examples/word-complex/screenshots/section-01.png" alt="Wordの見出し、表、脚注、回転した日本語図形、PNGの実際のMarkdownプレビュー" loading="lazy"></a><figcaption>文書全体のプレビュー。挿入文は残り、削除履歴・取消線の文字は出力に含まれません。図形と埋め込み画像はそれぞれ別ファイルです。 画像をクリックすると原寸で表示します。</figcaption></figure>
+<figure class="example-figure"><a href="examples/word-complex/screenshots/markdown-source.png"><img src="examples/word-complex/screenshots/markdown-source.png" alt="Word変換で生成した見出しと表と脚注参照のMarkdownタブ" loading="lazy"></a><figcaption>実際のMarkdownタブ。画面内はスクロール表示です。全ソースは上のdocument.mdから取得できます。 画像をクリックすると原寸で表示します。</figcaption></figure>
+</div>
+<p>Wordは印刷ページを画像化していません。本文の構造をMarkdownにし、回転図形は近似描画します。この例の図形はページ上の絶対座標を持たないため、altにも「ページ位置未算出」「位置・サイズ不明」と明記されます。</p>
+<details class="sample-details"><summary>実際のMarkdown全文</summary><pre><code># **Word → Markdown の表示確認**
+
+日本語の通常文です。見た目の文字サイズから見出しは推測しません。
+
+## **文字と最終版の変更履歴**
+
+太字：**重要な日本語** ／ [Apache POI 公式](https://poi.apache.org/)
+
+保存済みの最終版：追加した文を保持します。
+
+## **罫線のない Word の表**
+
+| 項目 | 結果 |
+| --- | --- |
+| 表の構造 | 罫線がなくても Markdown 表になります。 |
+| 結合セルは左上に文字を保持します。 |  |
+
+## **番号と脚注**
+
+3\. 番号は元の開始値 3 を保持します。
+
+4\. 参照付きの脚注です。[^footnote-1]
+
+## **時計回りに回転した日本語の図形**
+
+![角丸長方形、時計回り15度、日本語の図形 時計回り 15 度、基準=VML、paragraph:11、ローカル座標（ページ位置未算出）、保存配置: position=不明、水平基準=不明、垂直基準=不明、left未指定、top未指定、位置・サイズ不明（保存サイズ 幅=280pt、高さ=100pt）](images/diagram-0001.png)
+
+## **埋め込み PNG 画像**
+
+![画像、時計回り0度、shapes.png、基準=本文内、paragraph:13、ローカル座標（ページ位置未算出）、外接矩形 X=0pt、Y=0pt、幅=360pt、高さ=120pt](images/image-0001.png)
+
+[^footnote-1]: 脚注は本文の参照順に末尾へまとめます。</code></pre></details>
+<details class="sample-details"><summary>実際のreport.json：図形文字の近似警告</summary><pre><code>[
+  {
+    &quot;code&quot;: &quot;DRAWING_TEXT_APPROXIMATED&quot;,
+    &quot;section&quot;: &quot;document&quot;,
+    &quot;range&quot;: &quot;paragraph:11&quot;,
+    &quot;message&quot;: &quot;Word図形内の文字は取消線・非表示を除去して簡易描画します。段落ごとの書式・余白・文字回転は近似です。&quot;
+  }
+]</code></pre></details>
+<p><a href="examples/word-complex/output/images/diagram-0001.png">抽出された図形PNG</a> · <a href="examples/word-complex/output/images/image-0001.png">埋め込み画像PNG</a> · <a href="examples/word-complex/screenshots/overview.png">Playground全体</a></p>
+</section>
+<section class="sample-case" aria-labelledby="powerpoint">
+<h2 id="powerpoint">PowerPoint：罫線なし表・グループ・接続線・非表示要素</h2>
+<p>5枚のうち4枚が表示スライドです。日本語・番号・箇条書き・リンク・取消線、罫線のない結合表、5度回転した角丸図形と楕円・接続線のグループ、非表示図形、ノート、埋め込み画像を含みます。</p>
+<p class="sample-meta">HTTP 200 · 入力 37,283 bytes · ZIP 21,236 bytes · 4 表示スライド · 4 アセット · 警告 1 件</p>
+<div class="sample-links"><a href="examples/powerpoint-complex/input.pptx" download>入力 PPTX</a><a href="examples/powerpoint-complex/result.zip" download>実際の出力 ZIP</a><a href="examples/powerpoint-complex/output/document.md" download>document.md</a><a href="examples/powerpoint-complex/output/report.json">report.json</a><a href="examples/powerpoint-complex/run.json">実行記録・SHA-256</a></div>
+<div class="screenshot-grid">
+<figure class="example-figure"><a href="examples/powerpoint-complex/screenshots/section-02.png"><img src="examples/powerpoint-complex/screenshots/section-02.png" alt="PowerPointの罫線なしの結合表を実際にMarkdown表へ変換した表示" loading="lazy"></a><figcaption>ネイティブ表をMarkdown表へ変換。明示ヘッダーがないため空のヘッダーを追加し、元の先頭行と結合セルの文字を残します。 画像をクリックすると原寸で表示します。</figcaption></figure>
+<figure class="example-figure"><a href="examples/powerpoint-complex/screenshots/section-03.png"><img src="examples/powerpoint-complex/screenshots/section-03.png" alt="PowerPointの角丸図形、リンク、楕円、接続線の個別画像による実際のMarkdown表示" loading="lazy"></a><figcaption>グループの子要素を個別に出力。図形内の日本語・回転が画像に残り、元のX/Y座標はaltに記録されます。横並びや接続関係は画面上で再現しません。 画像をクリックすると原寸で表示します。</figcaption></figure>
+</div>
+<p>非表示スライド・非表示図形・ノート・取消線文字は、この例のMarkdownに含まれません。図形内のリンクは画像の後に通常リンクとして残ります。入力スライド全体の画像ではなく、文章・表・図形を分けた成果物です。</p>
+<details class="sample-details"><summary>実際のMarkdown全文：図形名・回転・文字・座標を含む</summary><pre><code># PowerPointからMarkdownへ
+
+日本語の本文・箇条書き・表・図・画像の実変換サンプルです。
+
+3\. 保存した番号を保つ
+4\. 外部コンテンツを取得しない
+- 日本語と English ABC123 を保持
+
+[資料へのリンク](https://example.com/reference)
+
+# 罫線なしの表もMarkdown表に
+
+|  |  |  |
+| --- | --- | --- |
+| 担当 | 内容 | 状態 |
+| 開発 | 日本語と保存済み書式 | 完了 |
+| 検証 | 入力ファイルから実際に変換 | 実施中 |
+| 結合セルは開始セルだけに残す |  |  |
+
+# 図は画像と説明文として残す
+
+![角丸長方形、時計回り5度、入力ファイル、基準=スライド左上、外接矩形 X=54.432pt、Y=158.065pt、幅=291.136pt、高さ=163.871pt](images/diagram-0001.png)
+
+[入力ファイル](https://example.com/input)
+
+![楕円、時計回り0度、Markdownと画像、基準=スライド左上、外接矩形 X=540pt、Y=170pt、幅=280pt、高さ=140pt](images/diagram-0002.png)
+
+![接続線、時計回り0度、基準=スライド左上、外接矩形 X=340pt、Y=240pt、幅=200pt、高さ=0pt](images/diagram-0003.png)
+
+図内の文字は画像説明に含め、本文に重ねて出力しません。
+
+# 保存済みの埋め込み画像
+
+![画像、時計回り0度、紺色背景と紫色の円、基準=スライド左上、外接矩形 X=80pt、Y=130pt、幅=640pt、高さ=360pt](images/image-0001.png)</code></pre></details>
+<details class="sample-details"><summary>実際のreport.json：表の結合を平坦化した警告</summary><pre><code>[
+  {
+    &quot;code&quot;: &quot;TABLE_MERGE_FLATTENED&quot;,
+    &quot;section&quot;: &quot;スライド2&quot;,
+    &quot;range&quot;: &quot;shape-3&quot;,
+    &quot;message&quot;: &quot;Markdown表では結合の開始セルだけに内容を残します。&quot;
+  }
+]</code></pre></details>
+<p><a href="examples/powerpoint-complex/output/images/diagram-0001.png">角丸図形PNG</a> · <a href="examples/powerpoint-complex/output/images/diagram-0002.png">楕円PNG</a> · <a href="examples/powerpoint-complex/screenshots/overview.png">Playground全体</a> · <a href="examples/powerpoint-complex/screenshots/markdown-source.png">Markdownタブの画面</a></p>
+</section>
+<h2 id="reproduce">再現方法と記録の読み方</h2>
+<p>2026年9月16日に、macOS arm64 / Java 21 / Azure Functions Core Tools のローカルホストで実行しました。<code>POST /api/convert?filename=input.xlsx</code> 等へファイル全体を送信し、HTTP 200のZIPを保存しています。オプションは既定値です。認証キーや外部Storageの設定は実行記録に含めていません。</p>
+<pre><code>curl --fail-with-body \
+  -H 'Content-Type: application/octet-stream' \
+  --data-binary @docs/APIDocs/office2md/examples/excel-complex/input.xlsx \
+  'http://localhost:7072/api/convert?filename=input.xlsx' \
+  -o result.zip</code></pre>
+<p>各 <code>run.json</code> に入力・出力ZIP・展開ファイル・スクリーンショットのSHA-256、HTTP結果、実行環境を保存しています。記録された時間はローカルの送信からZIP展開・プレビュー生成までで、Azureの起動時間・ネットワーク・同時処理性能の目安にはなりません。</p>
+<p>セクション別のスクリーンショットは、実際のプレビューのスクロール領域と画像の高さ上限を広げ、ほかのセクションを一時的に非表示にして撮影しました。Excelの表・グループの詳細画像は、それぞれ先頭790px・1000pxの切り出しです。本文・画像・成果物は変更していません。通常の画面も各ケースの「Playground全体」で確認できます。</p>
+<p><a href="examples/README.md">再現・検証手順</a> · <a href="examples/capture.cjs">実行と撮影のスクリプト</a> · <a href="examples/prepare_inputs.py">入力コピーの作成手順</a> · <a href="index.html#drawings">図形の変換ルール</a> · <a href="http.html#convert">HTTP API仕様</a></p>
+<footer class="page-footer"><p>実測確認：2026-09-16。成功した例でも、未対応・近似の情報はreport.jsonに残ります。</p></footer>
+</article>
+<aside class="toc" aria-label="このページの目次"><p class="toc-title">このページの内容</p><nav id="page-toc"></nav></aside>
+</div></main></body></html>

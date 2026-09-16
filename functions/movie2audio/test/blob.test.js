@@ -280,3 +280,10 @@ test('already-aborted invocation does not perform DNS or PUT', async t => {
   assert.equal(calls.dns.length, 0);
   assert.equal(calls.requests.length, 0);
 });
+
+test('WAV output uses the validated audio/wav media type in its actual Azure PUT', async t => {
+  const calls = mockRemote(t);
+  await uploadAudio(await audioFile(t), sas, options({ contentType: 'audio/wav' }));
+  assert.equal(calls.requests[0].settings.headers['Content-Type'], 'audio/wav');
+  await assert.rejects(uploadAudio('/not-opened', sas, options({ contentType: 'text/html' })), hasCode('STORAGE_ERROR'));
+});

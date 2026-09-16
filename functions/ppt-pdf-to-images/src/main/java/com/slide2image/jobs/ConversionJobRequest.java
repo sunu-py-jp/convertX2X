@@ -10,12 +10,21 @@ import com.slide2image.conversion.ConversionOptions;
 import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.Locale;
+import java.util.Map;
+import java.util.TreeMap;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.Set;
 import java.util.UUID;
 
 /** A versioned queue request. Storage names refer to server-configured aliases, never credentials or URLs. */
 public record ConversionJobRequest(int version, String jobId, BlobSource input, BlobOutput output,
-                                   String filename, ConversionOptions options) {
+                                   String filename, ConversionOptions options, Map<String, String> metadata, Notification notification) {
+    public ConversionJobRequest(int version, String jobId, BlobSource input, BlobOutput output,
+            String filename, ConversionOptions options) {
+        this(version, jobId, input, output, filename, options, Map.of(), null);
+    }
+    public ConversionJobRequest { metadata = metadata == null ? Map.of() : Map.copyOf(metadata); }
+    public record Notification(String queue) {}
     public static final int VERSION = 1;
     public static final int MAX_MESSAGE_BYTES = 48 * 1024;
 
@@ -24,16 +33,19 @@ public record ConversionJobRequest(int version, String jobId, BlobSource input, 
             .enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
             .build();
 
-    public record BlobSource(String storage, String container, String blobName) {
+    public record BlobSource(String storage, String container, String blobName, String expectedETag) {
+        public BlobSource(String storage, String container, String blobName) { this(storage, container, blobName, null); }
         public BlobSource(String container, String blobName) {
             this("default", container, blobName);
         }
     }
 
-    public record BlobOutput(String storage, String container, String prefix, String mode) {
+    public record BlobOutput(String storage, String container, String prefix, String mode, String naming) {
+        public BlobOutput(String storage, String container, String prefix, String mode) { this(storage, container, prefix, mode, "padded"); }
         public BlobOutput {
             // Also preserve equality with persisted requests created before mode was introduced.
             mode = mode == null ? "zip" : mode;
+            naming = naming == null ? "padded" : naming;
         }
 
         public BlobOutput(String storage, String container, String prefix) {
@@ -58,15 +70,33 @@ public record ConversionJobRequest(int version, String jobId, BlobSource input, 
             // Parser exceptions can include parts of the producer's original payload.
             throw invalid("The queue message is not valid JSON.");
         }
-        object(root, "message", Set.of("version", "jobId", "input", "output", "filename", "options"));
+        if (root == null || !root.isObject()) throw invalid("message must be an object.");
         JsonNode versionNode = root.get("version");
         if (versionNode == null || !versionNode.isIntegralNumber() || !versionNode.canConvertToInt()) {
-            throw invalid("version must be the integer 1.");
+            throw invalid("version must be the integer 1 or 2.");
         }
+        boolean v2 = versionNode.intValue() == 2;
+        object(root, "message", v2 ? Set.of("version", "jobId", "input", "output", "filename", "options", "metadata", "notification")
+                : Set.of("version", "jobId", "input", "output", "filename", "options"));
         JsonNode inputNode = root.get("input");
-        object(inputNode, "input", Set.of("storage", "container", "blobName"));
+        object(inputNode, "input", v2 ? Set.of("storage", "container", "blobName", "expectedETag") : Set.of("storage", "container", "blobName"));
         JsonNode outputNode = root.get("output");
-        object(outputNode, "output", Set.of("storage", "container", "prefix", "mode"));
+        object(outputNode, "output", v2 ? Set.of("storage", "container", "prefix", "mode", "naming") : Set.of("storage", "container", "prefix", "mode"));
+        Map<String, String> metadata = new TreeMap<>();
+        JsonNode meta = root.get("metadata");
+        if (meta != null) {
+            if (!meta.isObject()) throw invalid("metadata must be a flat string map.");
+            meta.fields().forEachRemaining(e -> {
+                if (!e.getValue().isTextual()) throw invalid("metadata values must be strings.");
+                metadata.put(e.getKey(), e.getValue().textValue());
+            });
+        }
+        Notification notification = null;
+        JsonNode notify = root.get("notification");
+        if (notify != null && !notify.isNull()) {
+            object(notify, "notification", Set.of("queue"));
+            notification = new Notification(requiredString(notify, "queue"));
+        }
         ConversionOptions options = null;
         JsonNode optionsNode = root.get("options");
         if (optionsNode != null) {
@@ -75,15 +105,22 @@ public record ConversionJobRequest(int version, String jobId, BlobSource input, 
                     optionalString(optionsNode, "format"), optionalPositiveInteger(optionsNode, "page"));
         }
         return new ConversionJobRequest(versionNode.intValue(), requiredString(root, "jobId"),
-                new BlobSource(optionalString(inputNode, "storage"), requiredString(inputNode, "container"), requiredString(inputNode, "blobName")),
+                new BlobSource(optionalString(inputNode, "storage"), requiredString(inputNode, "container"), requiredString(inputNode, "blobName"), optionalString(inputNode, "expectedETag")),
                 new BlobOutput(optionalString(outputNode, "storage"), requiredString(outputNode, "container"),
-                        optionalString(outputNode, "prefix"), optionalString(outputNode, "mode")),
-                optionalString(root, "filename"), options).normalized();
+                        optionalString(outputNode, "prefix"), optionalString(outputNode, "mode"), optionalString(outputNode, "naming")),
+                optionalString(root, "filename"), options, metadata, notification).normalized();
     }
 
     public String toJson() {
         try {
-            String message = JSON.writeValueAsString(normalized());
+            ConversionJobRequest normalized = normalized();
+            ObjectNode wire = JSON.valueToTree(normalized);
+            if (version == 1) {
+                wire.remove("metadata"); wire.remove("notification");
+                ((ObjectNode) wire.get("input")).remove("expectedETag");
+                ((ObjectNode) wire.get("output")).remove("naming");
+            }
+            String message = JSON.writeValueAsString(wire);
             if (message.getBytes(StandardCharsets.UTF_8).length > MAX_MESSAGE_BYTES) {
                 throw invalid("The queue message must contain JSON of at most 48 KiB.");
             }
@@ -95,13 +132,39 @@ public record ConversionJobRequest(int version, String jobId, BlobSource input, 
 
     /** Also validate programmatically constructed requests before persistence or publication. */
     public ConversionJobRequest normalized() {
-        if (version != VERSION) {
-            throw invalid("Only queue message version 1 is supported.");
+        if (version != 1 && version != 2) {
+            throw invalid("Only queue message versions 1 and 2 are supported.");
+        }
+        if (version == 1 && (!metadata.isEmpty() || notification != null
+                || (input != null && input.expectedETag() != null)
+                || (output != null && !"padded".equals(output.naming())))) {
+            throw invalid("The requested fields require queue message version 2.");
+        }
+        if (metadata.size() > 16) throw invalid("metadata supports at most 16 entries.");
+        for (var entry : metadata.entrySet()) {
+            if (entry.getKey().isBlank() || entry.getKey().length() > 64 || entry.getValue().length() > 512
+                    || entry.getKey().codePoints().anyMatch(Character::isISOControl)
+                    || entry.getValue().codePoints().anyMatch(Character::isISOControl)) {
+                throw invalid("metadata keys and values exceed the supported size or contain control characters.");
+            }
+        }
+        try {
+            if (JSON.writeValueAsBytes(metadata).length > 8192) throw invalid("metadata exceeds 8 KiB.");
+        } catch (JsonProcessingException failure) { throw invalid("metadata is invalid."); }
+        if (notification != null) {
+            if (notification.queue() == null) throw invalid("notification.queue must be a registered alias.");
+            normalizeStorageAlias(notification.queue());
         }
         String id = normalizeJobId(jobId);
         if (input == null || output == null) {
             throw invalid("input and output blob references are required.");
         }
+        if (input.expectedETag() != null && (input.expectedETag().isBlank() || input.expectedETag().length() > 256
+                || input.expectedETag().equals("*") || input.expectedETag().codePoints().anyMatch(Character::isISOControl)))
+            throw invalid("input.expectedETag must be a specific ETag of at most 256 characters.");
+        if (!Set.of("padded", "page-number").contains(output.naming())
+                || (!output.mode().equals("images") && !output.naming().equals("padded")))
+            throw invalid("output.naming must be padded, or page-number for images mode.");
         validateContainer(input.container());
         validateContainer(output.container());
         String inputStorage = normalizeStorageAlias(input.storage());
@@ -138,9 +201,9 @@ public record ConversionJobRequest(int version, String jobId, BlobSource input, 
         if (!format.equals("png") && !format.equals("jpeg")) {
             throw invalid("options.format must be png or jpeg.");
         }
-        return new ConversionJobRequest(VERSION, id, new BlobSource(inputStorage, input.container(), input.blobName()),
-                new BlobOutput(outputStorage, output.container(), prefix, output.mode()), name,
-                new ConversionOptions(selected.width(), format, selected.page()));
+        return new ConversionJobRequest(version, id, new BlobSource(inputStorage, input.container(), input.blobName(), input.expectedETag()),
+                new BlobOutput(outputStorage, output.container(), prefix, output.mode(), output.naming()), name,
+                new ConversionOptions(selected.width(), format, selected.page()), metadata, notification);
     }
 
     public static String normalizeJobId(String id) {

@@ -28,8 +28,10 @@ FLAGS = [
     "--disable-autodetect", "--disable-network", "--disable-everything",
     "--disable-doc", "--disable-ffplay", "--disable-avdevice", "--disable-debug",
     "--disable-asm", "--disable-iamf", "--enable-small", "--enable-protocol=file",
-    "--enable-demuxer=mov,matroska,avi,mpegts,flv", "--enable-muxer=ipod",
-    "--enable-parser=aac,aac_latm", "--enable-decoder=aac",
+    "--enable-demuxer=mov,matroska,avi,mpegts,flv,wav", "--enable-muxer=ipod,wav",
+    "--enable-parser=aac,aac_latm,mpegaudio,opus",
+    "--enable-decoder=aac,opus,mp3,mp3float,pcm_s16le,pcm_s16be,pcm_s24le,pcm_s24be,pcm_s32le,pcm_s32be,pcm_u8,pcm_f32le,pcm_f64le",
+    "--enable-encoder=aac,pcm_s16le", "--enable-filter=aresample,aformat,anull",
     "--enable-bsf=aac_adtstoasc",
 ]
 NOTICES = [

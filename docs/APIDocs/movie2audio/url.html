@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Movie2AudioのAPIリファレンス。動画ファイル・許可済みHTTPS URLからAACを再エンコードせずM4Aへ抽出。">
+<meta name="description" content="Movie2AudioのAPIリファレンス。動画からAACをコピー、または対応する音声をM4A・WAVへ変換。">
 <title>HTTPS URLから抽出 · Movie2Audio API</title>
 <link rel="stylesheet" href="../assets/styles.css">
 <script src="../assets/app.js" defer></script>
@@ -16,7 +16,7 @@
 <main id="main-content" class="main-content" tabindex="-1">
 <div class="page-layout">
 <article class="article">
-<p class="eyebrow">Movie → AAC</p>
+<p class="eyebrow">Movie → Audio</p>
 <h1>HTTPS URLから抽出</h1>
 <p class="lead">事前に許可したホストの直接ファイルURLを送り、取得した動画からAACを抽出します。</p>
 
@@ -50,6 +50,7 @@
 <p>取得した動画自体がAAC抽出の条件を満たさない場合は、ファイル入力と同じ変換エラーになります。<a href="settings.html#errors">共通のエラー一覧</a>を参照してください。</p>
 
 <p>ジョブIDを受け取って後から結果を取得する場合は <a href="jobs.html">非同期HTTP</a>、他システムから登録済みBlobを処理する場合は <a href="queue.html">直接Queue</a> を使います。SAS保存APIは同期専用です。</p>
+<p>音声形式の選択は<a href="http.html#audio-options">共通の音声オプション</a>を参照してください。URL・SASの本文形式は変更せず、受付URLのクエリで指定します。</p>
 <footer class="page-footer"><p>最終確認：2026-09-15。<a href="../../../functions/movie2audio/docs/usage.md">利用ガイド</a> · <a href="../../movie2audio.md">開発者向け実装ガイド</a></p></footer>
 </article>
 <aside class="toc" aria-label="このページの目次"><p class="toc-title">このページの内容</p><nav id="page-toc"></nav></aside>

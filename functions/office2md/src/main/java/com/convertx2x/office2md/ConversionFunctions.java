@@ -148,6 +148,18 @@ public class ConversionFunctions {
         }
     }
 
+    @FunctionName("MaintainConversions")
+    public void maintenance(@com.microsoft.azure.functions.annotation.TimerTrigger(name = "timer", schedule = "0 */5 * * * *")
+                            String timer, ExecutionContext context) {
+        if (!config.asyncEnabled() || (config.integration().resultQueues().isEmpty()
+                && config.integration().resultRetentionDays() == 0)) return;
+        try { jobs.get().maintenance(); }
+        catch (RuntimeException failure) {
+            logQueueFailure(context, failure);
+            throw new IllegalStateException("Conversion maintenance failed; a later timer run will retry.");
+        }
+    }
+
     private static void logQueueFailure(ExecutionContext context, RuntimeException failure) {
         String code = failure instanceof ConversionException conversion ? "; code=" + conversion.code() : "";
         context.getLogger().warning("Queue request failed: " + failure.getClass().getSimpleName()

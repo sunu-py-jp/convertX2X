@@ -18,6 +18,7 @@
   const groups = [
     {id: 'images', title: 'PowerPoint / PDF → 画像', subtitle: 'PPTX · PPT · PDF', icon: 'image', folder: 'ppt-pdf-to-images', items: [
       ['overview', '機能概要・出力形式', 'index.html', 'png jpeg zip ページ スライド 画像'],
+      ['examples', '実際の変換例', 'examples.html', 'サンプル スクリーンショット 変換結果 複雑 日本語 pptx pdf ダウンロード'],
       ['http', '同期HTTPで変換', 'http.html', 'post convert width format page curl ファイル'],
       ['jobs', '非同期HTTP・結果取得', 'jobs.html', 'jobs get post result status ジョブ 状態'],
       ['queue', 'Queueから直接依頼', 'queue.html', 'json blob manifest storage 外部システム images'],
@@ -25,13 +26,15 @@
     ]},
     {id: 'office', title: 'Office → Markdown', subtitle: 'XLSX · XLS · DOCX · PPTX', icon: 'office', folder: 'office2md', items: [
       ['overview', '機能概要・変換ルール', 'index.html', 'excel word powerpoint md 表 図形 取消線 座標'],
+      ['examples', '実際の変換例', 'examples.html', 'サンプル スクリーンショット 変換結果 複雑 excel word powerpoint markdown ダウンロード'],
       ['http', '同期HTTPで変換', 'http.html', 'post convert curl ファイル zip markdown'],
       ['jobs', '非同期HTTP・成果物取得', 'jobs.html', 'jobs get post result report archive images status ジョブ 状態'],
       ['queue', 'Queueから直接依頼', 'queue.html', 'json blob storage 外部システム'],
       ['settings', '設定・上限・エラー', 'settings.html', '環境変数 制限 認証 capabilities config playground 413 503']
     ]},
-    {id: 'movie', title: 'Movie → AAC', subtitle: 'MOVIE · AUDIO · M4A', icon: 'audio', folder: 'movie2audio', items: [
+    {id: 'movie', title: 'Movie → Audio', subtitle: 'MOVIE · M4A · WAV', icon: 'audio', folder: 'movie2audio', items: [
       ['overview', '機能概要・出力形式', 'index.html', 'movie2audio 動画 音声 aac m4a mp4 ffmpeg stream copy 再エンコード'],
+      ['examples', '実際の変換例', 'examples.html', 'サンプル スクリーンショット 変換結果 複雑 動画 音声 トラック m4a ダウンロード 再生'],
       ['http', 'ファイルを送って抽出', 'http.html', 'post convert curl upload 動画 ファイル audio mp4'],
       ['url', 'HTTPS URLから抽出', 'url.html', 'post convert-url json download 許可ホスト allowlist ssrf url_fetch_disabled'],
       ['jobs', '非同期HTTP・音声取得', 'jobs.html', 'jobs jobs-url get post result status ジョブ 状態 非同期 m4a'],
@@ -43,7 +46,7 @@
   const activeGroup = groups.find(group => current.startsWith(`${group.id}-`));
   document.getElementById('site-header').innerHTML = `<header class="site-header"><a class="brand" href="${url('index.html')}" aria-label="convertX2X API Docs トップ"><span class="brand-mark">X²</span><span class="brand-name">convertX2X</span></a><div class="header-context"><span>API Docs</span><i class="header-divider" aria-hidden="true"></i><span class="header-current">${activeGroup ? activeGroup.title : 'はじめに'}</span></div><div class="header-right"><span class="live-dot" aria-hidden="true"></span>HTTP &amp; QUEUE</div><button class="menu-toggle" type="button" aria-label="メニューを開く" aria-expanded="false" aria-controls="sidebar">${svg('menu')}</button></header>`;
   const sidebar = document.getElementById('sidebar');
-  sidebar.innerHTML = `<div class="search-box"><label class="sr-only" for="nav-search">API項目を検索</label>${svg('search')}<input id="nav-search" type="search" placeholder="API項目を検索…" autocomplete="off" spellcheck="false"><kbd aria-hidden="true">/</kbd></div><nav aria-label="機能別API"><a class="nav-home" href="${url('index.html')}"${current === 'home' ? ' aria-current="page"' : ''}>${svg('home')}はじめに</a><p class="nav-label">API REFERENCE</p>${groups.map(group => `<details class="nav-group" data-group="${group.id}" open><summary>${svg(group.icon, 'group-icon')}<span>${group.title}<span class="group-subtitle">${group.subtitle}</span></span>${svg('chevron', 'chevron')}</summary><div class="nav-items">${group.items.map(item => `<a class="nav-link" data-search="${group.title} ${group.subtitle} ${item[1]} ${item[3]}" href="${url(`${group.folder}/${item[2]}`)}"${current === `${group.id}-${item[0]}` ? ' aria-current="page"' : ''}>${item[1]}</a>`).join('')}</div></details>`).join('')}<p class="nav-empty" hidden>一致する項目がありません。</p><span id="search-status" class="sr-only" role="status"></span></nav><div class="sidebar-footer"><a href="${url('../README.md')}">開発者マニュアル ↗</a><span>実装済みAPIのリファレンス</span><span>Updated September 15, 2026</span></div>`;
+  sidebar.innerHTML = `<div class="search-box"><label class="sr-only" for="nav-search">API項目を検索</label>${svg('search')}<input id="nav-search" type="search" placeholder="API項目を検索…" autocomplete="off" spellcheck="false"><kbd aria-hidden="true">/</kbd></div><nav aria-label="機能別API"><a class="nav-home" href="${url('index.html')}"${current === 'home' ? ' aria-current="page"' : ''}>${svg('home')}はじめに</a><p class="nav-label">API REFERENCE</p>${groups.map(group => `<details class="nav-group" data-group="${group.id}" open><summary>${svg(group.icon, 'group-icon')}<span>${group.title}<span class="group-subtitle">${group.subtitle}</span></span>${svg('chevron', 'chevron')}</summary><div class="nav-items">${group.items.map(item => `<a class="nav-link" data-search="${group.title} ${group.subtitle} ${item[1]} ${item[3]}" href="${url(`${group.folder}/${item[2]}`)}"${current === `${group.id}-${item[0]}` ? ' aria-current="page"' : ''}>${item[1]}</a>`).join('')}</div></details>`).join('')}<p class="nav-empty" hidden>一致する項目がありません。</p><span id="search-status" class="sr-only" role="status"></span></nav><div class="sidebar-footer"><a href="${url('../README.md')}">開発者マニュアル ↗</a><span>実装済みAPIのリファレンス</span><span>Updated September 16, 2026</span></div>`;
 
   const search = document.getElementById('nav-search');
   const details = [...sidebar.querySelectorAll('.nav-group')];

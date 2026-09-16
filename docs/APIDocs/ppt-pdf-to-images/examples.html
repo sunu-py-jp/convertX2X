@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="PowerPoint・PDFを実際のAPIで画像に変換した結果。複雑な日本語資料、元ファイル、PNG・JPEG・ZIP、Playgroundのスクリーンショットを確認できます。">
+  <title>実際の変換例 | PowerPoint・PDF → 画像 | convertX2X API資料</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+  <script src="../assets/app.js" defer></script>
+</head>
+<body data-page="images-examples">
+<a class="skip-link" href="#main-content">本文へ移動</a>
+<div id="site-header"></div>
+<aside id="sidebar" class="sidebar" aria-label="APIナビゲーション"></aside>
+<div id="menu-overlay" class="menu-overlay" hidden></div>
+<main id="main-content" class="main-content" tabindex="-1">
+  <div class="page-layout">
+    <article class="article">
+      <p class="eyebrow">PowerPoint・PDF → 画像 / 実行結果</p>
+      <h1>実際の変換例</h1>
+      <p class="lead">自作の日本語資料を、ローカルのAzure Functionsへ実際にPOSTした結果です。基本レイアウトから、表・回転図形・透過・縦横混在のページまで、元ファイルと出力をダウンロードして確認できます。</p>
+      <div class="callout"><p>「API出力」は返されたZIPから取り出した画像そのものです。「スクリーンショット」は、同じ入力をPlaygroundで変換した実画面です。画像をクリックすると原寸で開きます。</p></div>
+
+      <section class="sample-case" aria-labelledby="pptx">
+        <h2 id="pptx">PowerPoint：基本スライドと複雑なダッシュボード</h2>
+        <p>16:9・3枚の資料です。1枚目は日本語の見出し・本文・明朝体・埋め込み画像、2枚目は色分けした表・KPIカード・ネイティブグラフ・12度回転したグループ図形、3枚目は業務フローと小さな注記を含みます。</p>
+        <div class="sample-meta"><span>入力 44,671 bytes</span><span>3スライド</span><span>PNG 1280 × 720 px</span><span>HTTP 200</span><span>実測 0.232 秒</span></div>
+        <div class="sample-links">
+          <a href="examples/inputs/quarterly-review.pptx" download>元のPowerPoint</a>
+          <a href="examples/outputs/quarterly-review.zip" download>実際の変換結果 ZIP</a>
+          <a href="examples/outputs/quarterly-review/page-0003.png">3枚目のPNG</a>
+        </div>
+        <div class="screenshot-grid">
+          <figure class="example-figure"><a href="examples/outputs/quarterly-review/page-0001.png"><img src="examples/outputs/quarterly-review/page-0001.png" alt="PowerPoint 1枚目のAPI出力。日本語、明朝体、埋め込み画像を表示。" width="1280" height="720" loading="lazy"></a><figcaption>API出力：1枚目。本文はゴシック、下のキャッチコピーは明朝体。右の棒・折れ線は埋め込みPNGです。</figcaption></figure>
+          <figure class="example-figure"><a href="examples/outputs/quarterly-review/page-0002.png"><img src="examples/outputs/quarterly-review/page-0002.png" alt="PowerPoint 2枚目のAPI出力。表、KPI、回転した六角形が表示され、ネイティブグラフ部分は空白。" width="1280" height="720" loading="lazy"></a><figcaption>API出力：2枚目。表と回転図形は表示されました。中央右のネイティブグラフは、この入力では描画されませんでした。</figcaption></figure>
+        </div>
+        <figure class="example-figure"><a href="examples/screenshots/quarterly-review-playground.png"><img src="examples/screenshots/quarterly-review-playground.png" alt="実際のPlaygroundでPowerPointの2枚目を変換した結果パネルのスクリーンショット。" loading="lazy"></a><figcaption>ブラウザのスクリーンショット：Playgroundで2枚目を指定して実行。プレビューのPNGは、全ページZIPの2枚目とSHA-256が一致しました。</figcaption></figure>
+        <div class="callout warning"><p><strong>確認できた制約：</strong>このPPTXのネイティブ棒グラフは空白になります。1枚目のように画像として埋め込まれた図表は表示されます。HTTP 200は、すべてのOffice機能の見た目を再現できたことを保証しません。</p></div>
+        <details class="sample-details"><summary>この変換を再実行する</summary>
+          <p>元ファイルをカレントフォルダに保存し、起動したローカルFunctionsへ送ります。<code>page</code> と <code>width</code> を省略し、全ページ・元の物理寸法を96dpiで変換しています。</p>
+          <pre><code>curl --fail-with-body \
+  -H 'Content-Type: application/octet-stream' \
+  --data-binary @quarterly-review.pptx \
+  'http://localhost:7071/api/convert?filename=quarterly-review.pptx&amp;format=png' \
+  --output quarterly-review.zip</code></pre>
+          <p>実レスポンス：<code>200</code> / <code>application/zip</code> / <code>X-Page-Count: 3</code>。ZIPは202,836 bytesで、<code>page-0001.png</code> ～ <code>page-0003.png</code> を含みます。Azure上では<a href="http.html#request-headers">Functionキーのヘッダー</a>も必要です。</p>
+        </details>
+      </section>
+
+      <section class="sample-case" aria-labelledby="pdf">
+        <h2 id="pdf">PDF：明細表・透過・回転・縦横混在</h2>
+        <p>A4縦2ページとA4横1ページを含む3ページのPDFです。日本語の本文、10行の明細表、0.4ptの罫線、透過した斜めの文字、ベクターの棒グラフ、画像の角丸クリッピング、回転文字を組み合わせました。日本語CIDフォントは埋め込んでいない入力です。</p>
+        <div class="sample-meta"><span>入力 19,413 bytes</span><span>3ページ</span><span>縦 794 × 1123 px / 横 1123 × 794 px</span><span>HTTP 200</span><span>実測 0.124 秒</span></div>
+        <div class="sample-links">
+          <a href="examples/inputs/operations-report.pdf" download>元のPDF</a>
+          <a href="examples/outputs/operations-report.zip" download>実際の変換結果 ZIP</a>
+          <a href="examples/outputs/operations-report/page-0001.png">基本例・1ページ目のPNG</a>
+        </div>
+        <div class="screenshot-grid">
+          <figure class="example-figure"><a href="examples/outputs/operations-report/page-0002.png"><img src="examples/outputs/operations-report/page-0002.png" alt="PDF 2ページ目のAPI出力。日本語の明細表、透過した確認用文字、ベクターの棒グラフ。" width="794" height="1123" loading="lazy"></a><figcaption>API出力：2ページ目。明細の文字・細い罫線・透過した斜め文字・ベクターの棒グラフを確認できます。</figcaption></figure>
+          <figure class="example-figure"><a href="examples/outputs/operations-report/page-0003.png"><img src="examples/outputs/operations-report/page-0003.png" alt="PDF 3ページ目のAPI出力。横長ページ、フロー図、切り抜いた画像、12度回転した文字。" width="1123" height="794" loading="lazy"></a><figcaption>API出力：3ページ目。横長ページの比率を維持。角丸に切り抜かれた画像と、−12度回転した文字も表示されました。</figcaption></figure>
+        </div>
+        <figure class="example-figure"><a href="examples/screenshots/operations-report-playground.png"><img src="examples/screenshots/operations-report-playground.png" alt="実際のPlaygroundでPDFの2ページ目を変換した結果パネルのスクリーンショット。" loading="lazy"></a><figcaption>ブラウザのスクリーンショット：PlaygroundでPDFの2ページ目を指定して実行。表示したPNGは全ページZIPの同じページと一致しました。</figcaption></figure>
+        <details class="sample-details"><summary>この変換を再実行する</summary>
+          <pre><code>curl --fail-with-body \
+  -H 'Content-Type: application/octet-stream' \
+  --data-binary @operations-report.pdf \
+  'http://localhost:7071/api/convert?filename=operations-report.pdf&amp;format=png' \
+  --output operations-report.zip</code></pre>
+          <p>実レスポンス：<code>200</code> / <code>application/zip</code> / <code>X-Page-Count: 3</code>。ZIPは194,916 bytesでした。縦横の違いはページごとに反映され、同じ寸法には引き伸ばされません。</p>
+        </details>
+      </section>
+
+      <h2 id="jpeg">単一ページ：幅1200pxのJPEG</h2>
+      <p>同じPDFの3ページ目だけを、<code>page=3&amp;format=jpeg&amp;width=1200</code> で変換しました。ZIPではなくJPEGのバイト列が直接返ります。結果は <strong>1200 × 848 px・60,602 bytes</strong>、<code>HTTP 200</code>、<code>X-Page-Count: 1</code>、実測 <strong>0.038秒</strong>でした。</p>
+      <div class="sample-links"><a href="examples/outputs/operations-report-page-0003.jpeg" download>実際のJPEGをダウンロード</a></div>
+      <pre><code>curl --fail-with-body \
+  -H 'Content-Type: application/octet-stream' \
+  --data-binary @operations-report.pdf \
+  'http://localhost:7071/api/convert?filename=operations-report.pdf&amp;page=3&amp;format=jpeg&amp;width=1200' \
+  --output operations-report-page-0003.jpeg</code></pre>
+
+      <h2 id="evidence">確認範囲・実行記録</h2>
+      <p>2026年9月16日、macOS arm64・Java 21・Azure Functions Core Tools 4.9.0で実行しました。記載時間は、起動済みのローカルホストに順番に送信した各1回の値で、アップロードと結果の受信を含みます。<strong>Azureの4GBプランの速度やコールドスタート時間を示すものではありません。</strong></p>
+      <ul>
+        <li>実APIでPPTX・PDFの全ページPNGとPDFの単一JPEGを生成し、HTTPステータス・ページ数・画像寸法・ファイルのSHA-256を記録しています。</li>
+        <li>Playgroundでも両形式の2ページ目を実変換し、プレビュー画像がZIP内の画像と同一であることを確認しました。ブラウザのJavaScriptエラーは0件でした。</li>
+        <li>日本語が読めることを出力で確認しています。フォントが未埋め込みのPDFでは、選択される代替フォントが実行環境で変わる場合があります。元のPowerPoint・Acrobatとのピクセル単位の一致や、Azure上での描画結果はこの例では検証していません。</li>
+        <li>このページで実行した経路は同期HTTPです。非同期HTTP・直接Queueで使う共通変換処理の出力例として参照できますが、この記録自体はQueue実行の証跡ではありません。</li>
+        <li>入力と図版はこの例のために自作した架空の資料です。生成スクリプトとともに、このリポジトリのMITライセンスで利用できます。</li>
+      </ul>
+      <div class="sample-links"><a href="examples/run.json">HTTP実行記録・SHA-256</a><a href="examples/browser.json">ブラウザ実行記録</a><a href="examples/generate_fixtures.py">入力資料の生成スクリプト</a><a href="examples/run_conversions.py">API実行スクリプト</a><a href="examples/capture_playground.cjs">スクリーンショット取得スクリプト</a></div>
+      <p>再生成にはPythonの <code>python-pptx</code>・<code>Pillow</code>・<code>reportlab</code>、画面の再撮影にはNode.jsのPlaywrightとChromium系ブラウザが必要です。これらは資料作成用で、API実行環境への追加は不要です。</p>
+
+      <footer class="page-footer"><p>実行確認：2026-09-16。出力ファイルを加工して見た目を補正する処理は行っていません。</p><p><a href="http.html">同期HTTPの仕様</a> · <a href="index.html">機能概要</a> · <a href="settings.html">設定と制限</a></p></footer>
+    </article>
+    <aside class="toc" aria-label="このページの目次"><p class="toc-title">このページの内容</p><nav id="page-toc"></nav></aside>
+  </div>
+</main>
+</body>
+</html>

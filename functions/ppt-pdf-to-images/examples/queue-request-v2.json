@@ -1,0 +1,21 @@
+{
+  "version": 2,
+  "jobId": "8c223476-b2dd-40df-ae85-8e548023c6df",
+  "input": {
+    "storage": "source",
+    "container": "source-files",
+    "blobName": "incoming/presentation.pptx",
+    "expectedETag": "\"replace-with-the-original-blob-etag\""
+  },
+  "output": {
+    "storage": "archive",
+    "container": "converted-files",
+    "prefix": "presentations",
+    "mode": "images",
+    "naming": "page-number"
+  },
+  "filename": "presentation.pptx",
+  "options": { "format": "png" },
+  "metadata": { "revision": "42", "externalId": "document-123" },
+  "notification": { "queue": "events" }
+}

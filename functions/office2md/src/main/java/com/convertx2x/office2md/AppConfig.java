@@ -2,10 +2,14 @@ package com.convertx2x.office2md;
 
 import com.convertx2x.office2md.conversion.ConversionLimits;
 import com.convertx2x.office2md.jobs.BlobStorageProfiles;
+import com.convertx2x.office2md.jobs.IntegrationSettings;
 import java.util.Map;
 
 /** App settings are environment variables in Azure Functions. */
-public record AppConfig(String storageConnectionString, ConversionLimits limits, BlobStorageProfiles blobStorageProfiles) {
+public record AppConfig(String storageConnectionString, ConversionLimits limits, BlobStorageProfiles blobStorageProfiles, IntegrationSettings integration) {
+    public AppConfig(String storageConnectionString, ConversionLimits limits, BlobStorageProfiles profiles) {
+        this(storageConnectionString, limits, profiles, IntegrationSettings.from(Map.of(STORAGE_SETTING, storageConnectionString == null ? "" : storageConnectionString)));
+    }
     public static final String STORAGE_SETTING = "CONVERSION_STORAGE_CONNECTION_STRING";
     public static final String QUEUE_CONNECTION_SETTING = "CONVERSION_QUEUE_CONNECTION_STRING";
 
@@ -29,11 +33,11 @@ public record AppConfig(String storageConnectionString, ConversionLimits limits,
                         Math.toIntExact(positive(settings, "CONVERSION_MAX_SHAPES", defaults.maxShapes())),
                         Math.toIntExact(positive(settings, "CONVERSION_MAX_GROUP_DEPTH", defaults.maxGroupDepth())),
                         positive(settings, "CONVERSION_MAX_IMAGE_PIXELS", defaults.maxImagePixels())),
-                BlobStorageProfiles.from(settings, connection));
+                BlobStorageProfiles.from(settings, connection), IntegrationSettings.from(settings));
     }
 
     public boolean asyncEnabled() {
-        return storageConnectionString != null && !storageConnectionString.isBlank();
+        return integration.storage().configured();
     }
 
     // Do not include secrets in generated record diagnostics.

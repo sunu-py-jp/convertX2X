@@ -10,4 +10,5 @@ public interface JobService {
     ConversionResult download(String id);
     void process(String message);
     void poison(String message);
+    default void maintain() {}
 }

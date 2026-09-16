@@ -29,7 +29,7 @@ if (jobs) {
     ['ProcessConversion', QUEUE_NAME, 'process'],
     ['PoisonConversion', `${QUEUE_NAME}-poison`, 'poison'],
   ]) {
-    app.storageQueue(name, { queueName, connection: 'CONVERSION_STORAGE_CONNECTION_STRING', dataType: 'binary',
+    app.storageQueue(name, { queueName, connection: 'CONVERSION_QUEUE_CONNECTION_STRING', dataType: 'binary',
       handler: async (message, context) => {
         try { await jobs[operation](message); }
         catch {
@@ -38,6 +38,17 @@ if (jobs) {
           throw new Error('Queue processing failed; the message will follow the retry policy.');
         }
       } });
+  }
+  if (config.jobs.notifications.size || config.jobs.resultRetentionDays || config.jobs.stateRetentionDays) {
+    app.timer('MaintainConversionJobs', { schedule: '0 */5 * * * *', useMonitor: true, handler: async (timer, context) => {
+      try {
+        const result = await jobs.maintenance();
+        if (result.failed) context.warn('Some job maintenance operations will be retried.');
+      } catch {
+        context.warn('Job maintenance failed; invocation=' + context.invocationId);
+        throw new Error('Job maintenance failed; pending operations remain durable.');
+      }
+    } });
   }
 }
 app.http('Playground', { methods: ['GET'], authLevel: 'anonymous', route: 'playground', handler: playground.page });

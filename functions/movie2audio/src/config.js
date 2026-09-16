@@ -35,5 +35,6 @@ export function createConfig(env = process.env) {
 
 export function publicSettings(config) {
   return { urlEnabled: config.urlEnabled, asyncEnabled: config.asyncEnabled, ...config.limits,
-    outputFormat: 'm4a', audioCodec: 'aac', audioMode: 'copy' };
+    outputFormat: 'm4a', audioCodec: 'aac', audioMode: 'copy',
+    audioModes: ['copy', 'transcode'], audioFormats: ['m4a', 'wav'] };
 }

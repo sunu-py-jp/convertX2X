@@ -4,16 +4,17 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { ConversionError, throwIfAborted } from './errors.js';
 import { extractAudio } from './ffmpeg.js';
+import { audioOutput, normalizeAudioOptions } from './audio-options.js';
 import { CONTAINER_NAME, normalizeJobId, normalizeJobRequest, parseJobRequest, safeFilename } from './job-request.js';
 import { createJobStore } from './job-store.js';
 
 // Persist and surface fixed messages only: SDK errors and media metadata may contain
 // credentials, private storage locations or attacker-controlled text.
 const FAILURES = Object.freeze({
-  ASYNC_DISABLED: [503, 'Asynchronous conversion is disabled; configure CONVERSION_STORAGE_CONNECTION_STRING.'],
+  ASYNC_DISABLED: [503, 'Asynchronous conversion is disabled; configure job storage with a connection string or identity endpoints.'],
   INVALID_JOB_ID: [400, 'The job ID must be a UUID.'],
   INVALID_JOB_REQUEST: [400, 'The queue request is invalid.'],
-  INVALID_QUEUE_MESSAGE: [400, 'Send a version 1 job with registered storage aliases and blob paths only.'],
+  INVALID_QUEUE_MESSAGE: [400, 'Send a version 1 or 2 job with registered storage aliases and blob paths only.'],
   INVALID_FILENAME: [400, 'The filename is invalid or too long.'],
   MISSING_FILENAME: [400, 'A filename is required.'],
   JOB_NOT_FOUND: [404, 'Job not found.'],
@@ -26,6 +27,10 @@ const FAILURES = Object.freeze({
   CONVERSION_TIMEOUT: [504, 'Audio extraction and storage exceeded the processing time limit.'],
   CONVERSION_INTERRUPTED: [503, 'Audio extraction was interrupted.'],
   EMPTY_INPUT: [400, 'A video file is required.'],
+  INPUT_VERSION_MISMATCH: [409, 'The input no longer matches the requested version.'],
+  INVALID_AUDIO_OPTIONS: [400, 'The audio conversion settings are invalid.'],
+  UNKNOWN_RESULT_QUEUE: [400, 'The result queue alias is not registered.'],
+  JOB_RESULT_EXPIRED: [410, 'The result retention period has expired.'],
   INPUT_NOT_FOUND: [422, 'The input blob was not found.'],
   UNKNOWN_INPUT_STORAGE: [400, 'The input storage alias is not registered.'],
   UNKNOWN_OUTPUT_STORAGE: [400, 'The output storage alias is not registered.'],
@@ -34,7 +39,7 @@ const FAILURES = Object.freeze({
   INVALID_MEDIA: [422, 'The video is unsupported, empty, damaged or could not be extracted.'],
   NO_VIDEO_STREAM: [422, 'The input must contain a video stream; cover artwork does not count as video.'],
   NO_AUDIO_STREAM: [422, 'The video does not contain an audio stream.'],
-  UNSUPPORTED_AUDIO_CODEC: [422, 'The first audio stream must use AAC. Audio is not re-encoded.'],
+  UNSUPPORTED_AUDIO_CODEC: [422, 'Copy mode requires AAC; transcode mode supports the documented AAC, Opus, MP3 and PCM codecs.'],
   EMPTY_OUTPUT: [422, 'Audio extraction produced an empty result.'],
   OUTPUT_MISSING: [500, 'Audio extraction produced no result.'],
   FFMPEG_UNAVAILABLE: [503, 'The bundled FFmpeg runtime could not be prepared or started.'],
@@ -45,6 +50,8 @@ const FAILURES = Object.freeze({
   RESULT_CHANGED: [409, 'The stored audio has changed since the job completed.'],
   RESULT_NOT_FOUND: [404, 'The stored audio was not found.'],
   JOB_BLOB_EXISTS: [409, 'A blob already exists at the requested storage location.'],
+  SUBMISSION_FAILED: [503, 'The job submission could not be confirmed.'],
+  SUBMISSION_EXPIRED: [503, 'The job submission did not complete within its retention period.'],
   PROCESSING_FAILED: [503, 'Conversion failed after repeated processing attempts.'],
 });
 
@@ -75,13 +82,15 @@ function publicJob(job) {
 function queued(request) {
   const now = new Date().toISOString();
   return { job: { id: request.jobId, status: 'queued', filename: request.filename,
-    createdAt: now, updatedAt: now, sizeBytes: null, errorCode: null, errorMessage: null }, request, result: null };
+    createdAt: now, updatedAt: now, sizeBytes: null, errorCode: null, errorMessage: null }, request, result: null, artifactTrackingVersion: 1 };
 }
 
 function transition(record, status, result = null, failure = null) {
-  return { job: { ...publicJob(record.job), status, updatedAt: new Date().toISOString(),
+  return { ...record, ...(record.submissionPending !== undefined ? { submissionPending: false } : {}), job: { ...publicJob(record.job), status, updatedAt: new Date().toISOString(),
     sizeBytes: result?.sizeBytes ?? null, errorCode: failure?.code ?? null, errorMessage: failure?.message ?? null },
-  request: record.request, result };
+  request: record.request, result,
+    ...(record.request.notification && ['succeeded', 'failed'].includes(status)
+      ? { outbox: { eventId: `${record.request.jobId}:${status}`, state: 'pending' } } : {}) };
 }
 
 function sameRequest(record, request) {
@@ -113,28 +122,44 @@ export function createJobService(config, { store, extract = extractAudio, tempor
     return record;
   }
 
-  async function submit(path, filename, { signal } = {}) {
+  async function submit(path, filename, { signal: outerSignal, options } = {}) {
+    let lock;
+    let record;
+    let signal = outerSignal;
     try {
       requireEnabled();
       throwIfAborted(signal);
       const name = safeFilename(filename);
       await fileSize(path, config.limits.maxInputBytes, true);
       const id = randomUUID();
-      const request = normalizeJobRequest({ version: 1, jobId: id,
+      const audio = normalizeAudioOptions(options);
+      const version = audio.mode === 'copy' ? 1 : 2;
+      const request = normalizeJobRequest({ version, jobId: id,
         input: { storage: 'default', container: CONTAINER_NAME, blobName: `${id}/input` },
-        output: { storage: 'default', container: CONTAINER_NAME, prefix: '' }, filename: name });
-      const record = queued(request);
+        output: { storage: 'default', container: CONTAINER_NAME, prefix: '' }, filename: name, ...(version === 2 ? { options: audio } : {}) });
+      record = { ...queued(request), submissionPending: true };
       await store.validateLocations(request);
-      await store.saveInput(request, path, { signal });
-      throwIfAborted(signal);
       const existing = await store.ensure(record, { signal });
       if (!sameRequest(existing, request)) throw error('JOB_ID_CONFLICT');
-      // A worker may receive the queue message immediately, so both input and status
-      // must be durable before publication. Failed publication leaves no false success.
+      lock = await store.lock(id, { signal });
+      signal = outerSignal ? AbortSignal.any([outerSignal, lock.signal]) : lock.signal;
+      await store.saveInput(request, path, { signal });
+      throwIfAborted(signal);
+      // The status lease covers input upload and publication. A worker can start
+      // after release; a crash before enqueue leaves an expirable pending submission.
       await store.enqueue(request, { signal });
       throwIfAborted(signal);
+      record = { ...record, submissionPending: false };
+      await lock.update(record);
       return publicJob(record.job);
-    } catch (failure) { throw safeFailure(signal?.aborted ? signal.reason : failure); }
+    } catch (failure) {
+      if (lock && record) {
+        // If the lease/deadline was lost this write is rejected, and the durable
+        // submission marker lets maintenance handle the abandoned state later.
+        await lock.update(transition(record, 'failed', null, error('SUBMISSION_FAILED'))).catch(() => {});
+      }
+      throw safeFailure(outerSignal?.aborted ? outerSignal.reason : failure);
+    } finally { await lock?.close().catch(() => {}); }
   }
 
   async function find(id, { signal } = {}) {
@@ -143,7 +168,9 @@ export function createJobService(config, { store, extract = extractAudio, tempor
       throwIfAborted(signal);
       const record = await store.find(normalizeJobId(id), { signal });
       throwIfAborted(signal);
-      return record ? publicJob(record.job) : null;
+      return record ? { ...publicJob(record.job), ...(record.request.version === 2 ? {
+        metadata: record.request.metadata ?? {}, input: record.source ?? null, result: record.result,
+        ...(record.resultExpiredAt ? { resultExpiredAt: record.resultExpiredAt } : {}) } : {}) } : null;
     } catch (failure) { throw safeFailure(signal?.aborted ? signal.reason : failure); }
   }
 
@@ -155,13 +182,15 @@ export function createJobService(config, { store, extract = extractAudio, tempor
       const record = await requiredRecord(normalizeJobId(id), { signal });
       if (record.job.status !== 'succeeded') throw error('JOB_NOT_READY');
       if (!record.result) throw error('OUTPUT_MISSING');
+      if (record.resultExpiredAt) throw error('JOB_RESULT_EXPIRED');
       await store.readResult(record.result, path, { signal });
       ownsOutput = true;
       throwIfAborted(signal);
       const sizeBytes = await fileSize(path, config.limits.maxOutputBytes, false);
       if (sizeBytes !== record.result.sizeBytes) throw error('STORAGE_UNAVAILABLE');
       await chmod(path, 0o600);
-      return { filename: 'audio.m4a', contentType: 'audio/mp4', sizeBytes };
+      return { filename: record.result.filename, contentType: record.result.contentType, sizeBytes,
+        ...(record.result.codec ? { codec: record.result.codec, mode: record.result.mode } : {}) };
     } catch (failure) {
       if (ownsOutput) await rm(path, { force: true }).catch(() => {});
       throw safeFailure(signal?.aborted ? signal.reason : failure);
@@ -190,7 +219,6 @@ export function createJobService(config, { store, extract = extractAudio, tempor
         if (isPoison) return;
         throw error('JOB_ID_CONFLICT');
       }
-      if (isPoison && terminal(existing.job)) return;
       lock = await store.lock(request.jobId, { signal });
       signal = AbortSignal.any([signal, lock.signal]);
       throwIfAborted(signal);
@@ -199,14 +227,19 @@ export function createJobService(config, { store, extract = extractAudio, tempor
         if (isPoison) return;
         throw error('JOB_ID_CONFLICT');
       }
-      if (terminal(record.job)) return;
+      if (terminal(record.job)) {
+        await store.deliver?.(record, lock, { signal }).catch(() => {});
+        return;
+      }
       if (isPoison) {
         throwIfAborted(signal);
-        await lock.update(transition(record, 'failed', null, error('PROCESSING_FAILED')));
+        const failed = transition(record, 'failed', null, error('PROCESSING_FAILED'));
+        await lock.update(failed);
+        await store.deliver?.(failed, lock, { signal }).catch(() => {});
         return;
       }
       release = admission?.acquire();
-      const running = transition(record, 'running');
+      let running = transition(record, 'running');
       throwIfAborted(signal);
       await lock.update(running);
       try {
@@ -215,12 +248,13 @@ export function createJobService(config, { store, extract = extractAudio, tempor
         directory = await mkdtemp(join(temporaryRoot, 'movie2audio-job-'));
         await chmod(directory, 0o700);
         const input = join(directory, 'input.bin');
-        const output = join(directory, 'audio.m4a');
-        await store.readInput(request.input, input, { signal });
+        const output = join(directory, audioOutput(request.options).filename);
+        const source = await store.readInput(request.input, input, { signal });
+        if (source) { running = { ...running, source }; await lock.update(running); }
         await fileSize(input, config.limits.maxInputBytes, true);
         await chmod(input, 0o600);
         throwIfAborted(signal);
-        await extract(input, output, { limits: config.limits, signal });
+        await extract(input, output, { limits: config.limits, signal, options: request.options });
         throwIfAborted(signal);
         const bytes = await fileSize(output, config.limits.maxOutputBytes, false);
         await chmod(output, 0o600);
@@ -229,12 +263,18 @@ export function createJobService(config, { store, extract = extractAudio, tempor
         // A lost lease or expired deadline may leave an unpublished artifact, but
         // must never publish success or overwrite another worker's state.
         throwIfAborted(signal);
-        await lock.update(transition(running, 'succeeded', result));
+        const completed = transition(running, 'succeeded', result);
+        await lock.update(completed);
+        // Delivery is independent of conversion. A durable pending outbox survives
+        // send failures and is retried by the maintenance timer.
+        await store.deliver?.(completed, lock, { signal }).catch(() => {});
       } catch (failure) {
         throwIfAborted(signal);
         const safe = safeFailure(failure);
         if (safe.status >= 500) throw safe;
-        await lock.update(transition(running, 'failed', null, safe));
+        const failed = transition(running, 'failed', null, safe);
+        await lock.update(failed);
+        await store.deliver?.(failed, lock, { signal }).catch(() => {});
       }
     } catch (failure) {
       if (lock?.signal.aborted && !controller.signal.aborted) throw error('JOB_LEASE_LOST');
@@ -248,5 +288,5 @@ export function createJobService(config, { store, extract = extractAudio, tempor
     }
   }
 
-  return { submit, find, download, process: message => run(message, false), poison: message => run(message, true) };
+  return { submit, find, download, maintenance: options => store.maintenance(options), process: message => run(message, false), poison: message => run(message, true) };
 }

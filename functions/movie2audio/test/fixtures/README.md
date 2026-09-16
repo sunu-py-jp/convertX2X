@@ -8,16 +8,20 @@
 | `aac-video.mp4` | MPEG-4 の映像 + 48 kHz / mono AAC、正常な抽出と圧縮パケットの一致 |
 | `aac-video.mkv` / `.avi` / `.ts` | コンテナが異なる場合の同じ音声の抽出 |
 | `silent-video.mp4` | 音声トラックなし |
-| `pcm-video.mkv` | PCM 音声の拒否 |
+| `pcm-video.mkv` | copyで拒否し、transcodeではAAC / PCM WAVへ変換 |
+| `opus-video.mkv` / `mp3-video.mkv` | Opus / MP3からAAC / PCM WAVへの変換 |
+| `stereo-pcm-video.mkv` | チャンネル数の維持と、明示的なモノラル化 |
+| `silent-pcm-video.mkv` | 無音の音声トラックを、音声トラックなしと混同しない |
 | `first-pcm-second-aac.mkv` | 第 1 音声が PCM の場合、第 2 音声の AAC に勝手に切り替えない |
 | `audio-only.m4a` | 映像なしの拒否 |
 | `audio-with-cover.m4a` | アルバムアートを動画と誤判定しない |
 
 エンコード機能のある通常の FFmpeg で次を実行すると再生成できます。
-本番に同梱した FFmpeg にはエンコーダーがないため、生成用には使えません。
+本番のFFmpegには映像エンコーダーや合成入力がないため、生成用には使えません。
 
 ```sh
 python3 test/fixtures/generate.py /path/to/encoding-capable/ffmpeg
+python3 test/fixtures/generate_audio_formats.py /path/to/full/ffmpeg
 node --test test/ffmpeg.test.js
 ```
 
@@ -26,6 +30,10 @@ node --test test/ffmpeg.test.js
 `aac,mpeg4,pcm_s16le` エンコーダー、`aac,wrapped_avframe,pcm_s16le` デコーダー、
 `mp4,ipod,matroska,mpegts,flv,avi,adts` muxer を有効にした別の実行ファイルを使用しました。
 `generate.py` に実際の生成コマンドとカバーアートの構築処理を保存しています。
+
+追加のOpus・MP3・ステレオPCM・無音PCMは、Alpine 3.22.2のFFmpegで
+`generate_audio_formats.py` を実行して作成しました。生成用のlibopus / libmp3lameは
+本番バイナリに含めず、音声データだけをテストfixtureとして保持しています。
 
 無劣化の検証は、元 MP4 と抽出後 M4A の各 AAC パケットに対して次の出力の
 `data_hash` 列を比較します。コンテナのヘッダーが異なるため、ファイル全体の SHA256 は一致しません。

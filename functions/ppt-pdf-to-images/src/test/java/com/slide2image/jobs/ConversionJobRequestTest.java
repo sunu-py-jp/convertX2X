@@ -114,7 +114,7 @@ class ConversionJobRequestTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"0", "2", "null", "true", "\"1\"", "1.0", "2147483648"})
+    @ValueSource(strings = {"0", "3", "null", "true", "\"1\"", "1.0", "2147483648"})
     void rejectsInvalidVersionWithoutCoercion(String version) {
         invalid(REQUEST.replace("\"version\":1", "\"version\":" + version));
     }
@@ -161,7 +161,7 @@ class ConversionJobRequestTest {
     @Test
     void validatesConstructedRecordsAndBoundsDisplayNames() {
         ConversionJobRequest base = ConversionJobRequest.parse(REQUEST);
-        assertThrows(ConversionException.class, () -> new ConversionJobRequest(2, ID, base.input(), base.output(), null, null).normalized());
+        assertThrows(ConversionException.class, () -> new ConversionJobRequest(3, ID, base.input(), base.output(), null, null).normalized());
         assertThrows(ConversionException.class, () -> new ConversionJobRequest(1, ID, null, base.output(), null, null).normalized());
         assertThrows(ConversionException.class, () -> new ConversionJobRequest(1, ID, base.input(), base.output(), "a".repeat(256), null).normalized());
         assertThrows(ConversionException.class, () -> new ConversionJobRequest(1, ID, base.input(), base.output(), "..", null).normalized());

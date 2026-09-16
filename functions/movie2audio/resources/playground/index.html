@@ -11,15 +11,16 @@
 <body>
   <header class="site-header"><a class="brand" href="playground"><span class="brand-mark">↗</span>convertX2X</a><span class="header-note">API PLAYGROUND</span></header>
   <main>
-    <section class="intro"><span class="eyebrow">MOVIE → AUDIO</span><h1>映像から、音だけ。</h1><p>動画のAAC音声を再エンコードせずに抽出。<br>そのままの音質で、M4Aファイルとして受け取れます。</p><div class="tags"><span>AAC</span><span>Stream copy</span><span>FFmpeg</span></div></section>
+    <section class="intro"><span class="eyebrow">MOVIE → AUDIO</span><h1>映像から、音だけ。</h1><p>AAC音声は、そのままの音質で抽出。<br>形式変換を選ぶと、Opus・MP3・PCMにも対応します。</p><div class="tags"><span>M4A / WAV</span><span>AAC copy</span><span>FFmpeg</span></div></section>
     <div class="workspace">
       <section class="panel input-panel" aria-labelledby="input-title">
         <div class="panel-heading"><span class="step">01</span><div><h2 id="input-title">動画を選択</h2><p>ファイル、または許可されたURLから</p></div></div>
         <form id="convert-form">
           <div class="input-group"><span class="field-label" id="mode-label">実行方法</span><fieldset class="source-switch mode-switch" aria-labelledby="mode-label"><legend class="sr-only">実行方法</legend><label><input type="radio" name="mode" value="sync" checked><span>同期で実行</span></label><label><input id="async-mode" type="radio" name="mode" value="async" disabled><span>キューで実行</span></label></fieldset><p class="hint" id="mode-hint">処理を終えた音声を、そのまま受け取ります。</p></div>
           <fieldset class="source-switch"><legend class="sr-only">入力方法</legend><label><input type="radio" name="source" value="file" checked><span>ファイル</span></label><label><input type="radio" name="source" value="url"><span>URL</span></label></fieldset>
-          <div id="file-field" class="input-group"><label for="video-file" class="field-label">動画ファイル</label><div class="file-box"><span class="file-symbol" aria-hidden="true">♫</span><strong>動画から音声を取り出す</strong><p>最初の音声トラックがAACの動画に対応</p><input id="video-file" type="file" accept="video/*,.mp4,.mov,.mkv,.webm,.m4v,.ts,.m2ts"></div></div>
+          <div id="file-field" class="input-group"><label for="video-file" class="field-label">動画ファイル</label><div class="file-box"><span class="file-symbol" aria-hidden="true">♫</span><strong>動画から音声を取り出す</strong><p>動画の最初の音声トラックを使用します</p><input id="video-file" type="file" accept="video/*,.mp4,.mov,.mkv,.webm,.m4v,.ts,.m2ts"></div></div>
           <div id="url-field" class="input-group" hidden><label for="video-url" class="field-label">動画ファイルのHTTPS URL</label><input id="video-url" type="url" placeholder="https://media.example.com/video.mp4" autocomplete="off" spellcheck="false"><p class="hint" id="url-hint">動画ファイルを直接取得できるURLを指定します。</p></div>
+          <div class="input-group"><label for="audio-profile" class="field-label">音声の出力</label><select id="audio-profile"><option value="copy">そのまま抽出 — AAC / M4A</option><option value="m4a">M4Aへ変換 — レート・チャンネルを維持</option><option value="wav">WAVへ変換 — レート・チャンネルを維持</option><option value="wav-mono">WAVへ変換 — 16kHz・モノラル</option></select><p class="hint" id="audio-hint">AACの音声データを変更せずに取り出します。</p></div>
           <div class="input-group"><label for="function-key" class="field-label">Function key <span class="optional">任意・ローカルでは不要</span></label><input id="function-key" type="password" autocomplete="off" spellcheck="false" placeholder="Azureではホストキーを入力"><p class="hint">キーはこの画面のメモリー内だけで使用します。</p></div>
           <button class="primary" id="convert-button" type="submit" disabled>音声を抽出する <span aria-hidden="true">→</span></button>
           <p class="limits" id="limits">実行設定を読み込んでいます…</p>
@@ -27,11 +28,11 @@
       </section>
       <section class="panel result-panel" aria-labelledby="result-title">
         <div class="panel-heading"><span class="step">02</span><div><h2 id="result-title">抽出した音声</h2><p>確認して、ダウンロード</p></div></div>
-        <div class="empty-result" id="empty-result"><span class="sound-wave" aria-hidden="true">▂ ▅ ▃ █ ▆ ▃ ▅ ▂</span><p>抽出した音声がここに表示されます</p><span>出力形式：M4A / AAC</span></div>
-        <div id="audio-result" hidden><div class="result-file"><span class="result-icon" aria-hidden="true">♫</span><div><strong>audio.m4a</strong><p id="result-meta"></p></div><span class="done-badge">完了</span></div><audio id="audio-player" controls preload="metadata"></audio><a class="download" id="download-link" download="audio.m4a">M4Aをダウンロード ↓</a></div>
+        <div class="empty-result" id="empty-result"><span class="sound-wave" aria-hidden="true">▂ ▅ ▃ █ ▆ ▃ ▅ ▂</span><p>抽出した音声がここに表示されます</p><span>出力形式：M4A / WAV</span></div>
+        <div id="audio-result" hidden><div class="result-file"><span class="result-icon" aria-hidden="true">♫</span><div><strong id="result-filename">audio.m4a</strong><p id="result-meta"></p></div><span class="done-badge">完了</span></div><audio id="audio-player" controls preload="metadata"></audio><a class="download" id="download-link" download="audio.m4a">M4Aをダウンロード ↓</a></div>
         <p id="job-info" class="job-info" hidden></p>
         <p id="status" class="status" role="status" aria-live="polite"></p>
-        <div class="note"><strong>音声を、そのまま。</strong><p>最初の音声トラックを1つ抽出します。AAC以外の音声・音声なし・暗号化された動画には対応しません。音声形式の変換や音量調整は行いません。</p></div>
+        <div class="note"><strong>用途に合わせた音声出力。</strong><p>「そのまま抽出」はAAC専用です。形式変換はAAC・Opus・MP3・一般的なPCMに対応します。音声トラックがない動画や、暗号化された動画には対応しません。文字起こしや音量調整は行いません。</p></div>
       </section>
     </div>
     <footer>Movie2Audio <span>·</span> convertX2X <span>·</span> 作業ファイルは処理後に削除 · キュー実行の入出力はStorageへ保存</footer>

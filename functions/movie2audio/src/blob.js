@@ -105,7 +105,8 @@ function statusError(status) {
   return failed();
 }
 
-export async function uploadAudio(path, sasUrl, { outputAllowedHosts, limits, signal: outerSignal }) {
+export async function uploadAudio(path, sasUrl, { outputAllowedHosts, limits, signal: outerSignal, contentType = 'audio/mp4' }) {
+  if (!['audio/mp4', 'audio/wav'].includes(contentType)) throw storageError();
   const target = validateBlobDestination(sasUrl, outputAllowedHosts);
   const controller = new AbortController();
   const signal = outerSignal ? AbortSignal.any([outerSignal, controller.signal]) : controller.signal;
@@ -149,7 +150,7 @@ export async function uploadAudio(path, sasUrl, { outputAllowedHosts, limits, si
       rejectResponse = reject;
       request = https.request(target.url, {
         method: 'PUT', agent, highWaterMark: 64 * 1024, maxHeaderSize: 16 * 1024,
-        headers: { 'Content-Type': 'audio/mp4', 'Content-Length': String(info.size),
+        headers: { 'Content-Type': contentType, 'Content-Length': String(info.size),
           'x-ms-blob-type': 'BlockBlob', 'If-None-Match': '*',
           'x-ms-version': '2023-11-03', 'x-ms-date': new Date().toUTCString(),
           'User-Agent': 'convertX2X-movie2audio/1.0' },

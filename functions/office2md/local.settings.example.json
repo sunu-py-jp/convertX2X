@@ -7,6 +7,13 @@
     "CONVERSION_QUEUE_CONNECTION_STRING": "UseDevelopmentStorage=true",
     "JAVA_OPTS": "-Djava.awt.headless=true",
     "AzureWebJobs.ProcessConversion.Disabled": "true",
-    "AzureWebJobs.PoisonConversion.Disabled": "true"
+    "AzureWebJobs.PoisonConversion.Disabled": "true",
+    "CONVERSION_STORAGE__blobServiceUri": "",
+    "CONVERSION_STORAGE__queueServiceUri": "",
+    "CONVERSION_STORAGE__clientId": "",
+    "CONVERSION_CREATE_RESOURCES": "true",
+    "CONVERSION_RESULT_RETENTION_DAYS": "0",
+    "CONVERSION_STATE_RETENTION_DAYS": "0",
+    "AzureWebJobs.MaintainConversions.Disabled": "true"
   }
 }

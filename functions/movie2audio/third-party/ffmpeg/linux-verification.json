@@ -52,5 +52,35 @@
         }
       ]
     }
+  },
+  "checkedAt": "2026-09-17",
+  "runtimeTest": {
+    "command": "node --test test/ffmpeg.test.js",
+    "container": "node:24-alpine",
+    "platform": "linux/amd64",
+    "network": "none",
+    "passed": 37,
+    "failed": 0,
+    "coverage": [
+      "AAC packet-preserving copy",
+      "AAC/Opus/MP3/PCM to M4A and WAV",
+      "16000 Hz mono normalization",
+      "stereo preservation",
+      "first-track selection",
+      "silent track vs missing track",
+      "size limits and cancellation",
+      "file-only protocols",
+      "AAC and PCM16 encoders only"
+    ]
+  },
+  "binaries": {
+    "ffmpeg": {
+      "sha256": "3bddd9d4d10443a08dd9607f77cfb6f9a3a80c7559a80b4754e194bac2bd3d03",
+      "bytes": 2894392
+    },
+    "ffprobe": {
+      "sha256": "dc06613950c5ef4cbbce79f7ae700d6661e97333ef8e1dc5fe6fb018556baaa2",
+      "bytes": 2722328
+    }
   }
 }

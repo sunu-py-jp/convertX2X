@@ -7,8 +7,43 @@ from pathlib import Path
 import shutil
 import subprocess
 import sys
+import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+CONTROL_KEYS = ('CONVERSION_STORAGE_CONNECTION_STRING', 'CONVERSION_STORAGE__blobServiceUri',
+                'CONVERSION_STORAGE__queueServiceUri', 'CONVERSION_STORAGE__clientId')
+BINDING_PREFIX = 'CONVERSION_QUEUE_CONNECTION_STRING'
+
+
+def prepare_environment(values, environ):
+    """Environment mode overrides local mode; derived trigger settings are rebuilt."""
+    result = {key: str(value) for key, value in values.items()}
+    if any(key in environ for key in CONTROL_KEYS):
+        for key in CONTROL_KEYS:
+            result.pop(key, None)
+    result.update(environ)
+    for key in list(result):
+        if key == BINDING_PREFIX or key.startswith(BINDING_PREFIX + '__'):
+            result.pop(key)
+    connection = result.get(CONTROL_KEYS[0], '').strip()
+    blob, queue, client = (result.get(key, '').strip() for key in CONTROL_KEYS[1:])
+    if connection and (blob or queue or client):
+        raise ValueError('Choose one control storage authentication mode.')
+    if not connection and (bool(blob) != bool(queue) or (client and not blob)):
+        raise ValueError('Both identity storage endpoints are required.')
+    if connection:
+        result[BINDING_PREFIX] = connection
+        if not result.get('AzureWebJobsStorage', '').strip():
+            result['AzureWebJobsStorage'] = connection
+    elif blob and queue:
+        result[BINDING_PREFIX + '__queueServiceUri'] = queue
+        result[BINDING_PREFIX + '__credential'] = 'managedidentity'
+        if client:
+            result[BINDING_PREFIX + '__clientId'] = client
+    result['FUNCTIONS_WORKER_RUNTIME'] = 'node'
+    return result
 
 
 def main():
@@ -47,16 +82,35 @@ def main():
         with os.fdopen(fd, 'w') as output:
             json.dump(settings, output, indent=2)
             output.write('\n')
-    child_env = os.environ.copy()
-    for key, value in values.items():
-        child_env.setdefault(key, str(value))
-    conversion_storage = child_env.get('CONVERSION_STORAGE_CONNECTION_STRING', '').strip()
-    if conversion_storage and not child_env.get('AzureWebJobsStorage', '').strip():
-        child_env['AzureWebJobsStorage'] = conversion_storage
-    child_env['FUNCTIONS_WORKER_RUNTIME'] = 'node'
+    child_env = prepare_environment(values, dict(os.environ))
     print(f'Playground: http://localhost:{args.port}/api/playground', flush=True)
-    os.chdir(ROOT)
-    os.execvpe('func', ['func', 'start', '--port', str(args.port)], child_env)
+    # Core Tools rereads local.settings.json after launch. Use a private copy so
+    # stale connection strings or identity prefixes cannot override the chosen
+    # authentication mode, while keeping the user's original settings intact.
+    with tempfile.TemporaryDirectory(prefix='movie2audio-local-') as directory:
+        stage = Path(directory)
+        for name in ('host.json', 'package.json', 'src', 'resources', 'node_modules'):
+            (stage / name).symlink_to(ROOT / name, target_is_directory=(ROOT / name).is_dir())
+        names = set(values) | {key for key in child_env if key.startswith('CONVERSION_')}
+        names |= {'FUNCTIONS_WORKER_RUNTIME', 'AzureWebJobsStorage'}
+        staged_settings = dict(settings)
+        staged_settings['Values'] = {key: child_env[key] for key in names if key in child_env}
+        descriptor = os.open(stage / 'local.settings.json', os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        with os.fdopen(descriptor, 'w') as output:
+            json.dump(staged_settings, output)
+        child = subprocess.Popen(['func', 'start', '--port', str(args.port)], cwd=stage, env=child_env)
+        try:
+            returncode = child.wait()
+        except KeyboardInterrupt:
+            child.terminate()
+            try:
+                child.wait(timeout=10)
+            except subprocess.TimeoutExpired:
+                child.kill()
+                child.wait()
+            returncode = 130
+        if returncode:
+            raise subprocess.CalledProcessError(returncode, 'func')
 
 
 if __name__ == '__main__':

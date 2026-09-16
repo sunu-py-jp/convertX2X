@@ -58,7 +58,7 @@ export CONVERSION_STORAGE_CONNECTION_STRING='UseDevelopmentStorage=true'
 python3 scripts/run_local.py
 ```
 
-Azure Storageを使う場合は、同じ変数にBlob・Queueを利用できる接続文字列を設定します。設定が空または未設定なら非同期機能は無効で、非同期APIは `503 ASYNC_DISABLED` を返します。
+Azure Storageを使う場合は、同じ変数にBlob・Queueを利用できる接続文字列を設定します。接続文字列とMI用の制御Storage設定が両方なければ非同期機能は無効で、非同期APIは `503 ASYNC_DISABLED` を返します。
 
 ### ローカル設定ファイル
 
@@ -369,7 +369,7 @@ Playgroundの画面・アセット・`GET /api/playground/config` は匿名公�
 
 Playgroundに入力したキーはページ内のメモリで保持し、URLやブラウザーの永続ストレージには保存しません。Storageの接続設定はサーバー側だけで扱います。
 
-新規作成するBlobコンテナーは非公開です。既存コンテナーの公開設定は変更しないため、運用側で非公開にしてください。入力・状態・結果・失敗した試行のBlobは自動削除しません。必要な保持期間に合わせてStorageのライフサイクル管理を設定します。
+新規作成するBlobコンテナーは非公開です。既存コンテナーの公開設定は変更しないため、運用側で非公開にしてください。自動清掃は既定で無効です。保持設定と必要に応じたStorage Lifecycleで保持期間を管理します。状態・所有記録・通知待ちを先に削除しないでください。
 
 Blob保存とQueue送信は単一トランザクションではありません。送信失敗時にBlobが残る場合があるため、保持期限による削除の対象に含めてください。
 
@@ -435,3 +435,13 @@ Apache POI・PDFBoxなどの依存ライブラリ、Maven Wrapper、ダウンロ
 同梱するNoto Sans CJK JP・Noto Serif CJK JPはSIL Open Font License 1.1です。固定バージョン、取得元、SHA-256、著作権表示とライセンス原文は [フォントのREADME](../src/main/resources/fonts/noto/README.md) にまとめ、フォントと一緒にJARへ含めます。
 
 同梱するMaven Wrapperのライセンス本文とNOTICEは [third-party/maven-wrapper](../third-party/maven-wrapper/README.md) に配置しています。
+
+## Managed Identity・結果通知・保持期間
+
+接続文字列に加えて、制御用Storageの `CONVERSION_STORAGE__blobServiceUri`・`CONVERSION_STORAGE__queueServiceUri` と任意の `__clientId` でManaged Identityを使えます。入力・出力の登録先にも `CONVERSION_INPUT_STORAGE_<ALIAS>__blobServiceUri` / `CONVERSION_OUTPUT_STORAGE_<ALIAS>__blobServiceUri` を使えます。同じ登録で接続文字列とMIを混在させません。
+
+`CONVERSION_CREATE_RESOURCES=false` はコンテナー・Queueの自動作成を省略します。必要なリソースは配置前に用意してください。結果Queueは事前登録し、version 2の `notification.queue` で選択します。通知の送信待ちは永続化し、重複通知をeventIdで識別できます。
+
+`CONVERSION_RESULT_RETENTION_DAYS`・`CONVERSION_STATE_RETENTION_DAYS` は既定0（自動削除無効）です。状態保持を有効にする場合は、結果保持も有効にし、それより長く設定します。期限切れ結果は清掃後に `410 JOB_RESULT_EXPIRED` になります。未完了のHTTP受付が残った場合も、保持設定に従って期限切れとして処理します。通常のQueue待ち・実行中のジョブを期限切れ成果物として削除しません。
+
+結果通知先または保持を設定すると5分ごとのメンテナンス実行が発生します。未設定では定期処理は無効です。ホスト認証・RBAC・閉域DNS・保持と重複判定の関係・利用側の版照合は[共通の配置・運用手順](../../../docs/development.md#8-managed-identity閉域storage結果通知)、JSONの拡張は[直接Queueのversion 2](direct-queue.md#version-2入力版付加情報結果通知)を参照してください。

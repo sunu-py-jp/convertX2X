@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Movie2AudioのAPIリファレンス。動画ファイル・許可済みHTTPS URLからAACを再エンコードせずM4Aへ抽出。">
+<meta name="description" content="Movie2AudioのAPIリファレンス。動画からAACをコピー、または対応する音声をM4A・WAVへ変換。">
 <title>抽出した音声をBlobへ保存 · Movie2Audio API</title>
 <link rel="stylesheet" href="../assets/styles.css">
 <script src="../assets/app.js" defer></script>
@@ -16,13 +16,13 @@
 <main id="main-content" class="main-content" tabindex="-1">
 <div class="page-layout">
 <article class="article">
-<p class="eyebrow">Movie → AAC → Blob</p>
+<p class="eyebrow">Movie → Audio → Blob</p>
 <h1>抽出した音声をBlobへ保存</h1>
 <p class="lead">動画ファイルまたはHTTPS URLと、書き込み先のBlob SAS URLを受け取り、完成したM4Aを指定先へ保存します。保存完了後にJSONを返す同期APIです。</p>
 <div class="hero-meta"><span class="pill accent">POST /convert-to-blob</span><span class="pill">単一Blob SAS</span><span class="pill">既存Blobは上書きしない</span></div>
 <h2 id="overview">保存の流れ</h2>
 <div class="flow" aria-label="動画から音声を抽出しBlobへ保存する流れ"><span>動画 + 保存先SAS</span><b aria-hidden="true">→</b><span>AACを抽出</span><b aria-hidden="true">→</b><span>BlobへPUT</span><b aria-hidden="true">→</b><span>201 JSON</span></div>
-<p>入力を一時ファイルに保存し、共通のFFmpeg処理で最初のAAC音声を再エンコードせずにM4Aへコピーします。音声と容量を検証した完成済みファイルをストリームで送信し、Blobの作成成功を確認してから応答します。Queue受付・バックグラウンドジョブではありません。</p>
+<p>入力を一時ファイルに保存し、共通のFFmpeg処理で既定では最初のAAC音声をM4Aへコピーします。クエリでtranscodeとWAVも選択できます。音声と容量を検証した完成済みファイルをストリームで送信し、Blobの作成成功を確認してから応答します。Queue受付・バックグラウンドジョブではありません。</p>
 <div class="callout"><strong>SAS URLに認証情報が含まれます。</strong><br>接続文字列、Storageのアカウントキー、任意の認証ヘッダーを追加で渡す必要はありません。Function Appを呼び出す <code>x-functions-key</code> は別の認証情報で、保存先へ転送しません。</div>
 <h2 id="enable">保存先を管理者が許可する</h2>
 <p>Function Appの環境変数に、保存を許可するAzure Blobのホスト名を設定します。未設定・空値では、このAPIは <code>503 OUTPUT_STORAGE_DISABLED</code> です。</p>
@@ -119,6 +119,7 @@
 <p>Azure Storage実サービスでの保存検証は、ローカルの入力検証・接続設定のテスト・テスト用受信先への転送検証とは別に行ってください。</p>
 
 <p>ジョブIDを受け取って後から結果を取得する場合は <a href="jobs.html">非同期HTTP</a>、他システムから登録済みBlobを処理する場合は <a href="queue.html">直接Queue</a> を使います。SAS保存APIは同期専用です。</p>
+<p>音声形式の選択は<a href="http.html#audio-options">共通の音声オプション</a>を参照してください。URL・SASの本文形式は変更せず、受付URLのクエリで指定します。</p>
 <footer class="page-footer"><p>最終確認：2026-09-15。<a href="../../../functions/movie2audio/docs/usage.md">利用ガイド</a> · <a href="../../movie2audio.md">開発者向け実装ガイド</a></p></footer>
 </article>
 <aside class="toc" aria-label="このページの目次"><p class="toc-title">このページの内容</p><nav id="page-toc"></nav></aside>

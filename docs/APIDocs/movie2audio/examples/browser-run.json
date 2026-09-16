@@ -1,0 +1,54 @@
+{
+  "capturedAt": "2026-09-16T12:26:15.289Z",
+  "browser": "152.0.7977.83",
+  "viewport": {
+    "width": 1360,
+    "height": 1080
+  },
+  "realFunctionsHost": "http://localhost:7073",
+  "pageErrors": [],
+  "cases": [
+    {
+      "case": "basic-playground",
+      "input": "basic-input.mp4",
+      "mode": "sync",
+      "media": {
+        "durationSeconds": 4,
+        "readyState": 4,
+        "error": null
+      },
+      "audioBytes": 81771,
+      "audioSha256": "bca8eddd6abc20ec96caf7b517804b719cb1ffb1463f68af1e17efa3b68678c0",
+      "actualPlaybackStarted": true,
+      "sameAsVerifiedHttpOutput": true,
+      "visibleMessage": "0.0秒で完了しました（送受信を含む）。",
+      "jobInfo": "",
+      "screenshot": "basic-playground.png"
+    },
+    {
+      "case": "complex-playground",
+      "input": "complex-input.mp4",
+      "mode": "async",
+      "media": {
+        "durationSeconds": 72,
+        "readyState": 4,
+        "error": null
+      },
+      "audioBytes": 1457629,
+      "audioSha256": "76dbbad7c91f7e1f4adbc7b809f6bfca69c2b1aedf2e66cd523a87009bb1ab52",
+      "actualPlaybackStarted": true,
+      "sameAsVerifiedHttpOutput": true,
+      "visibleMessage": "3.1秒で完了しました（キュー待機・送受信を含む）。",
+      "jobInfo": "ジョブID: d800495a-fc12-469e-8f5a-c81476eb0329",
+      "screenshot": "complex-playground.png"
+    },
+    {
+      "case": "error-playground",
+      "input": "first-pcm-second-aac.mkv",
+      "mode": "sync",
+      "errorCode": "UNSUPPORTED_AUDIO_CODEC",
+      "visibleMessage": "UNSUPPORTED_AUDIO_CODEC: The first audio stream must use AAC. Audio is not re-encoded.",
+      "screenshot": "error-playground.png"
+    }
+  ]
+}

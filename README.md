@@ -8,9 +8,9 @@
 | --- | --- | --- |
 | PowerPoint / PDF → 画像 | PPTX・PPT・PDF → PNG・JPEG・ZIP | [API資料](docs/APIDocs/ppt-pdf-to-images/index.html) |
 | Office → Markdown | Excel・Word・PowerPoint → Markdown・画像 | [API資料](docs/APIDocs/office2md/index.html) |
-| Movie → AAC | 動画ファイル・URL・Blob → AAC音声をコピーしたM4A | [API資料](docs/APIDocs/movie2audio/index.html) |
+| Movie → Audio | 動画ファイル・URL・Blob → AAC音声をコピーしたM4A | [API資料](docs/APIDocs/movie2audio/index.html) |
 
-画像・Office変換はJava 21、Movie → AACはNode.js 22 / 24と同梱FFmpegで実装しています。各機能に簡易Playgroundがあります。Movie → AACは、書き込み用SASで指定したBlobへの保存にも対応します。
+画像・Office変換はJava 21、Movie → AudioはNode.js 22 / 24と同梱FFmpegで実装しています。各機能に簡易Playgroundがあります。Movie → Audioは、書き込み用SASで指定したBlobへの保存にも対応します。
 
 非同期は `CONVERSION_STORAGE_CONNECTION_STRING` 設定時に有効になります。外部システムからQueueへ直接依頼でき、入力・出力に別のStorageアカウントを登録することもできます。
 

@@ -78,6 +78,35 @@ result:  storage, container, sectionCount, warningCount,
 <p>新しい変換ではjobIdと入力Blobパスを両方変えてください。投入後の入力を上書きすると、再試行が別の内容を読む可能性があります。入力のETag検査は1回のダウンロード中の変更を防ぐもので、再試行全体での不変性を代替しません。</p>
 <p>入力アップロード後にQueue送信が失敗した場合は、元の入力を保持したまま同じJSONを再送します。完成成果物も変更しないでください。リースで同じジョブの配送を直列化しますが、全ジョブのFIFO順序やアプリ全体の同時実行1は保証しません。失敗試行を含むBlobの保持・清掃は運用側で決めます。</p>
 
+<h2 id="version-2">Version 2：入力版・付加情報・結果通知</h2>
+<p>既存のversion 1は引き続き使えます。以下の拡張はversion 2でのみ受け付けます。接続先の資格情報やURLをQueueメッセージに含めません。</p>
+<pre><code class="language-json">{
+  &quot;version&quot;: 2,
+  &quot;jobId&quot;: &quot;b6812181-8d03-4cb0-841a-225798074cf9&quot;,
+  &quot;input&quot;: {
+    &quot;storage&quot;: &quot;source&quot;,
+    &quot;container&quot;: &quot;documents-incoming&quot;,
+    &quot;blobName&quot;: &quot;originals/book.xlsx&quot;,
+    &quot;expectedETag&quot;: &quot;\&quot;0x8EXAMPLE\&quot;&quot;
+  },
+  &quot;output&quot;: {
+    &quot;storage&quot;: &quot;archive&quot;,
+    &quot;container&quot;: &quot;converted-results&quot;,
+    &quot;prefix&quot;: &quot;exports&quot;
+  },
+  &quot;metadata&quot;: {
+    &quot;documentId&quot;: &quot;document-123&quot;,
+    &quot;revision&quot;: &quot;7&quot;
+  },
+  &quot;notification&quot;: {
+    &quot;queue&quot;: &quot;completed&quot;
+  }
+}</code></pre>
+<p><code>input.expectedETag</code>で原本の版を固定し、不一致は<code>INPUT_VERSION_MISMATCH</code>です。<code>metadata</code>は最大16項目の文字列マップ（キー64文字・値512文字・合計8KiB以下）、<code>notification.queue</code>は登録済み結果Queueのエイリアスです。metadataは認可情報ではありません。</p>
+<p>Officeの成果物にはMarkdown・report・画像一式と、それらの参照・サイズ・SHA-256を持つManifestがあります。通知には大量の画像一覧を埋め込まず、確定した成果物の参照を返します。</p>
+<p>通知は<code>eventId</code>・<code>jobId</code>・終端の<code>status</code>・入力版・metadata・結果参照・固定エラーを含みます。受信側でeventIdによる重複排除と最新revisionの照合を行ってください。通知失敗は送信待ちから再送し、変換はやり直しません。</p>
+<p>結果と状態の保持期間は既定では無期限です。保持設定を有効にすると、アプリが所有するファイルだけを清掃します。清掃済みの結果取得は<code>410 JOB_RESULT_EXPIRED</code>です。状態を削除した後は同じjobIdの重複判定も終了します。</p>
+<p>設定・権限・Private Endpoint・保持運用は<a href="../../development.md#8-managed-identity閉域storage結果通知">共通の配置・運用手順</a>、詳細な契約は<a href="../../../functions/office2md/docs/direct-queue.md#version-2入力版付加情報結果通知">直接Queueガイド</a>を参照してください。未登録の入力・出力・通知先は使用できません。</p>
 <footer class="page-footer"><p>最終確認：2026-09-13。<a href="../../../functions/office2md/docs/usage.md">利用ガイド</a>と<a href="../../../functions/office2md/src/main/java/com/convertx2x/office2md/ConversionFunctions.java">HTTP実装</a>に基づく資料です。</p></footer>
 </article>
 <aside class="toc" aria-label="このページの目次"><p class="toc-title">このページの内容</p><nav id="page-toc"></nav></aside>

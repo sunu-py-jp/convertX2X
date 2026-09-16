@@ -2,10 +2,14 @@ package com.slide2image;
 
 import com.slide2image.conversion.ConversionLimits;
 import com.slide2image.jobs.BlobStorageProfiles;
+import com.slide2image.jobs.IntegrationSettings;
 import java.util.Map;
 
 /** App settings are environment variables in Azure Functions. */
-public record AppConfig(String storageConnectionString, ConversionLimits limits, BlobStorageProfiles blobStorageProfiles) {
+public record AppConfig(String storageConnectionString, ConversionLimits limits, BlobStorageProfiles blobStorageProfiles, IntegrationSettings integration) {
+    public AppConfig(String connection, ConversionLimits limits, BlobStorageProfiles profiles) {
+        this(connection, limits, profiles, IntegrationSettings.from(Map.of(STORAGE_SETTING, connection == null ? "" : connection)));
+    }
     public static final String STORAGE_SETTING = "CONVERSION_STORAGE_CONNECTION_STRING";
     public static final String QUEUE_CONNECTION_SETTING = "CONVERSION_QUEUE_CONNECTION_STRING";
 
@@ -22,11 +26,11 @@ public record AppConfig(String storageConnectionString, ConversionLimits limits,
                         Math.toIntExact(positive(settings, "CONVERSION_MAX_PAGES", defaults.maxPages())),
                         positive(settings, "CONVERSION_MAX_PIXELS_PER_PAGE", defaults.maxPixelsPerPage()),
                         positive(settings, "CONVERSION_MAX_OUTPUT_BYTES", defaults.maxOutputBytes())),
-                BlobStorageProfiles.from(settings, connection));
+                BlobStorageProfiles.from(settings, connection), IntegrationSettings.from(settings));
     }
 
     public boolean asyncEnabled() {
-        return storageConnectionString != null && !storageConnectionString.isBlank();
+        return integration.control().hasBlob() && integration.control().hasQueue();
     }
 
     // Do not include secrets in generated record diagnostics.

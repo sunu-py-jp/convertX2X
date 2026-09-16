@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Movie2AudioのAPIリファレンス。動画ファイル・許可済みHTTPS URLからAACを再エンコードせずM4Aへ抽出。">
+<meta name="description" content="Movie2AudioのAPIリファレンス。動画からAACをコピー、または対応する音声をM4A・WAVへ変換。">
 <title>ファイルを送って抽出 · Movie2Audio API</title>
 <link rel="stylesheet" href="../assets/styles.css">
 <script src="../assets/app.js" defer></script>
@@ -16,7 +16,7 @@
 <main id="main-content" class="main-content" tabindex="-1">
 <div class="page-layout">
 <article class="article">
-<p class="eyebrow">Movie → AAC</p>
+<p class="eyebrow">Movie → Audio</p>
 <h1>ファイルを送って抽出</h1>
 <p class="lead">動画ファイルのバイト列をPOSTし、最初のAAC音声トラックをaudio.m4aとして受け取ります。</p>
 
@@ -49,11 +49,25 @@ X-Content-Type-Options: nosniff
 Cache-Control: no-store
 
 &lt;M4Aのバイト列&gt;</code></pre>
-<p><code>X-Audio-Codec: aac</code> は出力音声のコーデック、<code>X-Audio-Mode: copy</code> は再エンコードを行わなかったことを示します。元の動画のファイル名に関係なく、出力のファイル名は <code>audio.m4a</code> です。</p>
+<p><code>X-Audio-Codec: aac</code> は出力音声のコーデック、<code>X-Audio-Mode: copy</code> は再エンコードを行わなかったことを示します。元の動画のファイル名に関係なく、既定の出力名は<code>audio.m4a</code>です。WAVを選ぶと<code>audio.wav</code>になります。</p>
 <h2 id="streaming">ストリーミングの範囲</h2>
 <p>動画のアップロードは上限付きストリームで一時ディスクへ保存します。FFmpegが音声を抽出し、M4A全体を検証した後、完成したファイルを読み取りストリームで返します。入力動画・出力音声の全体をアプリのメモリーへ読み込む必要はありません。</p>
 <p>音声の抽出中から応答するライブ変換ではありません。元のAACを保持した通常のM4Aに <code>faststart</code> を適用し、抽出が完了してから送信します。受信側はHTTP本文をストリームとして読み、保存・再生・次の処理へ渡せます。</p>
 <p>アプリは <code>Content-Length</code> を付けません。出力ファイルの読み出し中の期限超過やエラーはストリームを中断し、開始済みの応答をJSONエラーへ差し替えません。転送中のキャンセルはアプリへ伝搬した時点で処理します。利用側ではステータスだけでなく、本文の読み取りが正常終了したことを確認してください。</p>
+<h2 id="audio-options">音声形式を選ぶ</h2>
+<p>既定はAACの無劣化コピーです。<code>audioMode=transcode</code>を明示すると、AAC・Opus・MP3・一般的なPCMからM4A/AACまたはWAV/16bit PCMへ変換できます。</p>
+<div class="table-wrap"><table><thead><tr><th>クエリ</th><th>指定値</th></tr></thead><tbody>
+<tr><td><code>audioMode</code></td><td>copy（既定） / transcode</td></tr>
+<tr><td><code>audioFormat</code></td><td>m4a（既定） / wav。WAVはtranscodeのみ</td></tr>
+<tr><td><code>sampleRate</code></td><td>省略で元の値。8000 / 11025 / 12000 / 16000 / 22050 / 24000 / 32000 / 44100 / 48000 / 64000 / 88200 / 96000</td></tr>
+<tr><td><code>channels</code></td><td>省略で元の値。1〜8</td></tr>
+</tbody></table></div>
+<p>copyではsampleRate・channelsを指定できません。同じパラメーターの重複も拒否します。M4Aへの再エンコードでは音質が変わります。WAVは非圧縮なので、16kHz・16bit・モノラルでも1時間約115MBとなり、既定100MiBの上限を超えます。</p>
+<pre><code class="language-shell">curl --fail-with-body \
+  'http://localhost:7073/api/convert?audioMode=transcode&amp;audioFormat=wav&amp;sampleRate=16000&amp;channels=1' \
+  -H 'Content-Type: application/octet-stream' \
+  --data-binary @video.mkv --output audio.wav</code></pre>
+<p>同じクエリをURL入力・SAS保存・非同期HTTP受付にも指定できます。直接Queueは<a href="queue.html#version-2">version 2のoptions</a>を使います。WAVの応答は<code>audio/wav</code>・<code>audio.wav</code>・<code>X-Audio-Codec: pcm_s16le</code>です。結果取得時に別形式へ再変換はしません。</p>
 <h2 id="speech">利用側の例：Azure Speech Fast Transcription</h2>
 <p>抽出に成功した <code>audio.m4a</code> を、利用側からFastへ送信する例です。Movie2Audio自身はSpeechを呼び出しません。実行するシェルの <code>SPEECH_ENDPOINT</code> にSpeechリソースのエンドポイント（例：<code>https://YOUR_SPEECH_RESOURCE.cognitiveservices.azure.com</code>）、<code>SPEECH_KEY</code> にそのキーを設定してください。Movie2Audio用の <code>FUNCTIONS_HOST_KEY</code> はSpeechには渡しません。</p>
 <pre><code class="language-shell">curl --fail-with-body \
@@ -63,15 +77,15 @@ Cache-Control: no-store
   --form 'definition={&quot;locales&quot;:[&quot;ja-JP&quot;]}' \
   --output transcript.json</code></pre>
 <p>Fastのリクエストは <code>multipart/form-data</code> です。<code>Content-Type</code> は境界文字列とともにcurlが生成します。成功時の文字起こし結果を <code>transcript.json</code> に保存します。利用可能なリージョン・音声サイズ・時間上限は<a href="https://learn.microsoft.com/en-us/azure/ai-services/speech-service/fast-transcription-create">Fastの公式資料</a>を確認してください。</p>
-<p>AAC音声の再エンコード、サンプリングレート変更、モノラル化は行いません。Fastは既定でチャンネルをまとめ、設定により左右を個別に認識できます。M4Aには <code>-movflags +faststart</code> を適用して再生情報を先頭側へ配置し、<a href="https://learn.microsoft.com/en-us/answers/questions/2133748/what-input-formats-does-batch-speech-to-text-suppo">Microsoft社員が案内するMP4の読み込み上の注意</a>に対応しています。</p>
+<p>既定のcopyではAAC音声の再エンコード、サンプリングレート変更、モノラル化は行いません。Fastは既定でチャンネルをまとめ、設定により左右を個別に認識できます。M4Aには <code>-movflags +faststart</code> を適用して再生情報を先頭側へ配置し、<a href="https://learn.microsoft.com/en-us/answers/questions/2133748/what-input-formats-does-batch-speech-to-text-suppo">Microsoft社員が案内するMP4の読み込み上の注意</a>に対応しています。</p>
 <div class="callout"><strong>Azure Speech実サービスでの受け入れ・文字起こしは未検証です。</strong><br>現行の<a href="https://learn.microsoft.com/en-us/azure/ai-services/speech-service/batch-transcription-audio-data">対応形式一覧</a>はAAC、<a href="https://techcommunity.microsoft.com/blog/azure-ai-foundry-blog/fast-transcription-public-preview-in-azure-ai-speech/4108720">Microsoftの2024年のFast紹介</a>はM4Aを掲載しています。この送信例はFast用です。短音声RESTやリアルタイムのSpeech SDKとは入力条件が異なります。</div>
 <h2 id="audio-selection">どの音声が選ばれるか</h2>
-<div class="table-wrap"><table><thead><tr><th scope="col">動画の音声構成</th><th scope="col">動作</th></tr></thead><tbody><tr><td>第1音声AAC、第2音声AAC</td><td>第1音声だけを抽出</td></tr><tr><td>第1音声MP3、第2音声AAC</td><td>422で拒否。第2音声は選ばない</td></tr><tr><td>音声なし</td><td><code>422 NO_AUDIO_STREAM</code></td></tr><tr><td>AAC音声のみ、動画なし</td><td><code>422 NO_VIDEO_STREAM</code></td></tr></tbody></table></div>
+<div class="table-wrap"><table><thead><tr><th scope="col">動画の音声構成</th><th scope="col">動作</th></tr></thead><tbody><tr><td>第1音声AAC、第2音声AAC</td><td>第1音声だけを抽出</td></tr><tr><td>第1音声MP3、第2音声AAC</td><td>copyでは422。transcodeでは第1音声を変換し、第2音声は選ばない</td></tr><tr><td>音声なし</td><td><code>422 NO_AUDIO_STREAM</code></td></tr><tr><td>AAC音声のみ、動画なし</td><td><code>422 NO_VIDEO_STREAM</code></td></tr></tbody></table></div>
 <h2 id="errors">失敗レスポンス</h2>
 <pre><code class="language-json">{
   &quot;error&quot;: {
     &quot;code&quot;: &quot;UNSUPPORTED_AUDIO_CODEC&quot;,
-    &quot;message&quot;: &quot;The first audio stream must use AAC. Audio is not re-encoded.&quot;
+    &quot;message&quot;: &quot;The first audio stream must use AAC in copy mode. Select transcode for supported non-AAC audio.&quot;
   }
 }</code></pre>
 <p>上の例は送信開始前のHTTP 422です。アプリのエラーコードで判定し、音声ファイルとして保存しないでください。<a href="settings.html#errors">設定・エラー一覧</a>にサイズ超過・同時実行・タイムアウトもまとめています。</p>

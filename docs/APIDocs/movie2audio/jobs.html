@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Movie2AudioのAPIリファレンス。動画ファイル・許可済みHTTPS URLからAACを再エンコードせずM4Aへ抽出。">
+<meta name="description" content="Movie2AudioのAPIリファレンス。動画からAACをコピー、または対応する音声をM4A・WAVへ変換。">
 <title>非同期HTTPで受付・結果を取得する · Movie2Audio API</title>
 <link rel="stylesheet" href="../assets/styles.css">
 <script src="../assets/app.js" defer></script>
@@ -16,7 +16,7 @@
 <main id="main-content" class="main-content" tabindex="-1">
 <div class="page-layout">
 <article class="article">
-<p class="eyebrow">Movie → AAC</p>
+<p class="eyebrow">Movie → Audio</p>
 <h1>非同期HTTPで受付・結果を取得する</h1>
 <p class="lead">動画をStorageへ保存してQueueへ登録し、202とジョブIDを返します。ワーカーが抽出したM4Aは、状態APIと結果APIから取得できます。</p>
 <div class="flow"><span>動画を受付</span><b aria-hidden="true">→</b><span>Blob + Queue</span><b aria-hidden="true">→</b><span>AACを抽出</span><b aria-hidden="true">→</b><span>M4Aを取得</span></div>
@@ -81,13 +81,14 @@
 <h2 id="storage">保存先と保持期間</h2>
 <div class="table-wrap"><table><thead><tr><th>対象</th><th>既定の保存場所</th></tr></thead><tbody><tr><td>Queue</td><td><code>movie2audio-jobs</code></td></tr><tr><td>入力</td><td>同名コンテナーの <code>{jobId}/input</code></td></tr><tr><td>状態</td><td>同名コンテナーの <code>{jobId}/status.json</code></td></tr><tr><td>出力</td><td>同名コンテナーの <code>{jobId}/results/{attemptUUID}/audio.m4a</code></td></tr></tbody></table></div>
 <p>HTTP受付は制御用Storageに入出力を保存します。別アカウントの入力・保存先を選ぶ場合は <a href="queue.html#storage-aliases">直接Queueの登録Storage指定</a> を使います。SAS URLを都度指定したい場合は同期の <a href="storage.html">/convert-to-blob</a> です。</p>
-<p>ローカルの作業ファイルは処理後に削除します。Storageの入力・状態・結果・途中で失敗した試行のBlobは自動削除しません。必要な保持期間に合わせてStorageのライフサイクル管理を設定します。</p>
+<p>ローカルの作業ファイルは処理後に削除します。既定ではStorageのBlobを自動削除しません。保持設定で所有成果物を清掃できます。状態の保持期限を過ぎると重複判定も終了します。</p>
 <h2 id="execution">実行期限とスケール</h2>
 <p>入力上限・出力上限・AACコピーの仕様は同期と共通です。既定180秒の期限は、HTTP受付、Queueの各処理試行、結果の取得処理にそれぞれ適用します。Queue内での待機時間はこの期限と別です。</p>
 <p>Node.jsプロセス内は同期変換とQueue処理を合わせて1件です。Queue設定は <code>batchSize=1</code>、<code>newBatchThreshold=0</code>、動的同時実行は無効です。スケールアウトすれば別インスタンスで並列に処理でき、厳密なFIFO順序は保証しません。インスタンス全体を1つに制限する場合は配置先プラン側でも設定します。</p>
 <p>一時的なStorage障害・競合は再試行し、最大10回の後は <code>movie2audio-jobs-poison</code> で失敗状態にします。不正動画や上限超過などは失敗として終了します。<a href="queue.html#retry">重複配送と再試行</a>を参照してください。</p>
 <h2 id="playground">Playgroundで試す</h2>
 <p><a href="http://localhost:7073/api/playground">Playground</a> で「キューで実行」を選ぶと、この受付・状態・結果APIを順番に使います。Storage未設定時は選択できません。画面は3秒おきに確認し、最大15分で待機を終了します。画面を閉じたり待機を終えたりしても、受付済みのジョブはキャンセルしません。表示されたIDで後から状態を確認できます。</p>
+<p>音声形式の選択は<a href="http.html#audio-options">共通の音声オプション</a>を参照してください。URL・SASの本文形式は変更せず、受付URLのクエリで指定します。</p>
 <footer class="page-footer"><p>最終確認：2026-09-15。<a href="../../../functions/movie2audio/docs/usage.md">利用ガイド</a> · <a href="../../movie2audio.md">開発者向け実装ガイド</a></p></footer>
 </article>
 <aside class="toc" aria-label="このページの目次"><p class="toc-title">このページの内容</p><nav id="page-toc"></nav></aside>

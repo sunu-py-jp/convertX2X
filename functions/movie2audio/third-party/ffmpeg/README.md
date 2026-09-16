@@ -42,14 +42,16 @@ ELF の `GNU_STACK` を 8 MiB に設定しています。macOS Apple Silicon 版
 両者とも次の構成です。各バイナリ横の `manifest.json` に実際の configure 引数、
 ビルド環境、サイズ、SHA256 を記録しています。
 
-- ネットワーク機能、外部ライブラリ自動検出、すべてのエンコーダーを無効化
+- ネットワーク機能、外部ライブラリ自動検出、不要なエンコーダーを無効化
 - 入出力 protocol は `file` のみ
-- 入力 demuxer は MOV/MP4、Matroska/WebM、AVI、MPEG-TS、FLV のみ
-- 出力 muxer は `ipod` と、その依存の `mov`
-- AAC の情報取得用デコーダー、AAC parser、ADTS から MP4 への bitstream filter を有効化
+- 入力demuxerはMOV/MP4、Matroska/WebM、AVI、MPEG-TS、FLVと、出力検証用のWAV
+- 出力muxerは`ipod`、その依存の`mov`、`wav`
+- AAC・Opus・MP3・一般的なPCMのデコーダー、必要なparser、ADTSからMP4へのbitstream filterを有効化
+- FFmpeg内蔵の`aac`・`pcm_s16le`エンコーダーと、音声のリサンプル・形式調整用フィルターのみ有効化
 - GPL オプション、nonfree オプション、version3 オプションは有効にしていません
 
-AAC 以外の音声を AAC にエンコードする機能はありません。
+既定はAACパケットのコピーです。明示したtranscodeモードでは、対応する音声を
+AAC/M4Aまたは16bit PCM/WAVへ変換できます。外部の音声エンコーダーはリンクしていません。
 `file` protocol の許可はファイルシステムのサンドボックスではないため、
 このアプリは playlist demuxer を含めず、MOV の外部参照オプションも既定の無効状態を維持します。
 

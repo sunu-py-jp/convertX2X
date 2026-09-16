@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Movie2Audioの実際の変換例。複数AACトラック、字幕、チャプターを含む動画から抽出したM4A、Playgroundのスクリーンショット、入力ファイルと検証記録。">
+<title>実際の変換例 · Movie2Audio API</title>
+<link rel="stylesheet" href="../assets/styles.css">
+<script src="../assets/app.js" defer></script>
+</head>
+<body data-page="movie-examples">
+<a class="skip-link" href="#main-content">本文へ移動</a>
+<div id="site-header"></div>
+<aside id="sidebar" class="sidebar" aria-label="APIナビゲーション"></aside>
+<div id="menu-overlay" class="menu-overlay" hidden></div>
+<main id="main-content" class="main-content" tabindex="-1">
+<div class="page-layout"><article class="article">
+<p class="eyebrow">Movie → Audio / Conversion examples</p>
+<h1>実際の変換例</h1>
+<p class="lead">入力動画、実際にAPIから返ったM4A、Playgroundの実行画面をまとめました。単純な動画に加えて、複数音声・字幕・チャプターを含む動画でも、どの情報が残るかを確認できます。</p>
+<div class="callout"><strong>掲載物はローカルの実処理結果です。</strong><br>2026年9月16日に、Node.js 24・Functions Core Tools・同梱FFmpeg 9.0.1で実行しました。キューはAzuriteを使用しています。Azure上の速度・負荷試験ではありません。映像とテスト音は自作で、会話の録音や文字起こしは含みません。</div>
+
+<h2 id="basic">基本例：4秒の動画からAACを抽出</h2>
+<section class="sample-case" aria-label="基本的なAAC抽出例">
+<p>映像1本と、48kHz・ステレオのAAC音声1本を含むMP4を、<a href="http.html">同期HTTP API</a>に送信しました。出力は4秒のM4Aです。</p>
+<div class="sample-meta"><span>入力 133,711 bytes</span><span>出力 81,771 bytes</span><span>HTTP 200</span><span>AAC / stream copy</span></div>
+<div class="sample-links"><a href="examples/basic-input.mp4" download>入力MP4をダウンロード</a><a href="examples/basic-audio.m4a" download>実際の出力M4A</a><a href="examples/basic-probe.json">入力・出力の解析結果</a></div>
+<p><strong>実際に抽出した音声</strong>（自作の短いテストメロディー）</p>
+<audio controls preload="metadata" aria-label="基本例の抽出済みAAC音声"><source src="examples/basic-audio.m4a" type="audio/mp4">音声再生に非対応の場合は、上のM4Aをダウンロードしてください。</audio>
+<figure class="example-figure"><a href="examples/basic-playground.png"><img src="examples/basic-playground.png" alt="同期で実行したMovie2Audio Playground。basic-input.mp4から4秒、79.9KiBのaudio.m4aが生成され、完了と表示されている。" loading="lazy" width="1360" height="1091"></a><figcaption>実際のPlaygroundを操作して撮影。ブラウザーで音声の読み込み・再生・ダウンロードまで確認しました。クリックすると原寸で開きます。</figcaption></figure>
+<p>AACの189パケットすべてについて、入力の最初の音声と出力のデータが一致しました。M4Aのコンテナーは作り直すため、動画ファイル全体とM4A全体のハッシュは異なります。</p>
+</section>
+
+<h2 id="complex">複雑な例：音声2本・字幕・3チャプターの72秒動画</h2>
+<section class="sample-case" aria-label="複数トラックを含む複雑な動画の抽出例">
+<p>3つの映像セクション、日本語タイトル、言語タグ、異なる音声2本、字幕、チャプターを含む自作MP4です。同期APIと、Playgroundの「キューで実行」の両方に同じ入力を送りました。</p>
+<div class="sample-meta"><span>72秒</span><span>入力 2,717,725 bytes</span><span>出力 1,457,629 bytes</span><span>音声2本 → 1本</span></div>
+<div class="sample-links"><a href="examples/complex-input.mp4" download>複雑な入力MP4</a><a href="examples/complex-audio.m4a" download>実際の出力M4A</a><a href="examples/complex-probe.json">全トラック・チャプターの解析結果</a></div>
+<div class="table-wrap"><table><thead><tr><th scope="col">入力の構成</th><th scope="col">実際の結果</th></tr></thead><tbody>
+<tr><td>映像：960 × 540、MPEG-4 Part 2</td><td>出力に含めない</td></tr>
+<tr><td>第1音声：AAC、48kHz、ステレオ、日本語タグ</td><td>この音声のみを再エンコードせず保持</td></tr>
+<tr><td>第2音声：AAC、44.1kHz、モノラル、英語タグ</td><td>出力に含めない。音声を混ぜない</td></tr>
+<tr><td>字幕：mov_text、英語3区間</td><td>出力に含めない</td></tr>
+<tr><td>3チャプター・日本語タイトル・作成者タグ</td><td>元の情報を出力へ引き継がない</td></tr>
+</tbody></table></div>
+<p><strong>実際に抽出した第1音声</strong>（72秒の自作ステレオテスト音）</p>
+<audio controls preload="metadata" aria-label="複雑な動画から抽出した72秒の第1AAC音声"><source src="examples/complex-audio.m4a" type="audio/mp4">上のM4Aをダウンロードしてください。</audio>
+<details class="sample-details"><summary>入力映像の内容を確認する</summary><figure class="example-figure"><a href="examples/complex-source.png"><img src="examples/complex-source.png" alt="入力動画の先頭フレーム。複数トラックの抽出確認という日本語タイトル、72秒、ステレオとモノラルの音声構成が記載されている。" loading="lazy" width="960" height="540"></a><figcaption>入力動画の作成に使った先頭フレームです。変換結果のスクリーンショットではありません。入力映像はMPEG-4 Part 2のため、ブラウザーによって動画を再生できません。MP4をダウンロードして対応プレイヤーで確認できます。出力M4Aは、このページで再生できます。</figcaption></figure></details>
+<figure class="example-figure"><a href="examples/complex-playground.png"><img src="examples/complex-playground.png" alt="キューで実行したMovie2Audio Playground。complex-input.mp4から1分12秒のaudio.m4aが生成され、完了とジョブIDが表示されている。" loading="lazy" width="1360" height="1091"></a><figcaption>実際の非同期HTTP → Queue → 変換 → 結果取得を完了した画面。音声は同期APIの出力とファイル全体のSHA-256が一致しました。表示時間にはキュー待機と画面のポーリングが含まれます。</figcaption></figure>
+<p><strong>音声3,376パケット、1,443,311 bytesがすべて一致。</strong>入力の第1AACと出力AACをパケット順に照合し、データの一致を確認しました。サンプリングレートやチャンネル数もそのままです。音質改善、音量調整、モノラル化は行いません。</p>
+</section>
+
+<h2 id="queue">同じ複雑な動画をQueueへ直接依頼</h2>
+<section class="sample-case" aria-label="直接Queueの実行例">
+<p>動画をAzuriteの入力Blobへ格納し、<a href="queue.html">直接Queue APIのJSON</a>をBase64で1回だけエンコードして送信しました。HTTPのジョブ作成APIを経由せず、Queueトリガーで実際に抽出した結果です。</p>
+<div class="sample-links"><a href="examples/queue-request.json">実際に送ったQueue JSON</a><a href="examples/queue-audio.m4a" download>Queueの出力M4A</a><a href="examples/queue-run.json">保存先・状態・ハッシュの実行記録</a></div>
+<p>結果は指定した出力コンテナーの <code>exports/{jobId}/results/{attemptId}/audio.m4a</code> に保存されました。保存されたBlob、結果取得APIからダウンロードしたM4A、同期APIのM4Aは、ファイル全体が一致しています。Queueの動画データや変換結果をZIPへ詰める処理はありません。</p>
+<p>URL入力とSAS保存は、このページでは実行していません。ここに載せたキュー保存は、登録済みStorage接続を使う方式です。<a href="url.html">URL入力</a>・<a href="storage.html">SAS保存</a>の制約は各API資料を参照してください。</p>
+</section>
+
+<h2 id="errors">対応外の例：2本目がAACでも第1音声を優先</h2>
+<section class="sample-case" aria-label="対応外の音声と音声なしのエラー例">
+<p>第1音声がPCM、第2音声がAACの動画を送ると、<code>422 UNSUPPORTED_AUDIO_CODEC</code>になりました。後ろにあるAACへ切り替えたり、PCMをAACへ再エンコードしたりはしません。</p>
+<div class="sample-links"><a href="examples/first-pcm-second-aac.mkv" download>PCM + AACの入力MKV</a><a href="examples/first-pcm-second-aac-error.json">実際のエラー応答</a><a href="examples/silent-video.mp4" download>音声なしの入力MP4</a><a href="examples/silent-error.json">音声なしのエラー応答</a></div>
+<figure class="example-figure"><a href="examples/error-playground.png"><img src="examples/error-playground.png" alt="最初の音声がPCMのMKVを同期実行し、UNSUPPORTED_AUDIO_CODECと表示された実際のPlayground画面。音声のダウンロードは表示されていない。" loading="lazy" width="1360" height="1091"></a><figcaption>実際のHTTP 422を表示した画面です。音声がない動画では、別途 <code>422 NO_AUDIO_STREAM</code> を確認しました。</figcaption></figure>
+</section>
+
+<h2 id="verification">実行記録と再現方法</h2>
+<p><a href="examples/run.json">HTTP実行記録</a>に入力・出力のサイズ、SHA-256、HTTP応答、所要時間、AACパケット照合結果を掲載しています。<a href="examples/browser-run.json">ブラウザー実行記録</a>には、実際の再生・ダウンロード・非同期ジョブの確認結果があります。時間は手元の1回の測定値で、Azure環境での処理時間の目安や上限ではありません。画面の測定値は別の実行です。</p>
+<pre><code class="language-shell">curl --fail-with-body \
+  -H 'Content-Type: application/octet-stream' \
+  --data-binary @complex-input.mp4 \
+  'http://localhost:7073/api/convert' \
+  --output audio.m4a</code></pre>
+<p>入力をダウンロードして実行できます。AzureのURLでは <code>x-functions-key</code> が必要です。ローカル環境の起動は<a href="../../../functions/movie2audio/docs/usage.md#ローカルで起動する">利用ガイド</a>、非同期機能は<a href="jobs.html">非同期HTTP</a>を参照してください。</p>
+<details class="sample-details"><summary>自作サンプルと検証スクリプト</summary><ul>
+<li><a href="examples/generate-inputs.py">入力動画の生成</a>：Pillowとエンコード可能なFFmpegが必要です。音声は合成したテスト音です。同梱の本番用FFmpegは抽出専用のため、この入力生成には使えません。</li>
+<li><a href="examples/run-examples.py">実際のHTTP呼び出しとAAC照合</a>：macOS Apple Silicon / Linux x64の同梱FFprobeを使用します。</li>
+<li><a href="examples/capture-playground.mjs">実際のPlayground撮影</a>：PlaywrightとChromeを使用します。</li>
+<li><a href="examples/run-direct-queue.mjs">実際の直接Queue呼び出し</a>：FunctionsとAzuriteが必要です。Azuriteは <code>--skipApiVersionCheck</code> を指定し、Functionsにはローカルエミュレーター接続を設定します。自分で作成した検証用Blobのみ実行後に削除します。</li>
+</ul><p>サンプル、図版、コードはこのリポジトリと同じMITライセンスです。フォントなど依存物には元のライセンスが適用されます。</p></details>
+<footer class="page-footer"><p>実測日：2026-09-16。<a href="index.html">Movie2Audioの概要</a> · <a href="settings.html">設定と制限</a></p></footer>
+</article><aside class="toc" aria-label="このページの目次"><p class="toc-title">このページの内容</p><nav id="page-toc"></nav></aside></div>
+</main>
+</body></html>

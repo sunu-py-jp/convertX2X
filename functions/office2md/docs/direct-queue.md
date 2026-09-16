@@ -24,7 +24,7 @@
 
 | 項目 | 内容 |
 | --- | --- |
-| `version` | 整数 `1` |
+| `version` | 整数 `1` または `2`。以下の基本例はversion 1 |
 | `jobId` | 通常のハイフン付きUUID。新しい変換では新しいIDを使う |
 | `input.container` / `input.blobName` | アップロード済みOfficeファイルのBlob参照 |
 | `input.storage` | 入力用Storageの登録名。省略・nullは `default` |
@@ -50,7 +50,7 @@ Queueと状態Blobは、常に `CONVERSION_STORAGE_CONNECTION_STRING` が指す�
 
 JSON内の登録名は `[a-z][a-z0-9_]{0,31}` に従う小文字で、`default` は予約済みです。環境変数の接尾辞は大文字にします。入力・出力の登録は別々で、出力用だけに登録したStorageを入力として使うことはできません。未知の登録名は拒否します。登録する接続文字列は、その用途に必要な権限を持つものを管理者側で用意します。アカウントキーを使う接続文字列では、登録名を分けるだけでStorage自体の権限が制限されるわけではありません。
 
-ワーカーは入力を読み取り、出力コンテナー・Blobを作成します。HTTPからの成果物取得とZIP作成にも出力Blobの読み取り権限が必要です。以下の送信サンプルは入力コンテナーとBlobを作成するため、送信側には入力の書き込み権限も必要です。接続文字列をQueueメッセージやソースコードに含めず、環境変数などで安全に渡してください。
+ワーカーは入力を読み取り、出力Blobを作成します。出力コンテナーの自動作成は `CONVERSION_CREATE_RESOURCES` に従います。HTTPからの成果物取得とZIP作成にも出力Blobの読み取り権限が必要です。以下の送信サンプルは入力コンテナーとBlobを作成するため、送信側には入力の書き込み権限も必要です。接続文字列をQueueメッセージやソースコードに含めず、環境変数などで安全に渡してください。
 
 ## Javaから送る
 
@@ -84,3 +84,48 @@ result:  storage, container, sectionCount, warningCount,
 HTTPの `/result`、`/report`、`/images/{assetName}` も利用できます。`/api/jobs/{id}` が返すURLに `x-functions-key` ヘッダーを付けてアクセスします。StorageのキーとFunction Appのホストキーは別のものです。
 
 非一時的な変換エラーは `failed` になります。一時的な処理エラーはQueueの設定に従って再試行され、上限後は `office2md-jobs-poison` に移ります。構文が壊れたメッセージなど、ジョブを特定できない入力では状態レコードを作れません。入力・状態・完了成果物・失敗した試行のBlobについて、保持期間と清掃方法を運用側で決めてください。
+
+## Version 2：入力版・付加情報・結果通知
+
+`version: 1` の既存依頼は引き続き使用できます。以下の拡張は `version: 2` を指定します。未知のキー・重複キー・型違いは引き続き拒否し、新しいフィールドをversion 1へ混ぜることはできません。
+
+- `input.expectedETag`：任意。原本のETagを引用符も含めて指定し、不一致は `INPUT_VERSION_MISMATCH`。省略時も実際に読み取ったETagを記録します。
+- `metadata`：任意の文字列マップ。最大16項目、キー64文字・値512文字・全体8KiB以下。IDやrevisionの引き継ぎに使い、秘密情報は含めません。
+- `notification.queue`：任意。管理者が登録した結果Queueのエイリアス。未登録先は拒否します。
+
+```json
+{
+  "version": 2,
+  "jobId": "b6812181-8d03-4cb0-841a-225798074cf9",
+  "input": {
+    "storage": "source",
+    "container": "documents-incoming",
+    "blobName": "originals/book.xlsx",
+    "expectedETag": "\"0x8EXAMPLE\""
+  },
+  "output": {
+    "storage": "archive",
+    "container": "converted-results",
+    "prefix": "exports"
+  },
+  "metadata": {
+    "documentId": "document-123",
+    "revision": "7"
+  },
+  "notification": {
+    "queue": "completed"
+  }
+}
+```
+
+Officeの成果物にはMarkdown・report・画像一式と、それらの参照・サイズ・SHA-256を持つManifestがあります。通知には大量の画像一覧を埋め込まず、確定した成果物の参照を返します。
+
+`source`・`archive`・`completed` は事前登録が必要です。ETagは例をそのまま使わず、実際の原本から取得します。入力版が一致しても、その結果を最新として採用できるかは利用側で現在のrevisionと照合してください。
+
+結果通知はversion 1のイベントで、`eventId`、`jobId`、`status`、`input`（実際の`eTag`）、`metadata`、`result`、`error`、`completedAt`を持ちます。失敗の `error` は固定の `code` と `retryable: false` を返します。ここでfalseはジョブが終端状態である意味です。一時障害の内部再試行中とは区別し、再実行が必要なら新しいjobIdを使います。
+
+通知送信待ちは保存し、失敗時は通知だけを再送します。通知は重複し得るため、受信側でeventIdを照合します。イベントのJSONにはBase64を1回適用します。不正JSONなどjobId・通知先を確定できない依頼には通知できません。
+
+成果物にはサイズ・SHA-256と実際の入力版を記録します。ETagは内容のハッシュではありません。再試行は別の保存先を使い、全出力が揃ってから成功状態を確定します。保存先を推測したり、Blob一覧から途中成果物を拾ったりしないでください。
+
+Managed Identity、結果Queueの登録、リソース事前作成、保持期間は[共通の配置・運用手順](../../../docs/development.md#8-managed-identity閉域storage結果通知)を参照してください。保持機能は既定で無効です。有効時は所有成果物のみを清掃し、状態の保持を終了すると同じjobIdの重複判定も終了します。期限を過ぎて清掃済みの結果取得は `410 JOB_RESULT_EXPIRED` です。

@@ -1,0 +1,99 @@
+{
+  "specVersion" : 2,
+  "source" : {
+    "filename" : "input.pptx",
+    "sha256" : "69aac8af15e6d87292b6fd6d085ff5666d42029e125033cc83560df2e597f97e",
+    "format" : "pptx"
+  },
+  "sectionKind" : "slide",
+  "sectionCount" : 4,
+  "warnings" : [ {
+    "code" : "TABLE_MERGE_FLATTENED",
+    "section" : "スライド2",
+    "range" : "shape-3",
+    "message" : "Markdown表では結合の開始セルだけに内容を残します。"
+  } ],
+  "information" : [ ],
+  "blocks" : [ {
+    "type" : "heading",
+    "level" : 1,
+    "section" : "スライド1",
+    "range" : "slide-1"
+  }, {
+    "type" : "paragraph",
+    "section" : "スライド1",
+    "range" : "shape-3"
+  }, {
+    "type" : "paragraph",
+    "section" : "スライド1",
+    "range" : "shape-4"
+  }, {
+    "type" : "paragraph",
+    "section" : "スライド1",
+    "range" : "shape-5"
+  }, {
+    "type" : "heading",
+    "level" : 1,
+    "section" : "スライド2",
+    "range" : "slide-2"
+  }, {
+    "type" : "table",
+    "section" : "スライド2",
+    "range" : "shape-3"
+  }, {
+    "type" : "heading",
+    "level" : 1,
+    "section" : "スライド3",
+    "range" : "slide-3"
+  }, {
+    "path" : "images/diagram-0001.png",
+    "type" : "diagram",
+    "section" : "スライド3",
+    "range" : "shape-4"
+  }, {
+    "path" : "images/diagram-0002.png",
+    "type" : "diagram",
+    "section" : "スライド3",
+    "range" : "shape-5"
+  }, {
+    "path" : "images/diagram-0003.png",
+    "type" : "diagram",
+    "section" : "スライド3",
+    "range" : "shape-6"
+  }, {
+    "type" : "paragraph",
+    "section" : "スライド3",
+    "range" : "shape-8"
+  }, {
+    "type" : "heading",
+    "level" : 1,
+    "section" : "スライド4",
+    "range" : "slide-4"
+  }, {
+    "path" : "images/image-0001.png",
+    "type" : "image",
+    "section" : "スライド4",
+    "range" : "shape-3"
+  } ],
+  "assets" : [ {
+    "sha256" : "359f07615f21b7b8fb418c158cf22e91f094eb5a4d1a10ae46966c6ae4f0dcdc",
+    "sizeBytes" : 8547,
+    "contentType" : "image/png",
+    "path" : "images/diagram-0001.png"
+  }, {
+    "sha256" : "32608549e9483055c3f66ddb9c4cb37c461c4ec3374c4b819af64eaa3a05a50e",
+    "sizeBytes" : 9761,
+    "contentType" : "image/png",
+    "path" : "images/diagram-0002.png"
+  }, {
+    "sha256" : "1df603d87d3c0deb749323ff7a04b03ba7f7c08425079c90b51319915428d18a",
+    "sizeBytes" : 156,
+    "contentType" : "image/png",
+    "path" : "images/diagram-0003.png"
+  }, {
+    "sha256" : "dee533bdc15da1508ed9dde21cb8a0b7037e31683ba70003e38b87a50f91b298",
+    "sizeBytes" : 1327,
+    "contentType" : "image/png",
+    "path" : "images/image-0001.png"
+  } ]
+}

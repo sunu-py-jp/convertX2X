@@ -34,6 +34,11 @@ public final class AzureJobService implements JobService {
         this(new AzureJobStore(connectionString, limits, profiles), converter::convert, converter::validate, Clock.systemUTC());
     }
 
+    public AzureJobService(IntegrationSettings settings, OfficeMarkdownService converter, ConversionLimits limits,
+                           BlobStorageProfiles profiles) {
+        this(new AzureJobStore(settings, limits, profiles), converter::convert, converter::validate, Clock.systemUTC());
+    }
+
     AzureJobService(JobStore store, Converter converter, Validator validator, Clock clock) {
         this.store = store;
         this.converter = converter;
@@ -50,9 +55,21 @@ public final class AzureJobService implements JobService {
                 new ConversionJobRequest.BlobSource(CONTAINER_NAME, id + "/input"),
                 new ConversionJobRequest.BlobOutput(CONTAINER_NAME, ""), safeName).normalized();
         JobRecord record = queued(request);
-        // Persist the input and status before publishing; a worker can run immediately.
-        store.create(record, input);
-        store.enqueue(request.toJson());
+        JobRecord submitting = new JobRecord(record.job(), null, request, null, null, null, true);
+        store.ensure(submitting);
+        // A worker cannot observe partial HTTP input or uncommitted submission while this lease is held.
+        try (JobStore.JobLock lock = store.lock(id)) {
+            try {
+                store.create(submitting, input);
+                store.enqueue(request.toJson());
+                lock.update(record);
+            } catch (RuntimeException failure) {
+                try { lock.update(new JobRecord(transition(submitting.job(), "failed", null, null,
+                        "SUBMISSION_FAILED", "The asynchronous request could not be submitted."), null, request)); }
+                catch (RuntimeException ignored) { /* A later maintenance sweep expires the abandoned submitting state. */ }
+                throw failure;
+            }
+        }
         return record.job();
     }
 
@@ -76,6 +93,7 @@ public final class AzureJobService implements JobService {
         if (!"succeeded".equals(record.job().status())) {
             throw new ConversionException(409, "JOB_NOT_READY", "The job has not completed successfully.");
         }
+        if (record.artifactsExpiredAt() != null) throw new ConversionException(410, "JOB_RESULT_EXPIRED", "The result retention period has ended.");
         if (record.result() == null) throw new IllegalStateException("The completed job has no result metadata.");
         return record;
     }
@@ -91,26 +109,30 @@ public final class AzureJobService implements JobService {
             JobRecord record = requireJob(id);
             checkRequest(record, request);
             if (terminal(record.job())) {
+                deliver(lock, record);
                 return;
             }
             JobStatus running = transition(record.job(), "running", null, null, null, null);
-            lock.update(new JobRecord(running, null, request));
+            lock.update(new JobRecord(running, null, request).withTrackingVersion(record.artifactTrackingVersion()));
+            String inputETag = null;
             try {
                 store.validateLocations(request);
-                byte[] input = store.readInput(request.input());
-                try (ConversionResult result = converter.convert(input, running.filename())) {
-                    JobRecord.ResultLocation location = store.writeResult(request, result);
+                JobStore.InputData input = store.readInputVersioned(request.input());
+                inputETag = input.eTag();
+                try (ConversionResult result = converter.convert(input.bytes(), running.filename())) {
+                    JobRecord.ResultLocation location = store.writeResult(request, result, inputETag);
                     // Publish only after every artifact from one attempt has reached Storage.
                     lock.update(new JobRecord(transition(running, "succeeded", location.sectionCount(),
-                            location.warningCount(), null, null), location, request));
+                            location.warningCount(), null, null), location, request, inputETag, null, null).withTrackingVersion(record.artifactTrackingVersion()));
                 }
             } catch (ConversionException failure) {
                 if (failure.statusCode() >= 500) {
                     throw failure;
                 }
                 lock.update(new JobRecord(transition(running, "failed", null, null,
-                        failure.code(), failure.getMessage()), null, request));
+                        failure.code(), failure.getMessage()), null, request, inputETag, null, null).withTrackingVersion(record.artifactTrackingVersion()));
             }
+            deliver(lock, requireJob(id));
         }
     }
 
@@ -126,16 +148,43 @@ public final class AzureJobService implements JobService {
         String id = request.jobId();
         store.ensure(queued(request));
         Optional<JobRecord> existing = store.find(id);
-        if (existing.isEmpty() || !Objects.equals(existing.get().request(), request) || terminal(existing.get().job())) {
+        if (existing.isEmpty() || !Objects.equals(existing.get().request(), request)) {
             return;
         }
         try (JobStore.JobLock lock = store.lock(id)) {
             JobRecord record = requireJob(id);
             if (Objects.equals(record.request(), request) && !terminal(record.job())) {
                 lock.update(new JobRecord(transition(record.job(), "failed", null, null,
-                        "PROCESSING_FAILED", "Conversion failed after repeated processing attempts."), null, request));
+                        "PROCESSING_FAILED", "Conversion failed after repeated processing attempts."), null, request).withTrackingVersion(record.artifactTrackingVersion()));
             }
+            deliver(lock, requireJob(id));
         }
+    }
+
+    /** Notification failure never changes conversion success and never reruns the converter. */
+    private JobRecord deliver(JobStore.JobLock lock, JobRecord record) {
+        if (!record.pendingNotification()) return record;
+        try {
+            store.notifyResult(record);
+            JobRecord delivered = record.withNotificationSent(now());
+            lock.update(delivered);
+            return delivered;
+        } catch (RuntimeException failure) {
+            // Persisted terminal state remains pending. Queue delivery is at least once; eventId is stable.
+            return record;
+        }
+    }
+
+    @Override public void maintenance() {
+        store.maintenance(id -> {
+            try (JobStore.JobLock lock = store.lock(id)) {
+                JobRecord record = requireJob(id);
+                if (record.submissionPending() && "queued".equals(record.job().status())) { store.cleanup(record, lock, Instant.now(clock)); return; }
+                if (!terminal(record.job())) return;
+                record = deliver(lock, record);
+                if (!record.pendingNotification()) store.cleanup(record, lock, Instant.now(clock));
+            }
+        });
     }
 
     private JobRecord requireJob(String id) {

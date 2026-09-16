@@ -31,7 +31,7 @@ test('output storage is opt-in and never exposes the host list in public configu
   assert.equal(disabled.outputStorageEnabled, false);
   assert.equal(config.outputStorageEnabled, true);
   assert.equal(publicSettings(config).outputAllowedHosts, undefined);
-  assert.equal(Object.keys(publicSettings(config)).length, 8);
+  assert.equal(Object.keys(publicSettings(config)).length, 10);
   const result = await createHandlers(disabled).convertToBlob(json(valid()), context);
   assert.equal(result.status, 503);
   assert.equal(errorCode(result), 'OUTPUT_STORAGE_DISABLED');
@@ -132,4 +132,23 @@ test('storage conflicts and aborts clean up locally and never retry the upload',
     assert.equal(attempts, 1);
     assert.deepEqual(await readdir(root), []);
   }
+});
+
+test('WAV transcoding forwards its content type to SAS upload and reports the actual output format', async t => {
+  const root = await workspace(t);
+  const handlers = createHandlers(config, { temporaryRoot: root,
+    download: async (url, path) => writeFile(path, await readFile(new URL('./fixtures/opus-video.mkv', import.meta.url))),
+    upload: async (path, destination, options) => {
+      assert.equal(options.contentType, 'audio/wav');
+      assert.equal(path.split('/').at(-1), 'audio.wav');
+      const bytes = await readFile(path); assert.equal(bytes.toString('ascii', 0, 4), 'RIFF');
+      return { blobUrl, bytes: bytes.length };
+    } });
+  const req = new Request('http://localhost/api/convert-to-blob?audioMode=transcode&audioFormat=wav&sampleRate=16000&channels=1',
+    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(valid()) });
+  const response = await handlers.convertToBlob(req, context);
+  assert.equal(response.status, 201);
+  const body = JSON.parse(response.body); assert.equal(body.output.contentType, 'audio/wav');
+  assert.deepEqual(body.audio, { codec: 'pcm_s16le', mode: 'transcode' });
+  assert.deepEqual(await readdir(root), []);
 });

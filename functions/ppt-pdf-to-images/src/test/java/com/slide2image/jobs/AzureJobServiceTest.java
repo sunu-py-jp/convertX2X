@@ -84,7 +84,7 @@ class AzureJobServiceTest {
         assertEquals(1, calls.get());
         assertArrayEquals(RESULT.bytes(), service.download(job.id()).bytes());
         assertEquals(RESULT.filename(), service.download(job.id()).filename());
-        assertEquals(List.of("running", "succeeded"), store.transitions);
+        assertEquals(List.of("queued", "running", "succeeded"), store.transitions);
     }
 
     @Test
@@ -407,6 +407,43 @@ class AzureJobServiceTest {
         assertEquals(original, store.jobs.get(request.jobId()));
     }
 
+    @Test
+    void notificationFailureAndCrashAfterSendNeverRepeatConversionAndReuseEventId() {
+        ConversionJobRequest base = externalRequest();
+        ConversionJobRequest request = new ConversionJobRequest(2, base.jobId(), base.input(), base.output(),
+                base.filename(), base.options(), Map.of("revision", "42"), new ConversionJobRequest.Notification("events")).normalized();
+        store.inputs.put(inputKey(request.input()), INPUT);
+        AtomicInteger calls = new AtomicInteger();
+        AzureJobService service = service((input, name, options) -> { calls.incrementAndGet(); return RESULT; });
+        store.failNotification = true;
+        service.process(request.toJson());
+        assertEquals("succeeded", store.jobs.get(request.jobId()).job().status());
+        assertTrue(store.jobs.get(request.jobId()).notificationPending());
+        store.failNotification = false;
+        store.failNotificationCommit = true;
+        service.process(request.toJson());
+        assertTrue(store.jobs.get(request.jobId()).notificationPending());
+        service.poison(request.toJson());
+        assertFalse(store.jobs.get(request.jobId()).notificationPending());
+        assertEquals(1, calls.get());
+        assertEquals(2, store.notifications.size());
+        assertEquals(store.notifications.getFirst().get("eventId"), store.notifications.getLast().get("eventId"));
+        assertEquals(Map.of("revision", "42"), store.notifications.getLast().get("metadata"));
+    }
+
+    @Test
+    void terminalFailureNotificationContainsFixedCodeAndNoExceptionDetails() {
+        ConversionJobRequest base = externalRequest();
+        ConversionJobRequest request = new ConversionJobRequest(2, base.jobId(), base.input(), base.output(),
+                null, null, Map.of(), new ConversionJobRequest.Notification("events")).normalized();
+        AzureJobService service = service((input, name, options) -> RESULT);
+        service.process(request.toJson());
+        assertEquals("failed", store.jobs.get(request.jobId()).job().status());
+        assertEquals(Map.of("code", "INPUT_NOT_FOUND", "retryable", false), store.notifications.getFirst().get("error"));
+        service.process(request.toJson());
+        assertEquals(1, store.notifications.size());
+    }
+
     private static ConversionResult page(int number) {
         return new ConversionResult(new byte[] {(byte) number}, "image/png", "page-%04d.png".formatted(number), 1);
     }
@@ -440,6 +477,9 @@ class AzureJobServiceTest {
         final List<String> transitions = new ArrayList<>();
         boolean locked;
         boolean failSuccessUpdate;
+        boolean failNotification;
+        boolean failNotificationCommit;
+        final List<Map<String, Object>> notifications = new ArrayList<>();
         int failImagePage;
         boolean failManifest;
         RuntimeException readFailure;
@@ -512,11 +552,19 @@ class AzureJobServiceTest {
                 }
             };
         }
+        @Override public void sendNotification(JobRecord record) {
+            if (failNotification) throw new IllegalStateException("Temporary notification failure");
+            notifications.add(record.notificationEvent());
+        }
         @Override public JobLock lock(String id) {
             if (locked) throw new IllegalStateException("The job already has an active lease.");
             locked = true;
             return new JobLock() {
                 @Override public void update(JobRecord job) {
+                    if (failNotificationCommit && job.notificationSentAt() != null) {
+                        failNotificationCommit = false;
+                        throw new IllegalStateException("Crash after send before checkpoint");
+                    }
                     if (failSuccessUpdate && "succeeded".equals(job.job().status())) {
                         failSuccessUpdate = false;
                         throw new IllegalStateException("The processing lease was lost.");

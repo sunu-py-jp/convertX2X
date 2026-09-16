@@ -86,6 +86,63 @@ class AzureJobServiceTest {
         assertEquals(0, store.inputReads);
     }
 
+    @Test void resumingLegacyQueuedStateDoesNotInventCompleteArtifactOwnership() {
+        MemoryStore store = new MemoryStore(); var request = ConversionJobRequestTest.request();
+        var legacy = new JobRecord(new JobStatus(request.jobId(), "queued", request.filename(), "created", "updated", null, null, null, null), null, request).withTrackingVersion(0);
+        store.ensure(legacy);
+        service(store, (bytes, name) -> result()).process(request.toJson());
+        assertEquals("succeeded", store.records.get(request.jobId()).job().status());
+        assertEquals(0, store.records.get(request.jobId()).artifactTrackingVersion());
+    }
+
+    @Test void failedHttpInputOrEnqueueLeavesTerminalOwnedStateForCleanup() {
+        for (boolean beforeUpload : List.of(true, false)) {
+            MemoryStore store = new MemoryStore(); store.failCreate = beforeUpload; store.failEnqueue = !beforeUpload;
+            AzureJobService service = service(store, (bytes, name) -> { throw new AssertionError("Must not convert"); });
+            assertThrows(IllegalStateException.class, () -> service.submit(new byte[]{1,2}, "input.xlsx"));
+            assertEquals(1, store.records.size());
+            JobRecord failed = store.records.values().iterator().next();
+            assertEquals("failed", failed.job().status()); assertEquals("SUBMISSION_FAILED", failed.job().errorCode());
+            assertFalse(failed.submissionPending()); assertFalse(store.held);
+        }
+    }
+
+    @Test void terminalOutboxRetriesWithoutRenderingAndStableIdSurvivesSendAckCrash() {
+        MemoryStore store = new MemoryStore(); AtomicInteger conversions = new AtomicInteger();
+        AzureJobService service = service(store, (bytes, name) -> { conversions.incrementAndGet(); return result(); });
+        var old = ConversionJobRequestTest.request();
+        var request = new ConversionJobRequest(2, old.jobId(), old.input(), old.output(), old.filename(), Map.of("revision", "2"), new ConversionJobRequest.Notification("events"));
+        store.failNotification = true;
+        service.process(request.toJson());
+        assertEquals("succeeded", store.records.get(request.jobId()).job().status());
+        assertNull(store.records.get(request.jobId()).notificationSentAt());
+        assertEquals(1, conversions.get());
+        store.failNotification = false; store.failNotificationAck = true;
+        service.maintenance(); // Queue accepted, durable ack crashed: retry sends same eventId.
+        assertNull(store.records.get(request.jobId()).notificationSentAt());
+        store.failNotificationAck = false;
+        service.maintenance(); service.process(request.toJson());
+        assertNotNull(store.records.get(request.jobId()).notificationSentAt());
+        assertEquals(2, store.events.size()); assertEquals(store.events.get(0), store.events.get(1));
+        assertEquals(request.jobId() + ":succeeded", store.events.get(0).get("eventId"));
+        assertEquals(Map.of("revision", "2"), store.events.get(0).get("metadata"));
+        assertEquals(1, conversions.get());
+    }
+
+    @Test void requestedVersionMismatchAndPoisonHaveTerminalFailureEvents() {
+        MemoryStore store = new MemoryStore(); AzureJobService service = service(store, (bytes, name) -> { throw new AssertionError("Must not render"); });
+        var old = ConversionJobRequestTest.request();
+        var request = new ConversionJobRequest(2, old.jobId(), old.input(), old.output(), old.filename(), Map.of(), new ConversionJobRequest.Notification("events"));
+        store.inputFailure = new ConversionException(409, "INPUT_VERSION_MISMATCH", "The input changed.");
+        service.process(request.toJson());
+        assertEquals("INPUT_VERSION_MISMATCH", store.records.get(request.jobId()).job().errorCode());
+        assertEquals(Map.of("code", "INPUT_VERSION_MISMATCH", "retryable", false), store.events.getFirst().get("error"));
+        var second = new ConversionJobRequest(2, UUID.randomUUID().toString(), old.input(), old.output(), old.filename(), Map.of(), new ConversionJobRequest.Notification("events"));
+        service.poison(second.toJson());
+        assertEquals("PROCESSING_FAILED", store.records.get(second.jobId()).job().errorCode());
+        assertEquals(2, store.events.size());
+    }
+
     private static AzureJobService service(MemoryStore store, AzureJobService.Converter converter) {
         return new AzureJobService(store, converter, (bytes, name) -> { }, Clock.systemUTC());
     }
@@ -103,18 +160,27 @@ class AzureJobServiceTest {
         final Map<String, JobRecord> records = new HashMap<>();
         final Map<String, JobDownload> downloads = new HashMap<>();
         final List<String> transitions = new ArrayList<>();
-        boolean held, failUpload; int attempts, inputReads; Path lastDirectory; String enqueued;
-        RuntimeException validationFailure;
-        public void create(JobRecord record, byte[] input) { ensure(record); }
+        boolean held, failUpload, failCreate, failEnqueue; int attempts, inputReads; Path lastDirectory; String enqueued;
+        RuntimeException validationFailure, inputFailure;
+        boolean failNotification, failNotificationAck;
+        final List<Map<String, Object>> events = new ArrayList<>();
+        public void notifyResult(JobRecord record) {
+            if (failNotification) throw new IllegalStateException("temporary queue outage");
+            events.add(AzureJobStore.notificationEvent(record));
+        }
+        public void maintenance(java.util.function.Consumer<String> action) { new ArrayList<>(records.keySet()).forEach(action); }
+
+        public void create(JobRecord record, byte[] input) { if (failCreate) throw new IllegalStateException("upload failed"); ensure(record); }
         public void ensure(JobRecord record) { records.putIfAbsent(record.job().id(), record); }
         public void enqueue(String message) {
+            if (failEnqueue) throw new IllegalStateException("queue unavailable");
             assertTrue(records.containsKey(ConversionJobRequest.parse(message).jobId())); enqueued = message;
         }
         public Optional<JobRecord> find(String id) { return Optional.ofNullable(records.get(id)); }
         public void validateLocations(ConversionJobRequest request) {
             if (validationFailure != null) throw validationFailure;
         }
-        public byte[] readInput(ConversionJobRequest.BlobSource source) { inputReads++; return new byte[]{1,2}; }
+        public byte[] readInput(ConversionJobRequest.BlobSource source) { if (inputFailure != null) throw inputFailure; inputReads++; return new byte[]{1,2}; }
         public JobRecord.ResultLocation writeResult(ConversionJobRequest request, ConversionResult result) {
             assertEquals("running", records.get(request.jobId()).job().status());
             attempts++; lastDirectory = result.directory();
@@ -131,7 +197,7 @@ class AzureJobServiceTest {
             if (held) throw new IllegalStateException("Lease held");
             held = true;
             return new JobLock() {
-                public void update(JobRecord record) { assertTrue(held); records.put(id, record); transitions.add(record.job().status()); }
+                public void update(JobRecord record) { assertTrue(held); if (failNotificationAck && record.notificationSentAt() != null) throw new IllegalStateException("ack write failed"); records.put(id, record); transitions.add(record.job().status()); }
                 public void close() { held = false; }
             };
         }

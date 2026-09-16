@@ -1,0 +1,186 @@
+{
+  "capturedAt": "2026-09-16T12:25:49.021660+00:00",
+  "environment": {
+    "location": "local macOS Functions Core Tools; not Azure",
+    "os": "Darwin",
+    "architecture": "arm64",
+    "python": "3.13.6",
+    "ffprobe": "ffprobe version 9.0.1 Copyright (c) 2007-2026 the FFmpeg developers"
+  },
+  "cases": [
+    {
+      "case": "basic",
+      "request": {
+        "method": "POST",
+        "path": "/api/convert",
+        "contentType": "application/octet-stream"
+      },
+      "httpStatus": 200,
+      "responseHeaders": {
+        "content-type": "audio/mp4",
+        "x-audio-codec": "aac",
+        "x-audio-mode": "copy",
+        "content-disposition": "attachment; filename=\"audio.m4a\""
+      },
+      "elapsedMsIncludingTransfer": 30.79,
+      "input": {
+        "file": "basic-input.mp4",
+        "sizeBytes": 133711,
+        "sha256": "4ea08b3fa48c490f5caa379a6154d733b043283fd93e92dd2483b8d344a87206",
+        "durationSeconds": 4.0,
+        "streams": [
+          {
+            "index": 0,
+            "codec_type": "video",
+            "codec_name": "mpeg4",
+            "sample_rate": null,
+            "channels": null
+          },
+          {
+            "index": 1,
+            "codec_type": "audio",
+            "codec_name": "aac",
+            "sample_rate": "48000",
+            "channels": 2
+          }
+        ],
+        "chapters": 0
+      },
+      "output": {
+        "file": "basic-audio.m4a",
+        "sizeBytes": 81771,
+        "sha256": "bca8eddd6abc20ec96caf7b517804b719cb1ffb1463f68af1e17efa3b68678c0",
+        "durationSeconds": 4.0
+      },
+      "verification": {
+        "inputFirstAudioPackets": {
+          "count": 189,
+          "payloadBytes": 80209,
+          "orderedPacketHashesSha256": "304ebf976b5c5be8800c88d9efe453b32a581a25eb936c73cc511f5b6faaacee"
+        },
+        "outputPackets": {
+          "count": 189,
+          "payloadBytes": 80209,
+          "orderedPacketHashesSha256": "304ebf976b5c5be8800c88d9efe453b32a581a25eb936c73cc511f5b6faaacee"
+        },
+        "allSelectedAacPacketPayloadsIdentical": true,
+        "oneAudioStreamOnly": true,
+        "noChapters": true
+      }
+    },
+    {
+      "case": "complex",
+      "request": {
+        "method": "POST",
+        "path": "/api/convert",
+        "contentType": "application/octet-stream"
+      },
+      "httpStatus": 200,
+      "responseHeaders": {
+        "content-type": "audio/mp4",
+        "x-audio-codec": "aac",
+        "x-audio-mode": "copy",
+        "content-disposition": "attachment; filename=\"audio.m4a\""
+      },
+      "elapsedMsIncludingTransfer": 63.02,
+      "input": {
+        "file": "complex-input.mp4",
+        "sizeBytes": 2717725,
+        "sha256": "9274172baa4248bf3e6d0184ab402b22ea0b38ebaafcedb674a0e4ba7af44d0f",
+        "durationSeconds": 72.0,
+        "streams": [
+          {
+            "index": 0,
+            "codec_type": "video",
+            "codec_name": "mpeg4",
+            "sample_rate": null,
+            "channels": null
+          },
+          {
+            "index": 1,
+            "codec_type": "audio",
+            "codec_name": "aac",
+            "sample_rate": "48000",
+            "channels": 2
+          },
+          {
+            "index": 2,
+            "codec_type": "audio",
+            "codec_name": "aac",
+            "sample_rate": "44100",
+            "channels": 1
+          },
+          {
+            "index": 3,
+            "codec_type": "subtitle",
+            "codec_name": "mov_text",
+            "sample_rate": null,
+            "channels": null
+          }
+        ],
+        "chapters": 3
+      },
+      "output": {
+        "file": "complex-audio.m4a",
+        "sizeBytes": 1457629,
+        "sha256": "76dbbad7c91f7e1f4adbc7b809f6bfca69c2b1aedf2e66cd523a87009bb1ab52",
+        "durationSeconds": 72.0
+      },
+      "verification": {
+        "inputFirstAudioPackets": {
+          "count": 3376,
+          "payloadBytes": 1443311,
+          "orderedPacketHashesSha256": "d81971cd43c617bd72f39392659424e74ed9a6e8ca14c510171249aed7b8ae7c"
+        },
+        "outputPackets": {
+          "count": 3376,
+          "payloadBytes": 1443311,
+          "orderedPacketHashesSha256": "d81971cd43c617bd72f39392659424e74ed9a6e8ca14c510171249aed7b8ae7c"
+        },
+        "allSelectedAacPacketPayloadsIdentical": true,
+        "oneAudioStreamOnly": true,
+        "noChapters": true
+      }
+    },
+    {
+      "case": "first-pcm-second-aac",
+      "request": {
+        "method": "POST",
+        "path": "/api/convert"
+      },
+      "input": {
+        "file": "first-pcm-second-aac.mkv",
+        "sizeBytes": 107221,
+        "sha256": "e7da109216364fc983b6ceb0c09a88d41328c8bd55042141f93c29f8e48bc360"
+      },
+      "httpStatus": 422,
+      "elapsedMsIncludingTransfer": 13.36,
+      "response": {
+        "error": {
+          "code": "UNSUPPORTED_AUDIO_CODEC",
+          "message": "The first audio stream must use AAC. Audio is not re-encoded."
+        }
+      }
+    },
+    {
+      "case": "silent",
+      "request": {
+        "method": "POST",
+        "path": "/api/convert"
+      },
+      "input": {
+        "file": "silent-video.mp4",
+        "sizeBytes": 1461,
+        "sha256": "25d139bc6eddb6615cc8be59619bb099a64eca2a1c811e4b16a12f84ddae22a8"
+      },
+      "httpStatus": 422,
+      "elapsedMsIncludingTransfer": 13.5,
+      "response": {
+        "error": {
+          "code": "NO_AUDIO_STREAM",
+          "message": "The video does not contain an audio stream."
+        }
+      }
+    }
+  ]
+}

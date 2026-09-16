@@ -55,7 +55,7 @@
       <div class="table-wrap"><table>
         <thead><tr><th>フィールド</th><th>必須・既定値</th><th>意味</th></tr></thead>
         <tbody>
-          <tr><td><code>version</code></td><td>必須、整数 <code>1</code></td><td>文字列の <code>"1"</code> は不可</td></tr>
+          <tr><td><code>version</code></td><td>必須、整数 <code>1</code> または <code>2</code></td><td>文字列の <code>"1"</code> は不可</td></tr>
           <tr><td><code>jobId</code></td><td>必須</td><td>通常のハイフン付きUUID。正規化後は小文字。</td></tr>
           <tr><td><code>input</code> / <code>output</code></td><td>必須、オブジェクト</td><td>以下の入出力指定を格納</td></tr>
           <tr><td><code>input.storage</code> / <code>output.storage</code></td><td>省略・nullなら <code>default</code></td><td>管理者が登録したStorage名。入力・出力の登録は別々。</td></tr>
@@ -173,9 +173,40 @@ queue.sendMessage(json); // jsonはUTF-8の依頼JSON文字列</code></pre>
         <li>不正JSONや不正UUIDなど、ワーカーが有効な依頼を解析できない場合は状態Blobを作れません。直接投入直後の404と区別し、長時間見つからない場合はワーカーとログを確認します。</li>
       </ul>
       <p>単一ワーカーでも厳密なFIFO順序や、変換処理の実行が常に1回だけになることは保証しません。入力のETag検査は読み取り中の差し替えを防ぐもので、再試行間の入力更新を許可するものではありません。</p>
-      <p>入力・状態・結果・途中で失敗した試行のBlobは自動削除しません。保持期間とライフサイクル管理を運用側で決めます。新規コンテナーは非公開で作成し、既存コンテナーの公開設定は変更しません。</p>
+      <p>自動清掃は既定で無効です。保持設定で所有する入力コピー・結果・試行出力を清掃できます。新規コンテナーは非公開で作成し、既存コンテナーの公開設定は変更しません。</p>
 
-      <footer class="page-footer">
+      <h2 id="version-2">Version 2：入力版・付加情報・結果通知</h2>
+<p>既存のversion 1は引き続き使えます。以下の拡張はversion 2でのみ受け付けます。接続先の資格情報やURLをQueueメッセージに含めません。</p>
+<pre><code class="language-json">{
+  &quot;version&quot;: 2,
+  &quot;jobId&quot;: &quot;b6812181-8d03-4cb0-841a-225798074cf9&quot;,
+  &quot;input&quot;: {
+    &quot;storage&quot;: &quot;source&quot;,
+    &quot;container&quot;: &quot;documents-incoming&quot;,
+    &quot;blobName&quot;: &quot;originals/slides.pptx&quot;,
+    &quot;expectedETag&quot;: &quot;\&quot;0x8EXAMPLE\&quot;&quot;
+  },
+  &quot;output&quot;: {
+    &quot;storage&quot;: &quot;archive&quot;,
+    &quot;container&quot;: &quot;converted-results&quot;,
+    &quot;prefix&quot;: &quot;exports&quot;,
+    &quot;mode&quot;: &quot;images&quot;,
+    &quot;naming&quot;: &quot;page-number&quot;
+  },
+  &quot;metadata&quot;: {
+    &quot;documentId&quot;: &quot;document-123&quot;,
+    &quot;revision&quot;: &quot;7&quot;
+  },
+  &quot;notification&quot;: {
+    &quot;queue&quot;: &quot;completed&quot;
+  }
+}</code></pre>
+<p><code>input.expectedETag</code>で原本の版を固定し、不一致は<code>INPUT_VERSION_MISMATCH</code>です。<code>metadata</code>は最大16項目の文字列マップ（キー64文字・値512文字・合計8KiB以下）、<code>notification.queue</code>は登録済み結果Queueのエイリアスです。metadataは認可情報ではありません。</p>
+<p>画像のversion 2では output.naming に padded（既定の page-0001.png）または page-number（1.png）を指定できます。page-number は個別画像モードで使います。元のページ番号と順序はManifestで確認してください。</p>
+<p>通知は<code>eventId</code>・<code>jobId</code>・終端の<code>status</code>・入力版・metadata・結果参照・固定エラーを含みます。受信側でeventIdによる重複排除と最新revisionの照合を行ってください。通知失敗は送信待ちから再送し、変換はやり直しません。</p>
+<p>結果と状態の保持期間は既定では無期限です。保持設定を有効にすると、アプリが所有するファイルだけを清掃します。清掃済みの結果取得は<code>410 JOB_RESULT_EXPIRED</code>です。状態を削除した後は同じjobIdの重複判定も終了します。</p>
+<p>設定・権限・Private Endpoint・保持運用は<a href="../../development.md#8-managed-identity閉域storage結果通知">共通の配置・運用手順</a>、詳細な契約は<a href="../../../functions/ppt-pdf-to-images/docs/direct-queue.md#version-2入力版付加情報結果通知">直接Queueガイド</a>を参照してください。未登録の入力・出力・通知先は使用できません。</p>
+<footer class="page-footer">
         <p>最終確認：2026-09-13。READMEとHTTP・設定・変換・ジョブ処理の実装を照合しています。</p>
         <p><a href="../../../functions/ppt-pdf-to-images/docs/usage.md">利用ガイド</a> · <a href="../../ppt-pdf-to-images.md">開発者ガイド</a></p>
       </footer>

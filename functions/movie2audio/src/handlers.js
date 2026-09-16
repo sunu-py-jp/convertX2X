@@ -11,6 +11,7 @@ import { uploadAudio, validateBlobDestination } from './blob.js';
 import { readStorageRequest } from './storage-request.js';
 import { createAdmission } from './admission.js';
 import { safeFilename } from './job-request.js';
+import { audioOptionsFromQuery, audioOutput } from './audio-options.js';
 
 const MAX_URL_BODY = 16384;
 const COMMON_HEADERS = { 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' };
@@ -86,7 +87,7 @@ export function createHandlers(config, { extract = extractAudio, download = down
 
   const requireAsync = () => {
     if (!config.asyncEnabled || !jobs) throw error(503, 'ASYNC_DISABLED',
-      'Asynchronous conversion is disabled; configure CONVERSION_STORAGE_CONNECTION_STRING.');
+      'Asynchronous conversion is disabled; configure job storage with a connection string or identity endpoints.');
   };
 
   function statusBody(request, job) {
@@ -135,6 +136,8 @@ export function createHandlers(config, { extract = extractAudio, download = down
     try {
       let url;
       let sasUrl;
+      const options = resultDownload ? undefined : audioOptionsFromQuery(new URL(request.url).searchParams);
+      let descriptor = audioOutput(options);
       const filename = submit ? safeFilename(new URL(request.url).searchParams.get('filename')
         ?? request.headers.get('x-file-name') ?? 'video.bin') : undefined;
       if (fromUrl) {
@@ -144,9 +147,10 @@ export function createHandlers(config, { extract = extractAudio, download = down
       throwIfAborted(signal);
       directory = await mkdtemp(join(temporaryRoot, 'movie2audio-'));
       const input = join(directory, 'input.bin');
-      const output = join(directory, 'audio.m4a');
+      const output = join(directory, descriptor.filename);
       if (resultDownload) {
-        await jobs.download(request.params?.id, output, { signal });
+        const stored = await jobs.download(request.params?.id, output, { signal });
+        descriptor = { ...audioOutput(stored.filename === 'audio.wav' ? { mode: 'transcode', format: 'wav' } : undefined), ...stored };
       } else {
         if (storeOutput) {
           const storage = await readStorageRequest(request, input, { limits: config.limits, signal });
@@ -159,14 +163,14 @@ export function createHandlers(config, { extract = extractAudio, download = down
         else if (!storeOutput) await receiveVideo(request, input, config.limits.maxInputBytes, signal);
         throwIfAborted(signal);
         if (submit) {
-          const job = await jobs.submit(input, filename, { signal });
+          const job = await jobs.submit(input, filename, { signal, options });
           throwIfAborted(signal);
           await cleanup();
           const body = statusBody(request, job);
           return { status: 202, headers: { ...COMMON_HEADERS, 'Content-Type': 'application/json; charset=utf-8',
             Location: body.statusUrl, 'Retry-After': '3' }, body: JSON.stringify(body) };
         }
-        await extract(input, output, { limits: config.limits, signal });
+        await extract(input, output, { limits: config.limits, signal, options });
       }
       throwIfAborted(signal);
       const info = await lstat(output).catch(failure => {
@@ -177,13 +181,13 @@ export function createHandlers(config, { extract = extractAudio, download = down
       if (info.size === 0) throw error(422, 'EMPTY_OUTPUT', 'Audio extraction produced an empty result.');
       if (info.size > config.limits.maxOutputBytes) throw error(413, 'OUTPUT_TOO_LARGE', 'The audio exceeds the output size limit.');
       if (storeOutput) {
-        const stored = await upload(output, sasUrl, { outputAllowedHosts: config.outputAllowedHosts, limits: config.limits, signal });
+        const stored = await upload(output, sasUrl, { outputAllowedHosts: config.outputAllowedHosts, limits: config.limits, signal, contentType: descriptor.contentType });
         throwIfAborted(signal);
         await cleanup();
         return { status: 201, headers: { ...COMMON_HEADERS, 'Content-Type': 'application/json; charset=utf-8' },
           body: JSON.stringify({ status: 'succeeded', output: { blobUrl: stored.blobUrl, bytes: stored.bytes,
-            ...(stored.etag ? { etag: stored.etag } : {}), contentType: 'audio/mp4' },
-            audio: { codec: 'aac', mode: 'copy' } }) };
+            ...(stored.etag ? { etag: stored.etag } : {}), contentType: descriptor.contentType },
+            audio: { codec: descriptor.codec, mode: descriptor.mode } }) };
       }
       const handle = await open(output, 'r');
       let body;
@@ -193,8 +197,8 @@ export function createHandlers(config, { extract = extractAudio, download = down
       // Errors after headers close the stream; an error JSON cannot replace audio bytes.
       body.on('error', () => {});
       return { status: 200, headers: { ...COMMON_HEADERS,
-        'Content-Type': 'audio/mp4', 'Content-Disposition': 'attachment; filename="audio.m4a"',
-        'X-Audio-Codec': 'aac', 'X-Audio-Mode': 'copy',
+        'Content-Type': descriptor.contentType, 'Content-Disposition': `attachment; filename="${descriptor.filename}"`,
+        'X-Audio-Codec': descriptor.codec, 'X-Audio-Mode': descriptor.mode,
       }, body };
     } catch (failure) {
       await cleanup();

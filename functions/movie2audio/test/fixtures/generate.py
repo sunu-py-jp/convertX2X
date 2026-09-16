@@ -2,7 +2,7 @@
 """Generate small, original regression fixtures. Requires a separate encoding-capable FFmpeg.
 
 Usage: python3 generate.py /path/to/ffmpeg
-The production FFmpeg deliberately contains no encoders and cannot generate these.
+The production FFmpeg has no video encoder or synthetic input generator.
 All pictures and sounds here are synthetic; no third-party sample media is used.
 """
 import base64

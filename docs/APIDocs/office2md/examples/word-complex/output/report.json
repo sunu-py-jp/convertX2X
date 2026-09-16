@@ -1,0 +1,123 @@
+{
+  "specVersion" : 2,
+  "source" : {
+    "filename" : "input.docx",
+    "sha256" : "e0f36ead555898d2d937169e782eab54cf0359fd00816dbede9139fb7e24fb0f",
+    "format" : "docx"
+  },
+  "sectionKind" : "document",
+  "sectionCount" : 1,
+  "warnings" : [ {
+    "code" : "DRAWING_TEXT_APPROXIMATED",
+    "section" : "document",
+    "range" : "paragraph:11",
+    "message" : "Word図形内の文字は取消線・非表示を除去して簡易描画します。段落ごとの書式・余白・文字回転は近似です。"
+  } ],
+  "information" : [ {
+    "code" : "STRIKETHROUGH_REMOVED",
+    "section" : "document",
+    "range" : "paragraph:4",
+    "message" : "取消線の文字を除外しました。"
+  }, {
+    "code" : "DRAWING_SIMPLIFIED",
+    "section" : "document",
+    "range" : "paragraph:11",
+    "message" : "Wordの基本図形を個別に簡易描画しました。ページ全体の配置は再現しません。"
+  } ],
+  "blocks" : [ {
+    "type" : "paragraph",
+    "markdownEndLine" : 1,
+    "section" : "document",
+    "markdownStartLine" : 1,
+    "range" : "paragraph:1"
+  }, {
+    "type" : "paragraph",
+    "markdownEndLine" : 3,
+    "section" : "document",
+    "markdownStartLine" : 3,
+    "range" : "paragraph:2"
+  }, {
+    "type" : "paragraph",
+    "markdownEndLine" : 5,
+    "section" : "document",
+    "markdownStartLine" : 5,
+    "range" : "paragraph:3"
+  }, {
+    "type" : "paragraph",
+    "markdownEndLine" : 7,
+    "section" : "document",
+    "markdownStartLine" : 7,
+    "range" : "paragraph:4"
+  }, {
+    "type" : "paragraph",
+    "markdownEndLine" : 9,
+    "section" : "document",
+    "markdownStartLine" : 9,
+    "range" : "paragraph:5"
+  }, {
+    "type" : "paragraph",
+    "markdownEndLine" : 11,
+    "section" : "document",
+    "markdownStartLine" : 11,
+    "range" : "paragraph:6"
+  }, {
+    "type" : "table",
+    "markdownEndLine" : 16,
+    "section" : "document",
+    "markdownStartLine" : 13,
+    "range" : "table:1"
+  }, {
+    "type" : "paragraph",
+    "markdownEndLine" : 18,
+    "section" : "document",
+    "markdownStartLine" : 18,
+    "range" : "paragraph:7"
+  }, {
+    "type" : "paragraph",
+    "markdownEndLine" : 20,
+    "section" : "document",
+    "markdownStartLine" : 20,
+    "range" : "paragraph:8"
+  }, {
+    "type" : "paragraph",
+    "markdownEndLine" : 22,
+    "section" : "document",
+    "markdownStartLine" : 22,
+    "range" : "paragraph:9"
+  }, {
+    "type" : "paragraph",
+    "markdownEndLine" : 24,
+    "section" : "document",
+    "markdownStartLine" : 24,
+    "range" : "paragraph:10"
+  }, {
+    "type" : "paragraph",
+    "markdownEndLine" : 26,
+    "section" : "document",
+    "markdownStartLine" : 26,
+    "range" : "paragraph:11"
+  }, {
+    "type" : "paragraph",
+    "markdownEndLine" : 28,
+    "section" : "document",
+    "markdownStartLine" : 28,
+    "range" : "paragraph:12"
+  }, {
+    "type" : "paragraph",
+    "markdownEndLine" : 30,
+    "section" : "document",
+    "markdownStartLine" : 30,
+    "range" : "paragraph:13"
+  } ],
+  "assets" : [ {
+    "sha256" : "8734d06539cb11fc728ae7e9ed296f23f75891a6313d0cf2cf9e832e1f1fe74d",
+    "sizeBytes" : 16637,
+    "contentType" : "image/png",
+    "path" : "images/diagram-0001.png"
+  }, {
+    "sha256" : "020adfae6e24d51a78361d61d71fbe2a71decd0be1f6b54f78f4474688798092",
+    "sizeBytes" : 6154,
+    "contentType" : "image/png",
+    "path" : "images/image-0001.png"
+  } ]
+}

@@ -1,8 +1,8 @@
-# Movie → AAC（Movie2Audio）
+# Movie → Audio（Movie2Audio）
 
 動画の最初の音声トラックからAACを再エンコードせずに抽出し、`audio.m4a`（`audio/mp4`）として返すAzure Functionsです。Node.jsのFunctions v4モデルで実装し、FFmpeg・FFprobeを同梱しています。他のJava製変換機能とは別のFunction Appへ配置します。
 
-入力には動画ストリームが必要で、最初の音声がAAC以外なら拒否します。既定の入出力上限は各100MiB、処理期限は180秒です。環境変数で変更できます。
+入力には動画ストリームが必要です。既定はAACコピーですが、明示的なtranscodeでOpus・MP3・PCMなどをM4A/AACまたはWAV/16bit PCMへ変換できます。既定の入出力上限は各100MiB、処理期限は180秒です。環境変数で変更できます。
 
 ## 利用できる方式
 
@@ -30,4 +30,4 @@ HTTPは入力を一時ディスクへ保存し、抽出を完了したM4Aをス�
 | 共通処理・実装の保守 | [開発者ガイド](../../docs/movie2audio.md) |
 | ライセンス・同梱FFmpeg | [MIT](LICENSE) · [FFmpegのライセンス・ソース](third-party/ffmpeg/README.md) |
 
-API資料全体は [Movie → AAC APIリファレンス](../../docs/APIDocs/movie2audio/index.html) から参照できます。
+API資料全体は [Movie → Audio APIリファレンス](../../docs/APIDocs/movie2audio/index.html) から参照できます。

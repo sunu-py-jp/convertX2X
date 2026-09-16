@@ -146,9 +146,20 @@ python3 scripts/run_local.py</code></pre>
       <h2 id="public-and-private">公開範囲とデータ保持</h2>
       <p>Playground画面・静的アセット・<code>GET /api/playground/config</code> は匿名です。変換・ジョブ登録・状態確認・結果取得はFunction認証です。公開設定に含めるのは非同期の有効状態、入力容量上限、ページ数上限だけです。</p>
       <p>Storageの接続文字列や生の依頼JSONはHTTPエラーへ出力しません。状態APIは内部Blob参照を隠しますが、直接Queueの個別画像モードの結果manifestには取得用のStorage登録名・Blob参照が入ります。</p>
-      <p>Blobは自動削除しません。入力、状態、結果、送信失敗や処理失敗で残った試行を含め、運用側で保持期間と削除方法を設定します。</p>
+      <p>Blobの自動清掃は既定で無効です。保持設定で、アプリが所有する入力コピー・結果・試行出力を清掃できます。原本と過去の未管理成果物は運用側で管理します。</p>
 
-      <footer class="page-footer">
+      <h2 id="identity-and-retention">Managed Identity・通知・保持</h2>
+<p>接続文字列に加え、<code>CONVERSION_STORAGE__blobServiceUri</code>と<code>CONVERSION_STORAGE__queueServiceUri</code>でMI認証を選択できます。ユーザー割り当てMIは<code>CONVERSION_STORAGE__clientId</code>を追加します。入力・出力のエイリアスにも同様のBlob URI設定を使えます。</p>
+<p>Queueトリガー用の<code>CONVERSION_QUEUE_CONNECTION_STRING__queueServiceUri</code>・<code>__credential=managedidentity</code>と、ホスト用Storageの設定も必要です。ワーカーの起動後に設定してもホストの接続には反映できません。</p>
+<div class="table-wrap"><table><thead><tr><th>設定</th><th>既定・動作</th></tr></thead><tbody>
+<tr><td><code>CONVERSION_CREATE_RESOURCES</code></td><td>true。falseでは必要なコンテナー・Queueを事前作成</td></tr>
+<tr><td><code>CONVERSION_RESULT_QUEUE_&lt;ALIAS&gt;__queueName</code></td><td>通知先の登録。__connectionString、または__queueServiceUriと任意の__clientIdも必要</td></tr>
+<tr><td><code>CONVERSION_RESULT_RETENTION_DAYS</code></td><td>0（清掃無効）。正の整数で所有成果物を期限後に清掃</td></tr>
+<tr><td><code>CONVERSION_STATE_RETENTION_DAYS</code></td><td>0（状態保持）。有効化時は結果保持より長い日数が必要</td></tr>
+</tbody></table></div>
+<p>通知先または保持を設定すると5分ごとの定期処理が動きます。未設定では無効です。入力版不一致は<code>409 INPUT_VERSION_MISMATCH</code>、未登録の通知先は<code>400 UNKNOWN_RESULT_QUEUE</code>、清掃済みの結果は<code>410 JOB_RESULT_EXPIRED</code>です。</p>
+<p>RBAC・閉域ネットワーク・ホスト認証・配置先での確認は<a href="../../development.md#8-managed-identity閉域storage結果通知">共通の配置・運用手順</a>を参照してください。実AzureのMI・Private Endpoint接続はローカルテストとは別に検証が必要です。</p>
+<footer class="page-footer">
         <p>最終確認：2026-09-13。READMEとHTTP・設定・変換・ジョブ処理の実装を照合しています。</p>
         <p><a href="../../../functions/ppt-pdf-to-images/docs/usage.md">利用ガイド</a> · <a href="../../ppt-pdf-to-images.md">開発者ガイド</a></p>
       </footer>

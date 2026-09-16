@@ -1,0 +1,1399 @@
+{
+  "specVersion" : 2,
+  "source" : {
+    "filename" : "input.xlsx",
+    "sha256" : "7c13e6a3c57c0eac46c0c104b17f57e6567c09f41b9597a54406ae309386eb15",
+    "format" : "xlsx"
+  },
+  "sectionKind" : "sheet",
+  "sectionCount" : 8,
+  "warnings" : [ {
+    "code" : "LINK_UNSUPPORTED",
+    "section" : "01_文章と書式",
+    "range" : "A26",
+    "message" : "Web・メール以外または不正なリンクを表示文字だけで保持しました。"
+  }, {
+    "code" : "LINK_UNSUPPORTED",
+    "section" : "01_文章と書式",
+    "range" : "A27",
+    "message" : "Web・メール以外または不正なリンクを表示文字だけで保持しました。"
+  }, {
+    "code" : "LINK_UNSUPPORTED",
+    "section" : "01_文章と書式",
+    "range" : "A28",
+    "message" : "Web・メール以外または不正なリンクを表示文字だけで保持しました。"
+  }, {
+    "code" : "CONDITIONAL_FORMATTING_UNEVALUATED",
+    "section" : "02_罫線の表",
+    "message" : "条件付き書式の罫線・太字・取消線は評価していません。"
+  }, {
+    "code" : "BORDER_NOT_TABLE",
+    "section" : "02_罫線の表",
+    "range" : "A3:I42",
+    "message" : "囲み枠または不完全な罫線は表として確定できないため、本文として保持します。"
+  }, {
+    "code" : "TABLE_MERGE_FLATTENED",
+    "section" : "02_罫線の表",
+    "range" : "A20:C23",
+    "message" : "Markdown表はセル結合を再現できないため、結合の続きは空欄です。"
+  }, {
+    "code" : "FORMULA_CACHE_MISSING",
+    "section" : "03_表示値と数式",
+    "range" : "C20",
+    "message" : "数式の保存済み計算結果がありません。再計算せず、数式または確定できるリンク表示を残しました。"
+  }, {
+    "code" : "FORMULA_CACHE_MISSING",
+    "section" : "03_表示値と数式",
+    "range" : "C22",
+    "message" : "数式の保存済み計算結果がありません。再計算せず、数式または確定できるリンク表示を残しました。"
+  }, {
+    "code" : "DYNAMIC_HYPERLINK_UNSUPPORTED",
+    "section" : "03_表示値と数式",
+    "range" : "C24",
+    "message" : "数式のリンク先を定数として読み取れないため、リンク化していません。"
+  }, {
+    "code" : "CELL_IMAGE_UNSUPPORTED",
+    "section" : "03_表示値と数式",
+    "range" : "C26",
+    "message" : "IMAGE関数の画像は取得しません。"
+  }, {
+    "code" : "FORMULA_CACHE_MISSING",
+    "section" : "03_表示値と数式",
+    "range" : "C26",
+    "message" : "数式の保存済み計算結果がありません。再計算せず、数式または確定できるリンク表示を残しました。"
+  }, {
+    "code" : "GRAPHIC_FRAME_UNSUPPORTED",
+    "section" : "07_未対応と加工",
+    "range" : "E4:Q15",
+    "message" : "グラフ・SmartArtなどの描画は未対応です。"
+  }, {
+    "code" : "SHAPE_UNSUPPORTED",
+    "section" : "07_未対応と加工",
+    "range" : "A20:E28",
+    "message" : "この種類の図形は未対応です。取得できた取消線除去後の文字を残します。"
+  }, {
+    "code" : "DRAWING_EFFECTS_SIMPLIFIED",
+    "section" : "07_未対応と加工",
+    "range" : "G20:L28",
+    "message" : "複雑な塗り・効果・自由形状は簡略化または代替表示します。"
+  }, {
+    "code" : "DRAWING_TEXT_APPROXIMATED",
+    "section" : "07_未対応と加工",
+    "range" : "N20:Q30",
+    "message" : "縦書き・縦方向の文字組みは横書きに近似します。"
+  }, {
+    "code" : "IMAGE_EFFECTS_IGNORED",
+    "section" : "07_未対応と加工",
+    "range" : "A33:G44",
+    "message" : "元画像を抽出します。切り抜き前の領域を含み、切り抜き・回転・反転・画像効果は反映しません。配置は代替テキストに記録します。"
+  }, {
+    "code" : "IMAGE_FORMAT_ATTACHMENT",
+    "section" : "07_未対応と加工",
+    "range" : "J35:P43",
+    "message" : "この画像形式は元ファイルの添付として保持します。"
+  } ],
+  "information" : [ {
+    "code" : "STRIKETHROUGH_REMOVED",
+    "section" : "01_文章と書式",
+    "range" : "A15",
+    "message" : "20文字を除外しました。"
+  }, {
+    "code" : "STRIKETHROUGH_REMOVED",
+    "section" : "01_文章と書式",
+    "range" : "A16",
+    "message" : "17文字を除外しました。"
+  }, {
+    "code" : "STRIKETHROUGH_REMOVED",
+    "section" : "01_文章と書式",
+    "range" : "A17",
+    "message" : "17文字を除外しました。"
+  }, {
+    "code" : "STRIKETHROUGH_REMOVED",
+    "section" : "01_文章と書式",
+    "range" : "A18",
+    "message" : "26文字を除外しました。"
+  }, {
+    "code" : "HIDDEN_ROW_OMITTED",
+    "section" : "01_文章と書式",
+    "range" : "37:37",
+    "message" : "非表示行を除外しました。"
+  }, {
+    "code" : "HIDDEN_COLUMN_OMITTED",
+    "section" : "01_文章と書式",
+    "range" : "L",
+    "message" : "非表示列を除外しました。"
+  }, {
+    "code" : "MERGED_CELLS",
+    "section" : "01_文章と書式",
+    "range" : "A1:I1",
+    "message" : "結合セルは表示中の左上セルの値だけを出力します。"
+  }, {
+    "code" : "MERGED_CELLS",
+    "section" : "01_文章と書式",
+    "range" : "A2:I2",
+    "message" : "結合セルは表示中の左上セルの値だけを出力します。"
+  }, {
+    "code" : "MERGED_CELLS",
+    "section" : "01_文章と書式",
+    "range" : "A35:E35",
+    "message" : "結合セルは表示中の左上セルの値だけを出力します。"
+  }, {
+    "code" : "TABLE_STYLE_UNEVALUATED",
+    "section" : "02_罫線の表",
+    "message" : "Excelテーブルのスタイルは評価せず、直接セル罫線から表を検出しました。"
+  }, {
+    "code" : "STRIKETHROUGH_REMOVED",
+    "section" : "02_罫線の表",
+    "range" : "B8",
+    "message" : "18文字を除外しました。"
+  }, {
+    "code" : "HIDDEN_ROW_OMITTED",
+    "section" : "02_罫線の表",
+    "range" : "14:14",
+    "message" : "非表示行を除外しました。"
+  }, {
+    "code" : "MERGED_CELLS",
+    "section" : "02_罫線の表",
+    "range" : "A1:I1",
+    "message" : "結合セルは表示中の左上セルの値だけを出力します。"
+  }, {
+    "code" : "MERGED_CELLS",
+    "section" : "02_罫線の表",
+    "range" : "A2:I2",
+    "message" : "結合セルは表示中の左上セルの値だけを出力します。"
+  }, {
+    "code" : "MERGED_CELLS",
+    "section" : "02_罫線の表",
+    "range" : "A20:C20",
+    "message" : "結合セルは表示中の左上セルの値だけを出力します。"
+  }, {
+    "code" : "EMPTY_TABLE_OMITTED",
+    "section" : "02_罫線の表",
+    "range" : "A40:C41",
+    "message" : "出力内容のない表を除外しました。"
+  }, {
+    "code" : "STRIKETHROUGH_REMOVED",
+    "section" : "03_表示値と数式",
+    "range" : "C28",
+    "message" : "9文字を除外しました。"
+  }, {
+    "code" : "MERGED_CELLS",
+    "section" : "03_表示値と数式",
+    "range" : "A1:I1",
+    "message" : "結合セルは表示中の左上セルの値だけを出力します。"
+  }, {
+    "code" : "MERGED_CELLS",
+    "section" : "03_表示値と数式",
+    "range" : "A2:I2",
+    "message" : "結合セルは表示中の左上セルの値だけを出力します。"
+  }, {
+    "code" : "HIDDEN_ROW_OMITTED",
+    "section" : "04_画像",
+    "range" : "35:35",
+    "message" : "非表示行を除外しました。"
+  }, {
+    "code" : "HIDDEN_DRAWING",
+    "section" : "04_画像",
+    "message" : "明示的に非表示の描画オブジェクトを除外しました。"
+  }, {
+    "code" : "HIDDEN_DRAWING_ANCHOR",
+    "section" : "04_画像",
+    "range" : "G35:K41",
+    "message" : "左上アンカーの行または列が非表示の描画オブジェクトを除外しました。"
+  }, {
+    "code" : "HIDDEN_DRAWING_ANCHOR",
+    "section" : "04_画像",
+    "range" : "M4:Q10",
+    "message" : "左上アンカーの行または列が非表示の描画オブジェクトを除外しました。"
+  }, {
+    "code" : "DRAWING_SIMPLIFIED",
+    "section" : "05_基本図形",
+    "range" : "A4:E10",
+    "message" : "基本図形を個別に簡易描画しました。セル内容は画像に含みません。図形ID: 1"
+  }, {
+    "code" : "DRAWING_SIMPLIFIED",
+    "section" : "05_基本図形",
+    "range" : "G4:K10",
+    "message" : "基本図形を個別に簡易描画しました。セル内容は画像に含みません。図形ID: 2"
+  }, {
+    "code" : "DRAWING_SIMPLIFIED",
+    "section" : "05_基本図形",
+    "range" : "M4:Q10",
+    "message" : "基本図形を個別に簡易描画しました。セル内容は画像に含みません。図形ID: 3"
+  }, {
+    "code" : "DRAWING_SIMPLIFIED",
+    "section" : "05_基本図形",
+    "range" : "A14:D21",
+    "message" : "基本図形を個別に簡易描画しました。セル内容は画像に含みません。図形ID: 4"
+  }, {
+    "code" : "DRAWING_SIMPLIFIED",
+    "section" : "05_基本図形",
+    "range" : "F14:I21",
+    "message" : "基本図形を個別に簡易描画しました。セル内容は画像に含みません。図形ID: 5"
+  }, {
+    "code" : "DRAWING_SIMPLIFIED",
+    "section" : "05_基本図形",
+    "range" : "K14:N21",
+    "message" : "基本図形を個別に簡易描画しました。セル内容は画像に含みません。図形ID: 6"
+  }, {
+    "code" : "DRAWING_SIMPLIFIED",
+    "section" : "05_基本図形",
+    "range" : "P14:S21",
+    "message" : "基本図形を個別に簡易描画しました。セル内容は画像に含みません。図形ID: 7"
+  }, {
+    "code" : "DRAWING_SIMPLIFIED",
+    "section" : "05_基本図形",
+    "range" : "A25:E25",
+    "message" : "基本図形を個別に簡易描画しました。セル内容は画像に含みません。図形ID: 8"
+  }, {
+    "code" : "DRAWING_SIMPLIFIED",
+    "section" : "05_基本図形",
+    "range" : "G25:K25",
+    "message" : "基本図形を個別に簡易描画しました。セル内容は画像に含みません。図形ID: 1"
+  }, {
+    "code" : "DRAWING_SIMPLIFIED",
+    "section" : "05_基本図形",
+    "range" : "A31:G38",
+    "message" : "基本図形を個別に簡易描画しました。セル内容は画像に含みません。図形ID: 10"
+  }, {
+    "code" : "DRAWING_SIMPLIFIED",
+    "section" : "05_基本図形",
+    "range" : "I31:O38",
+    "message" : "基本図形を個別に簡易描画しました。セル内容は画像に含みません。図形ID: 11"
+  }, {
+    "code" : "DRAWING_SIMPLIFIED",
+    "section" : "05_基本図形",
+    "range" : "A41:G48",
+    "message" : "基本図形を個別に簡易描画しました。セル内容は画像に含みません。図形ID: 12"
+  }, {
+    "code" : "DRAWING_SIMPLIFIED",
+    "section" : "05_基本図形",
+    "range" : "I41:O48",
+    "message" : "基本図形を個別に簡易描画しました。セル内容は画像に含みません。図形ID: 13"
+  }, {
+    "code" : "DRAWING_SIMPLIFIED",
+    "section" : "05_基本図形",
+    "range" : "A51:H59",
+    "message" : "基本図形を個別に簡易描画しました。セル内容は画像に含みません。図形ID: 14"
+  }, {
+    "code" : "DRAWING_SIMPLIFIED",
+    "section" : "05_基本図形",
+    "range" : "K52:P58",
+    "message" : "基本図形を個別に簡易描画しました。セル内容は画像に含みません。図形ID: 15"
+  }, {
+    "code" : "DRAWING_SIMPLIFIED",
+    "section" : "05_基本図形",
+    "range" : "A61:G71",
+    "message" : "基本図形を個別に簡易描画しました。セル内容は画像に含みません。図形ID: 16"
+  }, {
+    "code" : "DRAWING_SIMPLIFIED",
+    "section" : "05_基本図形",
+    "range" : "I63:O70",
+    "message" : "基本図形を個別に簡易描画しました。セル内容は画像に含みません。図形ID: 17"
+  }, {
+    "code" : "DRAWING_SIMPLIFIED",
+    "section" : "06_グループと接続",
+    "range" : "A5:D11",
+    "message" : "基本図形を個別に簡易描画しました。セル内容は画像に含みません。図形ID: 1"
+  }, {
+    "code" : "DRAWING_SIMPLIFIED",
+    "section" : "06_グループと接続",
+    "range" : "E5:H11",
+    "message" : "基本図形を個別に簡易描画しました。セル内容は画像に含みません。図形ID: 1"
+  }, {
+    "code" : "DRAWING_SIMPLIFIED",
+    "section" : "06_グループと接続",
+    "range" : "D8:E8",
+    "message" : "基本図形を個別に簡易描画しました。セル内容は画像に含みません。図形ID: 1"
+  }, {
+    "code" : "DRAWING_SIMPLIFIED",
+    "section" : "06_グループと接続",
+    "range" : "A17:D24",
+    "message" : "基本図形を個別に簡易描画しました。セル内容は画像に含みません。図形ID: 1"
+  }, {
+    "code" : "DRAWING_SIMPLIFIED",
+    "section" : "06_グループと接続",
+    "range" : "E19:I26",
+    "message" : "基本図形を個別に簡易描画しました。セル内容は画像に含みません。図形ID: 1"
+  }, {
+    "code" : "DRAWING_SIMPLIFIED",
+    "section" : "06_グループと接続",
+    "range" : "A35:F41",
+    "message" : "基本図形を個別に簡易描画しました。セル内容は画像に含みません。図形ID: 3"
+  }, {
+    "code" : "DRAWING_SIMPLIFIED",
+    "section" : "06_グループと接続",
+    "range" : "J35:O41",
+    "message" : "基本図形を個別に簡易描画しました。セル内容は画像に含みません。図形ID: 4"
+  }, {
+    "code" : "DRAWING_SIMPLIFIED",
+    "section" : "06_グループと接続",
+    "range" : "F38:J38",
+    "message" : "基本図形を個別に簡易描画しました。セル内容は画像に含みません。図形ID: 1"
+  }, {
+    "code" : "DRAWING_SIMPLIFIED",
+    "section" : "06_グループと接続",
+    "range" : "A47:G55",
+    "message" : "基本図形を個別に簡易描画しました。セル内容は画像に含みません。図形ID: 6"
+  }, {
+    "code" : "DRAWING_SIMPLIFIED",
+    "section" : "06_グループと接続",
+    "range" : "C49:I57",
+    "message" : "基本図形を個別に簡易描画しました。セル内容は画像に含みません。図形ID: 7"
+  }, {
+    "code" : "DRAWING_SIMPLIFIED",
+    "section" : "06_グループと接続",
+    "range" : "A63:J73",
+    "message" : "基本図形を個別に簡易描画しました。セル内容は画像に含みません。図形ID: 8"
+  }, {
+    "code" : "DRAWING_SIMPLIFIED",
+    "section" : "07_未対応と加工",
+    "range" : "G20:L28",
+    "message" : "基本図形を個別に簡易描画しました。セル内容は画像に含みません。図形ID: 3"
+  }, {
+    "code" : "DRAWING_SIMPLIFIED",
+    "section" : "07_未対応と加工",
+    "range" : "N20:Q30",
+    "message" : "基本図形を個別に簡易描画しました。セル内容は画像に含みません。図形ID: 4"
+  }, {
+    "code" : "HIDDEN_SHEET_OMITTED",
+    "section" : "非表示シート",
+    "message" : "非表示シートを除外しました。"
+  }, {
+    "code" : "HIDDEN_SHEET_OMITTED",
+    "section" : "VeryHiddenシート",
+    "message" : "非表示シートを除外しました。"
+  }, {
+    "code" : "EMPTY_SHEET_OMITTED",
+    "section" : "空シート",
+    "message" : "出力する内容のないシートを除外しました。"
+  }, {
+    "code" : "STRIKETHROUGH_REMOVED",
+    "section" : "取消線のみ",
+    "range" : "A1",
+    "message" : "19文字を除外しました。"
+  }, {
+    "code" : "EMPTY_SHEET_OMITTED",
+    "section" : "取消線のみ",
+    "message" : "出力する内容のないシートを除外しました。"
+  }, {
+    "code" : "EMPTY_TABLE_OMITTED",
+    "section" : "罫線のみ",
+    "range" : "A1:B2",
+    "message" : "出力内容のない表を除外しました。"
+  }, {
+    "code" : "EMPTY_SHEET_OMITTED",
+    "section" : "罫線のみ",
+    "message" : "出力する内容のないシートを除外しました。"
+  } ],
+  "blocks" : [ {
+    "type" : "text",
+    "section" : "01_文章と書式",
+    "range" : "A1",
+    "markdownStartLine" : 3,
+    "markdownEndLine" : 3
+  }, {
+    "type" : "text",
+    "section" : "01_文章と書式",
+    "range" : "A2",
+    "markdownStartLine" : 4,
+    "markdownEndLine" : 4
+  }, {
+    "type" : "text",
+    "section" : "01_文章と書式",
+    "range" : "A4",
+    "markdownStartLine" : 6,
+    "markdownEndLine" : 6
+  }, {
+    "type" : "text",
+    "section" : "01_文章と書式",
+    "range" : "A5",
+    "markdownStartLine" : 7,
+    "markdownEndLine" : 7
+  }, {
+    "type" : "text",
+    "section" : "01_文章と書式",
+    "range" : "A7",
+    "markdownStartLine" : 9,
+    "markdownEndLine" : 9
+  }, {
+    "type" : "text",
+    "section" : "01_文章と書式",
+    "range" : "A9:D9",
+    "markdownStartLine" : 11,
+    "markdownEndLine" : 11
+  }, {
+    "type" : "text",
+    "section" : "01_文章と書式",
+    "range" : "A11",
+    "markdownStartLine" : 13,
+    "markdownEndLine" : 13
+  }, {
+    "type" : "text",
+    "section" : "01_文章と書式",
+    "range" : "A12",
+    "markdownStartLine" : 14,
+    "markdownEndLine" : 14
+  }, {
+    "type" : "text",
+    "section" : "01_文章と書式",
+    "range" : "A13",
+    "markdownStartLine" : 15,
+    "markdownEndLine" : 15
+  }, {
+    "type" : "text",
+    "section" : "01_文章と書式",
+    "range" : "A15",
+    "markdownStartLine" : 17,
+    "markdownEndLine" : 17
+  }, {
+    "type" : "text",
+    "section" : "01_文章と書式",
+    "range" : "A20",
+    "markdownStartLine" : 19,
+    "markdownEndLine" : 19
+  }, {
+    "type" : "text",
+    "section" : "01_文章と書式",
+    "range" : "A21",
+    "markdownStartLine" : 20,
+    "markdownEndLine" : 20
+  }, {
+    "type" : "text",
+    "section" : "01_文章と書式",
+    "range" : "A22",
+    "markdownStartLine" : 21,
+    "markdownEndLine" : 21
+  }, {
+    "type" : "text",
+    "section" : "01_文章と書式",
+    "range" : "A23",
+    "markdownStartLine" : 22,
+    "markdownEndLine" : 22
+  }, {
+    "type" : "text",
+    "section" : "01_文章と書式",
+    "range" : "A24",
+    "markdownStartLine" : 23,
+    "markdownEndLine" : 23
+  }, {
+    "type" : "text",
+    "section" : "01_文章と書式",
+    "range" : "A26",
+    "markdownStartLine" : 25,
+    "markdownEndLine" : 25
+  }, {
+    "type" : "text",
+    "section" : "01_文章と書式",
+    "range" : "A27",
+    "markdownStartLine" : 26,
+    "markdownEndLine" : 26
+  }, {
+    "type" : "text",
+    "section" : "01_文章と書式",
+    "range" : "A28",
+    "markdownStartLine" : 27,
+    "markdownEndLine" : 27
+  }, {
+    "type" : "text",
+    "section" : "01_文章と書式",
+    "range" : "A30",
+    "markdownStartLine" : 29,
+    "markdownEndLine" : 29
+  }, {
+    "type" : "text",
+    "section" : "01_文章と書式",
+    "range" : "A31",
+    "markdownStartLine" : 30,
+    "markdownEndLine" : 30
+  }, {
+    "type" : "text",
+    "section" : "01_文章と書式",
+    "range" : "A32",
+    "markdownStartLine" : 31,
+    "markdownEndLine" : 31
+  }, {
+    "type" : "text",
+    "section" : "01_文章と書式",
+    "range" : "A33",
+    "markdownStartLine" : 32,
+    "markdownEndLine" : 33
+  }, {
+    "type" : "text",
+    "section" : "01_文章と書式",
+    "range" : "A35",
+    "markdownStartLine" : 35,
+    "markdownEndLine" : 35
+  }, {
+    "type" : "text",
+    "section" : "01_文章と書式",
+    "range" : "A40",
+    "markdownStartLine" : 37,
+    "markdownEndLine" : 37
+  }, {
+    "type" : "text",
+    "section" : "02_罫線の表",
+    "range" : "A1",
+    "markdownStartLine" : 41,
+    "markdownEndLine" : 41
+  }, {
+    "type" : "text",
+    "section" : "02_罫線の表",
+    "range" : "A2",
+    "markdownStartLine" : 42,
+    "markdownEndLine" : 42
+  }, {
+    "sourceColumns" : [ 1, 2, 3, 4 ],
+    "mergedRanges" : [ ],
+    "sourceRows" : [ 4, 5, 6, 7, 8, 9 ],
+    "header" : "empty-generated",
+    "type" : "table",
+    "section" : "02_罫線の表",
+    "range" : "A4:D9",
+    "markdownStartLine" : 44,
+    "markdownEndLine" : 51
+  }, {
+    "sourceColumns" : [ 6, 7, 8 ],
+    "mergedRanges" : [ ],
+    "sourceRows" : [ 4, 5, 6, 7 ],
+    "header" : "empty-generated",
+    "type" : "table",
+    "section" : "02_罫線の表",
+    "range" : "F4:H7",
+    "markdownStartLine" : 53,
+    "markdownEndLine" : 58
+  }, {
+    "sourceColumns" : [ 1, 2, 3 ],
+    "mergedRanges" : [ ],
+    "sourceRows" : [ 13, 15, 16 ],
+    "header" : "empty-generated",
+    "type" : "table",
+    "section" : "02_罫線の表",
+    "range" : "A13:C16",
+    "markdownStartLine" : 60,
+    "markdownEndLine" : 64
+  }, {
+    "sourceColumns" : [ 6, 7 ],
+    "mergedRanges" : [ ],
+    "sourceRows" : [ 13, 15, 16 ],
+    "header" : "empty-generated",
+    "type" : "table",
+    "section" : "02_罫線の表",
+    "range" : "F13:G16",
+    "markdownStartLine" : 66,
+    "markdownEndLine" : 70
+  }, {
+    "sourceColumns" : [ 1, 2, 3 ],
+    "mergedRanges" : [ "A20:C20" ],
+    "sourceRows" : [ 20, 21, 22, 23 ],
+    "header" : "empty-generated",
+    "type" : "table",
+    "section" : "02_罫線の表",
+    "range" : "A20:C23",
+    "markdownStartLine" : 72,
+    "markdownEndLine" : 77
+  }, {
+    "sourceColumns" : [ 1, 2, 3 ],
+    "mergedRanges" : [ ],
+    "sourceRows" : [ 27, 28, 29, 30 ],
+    "header" : "excel-table",
+    "type" : "table",
+    "section" : "02_罫線の表",
+    "range" : "A27:C30",
+    "markdownStartLine" : 79,
+    "markdownEndLine" : 83
+  }, {
+    "type" : "text",
+    "section" : "02_罫線の表",
+    "range" : "F27:H27",
+    "markdownStartLine" : 85,
+    "markdownEndLine" : 85
+  }, {
+    "type" : "text",
+    "section" : "02_罫線の表",
+    "range" : "F28:H28",
+    "markdownStartLine" : 86,
+    "markdownEndLine" : 86
+  }, {
+    "type" : "text",
+    "section" : "02_罫線の表",
+    "range" : "F29:H29",
+    "markdownStartLine" : 87,
+    "markdownEndLine" : 87
+  }, {
+    "type" : "text",
+    "section" : "02_罫線の表",
+    "range" : "F30:G30",
+    "markdownStartLine" : 88,
+    "markdownEndLine" : 88
+  }, {
+    "type" : "text",
+    "section" : "02_罫線の表",
+    "range" : "A34:H34",
+    "markdownStartLine" : 90,
+    "markdownEndLine" : 90
+  }, {
+    "type" : "text",
+    "section" : "02_罫線の表",
+    "range" : "F35:H35",
+    "markdownStartLine" : 91,
+    "markdownEndLine" : 91
+  }, {
+    "type" : "text",
+    "section" : "02_罫線の表",
+    "range" : "F36:H36",
+    "markdownStartLine" : 92,
+    "markdownEndLine" : 92
+  }, {
+    "type" : "text",
+    "section" : "02_罫線の表",
+    "range" : "A38",
+    "markdownStartLine" : 94,
+    "markdownEndLine" : 94
+  }, {
+    "type" : "text",
+    "section" : "02_罫線の表",
+    "range" : "A44",
+    "markdownStartLine" : 96,
+    "markdownEndLine" : 96
+  }, {
+    "type" : "text",
+    "section" : "02_罫線の表",
+    "range" : "A45",
+    "markdownStartLine" : 97,
+    "markdownEndLine" : 97
+  }, {
+    "type" : "text",
+    "section" : "03_表示値と数式",
+    "range" : "A1",
+    "markdownStartLine" : 101,
+    "markdownEndLine" : 101
+  }, {
+    "type" : "text",
+    "section" : "03_表示値と数式",
+    "range" : "A2",
+    "markdownStartLine" : 102,
+    "markdownEndLine" : 102
+  }, {
+    "type" : "text",
+    "section" : "03_表示値と数式",
+    "range" : "A4:C4",
+    "markdownStartLine" : 104,
+    "markdownEndLine" : 104
+  }, {
+    "type" : "text",
+    "section" : "03_表示値と数式",
+    "range" : "A5:C5",
+    "markdownStartLine" : 105,
+    "markdownEndLine" : 105
+  }, {
+    "type" : "text",
+    "section" : "03_表示値と数式",
+    "range" : "A6:C6",
+    "markdownStartLine" : 106,
+    "markdownEndLine" : 106
+  }, {
+    "type" : "text",
+    "section" : "03_表示値と数式",
+    "range" : "A7:C7",
+    "markdownStartLine" : 107,
+    "markdownEndLine" : 107
+  }, {
+    "type" : "text",
+    "section" : "03_表示値と数式",
+    "range" : "A8:C8",
+    "markdownStartLine" : 108,
+    "markdownEndLine" : 108
+  }, {
+    "type" : "text",
+    "section" : "03_表示値と数式",
+    "range" : "A9:C9",
+    "markdownStartLine" : 109,
+    "markdownEndLine" : 109
+  }, {
+    "type" : "text",
+    "section" : "03_表示値と数式",
+    "range" : "A10:C10",
+    "markdownStartLine" : 110,
+    "markdownEndLine" : 110
+  }, {
+    "type" : "text",
+    "section" : "03_表示値と数式",
+    "range" : "A11:C11",
+    "markdownStartLine" : 111,
+    "markdownEndLine" : 111
+  }, {
+    "type" : "text",
+    "section" : "03_表示値と数式",
+    "range" : "A12:C12",
+    "markdownStartLine" : 112,
+    "markdownEndLine" : 112
+  }, {
+    "type" : "text",
+    "section" : "03_表示値と数式",
+    "range" : "A13:C13",
+    "markdownStartLine" : 113,
+    "markdownEndLine" : 113
+  }, {
+    "type" : "text",
+    "section" : "03_表示値と数式",
+    "range" : "A14:C14",
+    "markdownStartLine" : 114,
+    "markdownEndLine" : 114
+  }, {
+    "type" : "text",
+    "section" : "03_表示値と数式",
+    "range" : "A15",
+    "markdownStartLine" : 115,
+    "markdownEndLine" : 115
+  }, {
+    "type" : "text",
+    "section" : "03_表示値と数式",
+    "range" : "A17:C17",
+    "markdownStartLine" : 117,
+    "markdownEndLine" : 117
+  }, {
+    "type" : "text",
+    "section" : "03_表示値と数式",
+    "range" : "A18:C18",
+    "markdownStartLine" : 118,
+    "markdownEndLine" : 118
+  }, {
+    "type" : "text",
+    "section" : "03_表示値と数式",
+    "range" : "A20:C20",
+    "markdownStartLine" : 120,
+    "markdownEndLine" : 120
+  }, {
+    "type" : "text",
+    "section" : "03_表示値と数式",
+    "range" : "A22:C22",
+    "markdownStartLine" : 122,
+    "markdownEndLine" : 122
+  }, {
+    "type" : "text",
+    "section" : "03_表示値と数式",
+    "range" : "A23:C23",
+    "markdownStartLine" : 123,
+    "markdownEndLine" : 123
+  }, {
+    "type" : "text",
+    "section" : "03_表示値と数式",
+    "range" : "A24:C24",
+    "markdownStartLine" : 124,
+    "markdownEndLine" : 124
+  }, {
+    "type" : "text",
+    "section" : "03_表示値と数式",
+    "range" : "A26:C26",
+    "markdownStartLine" : 126,
+    "markdownEndLine" : 126
+  }, {
+    "type" : "text",
+    "section" : "03_表示値と数式",
+    "range" : "A28",
+    "markdownStartLine" : 128,
+    "markdownEndLine" : 128
+  }, {
+    "type" : "text",
+    "section" : "04_画像",
+    "range" : "A1",
+    "markdownStartLine" : 132,
+    "markdownEndLine" : 132
+  }, {
+    "type" : "text",
+    "section" : "04_画像",
+    "range" : "A3:G3",
+    "markdownStartLine" : 134,
+    "markdownEndLine" : 134
+  }, {
+    "type" : "drawing",
+    "section" : "04_画像",
+    "range" : "A4:E10",
+    "markdownStartLine" : 136,
+    "markdownEndLine" : 136
+  }, {
+    "type" : "drawing",
+    "section" : "04_画像",
+    "range" : "G4:K10",
+    "markdownStartLine" : 138,
+    "markdownEndLine" : 138
+  }, {
+    "type" : "text",
+    "section" : "04_画像",
+    "range" : "A13",
+    "markdownStartLine" : 140,
+    "markdownEndLine" : 140
+  }, {
+    "type" : "drawing",
+    "section" : "04_画像",
+    "range" : "A14:E20",
+    "markdownStartLine" : 142,
+    "markdownEndLine" : 142
+  }, {
+    "type" : "drawing",
+    "section" : "04_画像",
+    "range" : "G14:K20",
+    "markdownStartLine" : 144,
+    "markdownEndLine" : 144
+  }, {
+    "type" : "text",
+    "section" : "04_画像",
+    "range" : "A23",
+    "markdownStartLine" : 146,
+    "markdownEndLine" : 146
+  }, {
+    "sourceColumns" : [ 1, 2, 3, 4, 5 ],
+    "mergedRanges" : [ ],
+    "sourceRows" : [ 24, 25, 26, 27, 28, 29 ],
+    "header" : "empty-generated",
+    "type" : "table",
+    "section" : "04_画像",
+    "range" : "A24:E29",
+    "markdownStartLine" : 148,
+    "markdownEndLine" : 155
+  }, {
+    "type" : "drawing",
+    "section" : "04_画像",
+    "range" : "B26:D29",
+    "markdownStartLine" : 157,
+    "markdownEndLine" : 157
+  }, {
+    "type" : "text",
+    "section" : "04_画像",
+    "range" : "H25",
+    "markdownStartLine" : 159,
+    "markdownEndLine" : 159
+  }, {
+    "type" : "text",
+    "section" : "04_画像",
+    "range" : "A33",
+    "markdownStartLine" : 161,
+    "markdownEndLine" : 161
+  }, {
+    "type" : "text",
+    "section" : "05_基本図形",
+    "range" : "A1",
+    "markdownStartLine" : 165,
+    "markdownEndLine" : 165
+  }, {
+    "type" : "text",
+    "section" : "05_基本図形",
+    "range" : "A3:M3",
+    "markdownStartLine" : 167,
+    "markdownEndLine" : 167
+  }, {
+    "type" : "drawing",
+    "section" : "05_基本図形",
+    "range" : "A4:E10",
+    "markdownStartLine" : 169,
+    "markdownEndLine" : 169
+  }, {
+    "type" : "drawing",
+    "section" : "05_基本図形",
+    "range" : "G4:K10",
+    "markdownStartLine" : 171,
+    "markdownEndLine" : 171
+  }, {
+    "type" : "drawing",
+    "section" : "05_基本図形",
+    "range" : "M4:Q10",
+    "markdownStartLine" : 173,
+    "markdownEndLine" : 173
+  }, {
+    "type" : "text",
+    "section" : "05_基本図形",
+    "range" : "A13",
+    "markdownStartLine" : 175,
+    "markdownEndLine" : 175
+  }, {
+    "type" : "drawing",
+    "section" : "05_基本図形",
+    "range" : "A14:D21",
+    "markdownStartLine" : 177,
+    "markdownEndLine" : 177
+  }, {
+    "type" : "drawing",
+    "section" : "05_基本図形",
+    "range" : "F14:I21",
+    "markdownStartLine" : 179,
+    "markdownEndLine" : 179
+  }, {
+    "type" : "drawing",
+    "section" : "05_基本図形",
+    "range" : "K14:N21",
+    "markdownStartLine" : 181,
+    "markdownEndLine" : 181
+  }, {
+    "type" : "drawing",
+    "section" : "05_基本図形",
+    "range" : "P14:S21",
+    "markdownStartLine" : 183,
+    "markdownEndLine" : 183
+  }, {
+    "type" : "text",
+    "section" : "05_基本図形",
+    "range" : "A24:G24",
+    "markdownStartLine" : 185,
+    "markdownEndLine" : 185
+  }, {
+    "type" : "drawing",
+    "section" : "05_基本図形",
+    "range" : "A25:E25",
+    "markdownStartLine" : 187,
+    "markdownEndLine" : 187
+  }, {
+    "type" : "drawing",
+    "section" : "05_基本図形",
+    "range" : "G25:K25",
+    "markdownStartLine" : 189,
+    "markdownEndLine" : 189
+  }, {
+    "type" : "text",
+    "section" : "05_基本図形",
+    "range" : "A30",
+    "markdownStartLine" : 191,
+    "markdownEndLine" : 191
+  }, {
+    "type" : "drawing",
+    "section" : "05_基本図形",
+    "range" : "A31:G38",
+    "markdownStartLine" : 193,
+    "markdownEndLine" : 193
+  }, {
+    "type" : "drawing",
+    "section" : "05_基本図形",
+    "range" : "I31:O38",
+    "markdownStartLine" : 195,
+    "markdownEndLine" : 195
+  }, {
+    "type" : "text",
+    "section" : "05_基本図形",
+    "range" : "A40",
+    "markdownStartLine" : 197,
+    "markdownEndLine" : 197
+  }, {
+    "type" : "drawing",
+    "section" : "05_基本図形",
+    "range" : "A41:G48",
+    "markdownStartLine" : 199,
+    "markdownEndLine" : 199
+  }, {
+    "type" : "drawing",
+    "section" : "05_基本図形",
+    "range" : "I41:O48",
+    "markdownStartLine" : 201,
+    "markdownEndLine" : 201
+  }, {
+    "type" : "text",
+    "section" : "05_基本図形",
+    "range" : "A50",
+    "markdownStartLine" : 203,
+    "markdownEndLine" : 203
+  }, {
+    "type" : "drawing",
+    "section" : "05_基本図形",
+    "range" : "A51:H59",
+    "markdownStartLine" : 205,
+    "markdownEndLine" : 207
+  }, {
+    "type" : "text",
+    "section" : "05_基本図形",
+    "range" : "K51",
+    "markdownStartLine" : 209,
+    "markdownEndLine" : 209
+  }, {
+    "type" : "drawing",
+    "section" : "05_基本図形",
+    "range" : "K52:P58",
+    "markdownStartLine" : 211,
+    "markdownEndLine" : 211
+  }, {
+    "type" : "text",
+    "section" : "05_基本図形",
+    "range" : "A60:I60",
+    "markdownStartLine" : 213,
+    "markdownEndLine" : 213
+  }, {
+    "type" : "drawing",
+    "section" : "05_基本図形",
+    "range" : "A61:G71",
+    "markdownStartLine" : 215,
+    "markdownEndLine" : 215
+  }, {
+    "type" : "drawing",
+    "section" : "05_基本図形",
+    "range" : "I63:O70",
+    "markdownStartLine" : 217,
+    "markdownEndLine" : 217
+  }, {
+    "type" : "text",
+    "section" : "06_グループと接続",
+    "range" : "A1",
+    "markdownStartLine" : 221,
+    "markdownEndLine" : 221
+  }, {
+    "type" : "text",
+    "section" : "06_グループと接続",
+    "range" : "A3",
+    "markdownStartLine" : 223,
+    "markdownEndLine" : 223
+  }, {
+    "type" : "drawing",
+    "section" : "06_グループと接続",
+    "range" : "A5:D11",
+    "markdownStartLine" : 225,
+    "markdownEndLine" : 225
+  }, {
+    "type" : "drawing",
+    "section" : "06_グループと接続",
+    "range" : "E5:H11",
+    "markdownStartLine" : 227,
+    "markdownEndLine" : 227
+  }, {
+    "type" : "drawing",
+    "section" : "06_グループと接続",
+    "range" : "I6:M11",
+    "markdownStartLine" : 229,
+    "markdownEndLine" : 229
+  }, {
+    "type" : "drawing",
+    "section" : "06_グループと接続",
+    "range" : "D8:E8",
+    "markdownStartLine" : 231,
+    "markdownEndLine" : 231
+  }, {
+    "type" : "text",
+    "section" : "06_グループと接続",
+    "range" : "A17",
+    "markdownStartLine" : 233,
+    "markdownEndLine" : 233
+  }, {
+    "type" : "drawing",
+    "section" : "06_グループと接続",
+    "range" : "A17:D24",
+    "markdownStartLine" : 235,
+    "markdownEndLine" : 235
+  }, {
+    "type" : "drawing",
+    "section" : "06_グループと接続",
+    "range" : "E19:I26",
+    "markdownStartLine" : 237,
+    "markdownEndLine" : 237
+  }, {
+    "type" : "text",
+    "section" : "06_グループと接続",
+    "range" : "A34",
+    "markdownStartLine" : 239,
+    "markdownEndLine" : 239
+  }, {
+    "type" : "drawing",
+    "section" : "06_グループと接続",
+    "range" : "A35:F41",
+    "markdownStartLine" : 241,
+    "markdownEndLine" : 241
+  }, {
+    "type" : "drawing",
+    "section" : "06_グループと接続",
+    "range" : "J35:O41",
+    "markdownStartLine" : 243,
+    "markdownEndLine" : 243
+  }, {
+    "type" : "drawing",
+    "section" : "06_グループと接続",
+    "range" : "F38:J38",
+    "markdownStartLine" : 245,
+    "markdownEndLine" : 245
+  }, {
+    "type" : "text",
+    "section" : "06_グループと接続",
+    "range" : "A46",
+    "markdownStartLine" : 247,
+    "markdownEndLine" : 247
+  }, {
+    "type" : "drawing",
+    "section" : "06_グループと接続",
+    "range" : "A47:G55",
+    "markdownStartLine" : 249,
+    "markdownEndLine" : 249
+  }, {
+    "type" : "drawing",
+    "section" : "06_グループと接続",
+    "range" : "C49:I57",
+    "markdownStartLine" : 251,
+    "markdownEndLine" : 251
+  }, {
+    "type" : "text",
+    "section" : "06_グループと接続",
+    "range" : "A62",
+    "markdownStartLine" : 253,
+    "markdownEndLine" : 253
+  }, {
+    "type" : "drawing",
+    "section" : "06_グループと接続",
+    "range" : "A63:J73",
+    "markdownStartLine" : 255,
+    "markdownEndLine" : 255
+  }, {
+    "type" : "drawing",
+    "section" : "06_グループと接続",
+    "range" : "C65:H71",
+    "markdownStartLine" : 257,
+    "markdownEndLine" : 257
+  }, {
+    "type" : "text",
+    "section" : "07_未対応と加工",
+    "range" : "A1",
+    "markdownStartLine" : 261,
+    "markdownEndLine" : 261
+  }, {
+    "type" : "text",
+    "section" : "07_未対応と加工",
+    "range" : "A3",
+    "markdownStartLine" : 263,
+    "markdownEndLine" : 263
+  }, {
+    "type" : "drawing",
+    "section" : "07_未対応と加工",
+    "range" : "E4:Q15",
+    "markdownStartLine" : 265,
+    "markdownEndLine" : 265
+  }, {
+    "type" : "text",
+    "section" : "07_未対応と加工",
+    "range" : "A5:B5",
+    "markdownStartLine" : 267,
+    "markdownEndLine" : 267
+  }, {
+    "type" : "text",
+    "section" : "07_未対応と加工",
+    "range" : "A6:B6",
+    "markdownStartLine" : 268,
+    "markdownEndLine" : 268
+  }, {
+    "type" : "text",
+    "section" : "07_未対応と加工",
+    "range" : "A7:B7",
+    "markdownStartLine" : 269,
+    "markdownEndLine" : 269
+  }, {
+    "type" : "text",
+    "section" : "07_未対応と加工",
+    "range" : "A19:N19",
+    "markdownStartLine" : 271,
+    "markdownEndLine" : 271
+  }, {
+    "type" : "drawing",
+    "section" : "07_未対応と加工",
+    "range" : "A20:E28",
+    "markdownStartLine" : 273,
+    "markdownEndLine" : 273
+  }, {
+    "type" : "drawing",
+    "section" : "07_未対応と加工",
+    "range" : "G20:L28",
+    "markdownStartLine" : 275,
+    "markdownEndLine" : 275
+  }, {
+    "type" : "drawing",
+    "section" : "07_未対応と加工",
+    "range" : "N20:Q30",
+    "markdownStartLine" : 277,
+    "markdownEndLine" : 277
+  }, {
+    "type" : "text",
+    "section" : "07_未対応と加工",
+    "range" : "A33:J33",
+    "markdownStartLine" : 279,
+    "markdownEndLine" : 279
+  }, {
+    "type" : "drawing",
+    "section" : "07_未対応と加工",
+    "range" : "A33:G44",
+    "markdownStartLine" : 281,
+    "markdownEndLine" : 281
+  }, {
+    "type" : "drawing",
+    "section" : "07_未対応と加工",
+    "range" : "J35:P43",
+    "markdownStartLine" : 283,
+    "markdownEndLine" : 283
+  }, {
+    "type" : "drawing",
+    "section" : "08_画像だけ",
+    "range" : "A3:J16",
+    "markdownStartLine" : 287,
+    "markdownEndLine" : 287
+  } ],
+  "assets" : [ {
+    "sha256" : "92092639ea9cdaf7b3c316ef6d4651d278a738347217a0d0d3bc4015bb4340dc",
+    "sizeBytes" : 28452,
+    "contentType" : "image/png",
+    "path" : "images/image-0001.png"
+  }, {
+    "sha256" : "19f63d464adaca1b853eaab6c273331ad4942a4f73d084433d8f8d01d7b5dc15",
+    "sizeBytes" : 22462,
+    "contentType" : "image/jpeg",
+    "path" : "images/image-0002.jpg"
+  }, {
+    "sha256" : "a10404683252f071d9bb76f661c37f05f427443c82328edc415de83bf6bd65d5",
+    "sizeBytes" : 3771,
+    "contentType" : "image/png",
+    "path" : "images/diagram-0001.png"
+  }, {
+    "sha256" : "3244328c34299b4672f122188cb6acf66454c119d7c07634e312160db5e172ac",
+    "sizeBytes" : 5835,
+    "contentType" : "image/png",
+    "path" : "images/diagram-0002.png"
+  }, {
+    "sha256" : "d3e9558e0ef55f1af10b5b3a1ddf6a1a33b5f266ba97dbb01bd8b2515cf89520",
+    "sizeBytes" : 8619,
+    "contentType" : "image/png",
+    "path" : "images/diagram-0003.png"
+  }, {
+    "sha256" : "9a7e459865dd4225f07164e41c08ecd663d34ae339e6decc5d91deedb2e9fc2b",
+    "sizeBytes" : 5193,
+    "contentType" : "image/png",
+    "path" : "images/diagram-0004.png"
+  }, {
+    "sha256" : "17ce8ba6aa2c9588966ad7a346ca48d4edc83b5135f78393099e3eb384cec86d",
+    "sizeBytes" : 5364,
+    "contentType" : "image/png",
+    "path" : "images/diagram-0005.png"
+  }, {
+    "sha256" : "7895170e0b2cc2f0fe7878798214f87025db070f557e6c077a7615b48318d62d",
+    "sizeBytes" : 4495,
+    "contentType" : "image/png",
+    "path" : "images/diagram-0006.png"
+  }, {
+    "sha256" : "fd48f34f3d2462529b0c3df942b3c086cb856ba7daf64b268ab5079510e7b4ac",
+    "sizeBytes" : 2377,
+    "contentType" : "image/png",
+    "path" : "images/diagram-0007.png"
+  }, {
+    "sha256" : "d01b97af321cdf4658b55544ac6a729cb8776a655b921080c841957eb046d0b4",
+    "sizeBytes" : 141,
+    "contentType" : "image/png",
+    "path" : "images/diagram-0008.png"
+  }, {
+    "sha256" : "ee4d97734325c9663d7bee39b546b843a6703c0f44db2bd16857152371566033",
+    "sizeBytes" : 278,
+    "contentType" : "image/png",
+    "path" : "images/diagram-0009.png"
+  }, {
+    "sha256" : "c99a1aa712d5b5d25db487919ee848528ca3d53741a1a9df088871feefb441e5",
+    "sizeBytes" : 10773,
+    "contentType" : "image/png",
+    "path" : "images/diagram-0010.png"
+  }, {
+    "sha256" : "efa6082e3b6daa66fd680358bb69766f2f525f309a2d363882003119e5bb06e2",
+    "sizeBytes" : 10839,
+    "contentType" : "image/png",
+    "path" : "images/diagram-0011.png"
+  }, {
+    "sha256" : "f9ce1d6fc18a2d9cd613ce5aef0411fb6e557c0a43f08de002c754c8471aed3f",
+    "sizeBytes" : 11606,
+    "contentType" : "image/png",
+    "path" : "images/diagram-0012.png"
+  }, {
+    "sha256" : "2884475946de395100572a2c0d83c6bd18f81715c52fc34ecf65020cba993f1f",
+    "sizeBytes" : 10551,
+    "contentType" : "image/png",
+    "path" : "images/diagram-0013.png"
+  }, {
+    "sha256" : "29d582b03135e628cbad43738658a4417534054ad4c8886c2980e2d14ed0cab9",
+    "sizeBytes" : 9554,
+    "contentType" : "image/png",
+    "path" : "images/diagram-0014.png"
+  }, {
+    "sha256" : "e08e04dbde48b4b185faab22f11515287f2469c8b6f314c0d2697b661378a95a",
+    "sizeBytes" : 2000,
+    "contentType" : "image/png",
+    "path" : "images/diagram-0015.png"
+  }, {
+    "sha256" : "bcbf8560d62cc6b4286132fca854bd6d117b89b878ac1ed6b3d6343d85f0d711",
+    "sizeBytes" : 24305,
+    "contentType" : "image/png",
+    "path" : "images/diagram-0016.png"
+  }, {
+    "sha256" : "8afcbcdae0448f0660c50283f7445800261408043fa04ccd930065472e4c5141",
+    "sizeBytes" : 5158,
+    "contentType" : "image/png",
+    "path" : "images/diagram-0017.png"
+  }, {
+    "sha256" : "8263f434e7c7deee246973ec9b0f0cc4987467ff5df26b980669094e885bcc03",
+    "sizeBytes" : 5171,
+    "contentType" : "image/png",
+    "path" : "images/diagram-0018.png"
+  }, {
+    "sha256" : "f6e8dc2203d934d60993d876c5b6fbb5b3aebfd077bcfe05523816575589db8f",
+    "sizeBytes" : 9616,
+    "contentType" : "image/png",
+    "path" : "images/diagram-0019.png"
+  }, {
+    "sha256" : "ce6f471043e1cf0048f568750503f11bd4f20f9b1c5b7657813f7779766b7405",
+    "sizeBytes" : 258,
+    "contentType" : "image/png",
+    "path" : "images/diagram-0020.png"
+  }, {
+    "sha256" : "2fb3264e678dfbce59b2d059d9d6667938d164e39d52a616edc16b5be5c1a377",
+    "sizeBytes" : 14263,
+    "contentType" : "image/png",
+    "path" : "images/diagram-0021.png"
+  }, {
+    "sha256" : "2b2a36b8995480fc04a673e9d066307a695fddc5c6e14778ce2824a608f937c5",
+    "sizeBytes" : 13400,
+    "contentType" : "image/png",
+    "path" : "images/diagram-0022.png"
+  }, {
+    "sha256" : "500042d46a5a9c765b4947ab876f70fc1fe98a33bbf94dfdfc394a3b511832fb",
+    "sizeBytes" : 3533,
+    "contentType" : "image/png",
+    "path" : "images/diagram-0023.png"
+  }, {
+    "sha256" : "907262dcae27a1d31d8aa0e364f8158b137336d102a23f7319e9e1d54dff1546",
+    "sizeBytes" : 3141,
+    "contentType" : "image/png",
+    "path" : "images/diagram-0024.png"
+  }, {
+    "sha256" : "9d8175d0ac22c7f95e39b38ebd5276e296e847dfe95acc4aaf9670f6527464e5",
+    "sizeBytes" : 294,
+    "contentType" : "image/png",
+    "path" : "images/diagram-0025.png"
+  }, {
+    "sha256" : "6f4833a4ed024c923e78bf98c0e41b10a9969bf62c313fa8767f5054216b14e5",
+    "sizeBytes" : 3544,
+    "contentType" : "image/png",
+    "path" : "images/diagram-0026.png"
+  }, {
+    "sha256" : "7b233a8a680480f3ff6c99011b5903ebba2a074d19b898ed27873127a613c18f",
+    "sizeBytes" : 12507,
+    "contentType" : "image/png",
+    "path" : "images/diagram-0027.png"
+  }, {
+    "sha256" : "ef70c1e860f780c85f9b4df5d6581902b8524c9a639c888c094d170fc67c7a7d",
+    "sizeBytes" : 4190,
+    "contentType" : "image/png",
+    "path" : "images/diagram-0028.png"
+  }, {
+    "sha256" : "0cb9b7746f89b9fcece174f78a76b434a5c0969c982f31310d46069824368ff6",
+    "sizeBytes" : 7208,
+    "contentType" : "image/png",
+    "path" : "images/diagram-0029.png"
+  }, {
+    "sha256" : "11fc2b1be070585b319661396385de36744b78f389874f5e8fd5610eb9313fea",
+    "sizeBytes" : 6803,
+    "contentType" : "image/png",
+    "path" : "images/diagram-0030.png"
+  }, {
+    "sha256" : "6d43b3973f1f93fc63fd81fe99f634b440aef06fc74004b2af3483d92cb195ec",
+    "sizeBytes" : 29824,
+    "contentType" : "image/png",
+    "path" : "images/image-0003.png"
+  }, {
+    "sha256" : "f259c4c60577e261310dcbf8dbbd4c55457b48c0f0786f33a51dfa2048c01505",
+    "sizeBytes" : 933174,
+    "contentType" : "image/bmp",
+    "path" : "images/image-0004.bmp"
+  } ]
+}

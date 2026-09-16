@@ -148,3 +148,20 @@ test('async file inputs use the same raw-body and size limits as synchronous con
   assert.equal(errorCode(await handlers.submitUrl(request('jobs-url', '{"url":"first","url":"second"}', 'application/json'), context)), 'INVALID_URL_REQUEST');
   assert.deepEqual(await readdir(root), []);
 });
+
+test('all HTTP input paths parse the same bounded audio options; result downloads honor stored format', async t => {
+  const root = await workspace(t);
+  let actual;
+  const handlers = createHandlers(config, { temporaryRoot: root, jobs: {
+    submit: async (path, filename, options) => { actual = options.options; return job; },
+    download: async (id, path) => { await writeFile(path, 'RIFFaudio'); return { filename: 'audio.wav', contentType: 'audio/wav', codec: 'pcm_s16le', mode: 'transcode', sizeBytes: 9 }; }
+  } });
+  const accepted = await handlers.submit(request('jobs?audioMode=transcode&audioFormat=wav&sampleRate=16000&channels=1'), context);
+  assert.equal(accepted.status, 202); assert.deepEqual(actual, { mode: 'transcode', format: 'wav', sampleRate: 16000, channels: 1 });
+  assert.equal(errorCode(await handlers.submit(request('jobs?audioMode=copy&audioMode=transcode'), context)), 'INVALID_AUDIO_OPTIONS');
+  const response = await handlers.result(request(`jobs/${id}/result?audioFormat=m4a`, null), context);
+  assert.equal(response.headers['Content-Type'], 'audio/wav'); assert.equal(response.headers['X-Audio-Codec'], 'pcm_s16le');
+  assert.equal(response.headers['Content-Disposition'], 'attachment; filename="audio.wav"');
+  for await (const chunk of response.body) { assert.ok(chunk.length); }
+  await clean(root);
+});

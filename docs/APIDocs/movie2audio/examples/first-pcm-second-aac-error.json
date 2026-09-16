@@ -1,0 +1,6 @@
+{
+  "error": {
+    "code": "UNSUPPORTED_AUDIO_CODEC",
+    "message": "The first audio stream must use AAC. Audio is not re-encoded."
+  }
+}

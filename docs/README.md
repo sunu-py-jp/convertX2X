@@ -8,7 +8,7 @@ APIの呼び出し方は [HTML APIリファレンス](APIDocs/index.html) を参
 | --- | --- | --- | --- |
 | PowerPoint / PDF → 画像 | [利用ガイド](../functions/ppt-pdf-to-images/docs/usage.md) | [依頼形式](../functions/ppt-pdf-to-images/docs/direct-queue.md) | [開発者ガイド](ppt-pdf-to-images.md) |
 | Office → Markdown | [利用ガイド](../functions/office2md/docs/usage.md) | [依頼形式](../functions/office2md/docs/direct-queue.md) | [開発者ガイド](office2md.md) |
-| Movie → AAC | [利用ガイド](../functions/movie2audio/docs/usage.md) | [依頼形式](../functions/movie2audio/docs/direct-queue.md) | [開発者ガイド](movie2audio.md) |
+| Movie → Audio | [利用ガイド](../functions/movie2audio/docs/usage.md) | [依頼形式](../functions/movie2audio/docs/direct-queue.md) | [開発者ガイド](movie2audio.md) |
 
 ## 共通の資料
 

@@ -108,6 +108,15 @@ public class ConversionFunctions {
         }
     }
 
+    @FunctionName("MaintainConversions")
+    public void maintain(@TimerTrigger(name = "timer", schedule = "0 */5 * * * *") String timer, ExecutionContext context) {
+        if (!config.asyncEnabled()) return;
+        try { jobs.get().maintain(); } catch (RuntimeException failure) {
+            logQueueFailure(context, failure);
+            throw new IllegalStateException("Conversion maintenance failed; a later scheduled run will retry.");
+        }
+    }
+
     private static void logQueueFailure(ExecutionContext context, RuntimeException failure) {
         String code = failure instanceof ConversionException conversion ? "; code=" + conversion.code() : "";
         context.getLogger().warning("Queue request failed: " + failure.getClass().getSimpleName()
@@ -232,7 +241,7 @@ public class ConversionFunctions {
             if (current == null) {
                 synchronized (RuntimeServices.class) {
                     current = instance;
-                    if (current == null) instance = current = new AzureJobService(CONFIG.storageConnectionString(), CONVERTER,
+                    if (current == null) instance = current = new AzureJobService(CONFIG.integration(), CONVERTER,
                             CONFIG.limits(), CONFIG.blobStorageProfiles());
                 }
             }

@@ -1,6 +1,6 @@
-# Movie → AACの実装
+# Movie → Audioの実装
 
-`functions/movie2audio/` は、動画の最初のAAC音声をM4Aへコピーする独立したNode.js Functionsプロジェクトです。Node.js 22 / 24、Functions v4のプログラミングモデルを使います。HTTPアップロードと許可済みHTTPS URLに加え、非同期HTTPと直接QueueのBlob入力が共通のFFmpeg抽出処理を呼びます。同期の結果はHTTPの音声ストリーム、または単一BlobのSASによる保存後のJSONで返します。非同期は登録済みStorageにM4Aを保存し、ジョブIDで状態・結果を取得します。他のJava製Function Appとは別にビルド・設定・配置します。
+`functions/movie2audio/` は、動画の最初の音声をM4AまたはWAVへ変換する独立したNode.js Functionsプロジェクトです。Node.js 22 / 24、Functions v4のプログラミングモデルを使います。HTTPアップロードと許可済みHTTPS URLに加え、非同期HTTPと直接QueueのBlob入力が共通のFFmpeg抽出処理を呼びます。同期の結果はHTTPの音声ストリーム、または単一BlobのSASによる保存後のJSONで返します。非同期は登録済みStorageにM4Aを保存し、ジョブIDで状態・結果を取得します。他のJava製Function Appとは別にビルド・設定・配置します。
 
 API利用方法は[利用ガイド](../functions/movie2audio/docs/usage.md)と[HTML API資料](APIDocs/movie2audio/index.html)を参照してください。
 
@@ -35,7 +35,7 @@ flowchart TD
     Response --> Cleanup[ファイル読み取りストリームのcloseで削除と枠解放]
 ```
 
-`src/index.js` の `app.setup({ enableHttpStream: true })` で、[Node.jsのHTTPストリーミング](https://learn.microsoft.com/en-us/azure/azure-functions/node-http-stream)を有効にします。アップロードは `request.body` から上限付きでディスクへ流し、応答は完成済みM4Aの読み取りストリームを返します。入力・出力ファイル全体を `arrayBuffer()` や `readFile()` でメモリーへ読み込まないでください。小さいURL JSONと画面アセットは別です。
+`src/index.js` の `app.setup({ enableHttpStream: true })` で、[Node.jsのHTTPストリーミング](https://learn.microsoft.com/en-us/azure/azure-functions/node-http-stream)を有効にします。アップロードは `request.body` から上限付きでディスクへ流し、応答は完成済みの音声ファイル（M4A/WAV）の読み取りストリームを返します。入力・出力ファイル全体を `arrayBuffer()` や `readFile()` でメモリーへ読み込まないでください。小さいURL JSONと画面アセットは別です。
 
 抽出を完了してからレスポンスを開始します。AACは `-c:a copy` でコピーし、元のサンプリングレート・チャンネル数を保持します。ローカルのM4Aへ出力し、`-movflags +faststart` で再生情報（`moov`）を音声データ（`mdat`）より前へ移します。抽出と送信を同時に進めるライブ変換ではなく、fragmented MP4も使いません。
 
@@ -89,7 +89,7 @@ FFmpegにはユーザーのURLやファイル名を渡しません。アプリ�
 
 保存先にも公開IP検証、検証済みIPへの接続、ホスト名のTLS検証、リダイレクト・プロキシ・自動リトライ禁止を適用します。SASやStorageが返すエラー本文をアプリの公開エラー・ログへ出さないでください。ユーザー指定URLをそのままログに残す例外やHTTPクライアントへの置換は、この保証を壊します。
 
-完成したM4Aをディスクから単一の `Put Blob` で送信し、`x-ms-blob-type: BlockBlob`、`Content-Type: audio/mp4`、`If-None-Match: *` を固定します。既存Blobへ上書きせず、前提条件エラーは `409 OUTPUT_BLOB_EXISTS` とします。SASのBlobパスが保存名そのもので、コンテナー作成・パス自動生成・保存済みBlob削除は行いません。返却する `blobUrl` からクエリを除き、バイト数・Content-Type・ETagとAAC copyの情報だけを返します。
+完成したM4Aをディスクから単一の `Put Blob` で送信し、`x-ms-blob-type: BlockBlob`、選択形式のContent-Type（audio/mp4またはaudio/wav）、`If-None-Match: *`を設定します。既存Blobへ上書きせず、前提条件エラーは `409 OUTPUT_BLOB_EXISTS` とします。SASのBlobパスが保存名そのもので、コンテナー作成・パス自動生成・保存済みBlob削除は行いません。返却する `blobUrl` からクエリを除き、バイト数・Content-Type・ETagとAAC copyの情報だけを返します。
 
 入力・抽出・アップロードで共通期限と同時実行枠を保持し、PUT成功を確認してから一時ファイルを削除して201 JSONを返します。失敗時もローカルの作業領域を片付けます。アップロード後の通信切断は保存の有無が不明になり得るため、失敗後のHEAD・自動再送・削除を追加しないでください。呼び出し元が保存名を一意にし、自分の権限で保存先を確認します。
 
@@ -101,7 +101,7 @@ FFmpegにはユーザーのURLやファイル名を渡しません。アプリ�
 
 `CONVERSION_STORAGE_CONNECTION_STRING` があるときだけQueueトリガーを登録します。Node.jsの登録はこの設定を接続名として直接参照します。Javaのような未設定接続用のダミー値や別名設定は必要ありません。`AzureWebJobsStorage` はホスト用で、機能のオン／オフとは別です。
 
-直接QueueもHTTP受付も、version1・UUID・入出力Blobを持つ同じ正規化済み依頼を処理します。外部JSONはデコード後48KiB以下の正しいUTF-8に制限し、未知キー・重複キー・型違い・末尾データを拒否します。QueueはBase64を1回デコードしてワーカーへ渡します。トリガーは `dataType: 'binary'` とし、Bufferを独自の厳密なパーサーへ渡します。SDKによるJSONの自動オブジェクト化に変えると重複キーの情報が失われるため、この指定を維持してください。URL・SAS・資格情報をJSONに追加せず、`CONVERSION_INPUT_STORAGE_{NAME}` と `CONVERSION_OUTPUT_STORAGE_{NAME}` に登録した接続を名前で参照します。入力・出力の登録を混用しないでください。
+直接QueueもHTTP受付も、version1または2・UUID・入出力Blobを持つ同じ正規化済み依頼を処理します。外部JSONはデコード後48KiB以下の正しいUTF-8に制限し、未知キー・重複キー・型違い・末尾データを拒否します。QueueはBase64を1回デコードしてワーカーへ渡します。トリガーは `dataType: 'binary'` とし、Bufferを独自の厳密なパーサーへ渡します。SDKによるJSONの自動オブジェクト化に変えると重複キーの情報が失われるため、この指定を維持してください。URL・SAS・資格情報をJSONに追加せず、`CONVERSION_INPUT_STORAGE_{NAME}` と `CONVERSION_OUTPUT_STORAGE_{NAME}` に登録した接続を名前で参照します。入力・出力の登録を混用しないでください。
 
 状態は制御用の `movie2audio-jobs/{jobId}/status.json` に `job`・`request`・`result` を記録します。同じUUIDに異なる正規化済み依頼が届いても既存状態を変更せず、成功／失敗済みの同一依頼は再実行しません。再実行する利用者は新しいUUIDと入力Blobを用意します。リースを定期更新して同じジョブを排他制御し、失効・所有権喪失時に古い処理が状態を確定しないようにします。
 
@@ -113,7 +113,7 @@ FFmpegにはユーザーのURLやファイル名を渡しません。アプリ�
 
 Node.jsプロセス内の実行枠は同期変換とQueue処理で共有します。`batchSize=1`・`newBatchThreshold=0`・動的同時実行無効は、複数インスタンス全体を1件に制限する設定ではありません。水平スケール時に並列で処理でき、厳密なFIFOや処理回数1回の保証はありません。
 
-受付・ワーカー各試行・結果取得はそれぞれ既定180秒の期限を持ち、キュー待機時間を含みません。Storageの入力・状態・結果・失敗した試行のBlobは自動削除せず、ライフサイクル管理は運用側で設定します。一時ディスクは成功・失敗・期限切れのすべてで後片付けします。
+受付・ワーカー各試行・結果取得はそれぞれ既定180秒の期限を持ち、キュー待機時間を含みません。Storageの保持は既定で無期限です。保持設定を有効にすると所有記録に基づいてアプリ生成物のみを清掃します。一時ディスクは成功・失敗・期限切れのすべてで後片付けします。
 
 Playgroundは公開設定の `asyncEnabled` でキュー実行を制御し、3秒間隔・最大15分の状態確認と結果取得を行います。キーはメモリー内だけに持ち、状態／結果URLは同一オリジンかつ該当ジョブの期待パスと完全一致するものだけを使います。API応答の任意URLへFunctionキーを転送しないでください。画面の待機終了は受付済みジョブのキャンセルではありません。
 
@@ -157,3 +157,9 @@ Node.js 22または24を使い、`.nvmrc` は24を指定します。配布物は
 Movie2Audioは音声をHTTPで返すか、指定されたBlobへ保存するところまでを担当します。Azure Speechなどへの送信・文字起こしは利用側の処理で、Movie2Audioにはその接続設定やサービス呼び出しを追加していません。
 
 コード・API契約を変更したら、[利用ガイド](../functions/movie2audio/docs/usage.md)、設定例、[HTML API資料](APIDocs/movie2audio/index.html)、このガイドを合わせて更新します。
+
+## 追加された変換・外部連携
+
+`src/audio-options.js` がcopy/transcode、m4a/wav、サンプルレート・チャンネル数の許可範囲を正規化します。`extractAudio`は同じ設定をHTTP・Queueから受け取り、固定の引数配列だけで実行します。AACコピーはパケットのSHA-256一致、形式変換は実ファイルのコーデック・レート・チャンネルとWAVのPCM内容を検証します。Linux x64版はネットワークを無効にしたコンテナーでも同じテストを実行します。
+
+接続文字列とMIの選択、version 2の期待ETag・付加情報・結果通知、永続的な通知送信待ち、所有成果物の保持を実装しています。具体的な契約は[直接Queueガイド](../functions/movie2audio/docs/direct-queue.md)、ホスト認証・ネットワーク・運用上の境界は[配置手順](development.md#8-managed-identity閉域storage結果通知)を参照してください。文字起こしは音声生成の成功条件に含めません。

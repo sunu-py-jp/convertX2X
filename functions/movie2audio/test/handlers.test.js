@@ -43,7 +43,7 @@ test('configuration preserves defaults and validates bounded settings without ex
   }
   assert.throws(() => createConfig({ CONVERSION_TIMEOUT_SECONDS: '211' }));
   const actual = publicSettings(createConfig({ CONVERSION_URL_ALLOWED_HOSTS: 'media.example.com' }));
-  assert.deepEqual(Object.keys(actual).sort(), ['asyncEnabled', 'audioCodec', 'audioMode', 'maxInputBytes', 'maxOutputBytes', 'outputFormat', 'timeoutSeconds', 'urlEnabled']);
+  assert.deepEqual(Object.keys(actual).sort(), ['asyncEnabled', 'audioCodec', 'audioFormats', 'audioMode', 'audioModes', 'maxInputBytes', 'maxOutputBytes', 'outputFormat', 'timeoutSeconds', 'urlEnabled']);
   assert.equal(actual.urlEnabled, true);
   assert.ok(!JSON.stringify(actual).includes('example.com'));
 });

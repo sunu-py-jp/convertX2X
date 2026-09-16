@@ -17,7 +17,7 @@ final class RuntimeServices {
         if (current == null) {
             synchronized (RuntimeServices.class) {
                 current = instance;
-                if (current == null) instance = current = new AzureJobService(CONFIG.storageConnectionString(),
+                if (current == null) instance = current = new AzureJobService(CONFIG.integration(),
                         CONVERTER, CONFIG.limits(), CONFIG.blobStorageProfiles());
             }
         }

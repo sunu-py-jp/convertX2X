@@ -9,4 +9,5 @@ public interface JobService {
     JobDownload archive(String id);
     void process(String message);
     void poison(String message);
+    default void maintenance() { }
 }

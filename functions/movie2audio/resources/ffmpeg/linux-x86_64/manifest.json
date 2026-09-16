@@ -14,10 +14,12 @@
     "--disable-iamf",
     "--enable-small",
     "--enable-protocol=file",
-    "--enable-demuxer=mov,matroska,avi,mpegts,flv",
-    "--enable-muxer=ipod",
-    "--enable-parser=aac,aac_latm",
-    "--enable-decoder=aac",
+    "--enable-demuxer=mov,matroska,avi,mpegts,flv,wav",
+    "--enable-muxer=ipod,wav",
+    "--enable-parser=aac,aac_latm,mpegaudio,opus",
+    "--enable-decoder=aac,opus,mp3,mp3float,pcm_s16le,pcm_s16be,pcm_s24le,pcm_s24be,pcm_s32le,pcm_s32be,pcm_u8,pcm_f32le,pcm_f64le",
+    "--enable-encoder=aac,pcm_s16le",
+    "--enable-filter=aresample,aformat,anull",
     "--enable-bsf=aac_adtstoasc",
     "--extra-ldflags=-static -Wl,-z,stack-size=8388608"
   ],
@@ -31,12 +33,12 @@
   },
   "binaries": {
     "ffmpeg": {
-      "sha256": "ba91048cbdd12bff06929e0d5b0e7d7446463e9c5c7c2a29d30b7bf6ebd07fdc",
-      "bytes": 2603576
+      "sha256": "3bddd9d4d10443a08dd9607f77cfb6f9a3a80c7559a80b4754e194bac2bd3d03",
+      "bytes": 2894392
     },
     "ffprobe": {
-      "sha256": "0131407302627a05d076a7a89bcc3fbf9dced30c4be9557c264e5b06d3005a8e",
-      "bytes": 2427416
+      "sha256": "dc06613950c5ef4cbbce79f7ae700d6661e97333ef8e1dc5fe6fb018556baaa2",
+      "bytes": 2722328
     }
   }
 }

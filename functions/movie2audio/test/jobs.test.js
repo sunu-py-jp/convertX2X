@@ -154,8 +154,10 @@ test('HTTP submission persists input and queued status before publication, then 
   assert.equal(job.status, 'queued');
   assert.equal(job.filename, '会議.mp4');
   assert.deepEqual(Object.keys(job).sort(), ['id', 'status', 'filename', 'createdAt', 'updatedAt', 'sizeBytes', 'errorCode', 'errorMessage'].sort());
-  assert.equal(store.history.length, 0, 'Submission defers FFmpeg');
-  assert.deepEqual(store.events.slice(-3), ['saveInput', 'ensure', 'enqueue']);
+  assert.deepEqual(store.history.map(record => record.job.status), ['queued'], 'Submission defers FFmpeg');
+  assert.ok(store.events.indexOf('ensure') < store.events.indexOf('saveInput'));
+  assert.ok(store.events.indexOf('saveInput') < store.events.indexOf('enqueue'));
+  assert.equal(store.records.get(job.id).submissionPending, false);
   const req = JSON.parse(store.messages[0]);
   assert.equal(req.input.container, CONTAINER_NAME);
   assert.equal(req.input.blobName, `${job.id}/input`);
@@ -168,7 +170,7 @@ test('HTTP submission persists input and queued status before publication, then 
   assert.equal(completed.status, 'succeeded');
   assert.ok(completed.sizeBytes > 1000);
   assert.equal(completed.errorCode, null);
-  assert.deepEqual(store.history.map(record => record.job.status), ['running', 'succeeded']);
+  assert.deepEqual(store.history.map(record => record.job.status), ['queued', 'running', 'succeeded']);
   assert.deepEqual(await readdir(work), []);
   assert.deepEqual(admission.events, ['acquire', 'release']);
   const destination = join(directory, 'download.m4a');
@@ -423,13 +425,14 @@ test('submission rejects empty, oversized and symlink inputs without enqueueing'
   assert.equal(store.records.size, 0);
 });
 
-test('a failed queue publication does not report acceptance or delete persisted input and status', async t => {
+test('a failed queue publication records a failed submission for retention without reporting acceptance', async t => {
   const { store, service } = await setup(t);
   store.enqueue = async () => { throw new Error(SECRET); };
   await assert.rejects(service.submit(join(FIXTURES, 'aac-video.mp4'), 'video.mp4'), expectCode('STORAGE_UNAVAILABLE', 503));
   assert.equal(store.inputs.size, 1);
   assert.equal(store.records.size, 1);
-  assert.equal(store.records.values().next().value.job.status, 'queued');
+  assert.equal(store.records.values().next().value.job.status, 'failed');
+  assert.equal(store.records.values().next().value.job.errorCode, 'SUBMISSION_FAILED');
   assert.equal(store.messages.length, 0);
 });
 

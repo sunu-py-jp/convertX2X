@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Movie2AudioのAPIリファレンス。動画ファイル・許可済みHTTPS URLからAACを再エンコードせずM4Aへ抽出。">
+<meta name="description" content="Movie2AudioのAPIリファレンス。動画からAACをコピー、または対応する音声をM4A・WAVへ変換。">
 <title>設定・上限・エラー · Movie2Audio API</title>
 <link rel="stylesheet" href="../assets/styles.css">
 <script src="../assets/app.js" defer></script>
@@ -16,7 +16,7 @@
 <main id="main-content" class="main-content" tabindex="-1">
 <div class="page-layout">
 <article class="article">
-<p class="eyebrow">Movie → AAC</p>
+<p class="eyebrow">Movie → Audio</p>
 <h1>設定・上限・エラー</h1>
 <p class="lead">環境変数で入力・出力・処理時間とURLの取得先を指定します。未設定時は100MiB・180秒、ファイル入力のみで動作します。</p>
 
@@ -69,6 +69,17 @@ npm test
 npm run package</code></pre>
 <p><code>dist/</code> に実行用ソース・アセット・本番用依存とFFmpegのソース・ライセンス一式を作成します。配置先はLinux x64 / Node.js 24の独立したFunction Appです。ビルド・テストはAzureへ公開しません。FFmpegの再ビルド、ソース・ライセンス・manifestの管理は <a href="../../../functions/movie2audio/third-party/ffmpeg/README.md">同梱FFmpegのREADME</a>を参照してください。アプリのMITライセンスと同梱FFmpegのライセンスはそれぞれ保持します。</p>
 
+<h2 id="identity-and-retention">Managed Identity・通知・保持</h2>
+<p>接続文字列に加え、<code>CONVERSION_STORAGE__blobServiceUri</code>と<code>CONVERSION_STORAGE__queueServiceUri</code>でMI認証を選択できます。ユーザー割り当てMIは<code>CONVERSION_STORAGE__clientId</code>を追加します。入力・出力のエイリアスにも同様のBlob URI設定を使えます。</p>
+<p>Queueトリガー用の<code>CONVERSION_QUEUE_CONNECTION_STRING__queueServiceUri</code>・<code>__credential=managedidentity</code>と、ホスト用Storageの設定も必要です。ワーカーの起動後に設定してもホストの接続には反映できません。</p>
+<div class="table-wrap"><table><thead><tr><th>設定</th><th>既定・動作</th></tr></thead><tbody>
+<tr><td><code>CONVERSION_CREATE_RESOURCES</code></td><td>true。falseでは必要なコンテナー・Queueを事前作成</td></tr>
+<tr><td><code>CONVERSION_RESULT_QUEUE_&lt;ALIAS&gt;__queueName</code></td><td>通知先の登録。__connectionString、または__queueServiceUriと任意の__clientIdも必要</td></tr>
+<tr><td><code>CONVERSION_RESULT_RETENTION_DAYS</code></td><td>0（清掃無効）。正の整数で所有成果物を期限後に清掃</td></tr>
+<tr><td><code>CONVERSION_STATE_RETENTION_DAYS</code></td><td>0（状態保持）。有効化時は結果保持より長い日数が必要</td></tr>
+</tbody></table></div>
+<p>通知先または保持を設定すると5分ごとの定期処理が動きます。未設定では無効です。入力版不一致は<code>409 INPUT_VERSION_MISMATCH</code>、未登録の通知先は<code>400 UNKNOWN_RESULT_QUEUE</code>、清掃済みの結果は<code>410 JOB_RESULT_EXPIRED</code>です。</p>
+<p>RBAC・閉域ネットワーク・ホスト認証・配置先での確認は<a href="../../development.md#8-managed-identity閉域storage結果通知">共通の配置・運用手順</a>を参照してください。実AzureのMI・Private Endpoint接続はローカルテストとは別に検証が必要です。</p>
 <footer class="page-footer"><p>最終確認：2026-09-15。<a href="../../../functions/movie2audio/docs/usage.md">利用ガイド</a> · <a href="../../movie2audio.md">開発者向け実装ガイド</a></p></footer>
 </article>
 <aside class="toc" aria-label="このページの目次"><p class="toc-title">このページの内容</p><nav id="page-toc"></nav></aside>

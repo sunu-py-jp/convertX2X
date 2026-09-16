@@ -8,10 +8,13 @@ import { Transform } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { fileURLToPath } from 'node:url';
 import { ConversionError, throwIfAborted } from './errors.js';
+import { normalizeAudioOptions } from './audio-options.js';
 
 const RESOURCE_DIRECTORY = fileURLToPath(new URL('../resources/ffmpeg/', import.meta.url));
 const STDOUT_LIMIT = 256 * 1024;
 const STDERR_LIMIT = 32 * 1024;
+const TRANSCODE_CODECS = new Set(['aac', 'opus', 'mp3', 'pcm_s16le', 'pcm_s16be', 'pcm_s24le',
+  'pcm_s24be', 'pcm_s32le', 'pcm_s32be', 'pcm_u8', 'pcm_f32le', 'pcm_f64le']);
 const INPUT_ARGUMENTS = Object.freeze([
   '-max_alloc', '67108864', '-protocol_whitelist', 'file',
   '-format_whitelist', 'mov,matroska,webm,avi,mpegts,flv',
@@ -168,13 +171,16 @@ async function validatePaths(inputPath, outputPath, limits) {
 }
 
 async function probe(runtime, inputPath, requireVideo, signal) {
+  const probeArguments = requireVideo ? INPUT_ARGUMENTS
+    : INPUT_ARGUMENTS.map(value => value === 'mov,matroska,webm,avi,mpegts,flv' ? 'mov,wav' : value);
   const result = await runProcess(runtime.ffprobe, ['-hide_banner', '-loglevel', 'error',
-    ...INPUT_ARGUMENTS, '-show_entries',
-    'stream=index,codec_type,codec_name,sample_rate,channels,nb_frames:stream_disposition=attached_pic:format=format_name',
+    ...probeArguments, '-show_entries',
+    'stream=index,codec_type,codec_name,sample_rate,channels,nb_frames,duration:stream_disposition=attached_pic:format=format_name,duration',
     '-of', 'json', '-i', inputPath], { cwd: path.dirname(inputPath), signal });
   if (result.exitCode !== 0) throw invalidMedia();
-  let streams;
-  try { streams = JSON.parse(result.stdout).streams; } catch { throw invalidMedia(); }
+  let document;
+  try { document = JSON.parse(result.stdout); } catch { throw invalidMedia(); }
+  const streams = document.streams;
   if (!Array.isArray(streams)) throw invalidMedia();
   const video = streams.some(stream => stream.codec_type === 'video'
     && Number(stream.disposition?.attached_pic ?? 0) === 0);
@@ -183,18 +189,18 @@ async function probe(runtime, inputPath, requireVideo, signal) {
     'The input must contain a video stream; cover artwork does not count as video.');
   if (!firstAudio) throw new ConversionError(422, 'NO_AUDIO_STREAM',
     'The video does not contain an audio stream.');
-  if (firstAudio.codec_name !== 'aac') throw new ConversionError(422, 'UNSUPPORTED_AUDIO_CODEC',
-    'The first audio stream must use AAC. Audio is not re-encoded.');
   const index = Number(firstAudio.index);
   const sampleRate = Number(firstAudio.sample_rate);
   const channels = Number(firstAudio.channels);
   if (!Number.isInteger(index) || index < 0 || !Number.isInteger(sampleRate) || sampleRate <= 0
     || !Number.isInteger(channels) || channels <= 0) throw invalidMedia();
-  return { index, audio: { codec: 'aac', sampleRate, channels }, frames: Number(firstAudio.nb_frames ?? -1) };
+  return { index, audio: { codec: firstAudio.codec_name, sampleRate, channels },
+    frames: Number(firstAudio.nb_frames ?? -1), duration: Number(firstAudio.duration ?? document.format?.duration ?? 0) };
 }
 
-/** Finish and validate a seekable M4A file; AAC packets are never re-encoded. */
-export async function extractAudio(inputPath, outputPath, { limits, signal } = {}) {
+/** Finish and validate a seekable audio file. Copy is the backward-compatible default. */
+export async function extractAudio(inputPath, outputPath, { limits, signal, options } = {}) {
+  const selected = normalizeAudioOptions(options);
   throwIfAborted(signal);
   inputPath = path.resolve(inputPath);
   outputPath = path.resolve(outputPath);
@@ -209,21 +215,35 @@ export async function extractAudio(inputPath, outputPath, { limits, signal } = {
     const runtime = await loadBundledFfmpeg();
     throwIfAborted(extractionSignal);
     const source = await probe(runtime, inputPath, true, extractionSignal);
+    if ((selected.mode === 'copy' && source.audio.codec !== 'aac')
+      || (selected.mode === 'transcode' && !TRANSCODE_CODECS.has(source.audio.codec))) {
+      throw new ConversionError(422, 'UNSUPPORTED_AUDIO_CODEC', selected.mode === 'copy'
+        ? 'The first audio stream must use AAC in copy mode. Select transcode for supported non-AAC audio.'
+        : 'The first audio stream uses an unsupported codec.');
+    }
+    const sampleRate = selected.sampleRate ?? source.audio.sampleRate;
+    const channels = selected.channels ?? source.audio.channels;
+    if (selected.mode === 'transcode' && (channels > 8 || sampleRate > 192000)) throw invalidMedia();
+    const codec = selected.format === 'wav' ? 'pcm_s16le' : 'aac';
+    const audioArgs = selected.mode === 'copy' ? ['-c:a', 'copy']
+      : ['-c:a', codec, '-ar', String(sampleRate), '-ac', String(channels),
+        ...(codec === 'aac' ? ['-b:a', String(Math.min(512000, 96000 * channels))] : [])];
+    const formatArgs = selected.format === 'wav' ? ['-f', 'wav'] : ['-movflags', '+faststart', '-f', 'ipod'];
     ownsOutput = true;
     // MOV external file references stay disabled by the pinned demuxer's defaults.
     // MOV-only options cannot be passed here because they break the other demuxers.
     const result = await runProcess(runtime.ffmpeg, ['-nostdin', '-hide_banner', '-loglevel', 'error',
       '-xerror', '-n', ...INPUT_ARGUMENTS, '-i', inputPath, '-map', `0:${source.index}`,
-      '-c:a', 'copy', '-vn', '-sn', '-dn', '-map_metadata', '-1', '-map_chapters', '-1',
-      '-movflags', '+faststart', '-f', 'ipod', outputPath],
+      ...audioArgs, '-vn', '-sn', '-dn', '-map_metadata', '-1', '-map_chapters', '-1',
+      ...formatArgs, outputPath],
     { cwd: path.dirname(inputPath), outputPath, maxOutputBytes: limits.maxOutputBytes, signal: extractionSignal });
     if (result.exitCode !== 0) throw invalidMedia();
     const output = await lstat(outputPath);
     if (!output.isFile() || output.size === 0) throw invalidMedia();
     if (output.size > limits.maxOutputBytes) throw outputTooLarge();
     const extracted = await probe(runtime, outputPath, false, extractionSignal);
-    if (!(extracted.frames > 0) || extracted.audio.sampleRate !== source.audio.sampleRate
-      || extracted.audio.channels !== source.audio.channels) throw invalidMedia();
+    if (!(extracted.frames > 0 || extracted.duration > 0) || extracted.audio.codec !== codec
+      || extracted.audio.sampleRate !== sampleRate || extracted.audio.channels !== channels) throw invalidMedia();
     throwIfAborted(extractionSignal);
     success = true;
     return extracted.audio;

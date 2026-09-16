@@ -14,9 +14,17 @@ interface JobStore {
     JobDownload readResult(JobRecord.ResultLocation result, String artifact);
     JobDownload readArchive(JobRecord.ResultLocation result);
     JobLock lock(String id);
+    record InputData(byte[] bytes, String eTag) { }
+    default InputData readInputVersioned(ConversionJobRequest.BlobSource source) { return new InputData(readInput(source), null); }
+    default JobRecord.ResultLocation writeResult(ConversionJobRequest request, ConversionResult result, String inputETag) { return writeResult(request, result); }
+    default void notifyResult(JobRecord record) { }
+    default void maintenance(java.util.function.Consumer<String> action) { }
+    default void cleanup(JobRecord record, JobLock lock, java.time.Instant now) { }
+
 
     interface JobLock extends AutoCloseable {
         void update(JobRecord job);
+        default void delete() { throw new UnsupportedOperationException(); }
         @Override void close();
     }
 }

@@ -1,0 +1,53 @@
+{
+  "capturedAt": "2026-09-16T12:26:16.345Z",
+  "environment": "local Functions Core Tools + Azurite; not Azure Storage",
+  "request": {
+    "version": 1,
+    "jobId": "7e497aae-c040-487e-a070-c4cdebf54b89",
+    "input": {
+      "storage": "default",
+      "container": "movie-docs-input-7e497aae",
+      "blobName": "complex-input.mp4"
+    },
+    "output": {
+      "storage": "default",
+      "container": "movie-docs-output-7e497aae",
+      "prefix": "exports"
+    },
+    "filename": "complex-input.mp4"
+  },
+  "transport": "Azure Storage Queue SDK; JSON encoded as Base64 once",
+  "status": {
+    "job": {
+      "id": "7e497aae-c040-487e-a070-c4cdebf54b89",
+      "status": "succeeded",
+      "filename": "complex-input.mp4",
+      "createdAt": "2026-09-16T12:26:15.977Z",
+      "updatedAt": "2026-09-16T12:26:16.057Z",
+      "sizeBytes": 1457629,
+      "errorCode": null,
+      "errorMessage": null
+    },
+    "statusUrl": "/api/jobs/7e497aae-c040-487e-a070-c4cdebf54b89",
+    "resultUrl": "/api/jobs/7e497aae-c040-487e-a070-c4cdebf54b89/result"
+  },
+  "storedResult": {
+    "storage": "default",
+    "container": "movie-docs-output-7e497aae",
+    "blobName": "exports/7e497aae-c040-487e-a070-c4cdebf54b89/results/fe3df86d-c9d8-4319-9b9b-e9ec5fb0a51d/audio.m4a",
+    "contentType": "audio/mp4",
+    "filename": "audio.m4a",
+    "sizeBytes": 1457629,
+    "etag": "\"0x221334E54DE1DC0\""
+  },
+  "elapsedMsIncludingQueueAndTransfer": 591,
+  "output": {
+    "file": "queue-audio.m4a",
+    "sizeBytes": 1457629,
+    "sha256": "76dbbad7c91f7e1f4adbc7b809f6bfca69c2b1aedf2e66cd523a87009bb1ab52"
+  },
+  "verification": {
+    "sameBytesAsSync": true,
+    "blobAndHttpDownloadMatch": true
+  }
+}

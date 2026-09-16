@@ -1,0 +1,38 @@
+{
+  "recordedAt": "2026-09-16T12:21:03.573Z",
+  "browser": "152.0.7977.83",
+  "viewport": {
+    "width": 1700,
+    "height": 1000
+  },
+  "screenshotRegion": ".result-panel",
+  "pageErrors": [],
+  "runs": [
+    {
+      "input": "inputs/quarterly-review.pptx",
+      "page": 2,
+      "status": 200,
+      "requestPath": "/api/convert?filename=quarterly-review.pptx&format=png&page=2",
+      "preview": {
+        "width": 1280,
+        "height": 720
+      },
+      "matchesZipPage": true,
+      "screenshot": "screenshots/quarterly-review-playground.png",
+      "screenshotSha256": "59a93a39651e9f080b17b8d37dabac5546e90f910e5a62a53a6e9ca5b474554e"
+    },
+    {
+      "input": "inputs/operations-report.pdf",
+      "page": 2,
+      "status": 200,
+      "requestPath": "/api/convert?filename=operations-report.pdf&format=png&page=2",
+      "preview": {
+        "width": 794,
+        "height": 1123
+      },
+      "matchesZipPage": true,
+      "screenshot": "screenshots/operations-report-playground.png",
+      "screenshotSha256": "365bf754443457bda8701d523dea2cfb2fb0a2138aeb40cf6b0858efcef8ba0a"
+    }
+  ]
+}

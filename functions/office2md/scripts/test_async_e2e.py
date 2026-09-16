@@ -316,6 +316,7 @@ def run(args, work, tools):
         "CONVERSION_OUTPUT_STORAGE_ARCHIVE": connection("exceloutput"),
         "AzureWebJobs.ProcessConversion.Disabled": "false",
         "AzureWebJobs.PoisonConversion.Disabled": "false",
+        "AzureWebJobs.MaintainConversions.Disabled": "true",
         "JAVA_OPTS": "-Djava.awt.headless=true",
     }
     local_settings = stage / "local.settings.json"

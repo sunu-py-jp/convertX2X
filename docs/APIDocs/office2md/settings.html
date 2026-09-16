@@ -63,6 +63,17 @@ python3 scripts/run_local.py</code></pre>
 <h2 id="warnings">警告とエラーを区別する</h2>
 <p>成功した変換のwarnings / informationはreportに記録します。例として <code>FORMULA_CACHE_MISSING</code>、<code>BORDER_NOT_TABLE</code>、<code>DRAWING_TEXT_APPROXIMATED</code>、<code>IMAGE_FORMAT_ATTACHMENT</code>、<code>CHART_UNSUPPORTED</code> があります。警告がある200レスポンスを失敗と同一視せず、用途に必要な要素が保持されているかを確認してください。</p>
 
+<h2 id="identity-and-retention">Managed Identity・通知・保持</h2>
+<p>接続文字列に加え、<code>CONVERSION_STORAGE__blobServiceUri</code>と<code>CONVERSION_STORAGE__queueServiceUri</code>でMI認証を選択できます。ユーザー割り当てMIは<code>CONVERSION_STORAGE__clientId</code>を追加します。入力・出力のエイリアスにも同様のBlob URI設定を使えます。</p>
+<p>Queueトリガー用の<code>CONVERSION_QUEUE_CONNECTION_STRING__queueServiceUri</code>・<code>__credential=managedidentity</code>と、ホスト用Storageの設定も必要です。ワーカーの起動後に設定してもホストの接続には反映できません。</p>
+<div class="table-wrap"><table><thead><tr><th>設定</th><th>既定・動作</th></tr></thead><tbody>
+<tr><td><code>CONVERSION_CREATE_RESOURCES</code></td><td>true。falseでは必要なコンテナー・Queueを事前作成</td></tr>
+<tr><td><code>CONVERSION_RESULT_QUEUE_&lt;ALIAS&gt;__queueName</code></td><td>通知先の登録。__connectionString、または__queueServiceUriと任意の__clientIdも必要</td></tr>
+<tr><td><code>CONVERSION_RESULT_RETENTION_DAYS</code></td><td>0（清掃無効）。正の整数で所有成果物を期限後に清掃</td></tr>
+<tr><td><code>CONVERSION_STATE_RETENTION_DAYS</code></td><td>0（状態保持）。有効化時は結果保持より長い日数が必要</td></tr>
+</tbody></table></div>
+<p>通知先または保持を設定すると5分ごとの定期処理が動きます。未設定では無効です。入力版不一致は<code>409 INPUT_VERSION_MISMATCH</code>、未登録の通知先は<code>400 UNKNOWN_RESULT_QUEUE</code>、清掃済みの結果は<code>410 JOB_RESULT_EXPIRED</code>です。</p>
+<p>RBAC・閉域ネットワーク・ホスト認証・配置先での確認は<a href="../../development.md#8-managed-identity閉域storage結果通知">共通の配置・運用手順</a>を参照してください。実AzureのMI・Private Endpoint接続はローカルテストとは別に検証が必要です。</p>
 <footer class="page-footer"><p>最終確認：2026-09-13。<a href="../../../functions/office2md/docs/usage.md">利用ガイド</a>と<a href="../../../functions/office2md/src/main/java/com/convertx2x/office2md/ConversionFunctions.java">HTTP実装</a>に基づく資料です。</p></footer>
 </article>
 <aside class="toc" aria-label="このページの目次"><p class="toc-title">このページの内容</p><nav id="page-toc"></nav></aside>

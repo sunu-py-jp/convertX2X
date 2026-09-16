@@ -1,8 +1,8 @@
-# Movie → AAC 利用・運用ガイド
+# Movie → Audio 利用・運用ガイド
 
 動画の最初の音声トラックからAACを抽出し、`audio.m4a` として返すAzure Functionsです。動画を直接送る `POST /api/convert`、許可したHTTPS URLから取得する `POST /api/convert-url`、抽出結果を指定したBlobへ保存する `POST /api/convert-to-blob` を提供します。さらに非同期HTTPの `/api/jobs`・`/api/jobs-url` と、外部システムからの直接Queue依頼に対応します。Node.jsのFunctions v4モデルで実装し、すべて共通のFFmpeg抽出処理を利用します。
 
-AACを再エンコードせずにコピーするため、ビットレート・サンプリングレート・チャンネル数を変更しません。返すのはAAC音声を格納したM4Aコンテナー（`audio/mp4`）です。動画コンテナーから取り出す際にコンテナーや付随情報は変わるため、入力ファイルと出力ファイル全体のバイト一致を意味するものではありません。
+既定のcopyモードではAACを再エンコードせずにコピーするため、ビットレート・サンプリングレート・チャンネル数を変更しません。返すのはAAC音声を格納したM4Aコンテナー（`audio/mp4`）です。動画コンテナーから取り出す際にコンテナーや付随情報は変わるため、入力ファイルと出力ファイル全体のバイト一致を意味するものではありません。
 
 入力動画はストリームで一時ディスクへ保存し、抽出を完了したM4AをHTTPストリームで返します。FFmpegの `-movflags +faststart` でM4Aの再生情報（`moov`）を音声データより前に配置します。抽出途中から音声を送り出す方式ではありません。返却後の再生・保存・Azure Speechなど他サービスへの送信は利用側が行います。この機能は文字起こしや他サービスへの自動送信を行いません。
 
@@ -26,9 +26,9 @@ AACを再エンコードせずにコピーするため、ビットレート・�
 | 項目 | 動作 |
 | --- | --- |
 | 入力 | MP4・MOV、Matroska、AVI、MPEG-TS、FLV系の動画コンテナー。中身をFFprobeで確認 |
-| 必須 | 動画ストリームがあり、最初の音声トラックがAACであること |
+| 必須 | 動画ストリームと音声トラック。copyでは最初の音声がAACであること |
 | 音声の選択 | 最初の音声トラックのみ。後続のAACトラックを探して選び直すことはしない |
-| 非AAC音声 | 422で拒否。自動AAC変換は行わない |
+| 非AAC音声 | copyでは422。transcodeで対応形式を明示的に変換 |
 | 出力 | `audio.m4a`、`Content-Type: audio/mp4`、音声1トラック |
 | 付随情報 | 動画・字幕・データトラック、入力メタデータ・チャプターを引き継がない |
 | 呼び出し | 同期HTTP、ジョブIDを返す非同期HTTP、入出力Blobを参照する直接Queue。同期SAS保存も利用可能 |
@@ -174,7 +174,7 @@ Blob名はSAS URLのパスそのものです。この例は `results` コンテ�
 
 ## 非同期機能を有効にする
 
-`CONVERSION_STORAGE_CONNECTION_STRING` に制御用Azure Storageの接続文字列を設定すると、非同期HTTPと直接Queueを有効にします。未設定・空値ではジョブAPIは `503 ASYNC_DISABLED` となり、Queueトリガーも登録しません。同期HTTPは引き続き利用できます。
+`CONVERSION_STORAGE_CONNECTION_STRING` に制御用Azure Storageの接続文字列を設定すると、非同期HTTPと直接Queueを有効にします。接続文字列もMI用の制御Storage設定もない場合、ジョブAPIは `503 ASYNC_DISABLED` となり、Queueトリガーも登録しません。同期HTTPは引き続き利用できます。
 
 AzureではFunctionsホスト用の `AzureWebJobsStorage` も設定します。これは非同期の有効化とは別の設定です。ローカル起動スクリプトは、ホスト用接続が空なら制御用接続で補完します。Azuriteを標準ポートで起動済みなら、次の設定で試せます。
 
@@ -329,11 +329,11 @@ node examples/QueueProducer.mjs --queue-only examples/queue-request.json
 
 同じID・同じ正規化済み依頼の成功／失敗済みジョブは再変換しません。異なる依頼で既存ジョブを上書きすることもありません。新しい変換には新しいUUIDを使い、入力Blobは処理完了まで変更しないでください。更新されるBlobリースで排他制御し、条件付き書き込みと試行別の保存先を使います。ホスト停止などで抽出が複数回走る場合はあります。
 
-不正動画、非AAC音声、サイズ超過などは `failed` にします。一時的なStorage障害や実行競合は再試行し、10回の試行上限後は `movie2audio-jobs-poison` で失敗状態にします。不正JSONなど、解析できない依頼にはpoison処理でも状態を作れません。
+不正動画、選択モードで未対応の音声、サイズ超過などは `failed` にします。一時的なStorage障害や実行競合は再試行し、10回の試行上限後は `movie2audio-jobs-poison` で失敗状態にします。不正JSONなど、解析できない依頼にはpoison処理でも状態を作れません。
 
 プロセス内は同期HTTP・非同期HTTP受付・Queue抽出・結果取得が1件の実行枠を共有します。Queueは `batchSize=1`、`newBatchThreshold=0`、失敗時の `visibilityTimeout=1分`、動的同時実行は無効です。水平スケール時は別インスタンスで並列に処理でき、厳密なFIFO順序は保証しません。
 
-既定180秒の期限は受付・Queueの各試行・結果取得ごとに適用します。Queueで待つ時間は含みません。入力・状態・結果・未完了の試行のBlobは自動削除しないため、保持期間を運用側で決めてください。作業用のローカル一時ファイルは処理後に削除します。
+既定180秒の期限は受付・Queueの各試行・結果取得ごとに適用します。Queueで待つ時間は含みません。Blobの自動削除は既定で無効です。保持設定を有効にすると、所有する入力コピー・成果物・試行出力を清掃します。作業用のローカル一時ファイルは処理後に削除します。
 
 ## レスポンスとエラー
 
@@ -351,7 +351,7 @@ Cache-Control: no-store
 <M4Aのバイト列>
 ```
 
-レスポンスは完成済みM4Aをディスクから順に送信します。アプリは `Content-Length` を付けません。クライアントではステータスの確認に加え、レスポンスの読み取りが正常終了したことを確認してください。出力ファイルの読み出し中にエラー・期限超過が起きた場合はストリームを中断し、JSONエラーへの差し替えは行いません。転送中のキャンセルは、アプリへ伝搬した時点で処理します。
+レスポンスは完成済みの音声ファイル（M4A/WAV）をディスクから順に送信します。アプリは `Content-Length` を付けません。クライアントではステータスの確認に加え、レスポンスの読み取りが正常終了したことを確認してください。出力ファイルの読み出し中にエラー・期限超過が起きた場合はストリームを中断し、JSONエラーへの差し替えは行いません。転送中のキャンセルは、アプリへ伝搬した時点で処理します。
 
 送信開始前のアプリ由来のエラーは `{"error":{"code":"...","message":"..."}}` です。コードごとのHTTPステータスは[設定・エラー一覧](../../../docs/APIDocs/movie2audio/settings.html#errors)を参照してください。503には `Retry-After: 3` を付けます。ただし、無効なURL機能やFFmpeg実行環境の問題は設定・実行環境を修正する必要があり、再試行だけでは解消しません。
 
@@ -443,3 +443,37 @@ python3 scripts/build_ffmpeg.py --target all
 ```
 
 ビルド対象・取得元・ライセンス・対応するソース一式は [third-party/ffmpeg/README.md](../third-party/ffmpeg/README.md) を参照してください。アプリのコードは [MIT](../LICENSE)、同梱FFmpegは同梱するLGPLの条件が適用されます。FFmpegのソースアーカイブ・著作権表示・ライセンス文・ビルドスクリプトを再配布時も保持してください。
+
+## Managed Identity・結果通知・保持期間
+
+接続文字列に加えて、制御用Storageの `CONVERSION_STORAGE__blobServiceUri`・`CONVERSION_STORAGE__queueServiceUri` と任意の `__clientId` でManaged Identityを使えます。入力・出力の登録先にも `CONVERSION_INPUT_STORAGE_<ALIAS>__blobServiceUri` / `CONVERSION_OUTPUT_STORAGE_<ALIAS>__blobServiceUri` を使えます。同じ登録で接続文字列とMIを混在させません。
+
+`CONVERSION_CREATE_RESOURCES=false` はコンテナー・Queueの自動作成を省略します。必要なリソースは配置前に用意してください。結果Queueは事前登録し、version 2の `notification.queue` で選択します。通知の送信待ちは永続化し、重複通知をeventIdで識別できます。
+
+`CONVERSION_RESULT_RETENTION_DAYS`・`CONVERSION_STATE_RETENTION_DAYS` は既定0（自動削除無効）です。状態保持を有効にする場合は、結果保持も有効にし、それより長く設定します。期限切れ結果は清掃後に `410 JOB_RESULT_EXPIRED` になります。未完了のHTTP受付が残った場合も、保持設定に従って期限切れとして処理します。通常のQueue待ち・実行中のジョブを期限切れ成果物として削除しません。
+
+結果通知先または保持を設定すると5分ごとのメンテナンス実行が発生します。未設定では定期処理は無効です。ホスト認証・RBAC・閉域DNS・保持と重複判定の関係・利用側の版照合は[共通の配置・運用手順](../../../docs/development.md#8-managed-identity閉域storage結果通知)、JSONの拡張は[直接Queueのversion 2](direct-queue.md#version-2入力版付加情報結果通知)を参照してください。
+
+## 音声形式を選ぶ
+
+省略時は従来どおりAACの無劣化コピーです。同期HTTP、URL入力、SAS保存、非同期HTTPの受付で、次のクエリを指定できます。JSON本文・multipartの構造は変えません。
+
+| クエリ | 値・既定 |
+| --- | --- |
+| `audioMode` | `copy`（既定） / `transcode` |
+| `audioFormat` | `m4a`（既定） / `wav`。WAVはtranscodeのみ |
+| `sampleRate` | 任意。8000 / 11025 / 12000 / 16000 / 22050 / 24000 / 32000 / 44100 / 48000 / 64000 / 88200 / 96000 |
+| `channels` | 任意。1〜8。省略時は元のチャンネル数を維持 |
+
+copyではsampleRate・channelsを指定できません。transcodeではAAC、Opus、MP3、一般的なPCMを読み取り、M4A/AACまたはWAV/16bit PCMを生成します。M4Aへの再エンコードは音質が変わります。WAVは非圧縮で、16kHz・16bit・モノラルでも1時間約115MBとなり、既定100MiBの出力上限を超えます。出力サイズ・期限は非同期にも適用されます。
+
+```sh
+curl --fail-with-body \
+  'http://localhost:7073/api/convert?audioMode=transcode&audioFormat=wav&sampleRate=16000&channels=1' \
+  -H 'Content-Type: application/octet-stream' \
+  --data-binary @video.mkv --output audio.wav
+```
+
+直接Queueではversion 2の `options` に `{ "mode": "transcode", "format": "wav", "sampleRate": 16000, "channels": 1 }` を指定します。結果ダウンロードは保存された形式を返し、取得時のクエリで再変換しません。M4Aは `audio/mp4`・`audio.m4a`、WAVは `audio/wav`・`audio.wav`、`X-Audio-Mode` はcopyまたはtranscodeです。
+
+最初の音声トラックを選ぶ規則は共通です。音声トラックが存在しない場合の `NO_AUDIO_STREAM` は、トラック内の音が無音であることとは区別します。任意のFFmpeg引数、音量調整、文字起こし、ライブ変換は提供しません。処理済みの音声ファイルを読み取りストリームで返します。

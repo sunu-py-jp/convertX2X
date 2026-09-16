@@ -1,0 +1,11 @@
+{
+  "CONVERSION_STORAGE__blobServiceUri": "https://controlaccount.blob.core.windows.net",
+  "CONVERSION_STORAGE__queueServiceUri": "https://controlaccount.queue.core.windows.net",
+  "CONVERSION_CREATE_RESOURCES": "false",
+  "CONVERSION_INPUT_STORAGE_SOURCE__blobServiceUri": "https://sourceaccount.blob.core.windows.net",
+  "CONVERSION_OUTPUT_STORAGE_ARCHIVE__blobServiceUri": "https://archiveaccount.blob.core.windows.net",
+  "CONVERSION_RESULT_QUEUE_EVENTS__queueServiceUri": "https://controlaccount.queue.core.windows.net",
+  "CONVERSION_RESULT_QUEUE_EVENTS__queueName": "conversion-results",
+  "CONVERSION_RESULT_RETENTION_DAYS": "7",
+  "CONVERSION_STATE_RETENTION_DAYS": "30"
+}

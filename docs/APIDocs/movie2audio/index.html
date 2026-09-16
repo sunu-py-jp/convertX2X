@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Movie2AudioのAPIリファレンス。動画ファイル・許可済みHTTPS URLからAACを再エンコードせずM4Aへ抽出。">
+<meta name="description" content="Movie2AudioのAPIリファレンス。動画からAACをコピー、または対応する音声をM4A・WAVへ変換。">
 <title>動画から、AAC音声だけを。 · Movie2Audio API</title>
 <link rel="stylesheet" href="../assets/styles.css">
 <script src="../assets/app.js" defer></script>
@@ -16,9 +16,10 @@
 <main id="main-content" class="main-content" tabindex="-1">
 <div class="page-layout">
 <article class="article">
-<p class="eyebrow">Movie → AAC</p>
+<p class="eyebrow">Movie → Audio</p>
 <h1>動画から、AAC音声だけを。</h1>
-<p class="lead">動画ファイル、または許可したHTTPS URLを受け取り、最初のAAC音声トラックをM4Aで返します。音声の再エンコードは行いません。</p>
+<p class="lead">動画ファイル、または許可したHTTPS URLを受け取り、最初の音声をM4AまたはWAVで返します。既定のAACコピーは音声データを変更せず、transcodeを明示すると対応形式を変換します。</p>
+<div class="callout"><p><a href="examples.html"><strong>実際の変換例を見る →</strong></a><br>複雑な入力を含む変換結果を、スクリーンショットとダウンロードできるファイルで確認できます。</p></div>
 
 <div class="hero-meta"><span class="pill accent">AAC stream copy</span><span class="pill">HTTP・Queue</span><span class="pill">Node.js 22 / 24・FFmpeg</span></div>
 <h2 id="overview">抽出の流れ</h2>
@@ -29,7 +30,7 @@
 <p>入力をストリームで一時ディスクへ保存し、抽出を完了したM4AをHTTPストリームで返します。AACのサンプリングレート・チャンネル数を保持し、<code>faststart</code> でM4Aの再生情報を先頭側へ配置します。抽出と送信は順番に行います。<a href="http.html#streaming">ストリーミングの範囲</a>を参照してください。</p>
 <p>現行の<a href="https://learn.microsoft.com/en-us/azure/ai-services/speech-service/batch-transcription-audio-data">対応形式一覧</a>にはAAC、<a href="https://techcommunity.microsoft.com/blog/azure-ai-foundry-blog/fast-transcription-public-preview-in-azure-ai-speech/4108720">Microsoftの2024年のFast紹介</a>にはM4Aが掲載されています。Azure Speech実サービスでの受け入れ・文字起こしは未検証です。</p>
 <h2 id="formats">入力の条件</h2>
-<div class="table-wrap"><table><thead><tr><th scope="col">項目</th><th scope="col">仕様</th></tr></thead><tbody><tr><td>動画コンテナー</td><td>MP4・MOV、Matroska、AVI、MPEG-TS、FLV系。拡張子ではなく内容を確認</td></tr><tr><td>動画ストリーム</td><td>必須。カバー画像のみの音声ファイルは動画として扱わない</td></tr><tr><td>音声ストリーム</td><td>最初の音声トラックがAACであること。後続のAACトラックに自動で切り替えない</td></tr><tr><td>AAC以外</td><td><code>422 UNSUPPORTED_AUDIO_CODEC</code>。AACへの再エンコードは行わない</td></tr><tr><td>対象外</td><td>Webページ・HLS/DASHプレイリスト・DRMコンテンツ。一般的なFFmpegの全機能は提供しない</td></tr></tbody></table></div>
+<div class="table-wrap"><table><thead><tr><th scope="col">項目</th><th scope="col">仕様</th></tr></thead><tbody><tr><td>動画コンテナー</td><td>MP4・MOV、Matroska、AVI、MPEG-TS、FLV系。拡張子ではなく内容を確認</td></tr><tr><td>動画ストリーム</td><td>必須。カバー画像のみの音声ファイルは動画として扱わない</td></tr><tr><td>音声ストリーム</td><td>copyでは最初の音声がAACであること。transcodeでも後続トラックへ自動で切り替えない</td></tr><tr><td>AAC以外</td><td>copyでは<code>422 UNSUPPORTED_AUDIO_CODEC</code>。transcodeでOpus・MP3・PCM等に対応</td></tr><tr><td>対象外</td><td>Webページ・HLS/DASHプレイリスト・DRMコンテンツ。一般的なFFmpegの全機能は提供しない</td></tr></tbody></table></div>
 <p>動画から動画・字幕・データトラックを除き、入力メタデータとチャプターを引き継がずに音声1トラックを出力します。破損したファイルや、同梱FFmpegの限られた解析範囲で読み取れないファイルは拒否します。</p>
 <h2 id="endpoints">利用するAPI</h2>
 <div class="table-wrap"><table><thead><tr><th scope="col">メソッド / パス</th><th scope="col">入力</th><th scope="col">結果</th></tr></thead><tbody><tr><td><code>POST /api/convert</code></td><td>動画ファイルの生バイト列</td><td><a href="http.html">audio.m4aを同じレスポンスで返す</a></td></tr><tr><td><code>POST /api/convert-url</code></td><td><code>{"url":"https://…"}</code></td><td><a href="url.html">許可済みURLを取得してaudio.m4aを返す</a></td></tr><tr><td><code>POST /api/convert-to-blob</code></td><td>動画またはURL + 出力先SAS</td><td><a href="storage.html">Blob保存後に201 JSONを返す</a></td></tr><tr><td><code>POST /api/jobs</code><br><code>POST /api/jobs-url</code></td><td>動画 / URL</td><td><a href="jobs.html">202で受付・状態確認後にM4Aを取得</a></td></tr><tr><td>Queue <code>movie2audio-jobs</code></td><td>入出力Blobを指定するJSON</td><td><a href="queue.html">登録済みStorageへM4Aを保存</a></td></tr><tr><td><code>GET /api/capabilities</code></td><td>なし / 匿名</td><td><a href="settings.html#capabilities">適用中の上限・URL機能の有効状態</a></td></tr></tbody></table></div>
@@ -50,6 +51,7 @@ npm start</code></pre>
 <p>上限は<a href="settings.html#environment">環境変数</a>で変更できます。URL取得は <code>CONVERSION_URL_ALLOWED_HOSTS</code>、Blob保存は <code>CONVERSION_OUTPUT_ALLOWED_HOSTS</code> の設定時だけ有効です。非同期HTTP・直接Queueは <code>CONVERSION_STORAGE_CONNECTION_STRING</code> の設定時だけ有効です。これらを未設定でも、ファイルをアップロードして音声を受け取る同期APIを利用できます。</p>
 <p>Azure Functions上の性能や処理時間は、動画の長さ・構造・ネットワーク・配置環境によって変わります。メモリー4GBだから100MiBを必ず180秒以内に処理できる、という保証はありません。</p>
 
+<p>音声形式の選択は<a href="http.html#audio-options">共通の音声オプション</a>を参照してください。URL・SASの本文形式は変更せず、受付URLのクエリで指定します。</p>
 <footer class="page-footer"><p>最終確認：2026-09-15。<a href="../../../functions/movie2audio/docs/usage.md">利用ガイド</a> · <a href="../../movie2audio.md">開発者向け実装ガイド</a></p></footer>
 </article>
 <aside class="toc" aria-label="このページの目次"><p class="toc-title">このページの内容</p><nav id="page-toc"></nav></aside>

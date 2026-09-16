@@ -27,6 +27,12 @@
     $('file-field').hidden = isUrl;
     $('url-field').hidden = !isUrl;
     $('async-mode').disabled = busy || !settings?.asyncEnabled;
+    $('audio-profile').disabled = busy;
+    const profile = $('audio-profile').value;
+    $('audio-hint').textContent = profile === 'copy' ? 'AACの音声データを変更せずに取り出します。'
+      : profile === 'm4a' ? 'AACへ再エンコードします。元の音声から音質が変わります。'
+        : profile === 'wav-mono' ? '16bit PCM・16kHz・モノラルに変換します。約115MB / 時間が目安です。'
+          : '16bit PCMに変換します。WAVはM4Aよりファイルサイズが大きくなります。';
     $('url-hint').textContent = settings?.urlEnabled
       ? '管理者が許可したホストの動画ファイルURLを指定します。Webページ・リダイレクトには対応しません。'
       : 'URL入力は無効です。管理者がCONVERSION_URL_ALLOWED_HOSTSを設定すると利用できます。';
@@ -124,13 +130,14 @@
     }
   }
   form.addEventListener('change', event => {
-    if (event.target.name === 'source' || event.target.name === 'mode') updateSource();
+    if (event.target.name === 'source' || event.target.name === 'mode' || event.target.id === 'audio-profile') updateSource();
   });
   form.addEventListener('submit', async event => {
     event.preventDefault();
     if (busy || !settings) return;
     const isUrl = selectedSource() === 'url';
     const isAsync = selectedMode() === 'async';
+    const profile = $('audio-profile').value;
     const file = $('video-file').files[0];
     const inputUrl = $('video-url').value.trim();
     if (!isUrl && !file) return report('動画ファイルを選択してください。', true);
@@ -153,6 +160,14 @@
       if (key) headers['x-functions-key'] = key;
       const endpoint = isAsync ? (isUrl ? 'jobs-url' : 'jobs') : (isUrl ? 'convert-url' : 'convert');
       const requestUrl = new URL(endpoint, api);
+      if (profile !== 'copy') {
+        requestUrl.searchParams.set('audioMode', 'transcode');
+        requestUrl.searchParams.set('audioFormat', profile === 'm4a' ? 'm4a' : 'wav');
+        if (profile === 'wav-mono') {
+          requestUrl.searchParams.set('sampleRate', '16000');
+          requestUrl.searchParams.set('channels', '1');
+        }
+      }
       if (isAsync && !isUrl) requestUrl.searchParams.set('filename', file.name);
       let response = await checkedResponse(await fetch(requestUrl, {
         method: 'POST', headers, body: isUrl ? JSON.stringify({ url: inputUrl }) : file,
@@ -162,13 +177,19 @@
         if (response.status !== 202 || !(response.headers.get('Content-Type') || '').includes('application/json')) throw new Error('ジョブ受付の応答形式が正しくありません。');
         response = await awaitJob(await response.json(), key, controller.signal);
       }
-      if (!(response.headers.get('Content-Type') || '').startsWith('audio/mp4')) throw new Error('想定外の形式のレスポンスを受信しました。');
+      const contentType = (response.headers.get('Content-Type') || '').split(';')[0].trim();
+      if (!['audio/mp4', 'audio/wav'].includes(contentType)) throw new Error('想定外の形式のレスポンスを受信しました。');
       const blob = await response.blob();
       if (blob.size === 0 || blob.size > settings.maxOutputBytes) throw new Error('音声のサイズが出力上限の範囲外です。');
       objectUrl = URL.createObjectURL(blob);
       $('audio-player').src = objectUrl;
       $('download-link').href = objectUrl;
-      $('result-meta').textContent = `${size(blob.size)} · AAC / stream copy`;
+      const extension = contentType === 'audio/wav' ? 'wav' : 'm4a';
+      const outputName = `audio.${extension}`;
+      $('result-filename').textContent = outputName;
+      $('download-link').download = outputName;
+      $('download-link').textContent = `${extension.toUpperCase()}をダウンロード ↓`;
+      $('result-meta').textContent = `${size(blob.size)} · ${extension === 'wav' ? 'PCM / WAV' : 'AAC / M4A'} · ${profile === 'copy' ? 'そのまま抽出' : '形式変換'}`;
       $('empty-result').hidden = true;
       $('audio-result').hidden = false;
       report(`${((performance.now() - started) / 1000).toFixed(1)}秒で完了しました（${isAsync ? 'キュー待機・' : ''}送受信を含む）。`);

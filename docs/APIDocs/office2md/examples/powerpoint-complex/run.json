@@ -1,0 +1,108 @@
+{
+  "capturedAt": "2026-09-16T12:17:31.209Z",
+  "mode": "actual local Functions HTTP through unmodified Playground",
+  "sourceCommit": "4923032ca0c641e9e5864397cdba7aaaceb1fe4f",
+  "runtime": {
+    "platform": "darwin",
+    "architecture": "arm64",
+    "node": "v24.19.0",
+    "java": "openjdk version \"21\" 2023-09-19 LTS\nOpenJDK Runtime Environment Temurin-21+35 (build 21+35-LTS)\nOpenJDK 64-Bit Server VM Temurin-21+35 (build 21+35-LTS, mixed mode)",
+    "coreTools": "4.9.0",
+    "browser": "152.0.7977.83"
+  },
+  "input": {
+    "path": "input.pptx",
+    "sizeBytes": 37283,
+    "sha256": "69aac8af15e6d87292b6fd6d085ff5666d42029e125033cc83560df2e597f97e"
+  },
+  "request": {
+    "method": "POST",
+    "path": "/api/convert?filename=input.pptx",
+    "contentType": "application/octet-stream",
+    "options": "default; no custom conversion options"
+  },
+  "response": {
+    "status": 200,
+    "contentType": "application/zip",
+    "elapsedMs": 90
+  },
+  "timingNote": "Local macOS measurement from submit click to completed Playground result (HTTP response, unzip and preview construction included). Not an Azure latency or throughput benchmark.",
+  "sectionCount": 4,
+  "sectionTitles": [
+    "PowerPointからMarkdownへ",
+    "罫線なしの表もMarkdown表に",
+    "図は画像と説明文として残す",
+    "保存済みの埋め込み画像"
+  ],
+  "assetCount": 4,
+  "warningCount": 1,
+  "warningCodes": [
+    "TABLE_MERGE_FLATTENED"
+  ],
+  "informationCount": 0,
+  "files": [
+    {
+      "path": "result.zip",
+      "sizeBytes": 21236,
+      "sha256": "56c7eae4f418b4aca83a67e506bbc547c95268cd1d0a970238fe9a5db4c9814c"
+    },
+    {
+      "path": "output/document.md",
+      "sizeBytes": 1441,
+      "sha256": "745e60a16cb76c1b7a55941bd7913399659052c85d5ff1a02deeaa337b8effc3"
+    },
+    {
+      "path": "output/report.json",
+      "sizeBytes": 2612,
+      "sha256": "5e951d290e499299ba898a8c46f061ba8a1b83cbf6d490b423592ee913a4c38b"
+    },
+    {
+      "path": "output/images/diagram-0001.png",
+      "sizeBytes": 8547,
+      "sha256": "359f07615f21b7b8fb418c158cf22e91f094eb5a4d1a10ae46966c6ae4f0dcdc"
+    },
+    {
+      "path": "output/images/diagram-0002.png",
+      "sizeBytes": 9761,
+      "sha256": "32608549e9483055c3f66ddb9c4cb37c461c4ec3374c4b819af64eaa3a05a50e"
+    },
+    {
+      "path": "output/images/diagram-0003.png",
+      "sizeBytes": 156,
+      "sha256": "1df603d87d3c0deb749323ff7a04b03ba7f7c08425079c90b51319915428d18a"
+    },
+    {
+      "path": "output/images/image-0001.png",
+      "sizeBytes": 1327,
+      "sha256": "dee533bdc15da1508ed9dde21cb8a0b7037e31683ba70003e38b87a50f91b298"
+    },
+    {
+      "path": "screenshots/overview.png",
+      "sizeBytes": 174660,
+      "sha256": "9ae9c389e73649a84d8d8fc19b5d471bd61f0acae8b1682968d640d6ee69c9f3"
+    },
+    {
+      "path": "screenshots/section-02.png",
+      "sizeBytes": 24579,
+      "sha256": "e2f7d9e6216d5724b915c0e9d949a930fa757e50ef71e157ee7cff8c8fc3c948"
+    },
+    {
+      "path": "screenshots/section-03.png",
+      "sizeBytes": 37392,
+      "sha256": "cf345be8bd38392937e544e7bedead84832e5cd8a5fac23f50942089e830eaa2"
+    },
+    {
+      "path": "screenshots/markdown-source.png",
+      "sizeBytes": 97840,
+      "sha256": "1953711ba196a1b72e2bd7ef5aef8dfd4c68a3914e49bfde755512aa734725d9"
+    },
+    {
+      "path": "screenshots/warnings.png",
+      "sizeBytes": 8609,
+      "sha256": "ee7e2f3e5932da004c63cc1039c0bb9245c6e5a1dd38aa2783f836bb1317f911"
+    }
+  ],
+  "screenshotLayout": "Overview/source use normal Playground. Section screenshots expand the preview scroll region and image maximum height, and hide other sections. Excel tables-detail and group-detail crop the top 790 and 1000 CSS pixels; full sections are also included. Warnings expand the warning list. No original text, images or outputs are changed.",
+  "browserErrors": [],
+  "externalBrowserRequests": []
+}

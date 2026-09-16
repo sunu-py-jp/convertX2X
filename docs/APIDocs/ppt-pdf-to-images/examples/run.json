@@ -1,0 +1,152 @@
+{
+  "recordedAt": "2026-09-16T12:18:05.470887+00:00",
+  "environment": {
+    "os": "Darwin",
+    "architecture": "arm64",
+    "python": "3.12.14",
+    "java": "openjdk version \"21\" 2023-09-19 LTS",
+    "functionsCoreTools": "4.9.0",
+    "sourceCommit": "4923032ca0c641e9e5864397cdba7aaaceb1fe4f",
+    "functionJarSha256": "83ed62072a0b8aff944d9d13fb6ee9922ccfc9c714c24ed277df6626215301dc"
+  },
+  "measurement": "One sequential request per case on an already running local macOS host. Includes request upload and response download. Not an Azure benchmark; not an isolated cold-start measurement.",
+  "cases": [
+    {
+      "id": "quarterly-review",
+      "input": {
+        "path": "inputs/quarterly-review.pptx",
+        "sizeBytes": 44671,
+        "sha256": "c3d8af2ec37c6d37de678e88fcb7bab1ed6502af24df774d36114eddf6659fd1"
+      },
+      "request": {
+        "method": "POST",
+        "path": "/api/convert",
+        "options": {
+          "filename": "quarterly-review.pptx",
+          "format": "png"
+        },
+        "contentType": "application/octet-stream"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/zip",
+          "Content-Disposition": "attachment; filename=\"quarterly-review.zip\"",
+          "X-Page-Count": "3"
+        },
+        "elapsedSeconds": 0.232,
+        "path": "outputs/quarterly-review.zip",
+        "sizeBytes": 202836,
+        "sha256": "372cd954b7a5c2e984046e9075fcd439f6ec5b3699a7cf071e884a204b1aa56f"
+      },
+      "pages": [
+        {
+          "path": "outputs/quarterly-review/page-0001.png",
+          "sizeBytes": 75022,
+          "sha256": "26347fd25fa7b343f247a7a05132e8a735c3745fdad80d521627be7c3213e3df",
+          "width": 1280,
+          "height": 720
+        },
+        {
+          "path": "outputs/quarterly-review/page-0002.png",
+          "sizeBytes": 76318,
+          "sha256": "7cb024d9c77d93daa8d7f669c6c581590c06b6ff9067d2d178decfb5412692ab",
+          "width": 1280,
+          "height": 720
+        },
+        {
+          "path": "outputs/quarterly-review/page-0003.png",
+          "sizeBytes": 68568,
+          "sha256": "1e37c452cfb038e40d321ad9a626b49e394c1e9fb06f0629d634175475988a26",
+          "width": 1280,
+          "height": 720
+        }
+      ]
+    },
+    {
+      "id": "operations-report",
+      "input": {
+        "path": "inputs/operations-report.pdf",
+        "sizeBytes": 19413,
+        "sha256": "1aaad6f40658dfbf02060e1a6364c9d10c8777092cad4a7c3b0ca5dab7e0db23"
+      },
+      "request": {
+        "method": "POST",
+        "path": "/api/convert",
+        "options": {
+          "filename": "operations-report.pdf",
+          "format": "png"
+        },
+        "contentType": "application/octet-stream"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/zip",
+          "Content-Disposition": "attachment; filename=\"operations-report.zip\"",
+          "X-Page-Count": "3"
+        },
+        "elapsedSeconds": 0.124,
+        "path": "outputs/operations-report.zip",
+        "sizeBytes": 194916,
+        "sha256": "0d527587710ddc67707065e34ee736dc4ea4170343083cd165c934f8b3c66313"
+      },
+      "pages": [
+        {
+          "path": "outputs/operations-report/page-0001.png",
+          "sizeBytes": 67769,
+          "sha256": "5391ee29e64597ae0b85c389842b2b3b70a585851ea4288b17a4ab0ef4cbc38e",
+          "width": 794,
+          "height": 1123
+        },
+        {
+          "path": "outputs/operations-report/page-0002.png",
+          "sizeBytes": 92422,
+          "sha256": "5be1aae76b172e0973518e924176316c49eae3b8216e9d55098b4f7be8c9824b",
+          "width": 794,
+          "height": 1123
+        },
+        {
+          "path": "outputs/operations-report/page-0003.png",
+          "sizeBytes": 60125,
+          "sha256": "8c5cea97c1f44830a17afb7088da0603b223534d13f70d7e52e312d6d1e76e62",
+          "width": 1123,
+          "height": 794
+        }
+      ]
+    },
+    {
+      "id": "pdf-single-jpeg",
+      "input": {
+        "path": "inputs/operations-report.pdf",
+        "sizeBytes": 19413,
+        "sha256": "1aaad6f40658dfbf02060e1a6364c9d10c8777092cad4a7c3b0ca5dab7e0db23"
+      },
+      "request": {
+        "method": "POST",
+        "path": "/api/convert",
+        "options": {
+          "filename": "operations-report.pdf",
+          "page": "3",
+          "format": "jpeg",
+          "width": "1200"
+        },
+        "contentType": "application/octet-stream"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "image/jpeg",
+          "Content-Disposition": "attachment; filename=\"operations-report-page-0003.jpeg\"",
+          "X-Page-Count": "1"
+        },
+        "elapsedSeconds": 0.038,
+        "path": "outputs/operations-report-page-0003.jpeg",
+        "sizeBytes": 60602,
+        "sha256": "5aa10de2b3f98f5dfe53b16ec0c70a50d51d9379af2c2a29c023bd97dd5f5a6f",
+        "width": 1200,
+        "height": 848
+      }
+    }
+  ]
+}

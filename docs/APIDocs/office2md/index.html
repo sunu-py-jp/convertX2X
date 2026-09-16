@@ -18,6 +18,7 @@
 <p class="eyebrow">Office → Markdown</p>
 <h1>概要と変換ルール</h1>
 <p class="lead">Excel・Word・PowerPointの内容を、Markdown・画像・変換情報へ取り出します。</p>
+<div class="callout"><p><a href="examples.html"><strong>実際の変換例を見る →</strong></a><br>複雑な入力を含む変換結果を、スクリーンショットとダウンロードできるファイルで確認できます。</p></div>
 <h2 id="overview">できること</h2>
 <p>Excel・Word・PowerPointを、文章として扱えるMarkdownと、埋め込み画像・図形の画像に変換します。Java 21 / Apache POIを使う独立したAzure Functionsアプリです。同期HTTP・非同期HTTP・直接Queueは同じ変換コアを利用します。</p>
 <div class="cards"><a class="card" href="http.html#convert"><h3>同期HTTP</h3><p>ファイルを送信し、その応答でZIPを受け取る。</p></a><a class="card" href="jobs.html#submit"><h3>非同期HTTP</h3><p>ジョブを登録し、状態を確認して成果物を取得する。</p></a><a class="card" href="queue.html#message"><h3>直接Queue</h3><p>外部システムからBlob参照のJSONを投入する。</p></a></div>

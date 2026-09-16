@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "jobId": "7e497aae-c040-487e-a070-c4cdebf54b89",
+  "input": {
+    "storage": "default",
+    "container": "movie-docs-input-7e497aae",
+    "blobName": "complex-input.mp4"
+  },
+  "output": {
+    "storage": "default",
+    "container": "movie-docs-output-7e497aae",
+    "prefix": "exports"
+  },
+  "filename": "complex-input.mp4"
+}

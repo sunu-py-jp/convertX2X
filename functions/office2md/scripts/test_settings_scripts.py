@@ -10,7 +10,7 @@ import sys
 import tempfile
 import unittest
 
-from async_settings import QUEUE_STORAGE_KEY, STORAGE_KEY
+from async_settings import QUEUE_STORAGE_KEY, STORAGE_KEY, derive_settings, obsolete_keys
 
 
 class SettingsScriptsTest(unittest.TestCase):
@@ -29,7 +29,7 @@ class SettingsScriptsTest(unittest.TestCase):
         (self.stage / "host.json").write_text('{"version":"2.0"}')
         self.capture = self.root / "child-capture.json"
         self.env = os.environ.copy()
-        for key in (STORAGE_KEY, QUEUE_STORAGE_KEY, "AzureWebJobsStorage"):
+        for key in [k for k in self.env if k.startswith("CONVERSION_")] + ["AzureWebJobsStorage"]:
             self.env.pop(key, None)
         self.env.update({
             "PATH": str(self.bin) + os.pathsep + self.env.get("PATH", ""),
@@ -46,6 +46,9 @@ json.dump({'argv': sys.argv, 'cwd': str(Path.cwd()), 'env': dict(os.environ)},
         self.fake("az", """
 import json, os, stat, sys
 from pathlib import Path
+if 'list' in sys.argv:
+    print(os.environ.get('FAKE_AZ_CURRENT', '[]')); sys.exit(0)
+if '--settings' not in sys.argv: sys.exit(0)
 settings_file = Path(sys.argv[sys.argv.index('--settings') + 1][1:])
 payload = json.loads(settings_file.read_text())
 json.dump({'argv': sys.argv, 'payload': payload, 'temporaryFile': str(settings_file),
@@ -116,7 +119,7 @@ if os.environ.get('FAKE_AZ_FAIL'):
                                  "--name", "app", "--slot", "staging")
         self.assertEqual(result.returncode, 0, result.stderr)
         captured = json.loads(self.capture.read_text())
-        self.assertEqual(len(captured["payload"]), 4)
+        self.assertEqual(captured["payload"]["AzureWebJobs.MaintainConversions.Disabled"], "true")
         self.assertEqual(captured["payload"][QUEUE_STORAGE_KEY], self.env[STORAGE_KEY])
         self.assert_switches(captured["payload"], True)
         self.assertEqual(captured["mode"], 0o600)
@@ -134,8 +137,33 @@ if os.environ.get('FAKE_AZ_FAIL'):
         self.assert_switches(captured["payload"], False)
         self.assertEqual(set(captured["payload"]), {
             STORAGE_KEY, QUEUE_STORAGE_KEY,
-            "AzureWebJobs.ProcessConversion.Disabled", "AzureWebJobs.PoisonConversion.Disabled",
+            "AzureWebJobs.ProcessConversion.Disabled", "AzureWebJobs.PoisonConversion.Disabled", "AzureWebJobs.MaintainConversions.Disabled",
+            "CONVERSION_STORAGE__blobServiceUri", "CONVERSION_STORAGE__queueServiceUri", "CONVERSION_STORAGE__clientId",
         })
+
+    def test_managed_identity_removes_scalar_shadow_and_default_timer_stays_off(self):
+        self.local_settings(**{QUEUE_STORAGE_KEY: "stale-key"})
+        self.env.update({"CONVERSION_STORAGE__blobServiceUri": "https://account.blob.core.windows.net",
+                         "CONVERSION_STORAGE__queueServiceUri": "https://account.queue.core.windows.net"})
+        result = self.run_script("run_local.py", "--skip-build")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        captured = json.loads(self.capture.read_text())["env"]
+        self.assertNotIn(QUEUE_STORAGE_KEY, captured)
+        self.assertEqual(captured[QUEUE_STORAGE_KEY + "__credential"], "managedidentity")
+        self.assert_switches(captured, True)
+        self.assertEqual(captured["AzureWebJobs.MaintainConversions.Disabled"], "true")
+        derived = derive_settings("secret", {"CONVERSION_RESULT_QUEUE_EVENTS__queueName": "events"})
+        self.assertEqual(derived["AzureWebJobs.MaintainConversions.Disabled"], "false")
+        self.assertIn(QUEUE_STORAGE_KEY + "__credential", obsolete_keys(derived))
+
+    def test_azure_preserves_maintenance_enabled_from_existing_registration(self):
+        self.env[STORAGE_KEY] = "not-a-real-storage-secret"
+        self.env["FAKE_AZ_CURRENT"] = json.dumps([{"name": "CONVERSION_RESULT_QUEUE_EVENTS__queueName", "value": "events"}])
+        result = self.run_script("configure_azure_async.py", "--resource-group", "rg", "--name", "app")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        payload = json.loads(self.capture.read_text())["payload"]
+        self.assertEqual(payload["AzureWebJobs.MaintainConversions.Disabled"], "false")
+        self.assertNotIn("CONVERSION_RESULT_QUEUE_EVENTS__queueName", payload)
 
     def test_azure_failure_hides_cli_secret_and_removes_temporary_payload(self):
         self.env[STORAGE_KEY] = "not-a-real-storage-secret"

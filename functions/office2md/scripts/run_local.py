@@ -9,7 +9,7 @@ import shutil
 import subprocess
 import sys
 
-from async_settings import STORAGE_KEY, derive_settings
+from async_settings import STORAGE_KEY, derive_settings, obsolete_keys
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -37,7 +37,11 @@ def main() -> None:
     for key in values:
         values[key] = os.environ.get(key, values[key])
     connection = os.environ.get(STORAGE_KEY, values.get(STORAGE_KEY, ""))
-    values.update(derive_settings(connection))
+    # Include environment-only MI, alias and retention settings before deriving trigger switches.
+    values.update({key: value for key, value in os.environ.items() if key.startswith("CONVERSION_") or key.startswith("AzureWebJobsStorage__")})
+    derived = derive_settings(connection, values)
+    values.update(derived)
+    for key in obsolete_keys(derived): values.pop(key, None)
     values["FUNCTIONS_WORKER_RUNTIME"] = "java"
     values["JAVA_OPTS"] = os.environ.get(
         "JAVA_OPTS", values.get("JAVA_OPTS", "-Djava.awt.headless=true")
@@ -54,6 +58,7 @@ def main() -> None:
 
     child_env = os.environ.copy()
     child_env.update({key: str(value) for key, value in values.items()})
+    for key in obsolete_keys(derived): child_env.pop(key, None)
     if not child_env.get("JAVA_HOME"):
         java_settings = subprocess.run(
             ["java", "-XshowSettings:properties", "-version"],
@@ -66,7 +71,7 @@ def main() -> None:
                 break
         if not child_env.get("JAVA_HOME"):
             parser.error("Set JAVA_HOME to the Java 21 JDK directory.")
-    print(f"Async conversion: {'enabled' if connection.strip() else 'disabled'}", flush=True)
+    print(f"Async conversion: {'enabled' if derived['AzureWebJobs.ProcessConversion.Disabled'] == 'false' else 'disabled'}", flush=True)
     print(f"Playground: http://localhost:{args.port}/api/playground", flush=True)
     os.chdir(stage)
     os.execvpe("func", ["func", "start", "--port", str(args.port)], child_env)
