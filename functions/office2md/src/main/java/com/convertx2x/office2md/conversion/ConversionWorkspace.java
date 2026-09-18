@@ -20,7 +20,8 @@ public final class ConversionWorkspace implements AutoCloseable {
     private final Map<String, String> assetHashes = new HashMap<>();
     private final Map<String, Integer> sequences = new HashMap<>();
     private long outputBytes;
-    private int images, shapes, sectionCount;
+    private long images, shapes;
+    private int sectionCount;
 
     public ConversionWorkspace(ConversionLimits limits) {
         this.limits = Objects.requireNonNull(limits);
@@ -51,23 +52,23 @@ public final class ConversionWorkspace implements AutoCloseable {
         return item;
     }
     private void checkReportBudget() {
-        // Bound diagnostic objects as well as the final serialized report.
-        if ((long) warnings.size() + information.size() > limits.maxReadItems() + (long) limits.maxShapes() + limits.maxImages() + limits.maxSections())
+        // Apply the optional aggregate count only when every contributing count is bounded.
+        if (ConversionLimits.exceeds((long) warnings.size() + information.size(), limits.maxReportEntries()))
             throw limit("REPORT_LIMIT", "変換情報の件数が上限を超えました。");
     }
     public void block(Map<String, Object> block) {
-        if (blocks.size() >= limits.maxReadItems()) throw limit("BLOCK_LIMIT", "出力ブロック数が上限を超えました。");
+        if (ConversionLimits.exceeds(blocks.size() + 1L, limits.maxReadItems())) throw limit("BLOCK_LIMIT", "出力ブロック数が上限を超えました。");
         blocks.add(new LinkedHashMap<>(block));
     }
     public void sectionIncluded() {
-        if (++sectionCount > limits.maxSections()) throw limit("SECTION_LIMIT", "シート・スライド数が上限を超えました。");
+        if (ConversionLimits.exceeds(++sectionCount, limits.maxSections())) throw limit("SECTION_LIMIT", "シート・スライド数が上限を超えました。");
     }
 
     public void imagePlacement() {
-        if (++images > limits.maxImages()) throw limit("IMAGE_LIMIT", "画像の配置数が上限を超えました。");
+        if (ConversionLimits.exceeds(++images, limits.maxImages())) throw limit("IMAGE_LIMIT", "画像の配置数が上限を超えました。");
     }
     public void shapeVisited(int depth) {
-        if (++shapes > limits.maxShapes()) throw limit("SHAPE_LIMIT", "図形数が上限を超えました。");
+        if (ConversionLimits.exceeds(++shapes, limits.maxShapes())) throw limit("SHAPE_LIMIT", "図形数が上限を超えました。");
         if (depth > limits.maxGroupDepth()) throw limit("GROUP_DEPTH_LIMIT", "図形のグループ階層が上限を超えました。");
     }
 

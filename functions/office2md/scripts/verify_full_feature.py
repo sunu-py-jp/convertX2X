@@ -24,11 +24,11 @@ import urllib.request
 import zipfile
 
 DEFAULT_LIMITS = {
-    "maxInputBytes": 20 * 1024 * 1024, "maxSections": 50,
-    "maxReadItems": 200_000, "maxTableCells": 1_000_000,
-    "maxMarkdownBytes": 20 * 1024 * 1024, "maxImages": 200,
+    "maxInputBytes": 20 * 1024 * 1024, "maxSections": 0,
+    "maxReadItems": 0, "maxTableCells": 0,
+    "maxMarkdownBytes": 20 * 1024 * 1024, "maxImages": 0,
     "maxImageBytes": 20 * 1024 * 1024, "maxOutputBytes": 100 * 1024 * 1024,
-    "maxShapes": 1000, "maxGroupDepth": 16, "maxImagePixels": 20_000_000,
+    "maxShapes": 0, "maxGroupDepth": 16, "maxImagePixels": 20_000_000,
 }
 SAFE_HEADERS = {"content-type", "content-length", "content-disposition", "x-section-count",
                 "x-warning-count", "cache-control", "etag", "date", "request-id", "x-ms-request-id"}
@@ -104,7 +104,8 @@ def extract(archive_path, output, limits):
     files = {}
     with zipfile.ZipFile(archive_path) as archive:
         entries = archive.infolist()
-        require(len(entries) <= limits["maxImages"] + limits["maxShapes"] + 2, "ZIP entry count exceeds the limit")
+        if limits["maxImages"] and limits["maxShapes"]:
+            require(len(entries) <= limits["maxImages"] + limits["maxShapes"] + 2, "ZIP entry count exceeds the limit")
         declared = 0
         for entry in entries:
             name = entry.filename
@@ -294,7 +295,7 @@ def run(args, output, verification):
         capabilities = json.loads(data)
     for name, fallback in DEFAULT_LIMITS.items():
         value = capabilities.get(name, fallback)
-        require(type(value) is int and value > 0, "Invalid capability limit: " + name)
+        require(type(value) is int and value >= (0 if fallback == 0 else 1), "Invalid capability limit: " + name)
         limits[name] = value
     verification["limits"] = limits
     require(args.input.is_file(), "Input file does not exist")

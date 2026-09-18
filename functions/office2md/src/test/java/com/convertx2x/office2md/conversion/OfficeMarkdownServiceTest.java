@@ -57,7 +57,39 @@ class OfficeMarkdownServiceTest {
                 "CONVERSION_MAX_READ_ITEMS", "234", "CONVERSION_MAX_READ_CELLS", "345"));
         assertEquals(9, config.limits().maxSections());
         assertEquals(234, config.limits().maxReadItems());
-        assertThrows(IllegalArgumentException.class, () -> AppConfig.from(Map.of("CONVERSION_MAX_SECTIONS", "0")));
+        assertEquals(0, AppConfig.from(Map.of("CONVERSION_MAX_SECTIONS", "0", "CONVERSION_MAX_SHEETS", "12")).limits().maxSections());
+        assertThrows(IllegalArgumentException.class, () -> AppConfig.from(Map.of("CONVERSION_MAX_SECTIONS", "-1")));
+    }
+
+    @Test void moreThanFiftySheetsConvertWithDefaultLimits() throws Exception {
+        byte[] input;
+        try (var book = new XSSFWorkbook(); var out = new ByteArrayOutputStream()) {
+            for (int i = 1; i <= 51; i++) book.createSheet("Sheet " + i).createRow(0).createCell(0).setCellValue("Sheet content " + i);
+            book.write(out); input = out.toByteArray();
+        }
+        try (var result = service.convert(input, "many-sheets.xlsx")) {
+            assertEquals(51, result.sectionCount());
+            assertTrue(Files.readString(result.files().get("document.md")).contains("Sheet content 51"));
+        }
+    }
+
+    @ParameterizedTest @ValueSource(strings={"CONVERSION_MAX_SECTIONS", "CONVERSION_MAX_READ_ITEMS", "CONVERSION_MAX_TABLE_CELLS", "CONVERSION_MAX_IMAGES", "CONVERSION_MAX_SHAPES", "CONVERSION_MAX_SHEETS", "CONVERSION_MAX_READ_CELLS"})
+    void countLimitsAcceptZeroButRejectNegativeNumbers(String setting) {
+        assertDoesNotThrow(() -> AppConfig.from(Map.of(setting, "0")));
+        assertDoesNotThrow(() -> AppConfig.from(Map.of(setting, "1")));
+        assertThrows(IllegalArgumentException.class, () -> AppConfig.from(Map.of(setting, "-1")));
+    }
+
+    @ParameterizedTest @ValueSource(strings={"CONVERSION_MAX_INPUT_BYTES", "CONVERSION_MAX_MARKDOWN_BYTES", "CONVERSION_MAX_IMAGE_BYTES", "CONVERSION_MAX_OUTPUT_BYTES", "CONVERSION_MAX_GROUP_DEPTH", "CONVERSION_MAX_IMAGE_PIXELS"})
+    void memoryAndRecursionProtectionsRemainPositive(String setting) {
+        assertThrows(IllegalArgumentException.class, () -> AppConfig.from(Map.of(setting, "0")));
+    }
+
+    @Test void combinedCountsStayUnlimitedWhenEitherAssetSourceIsUnlimited() {
+        assertEquals(0, AppConfig.from(Map.of("CONVERSION_MAX_IMAGES", "1")).limits().maxAssets());
+        assertEquals(0, AppConfig.from(Map.of("CONVERSION_MAX_SHAPES", "1")).limits().maxAssets());
+        assertEquals(3, AppConfig.from(Map.of("CONVERSION_MAX_IMAGES", "1", "CONVERSION_MAX_SHAPES", "2")).limits().maxAssets());
+        assertDoesNotThrow(() -> ConversionLimits.defaults().checkTableCells(1_000_001));
     }
 
     private static byte[] fixture(String extension) throws Exception {

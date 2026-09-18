@@ -17,7 +17,7 @@
   const check = (condition, message = '変換結果の形式が正しくありません。') => { if (!condition) throw new Error(message); };
   const alive = run => { if (run?.controller.signal.aborted) throw new DOMException('Stopped', 'AbortError'); };
   const blobUrl = blob => { const url = URL.createObjectURL(blob); objectUrls.add(url); return url; };
-  const budget = () => ({ total: Math.min(config.maxOutputBytes, 100 * MiB), markdown: Math.min(config.maxMarkdownBytes, 20 * MiB), image: Math.min(config.maxImageBytes, 20 * MiB), images: Math.min(config.maxImages + config.maxShapes, 1200) });
+  const budget = () => ({ total: Math.min(config.maxOutputBytes, 100 * MiB), markdown: Math.min(config.maxMarkdownBytes, 20 * MiB), image: Math.min(config.maxImageBytes, 20 * MiB), images: config.maxImages === 0 || config.maxShapes === 0 ? Infinity : config.maxImages + config.maxShapes });
 
   function status(state, title, detail = '') {
     $('status-bar').dataset.state = state;
@@ -403,10 +403,11 @@
       const response = await fetch(endpoint('capabilities'), { cache: 'no-store', redirect: 'error', credentials: 'same-origin', signal: AbortSignal.timeout(15000) });
       check(response.ok, `設定を取得できませんでした（HTTP ${response.status}）。`);
       const data = JSON.parse(utf8(await responseBytes(response, 65536)));
-      check(typeof data.asyncEnabled === 'boolean' && ['maxInputBytes', 'maxSections', 'maxMarkdownBytes', 'maxImages', 'maxImageBytes', 'maxOutputBytes', 'maxImagePixels', 'maxShapes'].every(key => Number.isSafeInteger(data[key]) && data[key] > 0));
+      check(typeof data.asyncEnabled === 'boolean' && ['maxInputBytes', 'maxMarkdownBytes', 'maxImageBytes', 'maxOutputBytes', 'maxImagePixels', 'maxGroupDepth'].every(key => Number.isSafeInteger(data[key]) && data[key] > 0)
+        && ['maxSections', 'maxReadItems', 'maxTableCells', 'maxImages', 'maxShapes'].every(key => Number.isSafeInteger(data[key]) && data[key] >= 0));
       config = data; $('config-status').dataset.state = 'ready'; $('config-status').textContent = '接続済み';
       $('config-message').textContent = config.asyncEnabled ? '同期 / 非同期を利用できます' : '同期のみ · 非同期はStorage設定で有効';
-      $('file-hint').textContent = `XLSX / XLS / DOCX / PPTX · 最大 ${sizeLabel(config.maxInputBytes)} · ${config.maxSections} シート／スライド`;
+      $('file-hint').textContent = `XLSX / XLS / DOCX / PPTX · 最大 ${sizeLabel(config.maxInputBytes)}` + (config.maxSections ? ` · ${config.maxSections} シート／スライド` : '');
       $('retry-config').hidden = true;
       $('error-message').hidden = true;
       if (selectedFile) selectFile(selectedFile);

@@ -23,14 +23,14 @@ public record AppConfig(String storageConnectionString, ConversionLimits limits,
         return new AppConfig(connection,
                 new ConversionLimits(
                         positive(settings, "CONVERSION_MAX_INPUT_BYTES", defaults.maxInputBytes()),
-                        Math.toIntExact(positiveAlias(settings, "CONVERSION_MAX_SECTIONS", "CONVERSION_MAX_SHEETS", defaults.maxSections())),
-                        Math.toIntExact(positiveAlias(settings, "CONVERSION_MAX_READ_ITEMS", "CONVERSION_MAX_READ_CELLS", defaults.maxReadItems())),
-                        Math.toIntExact(positive(settings, "CONVERSION_MAX_TABLE_CELLS", defaults.maxTableCells())),
+                        Math.toIntExact(countAlias(settings, "CONVERSION_MAX_SECTIONS", "CONVERSION_MAX_SHEETS", defaults.maxSections())),
+                        Math.toIntExact(countAlias(settings, "CONVERSION_MAX_READ_ITEMS", "CONVERSION_MAX_READ_CELLS", defaults.maxReadItems())),
+                        Math.toIntExact(nonNegative(settings, "CONVERSION_MAX_TABLE_CELLS", defaults.maxTableCells())),
                         positive(settings, "CONVERSION_MAX_MARKDOWN_BYTES", defaults.maxMarkdownBytes()),
-                        Math.toIntExact(positive(settings, "CONVERSION_MAX_IMAGES", defaults.maxImages())),
+                        Math.toIntExact(nonNegative(settings, "CONVERSION_MAX_IMAGES", defaults.maxImages())),
                         positive(settings, "CONVERSION_MAX_IMAGE_BYTES", defaults.maxImageBytes()),
                         positive(settings, "CONVERSION_MAX_OUTPUT_BYTES", defaults.maxOutputBytes()),
-                        Math.toIntExact(positive(settings, "CONVERSION_MAX_SHAPES", defaults.maxShapes())),
+                        Math.toIntExact(nonNegative(settings, "CONVERSION_MAX_SHAPES", defaults.maxShapes())),
                         Math.toIntExact(positive(settings, "CONVERSION_MAX_GROUP_DEPTH", defaults.maxGroupDepth())),
                         positive(settings, "CONVERSION_MAX_IMAGE_PIXELS", defaults.maxImagePixels())),
                 BlobStorageProfiles.from(settings, connection), IntegrationSettings.from(settings));
@@ -47,19 +47,27 @@ public record AppConfig(String storageConnectionString, ConversionLimits limits,
     }
 
     private static long positive(Map<String, String> settings, String name, long fallback) {
+        return number(settings, name, fallback, 1);
+    }
+
+    private static long nonNegative(Map<String, String> settings, String name, long fallback) {
+        return number(settings, name, fallback, 0);
+    }
+
+    private static long number(Map<String, String> settings, String name, long fallback, int minimum) {
         String value = settings.get(name);
         if (value == null || value.isBlank()) return fallback;
         try {
             long number = Long.parseLong(value.trim());
-            if (number > 0) return number;
+            if (number >= minimum) return number;
         } catch (NumberFormatException ignored) {
             // Include only the setting name, never the supplied value.
         }
-        throw new IllegalArgumentException(name + " must be a positive integer");
+        throw new IllegalArgumentException(name + (minimum == 0 ? " must be a non-negative integer (0 disables the limit)" : " must be a positive integer"));
     }
 
-    private static long positiveAlias(Map<String, String> settings, String name, String legacy, long fallback) {
+    private static long countAlias(Map<String, String> settings, String name, String legacy, long fallback) {
         String value = settings.get(name);
-        return positive(settings, value == null || value.isBlank() ? legacy : name, fallback);
+        return nonNegative(settings, value == null || value.isBlank() ? legacy : name, fallback);
     }
 }

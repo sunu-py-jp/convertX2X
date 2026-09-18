@@ -50,12 +50,12 @@ public class ExcelMarkdownService {
                 if (workbook instanceof XSSFWorkbook x && (x.isMacroEnabled() || !x.getPackagePart().getContentType()
                         .equals("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml")))
                     throw new ConversionException(415, "UNSUPPORTED_FORMAT", "マクロ有効ブック・テンプレートには対応していません。");
-                if (workbook.getNumberOfSheets() > limits.maxSections())
+                if (ConversionLimits.exceeds(workbook.getNumberOfSheets(), limits.maxSections()))
                     throw ConversionWorkspace.limit("SHEET_LIMIT", "シート数が上限を超えました。");
                 long readCells = 0;
                 for (Sheet sheet : workbook) for (Row row : sheet) {
                     readCells += row.getPhysicalNumberOfCells();
-                    if (readCells > limits.maxReadItems()) throw ConversionWorkspace.limit("READ_CELLS_LIMIT", "読み取りセル数が上限を超えました。");
+                    if (ConversionLimits.exceeds(readCells, limits.maxReadItems())) throw ConversionWorkspace.limit("READ_CELLS_LIMIT", "読み取りセル数が上限を超えました。");
                 }
                 StringBuilder markdown = new StringBuilder();
                 CellMarkdown cells = new CellMarkdown(workbook, workspace);
@@ -67,7 +67,7 @@ public class ExcelMarkdownService {
                         workspace.info("HIDDEN_SHEET_OMITTED", sheet.getSheetName(), null, "非表示シートを除外しました。"); continue;
                     }
                     MergedRanges merges = new MergedRanges(sheet.getMergedRegions());
-                    if (merges.all().size() > limits.maxReadItems()) throw ConversionWorkspace.limit("MERGE_LIMIT", "結合範囲の数が上限を超えました。");
+                    if (ConversionLimits.exceeds(merges.all().size(), limits.maxReadItems())) throw ConversionWorkspace.limit("MERGE_LIMIT", "結合範囲の数が上限を超えました。");
                     if (sheet.getSheetConditionalFormatting().getNumConditionalFormattings() > 0)
                         workspace.warning("CONDITIONAL_FORMATTING_UNEVALUATED", sheet.getSheetName(), null,
                                 "条件付き書式の罫線・太字・取消線は評価していません。");
@@ -77,7 +77,7 @@ public class ExcelMarkdownService {
                     List<CellRangeAddress> tables = new BorderTables(sheet, merges, workspace).detect();
                     for (CellRangeAddress table : tables) {
                         tableCells += BorderTables.area(table);
-                        if (tableCells > limits.maxTableCells()) throw ConversionWorkspace.limit("TABLE_CELLS_LIMIT", "ブック内の罫線表の展開セル数が上限を超えました。");
+                        limits.checkTableCells(tableCells);
                     }
                     Map<Long, String> values = readCells(sheet, merges, cells, workspace);
                     List<Block> blocks = blocks(sheet, tables, merges, values, workspace);

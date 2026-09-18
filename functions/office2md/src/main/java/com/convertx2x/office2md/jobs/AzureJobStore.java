@@ -198,7 +198,7 @@ final class AzureJobStore implements JobStore {
         if (!result.files().containsKey("document.md") || !result.files().containsKey("report.json")) {
             throw new IllegalStateException("The conversion is missing required artifacts.");
         }
-        if ((long) result.files().size() > (long) limits.maxImages() + limits.maxShapes() + 2) {
+        if (ConversionLimits.exceeds(result.files().size() - 2L, limits.maxAssets())) {
             throw new ConversionException(413, "ARTIFACT_LIMIT_EXCEEDED", "The result contains too many artifacts.");
         }
         String token = UUID.randomUUID().toString();

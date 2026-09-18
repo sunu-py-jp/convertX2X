@@ -80,17 +80,18 @@ Content-Type: application/json; charset=utf-8
     &quot;pptx&quot;
   ],
   &quot;maxInputBytes&quot;: 20971520,
-  &quot;maxSections&quot;: 50,
-  &quot;maxReadItems&quot;: 200000,
-  &quot;maxTableCells&quot;: 1000000,
+  &quot;maxSections&quot;: 0,
+  &quot;maxReadItems&quot;: 0,
+  &quot;maxTableCells&quot;: 0,
   &quot;maxMarkdownBytes&quot;: 20971520,
-  &quot;maxImages&quot;: 200,
+  &quot;maxImages&quot;: 0,
   &quot;maxImageBytes&quot;: 20971520,
   &quot;maxOutputBytes&quot;: 104857600,
-  &quot;maxShapes&quot;: 1000,
+  &quot;maxShapes&quot;: 0,
   &quot;maxGroupDepth&quot;: 16,
   &quot;maxImagePixels&quot;: 20000000
 }</code></pre>
+<p><code>maxSections</code> / <code>maxReadItems</code> / <code>maxTableCells</code> / <code>maxImages</code> / <code>maxShapes</code> の <code>0</code> は件数制限なしを意味します。容量・画素数・深さの上限は正の値です。</p>
 <h2 id="public-ui">公開される画面用エンドポイント</h2>
 <div class="table-wrap"><table><thead><tr><th scope="col">GETパス</th><th scope="col">内容</th></tr></thead><tbody><tr><td><code>/api/playground</code></td><td>匿名のPlayground画面。末尾スラッシュ付きは正規パスへ302</td></tr><tr><td><code>/api/playground/config</code></td><td>上のcapabilitiesと同じ公開設定</td></tr><tr><td><code>/api/playground/assets/app.js</code></td><td>画面のJavaScript</td></tr><tr><td><code>/api/playground/assets/style.css</code></td><td>画面のCSS</td></tr></tbody></table></div>
 <p>上記以外の画面アセット名は404です。APIの既定ルート接頭辞は <code>/api</code> です。ホスト設定を変更した場合は、変更後の接頭辞を使います。</p>

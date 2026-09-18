@@ -190,7 +190,6 @@ class Api:
             check("日本語の売上" in output["document.md"].decode("utf-8"), "Japanese Markdown missing")
             check(report["sectionCount"] == 1, "Unexpected sheet count")
             check(len(report["assets"]) == 2, "Expected an embedded image and a diagram PNG")
-        check(len(report["assets"]) <= 1200, "Too many report assets")
         for asset in report["assets"]:
             check(re.fullmatch(r"images/[a-z]+-[0-9]+\.[a-z0-9]{1,8}", asset["path"]), "Unsafe asset path")
             name = asset["path"].split("/")[-1]

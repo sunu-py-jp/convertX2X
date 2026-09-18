@@ -39,10 +39,9 @@ final class BorderTables {
             long origin = key(unit.getFirstRow(), unit.getFirstColumn());
             if (!examined.add(origin)) continue;
             long area = area(unit);
-            if (area > workspace.limits().maxTableCells()) continue;
+            if (ConversionLimits.exceeds(area, workspace.limits().maxTableCells())) continue;
             if (!closed(unit)) continue;
-            if (expanded + area > workspace.limits().maxTableCells())
-                throw ConversionWorkspace.limit("TABLE_CELLS_LIMIT", "罫線表の展開セル数が上限を超えました。");
+            workspace.limits().checkTableCells(expanded + area);
             expanded += area;
             int index = units.size(); units.add(unit);
             for (int r = unit.getFirstRow(); r <= unit.getLastRow(); r++)

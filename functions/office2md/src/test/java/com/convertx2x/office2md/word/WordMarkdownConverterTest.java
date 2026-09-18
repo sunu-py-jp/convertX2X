@@ -169,6 +169,11 @@ class WordMarkdownConverterTest {
         assertTrue(convert(text).markdown().contains("日本語の文字量"));
     }
 
+    @Test void unlimitedCellCountStillRejectsImpossibleOutputBeforeExpandingASpan() throws Exception {
+        byte[] table = doc("<w:tbl><w:tr><w:tc><w:tcPr><w:gridSpan w:val=\"2147483647\"/></w:tcPr><w:p/></w:tc></w:tr></w:tbl>", d -> { });
+        assertEquals("MARKDOWN_BYTES_LIMIT", assertThrows(ConversionException.class, () -> convert(table)).code());
+    }
+
     @Test void rejectsWrongFormatAndClosesResultWorkspaceWithoutChangingSource() throws Exception {
         WordMarkdownConverter converter = new WordMarkdownConverter(ConversionLimits.defaults());
         assertEquals(415, assertThrows(ConversionException.class, () -> converter.convert("%PDF-1.7".getBytes(), "wrong.docx")).statusCode());

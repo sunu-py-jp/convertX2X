@@ -288,6 +288,34 @@ class PowerPointMarkdownConverterTest {
         }
     }
 
+    @Test void defaultLimitsAllowMoreSlidesShapesPicturesAndTextThanTheFormerCaps() throws Exception {
+        try (XMLSlideShow deck = deck()) {
+            XSLFSlide first = deck.createSlide();
+            for (int i = 1; i <= 1001; i++) text(first, "Text box " + i, 20, 20, 300, 30);
+            XSLFPictureData picture = deck.addPicture(png(), PictureData.PictureType.PNG);
+            for (int i = 0; i < 201; i++) first.createPicture(picture).setAnchor(new Rectangle2D.Double(20, 80, 40, 30));
+            // Varied text keeps the fixture below POI's compression-ratio protection.
+            var random = new Random(42);
+            StringBuilder largeText = new StringBuilder();
+            for (int i = 0; i < 201_000; i++) largeText.append((char) ('a' + random.nextInt(26)));
+            for (int i = 2; i <= 51; i++) text(deck.createSlide(), "Slide " + i, 20, 20, 300, 30);
+            text(deck.getSlides().getLast(), largeText.toString(), 20, 80, 300, 30);
+            byte[] input = bytes(deck);
+            Path fixture = Path.of("target/fixtures/many-slides.pptx");
+            Files.createDirectories(fixture.getParent());
+            Files.write(fixture, input);
+            try (ConversionResult result = convert(input)) {
+                assertEquals(51, result.sectionCount());
+                String markdown = md(result);
+                assertTrue(markdown.contains("Text box 1001"));
+                assertTrue(markdown.contains("Slide 51"));
+                assertTrue(markdown.contains(largeText));
+                assertEquals(201, markdown.lines().filter(line -> line.startsWith("![")).count());
+                assertEquals(1, report(result).path("assets").size(), "Repeated images share one output file");
+            }
+        }
+    }
+
     @Test void rotatedAndCroppedPicturesUseTheirSavedAppearance() throws Exception {
         try (XMLSlideShow deck = deck()) {
             XSLFSlide slide = deck.createSlide();

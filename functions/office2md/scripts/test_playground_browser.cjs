@@ -36,29 +36,32 @@ async function main() {
   await fs.mkdir(work, { recursive: true });
   let base = arg('--base'), server, mode = 'normal', polled = 0;
   const external = [], pageErrors = [], requests = [], report = [];
-  const limits = { asyncEnabled: true, supportedFormats: ['xlsx', 'xls', 'docx', 'pptx'], maxInputBytes: 20971520, maxSections: 50, maxReadItems: 200000, maxTableCells: 1000000, maxMarkdownBytes: 20971520, maxImages: 200, maxImageBytes: 20971520, maxOutputBytes: 104857600, maxShapes: 1000, maxGroupDepth: 16, maxImagePixels: 20000000 };
+  const limits = { asyncEnabled: true, supportedFormats: ['xlsx', 'xls', 'docx', 'pptx'], maxInputBytes: 20971520, maxSections: 0, maxReadItems: 0, maxTableCells: 0, maxMarkdownBytes: 20971520, maxImages: 0, maxImageBytes: 20971520, maxOutputBytes: 104857600, maxShapes: 0, maxGroupDepth: 16, maxImagePixels: 20000000 };
   const id = '3b6e6d68-41bc-4c78-b186-a8d6bb75d449', jobPath = `/api/jobs/${id}`;
   const image = png(), md = Buffer.from('# 営業資料\n\n## 詳細\n\n- 箇条書き\n  - 子項目\n\n日本語の**太字**と<strong> 記号！ </strong><br>次の行\n\n|  |  |\n| --- | --- |\n| **商品** | 金額 |\n| りんご\\|みかん | 100 |\n\n![長方形、時計回り30度、図内の文字、基準=スライド左上、外接矩形 X=20pt、Y=100pt、幅=120pt、高さ=40pt](images/image-0001.png)\n\n本文[^footnote-1]\n\n[^footnote-1]: 脚注の内容\n\n[公式サイト](https://example.com)\n\n<script>window.pwned=1</script>\n![外部](https://external.invalid/image.png)\n[危険](javascript:alert%281%29)\n&lt;img src=x onerror=alert(1)&gt;\n');
   const manifest = Buffer.from(JSON.stringify({ specVersion: 2, sectionCount: 1, assets: [{ path: 'images/image-0001.png', contentType: 'image/png', sizeBytes: image.length, sha256: sha(image) }], warnings: [{ code: 'BORDER_AMBIGUOUS', section: '営業資料', range: 'A8:B9', message: '不完全な罫線を本文として残しました。' }] }));
   const files = new Map([['document.md', md], ['report.json', manifest], ['images/image-0001.png', image]]);
   const archive = zip(files);
+  const manyAssets = Array.from({ length: 1201 }, (_, index) => ({ path: `images/image-${String(index + 1).padStart(4, '0')}.png`, contentType: 'image/png', sizeBytes: image.length, sha256: sha(image) }));
+  const manyManifest = Buffer.from(JSON.stringify({ ...JSON.parse(manifest), assets: manyAssets }));
+  const manyArchive = zip(new Map([['document.md', md], ['report.json', manyManifest], ...manyAssets.map(asset => [asset.path, image])]));
   if (!base) {
     server = http.createServer(async (req, res) => {
       const url = new URL(req.url, 'http://localhost'); requests.push({ pathname: url.pathname, search: url.search, key: req.headers['x-functions-key'], type: req.headers['content-type'] });
       const send = (status, type, body, headers = {}) => { res.writeHead(status, { 'Content-Type': type, 'Cache-Control': 'no-store', ...headers }); res.end(body); };
       const json = (status, data, headers) => send(status, 'application/json', JSON.stringify(data), headers);
-      if (url.pathname === '/api/capabilities') return mode === 'config-fail' ? json(503, {}) : json(200, { ...limits, asyncEnabled: mode !== 'disabled' });
+      if (url.pathname === '/api/capabilities') return mode === 'config-fail' ? json(503, {}) : json(200, { ...limits, ...(mode === 'limited' ? { maxSections: 50, maxImages: 200, maxShapes: 1000 } : {}), asyncEnabled: mode !== 'disabled' });
       if (url.pathname === '/api/convert' && req.method === 'POST') {
         req.resume(); if (mode === 'slow') return setTimeout(() => send(200, 'application/zip', archive), 1000);
         if (mode === 'api-error') return json(422, { error: { code: 'INVALID_WORKBOOK', message: '変換できないExcelです。' } });
-        return send(200, 'application/zip', mode === 'bad-path' ? zip(files, '../outside') : mode === 'duplicate' ? zip([...files, ['document.md', md]]) : archive);
+        return send(200, 'application/zip', mode === 'bad-path' ? zip(files, '../outside') : mode === 'duplicate' ? zip([...files, ['document.md', md]]) : mode === 'many-assets' ? manyArchive : archive);
       }
       if (url.pathname === '/api/jobs' && req.method === 'POST') { req.resume(); polled = 0; return json(202, { job: { id, status: 'queued' }, statusUrl: mode === 'unsafe-url' ? `https://external.invalid${jobPath}` : jobPath }, { 'Retry-After': '0.5' }); }
       if (url.pathname === jobPath) { polled++; return json(200, { job: { id, status: polled === 1 ? 'running' : 'succeeded' }, statusUrl: jobPath, resultUrl: `${jobPath}/result`, reportUrl: `${jobPath}/report`, archiveUrl: `${jobPath}/archive`, assetsBaseUrl: `${jobPath}/images/` }, { 'Retry-After': '0.5' }); }
       if (url.pathname === `${jobPath}/result`) return send(200, 'text/markdown', md);
-      if (url.pathname === `${jobPath}/report`) return send(200, 'application/json', manifest);
-      if (url.pathname === `${jobPath}/images/image-0001.png`) return send(200, 'image/png', image);
-      if (url.pathname === `${jobPath}/archive`) return send(200, 'application/zip', archive);
+      if (url.pathname === `${jobPath}/report`) return send(200, 'application/json', mode === 'many-assets' ? manyManifest : manifest);
+      if (url.pathname.startsWith(`${jobPath}/images/image-`) && url.pathname.endsWith('.png')) return send(200, 'image/png', image);
+      if (url.pathname === `${jobPath}/archive`) return send(200, 'application/zip', mode === 'many-assets' ? manyArchive : archive);
       const asset = url.pathname === '/api/playground' ? 'index.html' : url.pathname.startsWith('/api/playground/assets/') ? url.pathname.split('/').pop() : '';
       if (['index.html', 'style.css', 'app.js'].includes(asset)) return send(200, asset.endsWith('.js') ? 'text/javascript' : asset.endsWith('.css') ? 'text/css' : 'text/html', await fs.readFile(path.join(root, 'src/main/resources/playground', asset)), { 'Content-Security-Policy': "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' blob:; base-uri 'none'; form-action 'none'", 'X-Content-Type-Options': 'nosniff' });
       send(404, 'text/plain', 'Not found');
@@ -120,6 +123,17 @@ async function main() {
       await run('docx', true); await run('pptx', true);
     }
     if (mock) {
+      assert.equal((await page.locator('#file-hint').textContent()).includes('0 シート'), false);
+      mode = 'many-assets';
+      for (const async of [false, true]) {
+        await run('pptx', async);
+        assert.equal(JSON.parse(await page.locator('#report-source').textContent()).assets.length, 1201);
+        report.push(`1201 assets accepted with unlimited counts (${async ? 'async' : 'sync'})`);
+      }
+      mode = 'limited'; await ready();
+      assert((await page.locator('#file-hint').textContent()).includes('50 シート／スライド'));
+      await run('xlsx');
+      mode = 'normal'; await ready();
       await page.locator('.auth-settings summary').click(); await page.locator('#function-key').fill('test-header-only-secret'); await run('xlsx', true);
       for (const request of requests.filter(request => request.key)) { assert.equal(request.key, 'test-header-only-secret'); assert.equal(request.search.includes('test-header-only-secret'), false); }
       assert(requests.some(request => request.pathname.endsWith('/images/image-0001.png') && request.key));

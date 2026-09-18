@@ -70,7 +70,8 @@ class ConversionFunctionsTest {
         AppConfig config = AppConfig.from(Map.of(AppConfig.STORAGE_SETTING, "AccountKey=secret"));
         assertFalse(config.toString().contains("secret"));
         HttpResponseMessage capabilities = new PlaygroundFunctions(config).capabilities(request("/api/capabilities", "", Map.of(), Map.of()));
-        assertTrue(capabilities.getBody().toString().contains("\"maxSections\":50"));
+        for (String count : java.util.List.of("maxSections", "maxReadItems", "maxTableCells", "maxImages", "maxShapes"))
+            assertTrue(capabilities.getBody().toString().contains("\"" + count + "\":0"));
         assertTrue(capabilities.getBody().toString().contains("\"maxImagePixels\":20000000"));
         assertFalse(capabilities.getBody().toString().contains("secret"));
         var functions = new ConversionFunctions(config, converter, () -> { throw new IllegalStateException("AccountKey=secret"); });
@@ -80,7 +81,7 @@ class ConversionFunctionsTest {
         IllegalStateException queue = assertThrows(IllegalStateException.class, () -> functions.process("{}", context()));
         assertNull(queue.getCause());
         assertFalse(queue.getMessage().contains("secret"));
-        assertThrows(IllegalArgumentException.class, () -> AppConfig.from(Map.of("CONVERSION_MAX_READ_CELLS", "0")));
+        assertThrows(IllegalArgumentException.class, () -> AppConfig.from(Map.of("CONVERSION_MAX_READ_CELLS", "-1")));
     }
 
     private static byte[] workbook() throws Exception {

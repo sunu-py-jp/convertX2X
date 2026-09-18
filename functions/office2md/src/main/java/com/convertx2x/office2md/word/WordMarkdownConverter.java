@@ -147,7 +147,7 @@ public final class WordMarkdownConverter {
             while (!pending.isEmpty()) {
                 Visit visit = pending.pop();
                 if (visit.depth() > 128) throw ConversionWorkspace.limit("DOCUMENT_DEPTH_LIMIT", "Word の XML の入れ子が上限を超えています。");
-                if (++readItems > workspace.limits().maxReadItems()) throw ConversionWorkspace.limit("READ_ITEMS_LIMIT", "読み取り要素数が上限を超えています。");
+                if (ConversionLimits.exceeds(++readItems, workspace.limits().maxReadItems())) throw ConversionWorkspace.limit("READ_ITEMS_LIMIT", "読み取り要素数が上限を超えています。");
                 // Count without inspecting deleted text or relationship values.
                 for (Node n = visit.node().getLastChild(); n != null; n = n.getPreviousSibling())
                     if (n.getNodeType() == Node.ELEMENT_NODE) pending.push(new Visit(n, visit.depth() + 1));
@@ -306,8 +306,10 @@ public final class WordMarkdownConverter {
             boolean header = false;
             for (Node row : rows) {
                 if (on(child(child(row, "trPr"), "del"))) continue;
+                if (values.isEmpty()) header = on(child(child(row, "trPr"), "tblHeader"));
                 List<String> cells = new ArrayList<>();
                 int before = boundedSpan(val(child(child(row, "trPr"), "gridBefore")), 0);
+                checkTableWidth(Math.max(width, before), values.size() + 1, header);
                 for (int i = 0; i < before; i++) cells.add("");
                 List<Node> sourceCells = new ArrayList<>();
                 collectCells(row, sourceCells);
@@ -318,19 +320,19 @@ public final class WordMarkdownConverter {
                     boolean continuation = child(props, "vMerge") != null && !"restart".equals(val(child(props, "vMerge")))
                             || child(props, "hMerge") != null && !"restart".equals(val(child(props, "hMerge")));
                     String text = continuation ? "" : cell(cell, part, range + "/row:" + (values.size() + 1) + "/column:" + (cells.size() + 1));
+                    checkTableWidth(Math.max(width, cells.size() + (long) Math.max(1, span)), values.size() + 1, header);
                     cells.add(text);
                     for (int i = 1; i < span; i++) cells.add("");
-                    if (cells.size() > workspace.limits().maxTableCells()) throw ConversionWorkspace.limit("TABLE_CELLS_LIMIT", "表のセル数が上限を超えています。");
                 }
                 int after = boundedSpan(val(child(child(row, "trPr"), "gridAfter")), 0);
+                checkTableWidth(Math.max(width, cells.size() + (long) after), values.size() + 1, header);
                 for (int i = 0; i < after; i++) cells.add("");
-                if (values.isEmpty()) header = on(child(child(row, "trPr"), "tblHeader"));
                 values.add(cells);
                 width = Math.max(width, cells.size());
             }
             if (width == 0 || values.isEmpty()) return "";
             tableCells += (long) width * (values.size() + (header ? 0 : 1));
-            if (tableCells > workspace.limits().maxTableCells()) throw ConversionWorkspace.limit("TABLE_CELLS_LIMIT", "表のセル数が上限を超えています。");
+            workspace.limits().checkTableCells(tableCells);
             StringBuilder out = new StringBuilder();
             int start = 0;
             if (header) { tableRow(out, values.getFirst(), width); start = 1; }
@@ -339,9 +341,13 @@ public final class WordMarkdownConverter {
             for (int i = start; i < values.size(); i++) tableRow(out, values.get(i), width);
             return out.toString().stripTrailing();
         }
+        private void checkTableWidth(long width, int rows, boolean header) {
+            workspace.limits().checkTableCells(tableCells + width * (rows + (header ? 0L : 1L)));
+        }
         private int boundedSpan(String value, int fallback) {
             int number = integer(value, fallback);
-            if (number < 0 || number > workspace.limits().maxTableCells()) throw ConversionWorkspace.limit("TABLE_CELLS_LIMIT", "表のセル範囲が上限を超えています。");
+            if (number < 0) throw ConversionWorkspace.limit("TABLE_CELLS_LIMIT", "表のセル範囲が有効ではありません。");
+            workspace.limits().checkTableCells(number);
             return number;
         }
         private void collectRows(Node node, List<Node> rows) {

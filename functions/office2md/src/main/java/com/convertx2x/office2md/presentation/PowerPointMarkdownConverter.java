@@ -78,7 +78,7 @@ public final class PowerPointMarkdownConverter {
         Reader(ConversionWorkspace workspace) { this.workspace = workspace; }
 
         void read(XMLSlideShow presentation) throws IOException {
-            if (presentation.getSlides().size() > limits.maxSections())
+            if (ConversionLimits.exceeds(presentation.getSlides().size(), limits.maxSections()))
                 throw ConversionWorkspace.limit("SECTION_LIMIT", "スライド数が上限を超えました。");
             int ordinal = 0;
             for (XSLFSlide slide : presentation.getSlides()) {
@@ -105,7 +105,7 @@ public final class PowerPointMarkdownConverter {
 
         private void count(int amount) {
             readItems += amount;
-            if (readItems > limits.maxReadItems()) throw ConversionWorkspace.limit("READ_ITEMS_LIMIT", "文字・読み取り要素数が上限を超えました。");
+            if (ConversionLimits.exceeds(readItems, limits.maxReadItems())) throw ConversionWorkspace.limit("READ_ITEMS_LIMIT", "文字・読み取り要素数が上限を超えました。");
         }
 
         private Entry inspect(XSLFShape shape, int depth, AffineTransform parent, boolean parentFlipped) throws IOException {
@@ -129,7 +129,7 @@ public final class PowerPointMarkdownConverter {
             if (shape instanceof XSLFTable table) {
                 long cells = (long) table.getNumberOfRows() * table.getNumberOfColumns();
                 tableCells += cells;
-                if (tableCells > limits.maxTableCells()) throw ConversionWorkspace.limit("TABLE_CELLS_LIMIT", "表のセル数が上限を超えました。");
+                limits.checkTableCells(tableCells);
                 entry.table = table(table);
             } else if (shape instanceof XSLFGroupShape group) {
                 Rectangle2D interior = group.getInteriorAnchor();
