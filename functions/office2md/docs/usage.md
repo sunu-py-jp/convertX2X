@@ -14,6 +14,16 @@ cp local.settings.example.json local.settings.json
 python3 scripts/run_local.py
 ```
 
+WindowsのPowerShellでは次を使います。`local.settings.json` がすでにある場合はコピーを省略します。
+
+```powershell
+cd functions/office2md
+Copy-Item local.settings.example.json local.settings.json
+python scripts/run_local.py
+```
+
+起動スクリプトはWindowsでは `mvnw.cmd`、macOS/Linuxでは `mvnw` を選びます。Windowsの `func.cmd` と `func.exe` の両方に対応します。起動に失敗した場合は、処理名と `WinError` / `errno` または終了コードを表示します。接続設定や例外の本文は表示しません。
+
 <http://localhost:7072/api/playground> を開き、Officeファイルを選んで「Markdownに変換」を押します。Markdownのプレビュー・ソース・警告を確認し、ZIPを保存できます。画面用のNode.js、npm、CDNは不要です。既存のビルドを使う場合は `--skip-build`、ポート変更は `--port 7082` を指定します。
 
 Storage接続を設定しなければ同期だけが有効です。非同期を使う場合は、実行環境の `CONVERSION_STORAGE_CONNECTION_STRING` または `local.settings.json` の同名設定に接続文字列を設定して起動します。Azuriteなら、先にBlob・Queueサービスを起動し、値を `UseDevelopmentStorage=true` にします。接続文字列やキーをリポジトリに保存しないでください。

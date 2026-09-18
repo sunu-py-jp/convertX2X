@@ -13,6 +13,7 @@ import unittest
 from async_settings import QUEUE_STORAGE_KEY, STORAGE_KEY, derive_settings, obsolete_keys
 
 
+@unittest.skipUnless(os.name == "posix", "Fake child commands require POSIX shebang execution")
 class SettingsScriptsTest(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix="office2md-script-test-")
@@ -97,6 +98,26 @@ if os.environ.get('FAKE_AZ_FAIL'):
         self.assert_switches(captured["env"], False)
         self.assertEqual(captured["argv"][1:], ["start", "--port", "7088"])
         self.assertEqual(Path(captured["cwd"]).resolve(), self.stage.resolve())
+
+    def test_local_build_runs_wrapper_before_starting_host(self):
+        self.local_settings()
+        wrapper = self.root / "mvnw"
+        wrapper.write_text(f"#!{sys.executable}\nimport sys\nfrom pathlib import Path\n"
+                           "Path('build-args.txt').write_text(' '.join(sys.argv[1:]))\n")
+        wrapper.chmod(0o700)
+        result = self.run_script("run_local.py")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual((self.root / "build-args.txt").read_text(), "-B -ntp package")
+        self.assertTrue(self.capture.exists())
+
+    def test_local_os_error_identifies_build_without_printing_settings(self):
+        self.local_settings(**{STORAGE_KEY: "not-a-real-storage-secret"})
+        result = self.run_script("run_local.py")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("during Maven build", result.stderr)
+        self.assertIn("errno 2", result.stderr)
+        self.assertNotIn("not-a-real-storage-secret", result.stdout + result.stderr)
+        self.assertFalse(self.capture.exists())
 
     def test_local_env_enables_both_clients_and_does_not_print_secret(self):
         self.local_settings(**{"UNRELATED_SETTING": "keep-me"})
