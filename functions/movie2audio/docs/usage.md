@@ -37,7 +37,7 @@
 
 ## ローカルで起動する
 
-必要なものはNode.js 22または24、npm、Python 3.10以上、Azure Functions Core Tools v4です。`.nvmrc` は24を指定します。`npm start` はPythonの起動スクリプトを呼びます。JDK・Mavenは不要です。FFmpegの別途インストールや起動時ダウンロードは不要です。同梱バイナリの対応環境はLinux x64、macOS Apple Silicon、Windows x64です。Windowsでは `npm.cmd` と `func.cmd` を起動スクリプトが自動で解決します。
+必要なものはNode.js 22または24、npm、Python 3.10以上、Azure Functions Core Tools v4です。`.nvmrc` は24を指定します。`npm start` はPythonの起動スクリプトを呼びます。JDK・Maven、FFmpeg、Azuriteの別途インストールは不要です。同梱バイナリの対応環境はLinux x64、macOS Apple Silicon、Windows x64です。Windowsでは `npm.cmd` と `func.cmd` を起動スクリプトが自動で解決します。
 
 ```bash
 cd functions/movie2audio
@@ -47,6 +47,10 @@ npm start
 [Playground](http://localhost:7073/api/playground)で動画のアップロード、許可済みURLからの抽出を試せます。URL入力は環境変数の許可ホスト設定がある場合だけ有効です。Storage接続を設定すると「キューで実行」も選べ、受付・状態確認・音声の取得を順に試せます。画面は3秒おきに確認し、最大15分で待機を終了します。受付済みのジョブは継続します。Playgroundは同梱のHTML・CSS・JavaScriptで、フロントエンドビルドは不要です。
 
 `npm start` は依存パッケージのインストールとSDK互換修正を行い、未作成なら `local.settings.example.json` から `local.settings.json` を作成して起動します。設定は `local.settings.json` の `Values` またはシェルの環境変数へ置き、変更後に再起動してください。シェルの環境変数を優先します。秘密情報を含む `local.settings.json` はGit管理しません。
+
+既定ではローカルQueueも有効です。起動スクリプトは `127.0.0.1:10000` / `10001` のAzuriteを再利用し、動いていなければ一時Azuriteを起動します。その後、Blobコンテナー `movie2audio-jobs` とQueue `movie2audio-jobs` / `movie2audio-jobs-poison` を自動作成します。スクリプト自身が起動したAzuriteはFunctions停止時に終了します。Playgroundの「キューで実行」から、そのままQueue経由の変換を確認できます。
+
+実Azure Storageを使う場合は `CONVERSION_STORAGE_CONNECTION_STRING` を設定します。ローカルQueueを無効にする場合は、この環境変数を空文字で明示して起動します。
 
 `python3 scripts/run_local.py` でも起動できます。依存インストール済みなら `--skip-build` で省略できます。既定ポートは7073で、`--port 7083` のように変更できます。ソース変更後もホストを再起動します。
 
@@ -176,14 +180,9 @@ Blob名はSAS URLのパスそのものです。この例は `results` コンテ�
 
 `CONVERSION_STORAGE_CONNECTION_STRING` に制御用Azure Storageの接続文字列を設定すると、非同期HTTPと直接Queueを有効にします。接続文字列もMI用の制御Storage設定もない場合、ジョブAPIは `503 ASYNC_DISABLED` となり、Queueトリガーも登録しません。同期HTTPは引き続き利用できます。
 
-AzureではFunctionsホスト用の `AzureWebJobsStorage` も設定します。これは非同期の有効化とは別の設定です。ローカル起動スクリプトは、ホスト用接続が空なら制御用接続で補完します。Azuriteを標準ポートで起動済みなら、次の設定で試せます。
+AzureではFunctionsホスト用の `AzureWebJobsStorage` も設定します。これは非同期の有効化とは別の設定です。ローカル起動スクリプトは、ホスト用接続が空なら制御用接続で補完し、既定ではAzuriteの起動とリソース作成まで行います。
 
-```bash
-CONVERSION_STORAGE_CONNECTION_STRING='UseDevelopmentStorage=true' \
-python3 scripts/run_local.py --skip-build
-```
-
-制御用StorageにはQueueと状態用コンテナーを作成します。どちらも名前は `movie2audio-jobs` です。HTTP受付の入力と出力も既定では同じStorageに保存します。直接Queueだけ、サーバーに登録した別Storageの入出力を選べます。
+制御用StorageにはQueueと状態用コンテナーを作成します。どちらも名前は `movie2audio-jobs` です。ローカルの既定Azuriteでは起動スクリプトが作成します。HTTP受付の入力と出力も既定では同じStorageに保存します。直接Queueだけ、サーバーに登録した別Storageの入出力を選べます。
 
 | Functions側の環境変数 | Queue JSONの参照 | 役割 |
 | --- | --- | --- |
@@ -404,11 +403,9 @@ python3 scripts/test_http_e2e.py --large-input
 
 URLの成功ケースも確認する場合は、サーバー側で対象ホストを許可したうえで、テスト実行側の環境変数 `MOVIE_TEST_VIDEO_URL` に直接動画URLを設定します。Azureの変換APIを検証する場合は `--base https://YOUR_FUNCTION_APP.azurewebsites.net/api` と、環境変数 `FUNCTIONS_HOST_KEY` を使います。テストはURLやキーを結果に出力しません。100MiB境界テストは小さな動画へMP4の空き領域を追加したもので、長時間動画の処理性能を測るものではありません。
 
-非同期の実連携は、標準ポート10000/10001/10002の専用Azuriteと、制御用接続に `UseDevelopmentStorage=true` を設定した専用のローカルFunctionsを起動して確認します。通常のPlaygroundとは別に7074で起動する例です。
+非同期の実連携は、通常のPlaygroundとは別に7074でローカルFunctionsを起動して確認できます。Azuriteと必要なQueue・Blobは起動スクリプトが準備します。
 
 ```bash
-# Azuriteは別ターミナルで起動済みとします。
-CONVERSION_STORAGE_CONNECTION_STRING='UseDevelopmentStorage=true' \
 python3 scripts/run_local.py --skip-build --port 7074
 ```
 

@@ -9,7 +9,7 @@
   },
   "scripts": {
     "postinstall": "node scripts/patch-sdk.mjs",
-    "start": "python3 scripts/run_local.py",
+    "start": "node scripts/start.mjs",
     "test": "node --test test/*.test.js",
     "package": "node scripts/package.mjs"
   },
@@ -20,6 +20,9 @@
     "@azure/storage-queue": "12.31.0",
     "busboy": "1.6.0",
     "ipaddr.js": "2.5.0"
+  },
+  "devDependencies": {
+    "azurite": "3.37.0"
   },
   "license": "MIT"
 }

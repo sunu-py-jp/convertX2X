@@ -27,6 +27,10 @@ spec=importlib.util.spec_from_file_location('launcher','scripts/run_local.py')
 m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
 old={'CONVERSION_STORAGE_CONNECTION_STRING':'old-secret','CONVERSION_QUEUE_CONNECTION_STRING':'old-secret','CONVERSION_QUEUE_CONNECTION_STRING__clientId':'old-client'}
 env={'CONVERSION_STORAGE__blobServiceUri':'https://account.blob.core.windows.net','CONVERSION_STORAGE__queueServiceUri':'https://account.queue.core.windows.net'}
+defaults={}; m.use_default_azurite(defaults,{})
+assert defaults['CONVERSION_STORAGE_CONNECTION_STRING']=='UseDevelopmentStorage=true'
+disabled={}; m.use_default_azurite(disabled,{'CONVERSION_STORAGE_CONNECTION_STRING':''})
+assert 'CONVERSION_STORAGE_CONNECTION_STRING' not in disabled
 value=m.prepare_environment(old,env)
 assert 'CONVERSION_STORAGE_CONNECTION_STRING' not in value
 assert 'CONVERSION_QUEUE_CONNECTION_STRING' not in value

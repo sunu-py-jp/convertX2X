@@ -162,11 +162,9 @@ npm run package
 
 同梱FFmpegを使う実抽出、AACパケットの保持、M4Aの構造、URLの取得先制限、HTTP入力と応答ストリームの終了処理を確認します。配布物は `dist/` に作成します。起動済みホストには `python3 scripts/test_http_e2e.py` で実動画を送り、音声を取得します。URL入力は許可した直接HTTPS URLで確認します。音声選択、期限・容量、同梱FFmpegの再ビルド方法は[利用ガイド](../functions/movie2audio/docs/usage.md)を参照してください。
 
-Movie → Audioの非同期E2Eは、標準ポート10000/10001/10002の専用Azuriteと、別ターミナルのFunctionsホストを使います。作業場所は同じです。次の再試行設定はテストの不正メッセージを短時間でpoison処理するためのもので、本番の既定値を変更しません。
+Movie → Audioの通常のローカル起動は、標準ポート10000/10001のAzuriteを再利用し、未起動なら自動起動して必要なQueueとBlobコンテナーも作成します。次の再試行設定はテストの不正メッセージを短時間でpoison処理するためのもので、本番の既定値を変更しません。
 
 ```sh
-# Azuriteは前述のコマンドで起動済みとします。
-CONVERSION_STORAGE_CONNECTION_STRING='UseDevelopmentStorage=true' \
 AzureFunctionsJobHost__extensions__queues__maxPollingInterval='00:00:01' \
 AzureFunctionsJobHost__extensions__queues__visibilityTimeout='00:00:01' \
 AzureFunctionsJobHost__extensions__queues__maxDequeueCount='2' \

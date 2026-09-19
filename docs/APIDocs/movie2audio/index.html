@@ -40,7 +40,7 @@
 <pre><code class="language-shell">cd functions/movie2audio
 npm ci
 npm start</code></pre>
-<p><a href="http://localhost:7073/api/playground">Movie2Audio Playground</a>へアクセスするか、別のターミナルで動画を送ります。</p>
+<p>起動スクリプトは既存のAzuriteを再利用し、未起動なら自動起動して必要なQueueとBlobコンテナーを作成します。<a href="http://localhost:7073/api/playground">Movie2Audio Playground</a>へアクセスするか、別のターミナルで動画を送ります。</p>
 <pre><code class="language-shell">curl --fail-with-body \
   -H &#x27;Content-Type: application/octet-stream&#x27; \
   --data-binary @sample.mp4 \
