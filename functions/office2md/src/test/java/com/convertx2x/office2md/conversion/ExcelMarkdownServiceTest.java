@@ -209,7 +209,8 @@ class ExcelMarkdownServiceTest {
             sheet.createDrawingPatriarch().createPicture(anchor,picture);
             Sheet imageOnly=book.createSheet("画像のみ");ClientAnchor other=book.getCreationHelper().createClientAnchor();other.setRow1(1);other.setRow2(3);other.setCol1(0);other.setCol2(2);imageOnly.createDrawingPatriarch().createPicture(other,picture);
             try(ConversionResult result=convert(book)) {
-                String md=markdown(result);assertEquals(2,result.sectionCount());assertTrue(md.indexOf("表の末尾")<md.indexOf("!["));assertTrue(md.indexOf("![")<md.indexOf("表外本文"));
+                String md=markdown(result);assertEquals(2,result.sectionCount());assertTrue(md.indexOf("表の末尾")<md.indexOf("!["));
+                assertTrue(md.contains("|  |  | 表外本文 |"));assertTrue(md.indexOf("表外本文")<md.indexOf("!["));
                 assertTrue(md.contains("# 画像のみ"));assertEquals(1,report(result).path("assets").size());
             }
         }

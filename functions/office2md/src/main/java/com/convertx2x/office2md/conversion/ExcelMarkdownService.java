@@ -74,20 +74,22 @@ public class ExcelMarkdownService {
                     if (sheet instanceof XSSFSheet x && !x.getTables().isEmpty())
                         workspace.info("TABLE_STYLE_UNEVALUATED", sheet.getSheetName(), null,
                                 "Excelテーブルのスタイルは評価せず、直接セル罫線から表を検出しました。");
-                    List<CellRangeAddress> tables = new BorderTables(sheet, merges, workspace).detect();
-                    for (CellRangeAddress table : tables) {
-                        tableCells += BorderTables.area(table);
+                    BorderTables borders = new BorderTables(sheet, merges, workspace);
+                    List<CellRangeAddress> detected = borders.detect();
+                    NavigableMap<Long, String> values = readCells(sheet, merges, cells, workspace);
+                    List<TableExpansion.Table> tables = TableExpansion.expand(sheet, detected, borders, merges, values);
+                    for (TableExpansion.Table table : tables) {
+                        tableCells += (table.range().getLastRow() - (long) table.range().getFirstRow() + 1) * table.columns().size();
                         limits.checkTableCells(tableCells);
                     }
-                    Map<Long, String> values = readCells(sheet, merges, cells, workspace);
                     List<Block> blocks = blocks(sheet, tables, merges, values, workspace);
                     List<DrawingBlock> drawings = new DrawingExtractor().extract(sheet, workspace);
                     for (DrawingBlock drawing : drawings) {
                         int row = drawing.firstRow(), column = drawing.firstColumn();
-                        for (CellRangeAddress table : tables) if (overlaps(table, drawing)) {
+                        for (TableExpansion.Table table : tables) if (overlaps(table.range(), drawing)) {
                             // Tables are sorted. Pin an overlapping image immediately after
                             // the last such table, regardless of its original anchor row.
-                            row = table.getFirstRow(); column = table.getFirstColumn();
+                            row = table.range().getFirstRow(); column = table.range().getFirstColumn();
                         }
                         CellRangeAddress drawingRange = drawing.firstRow() < 0 || drawing.firstColumn() < 0 || drawing.firstRow() == Integer.MAX_VALUE ? null
                                 : new CellRangeAddress(drawing.firstRow(), drawing.lastRow(), drawing.firstColumn(), drawing.lastColumn());
@@ -139,8 +141,8 @@ public class ExcelMarkdownService {
         } finally { CONVERSION_SLOT.release(); }
     }
 
-    private static Map<Long, String> readCells(Sheet sheet, MergedRanges merges, CellMarkdown formatter, ConversionWorkspace workspace) {
-        Map<Long, String> values = new TreeMap<>();
+    private static NavigableMap<Long, String> readCells(Sheet sheet, MergedRanges merges, CellMarkdown formatter, ConversionWorkspace workspace) {
+        NavigableMap<Long, String> values = new TreeMap<>();
         Set<Integer> hiddenColumns = new TreeSet<>();
         long characters = 0;
         for (Row row : sheet) {
@@ -162,41 +164,52 @@ public class ExcelMarkdownService {
         return values;
     }
 
-    private static List<Block> blocks(Sheet sheet, List<CellRangeAddress> tables, MergedRanges merges,
+    private static List<Block> blocks(Sheet sheet, List<TableExpansion.Table> tables, MergedRanges merges,
             Map<Long, String> values, ConversionWorkspace workspace) {
         List<Block> blocks = new ArrayList<>();
         Set<Long> tablePositions = new HashSet<>();
-        for (CellRangeAddress table : tables) {
-            List<Integer> rows = new ArrayList<>(), columns = new ArrayList<>();
+        for (TableExpansion.Table expanded : tables) {
+            CellRangeAddress table = expanded.range();
+            List<Integer> rows = new ArrayList<>(), columns = expanded.columns();
             for (int row = table.getFirstRow(); row <= table.getLastRow(); row++) {
                 Row physical = sheet.getRow(row);
                 if (physical == null || !physical.getZeroHeight()) rows.add(row);
             }
-            for (int column = table.getFirstColumn(); column <= table.getLastColumn(); column++) if (!sheet.isColumnHidden(column)) columns.add(column);
-            boolean content = false;
-            for (int row : rows) for (int column : columns) {
-                long key = BorderTables.key(row, column); tablePositions.add(key);
-                if (!values.getOrDefault(key, "").isBlank()) content = true;
-            }
-            if (!content || rows.isEmpty() || columns.isEmpty()) {
+            if (expanded.values().values().stream().allMatch(String::isBlank) || rows.isEmpty() || columns.isEmpty()) {
                 workspace.info("EMPTY_TABLE_OMITTED", sheet.getSheetName(), table.formatAsString(), "出力内容のない表を除外しました。"); continue;
             }
-            boolean nativeHeader = nativeHeader(sheet, table) && rows.getFirst() == table.getFirstRow();
+            tablePositions.addAll(expanded.values().keySet());
+            Map<Long, String> tableValues = new HashMap<>(expanded.values());
+            for (CellRangeAddress span : expanded.inferredMerges()) {
+                List<String> pieces = new ArrayList<>();
+                for (int column = span.getFirstColumn(); column <= span.getLastColumn(); column++) {
+                    String value = tableValues.remove(BorderTables.key(span.getFirstRow(), column));
+                    if (value != null && !value.isBlank()) pieces.add(value);
+                }
+                tableValues.put(BorderTables.key(span.getFirstRow(), span.getFirstColumn()), String.join("　", pieces));
+            }
+            boolean nativeHeader = expanded.seeds().stream().allMatch(seed -> nativeHeader(sheet, seed)) && rows.getFirst() == table.getFirstRow();
             StringBuilder markdown = new StringBuilder();
-            if (nativeHeader) appendTableRow(markdown, rows.getFirst(), columns, values);
-            else appendTableRow(markdown, -1, columns, values);
+            if (nativeHeader) appendTableRow(markdown, rows.getFirst(), columns, tableValues);
+            else appendTableRow(markdown, -1, columns, tableValues);
             markdown.append('\n').append('|');
             for (int ignored : columns) markdown.append(" --- |");
             for (int row : rows) {
                 if (nativeHeader && row == rows.getFirst()) continue;
-                markdown.append('\n'); appendTableRow(markdown, row, columns, values);
+                markdown.append('\n'); appendTableRow(markdown, row, columns, tableValues);
                 if (markdown.length() > workspace.limits().maxMarkdownBytes()) throw ConversionWorkspace.limit("MARKDOWN_BYTES_LIMIT", "Markdownのサイズが上限を超えました。");
             }
             List<String> merged = merges.all().stream().filter(table::intersects).map(CellRangeAddress::formatAsString).toList();
             if (!merged.isEmpty()) workspace.warning("TABLE_MERGE_FLATTENED", sheet.getSheetName(), table.formatAsString(), "Markdown表はセル結合を再現できないため、結合の続きは空欄です。");
+            if (!expanded.inferredMerges().isEmpty()) workspace.warning("TABLE_VISUAL_MERGE_FLATTENED", sheet.getSheetName(), table.formatAsString(),
+                    "仕切り線のない横並びの区画を見た目上の1セルとして扱い、値を左側にまとめました。");
+            if (expanded.seeds().size() > 1 || !expanded.seeds().getFirst().formatAsString().equals(table.formatAsString()))
+                workspace.info("TABLE_EXPANDED", sheet.getSheetName(), table.formatAsString(), "検出した表と同じ行の左右の値・表を取り込みました。");
             blocks.add(new Block("table", table, markdown.toString(), table.getFirstRow(), table.getFirstColumn(), 1,
                     Map.of("sourceRows", rows.stream().map(r -> r + 1).toList(), "sourceColumns", columns.stream().map(c -> c + 1).toList(),
-                            "header", nativeHeader ? "excel-table" : "empty-generated", "mergedRanges", merged)));
+                            "header", nativeHeader ? "excel-table" : "empty-generated", "mergedRanges", merged,
+                            "detectedRanges", expanded.seeds().stream().map(CellRangeAddress::formatAsString).toList(),
+                            "inferredMergedRanges", expanded.inferredMerges().stream().map(CellRangeAddress::formatAsString).toList())));
         }
         Map<Integer, List<Map.Entry<Long, String>>> textRows = new TreeMap<>();
         for (var entry : values.entrySet()) if (!tablePositions.contains(entry.getKey()))

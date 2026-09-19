@@ -4,7 +4,7 @@ import java.util.*;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
 
-/** Conservative closed-grid detection. Border color/style do not affect connectivity. */
+/** Closed-grid seeds for horizontal table expansion. Border color/style do not affect connectivity. */
 final class BorderTables {
     private final Set<Long> horizontal = new HashSet<>(), vertical = new HashSet<>();
     private final Set<Long> candidates = new HashSet<>();
@@ -17,6 +17,8 @@ final class BorderTables {
     static long key(int row, int col) { return ((long) row << 32) | (col & 0xffffffffL); }
     static int row(long key) { return (int) (key >>> 32); }
     static int col(long key) { return (int) key; }
+    boolean hasHorizontal(int row, int column) { return horizontal.contains(key(row, column)); }
+    boolean hasVertical(int row, int column) { return vertical.contains(key(row, column)); }
 
     List<CellRangeAddress> detect() {
         for (Row row : sheet) for (Cell cell : row) {
@@ -63,14 +65,51 @@ final class BorderTables {
             if (group.size() < 2) continue;
             CellRangeAddress bounds = bounds(group);
             long cells = group.stream().mapToLong(BorderTables::area).sum();
-            if (area(bounds) != cells || !closed(bounds) || protruding(bounds)) { rejected = true; continue; }
-            result.add(bounds);
+            if (area(bounds) == cells && closed(bounds) && !protrudingVertically(bounds)) result.add(bounds);
+            else {
+                // A closed outer rectangle may contain a regular full-height grid beside a
+                // visually merged span. Never recover a seed from an open outer border.
+                if (closed(bounds) && !protrudingVertically(bounds)) result.addAll(fullHeightSeeds(group, bounds));
+                rejected = true;
+            }
         }
         result.sort(Comparator.comparingInt(CellRangeAddress::getFirstRow).thenComparingInt(CellRangeAddress::getFirstColumn));
         if ((!candidates.isEmpty() && result.isEmpty()) || rejected)
             workspace.warning("BORDER_NOT_TABLE", sheet.getSheetName(), borderRange(),
-                    "囲み枠または不完全な罫線は表として確定できないため、本文として保持します。");
+                    "罫線だけでは表として確定できない部分があります。検出した表の左右の値は表に取り込み、それ以外は本文として保持します。");
         return result;
+    }
+    private List<CellRangeAddress> fullHeightSeeds(List<CellRangeAddress> units, CellRangeAddress bounds) {
+        Map<Integer, Long> coverage = new TreeMap<>();
+        for (CellRangeAddress unit : units)
+            for (int column = unit.getFirstColumn(); column <= unit.getLastColumn(); column++)
+                coverage.merge(column, unit.getLastRow() - (long) unit.getFirstRow() + 1, Long::sum);
+        long height = bounds.getLastRow() - (long) bounds.getFirstRow() + 1;
+        List<CellRangeAddress> seeds = new ArrayList<>();
+        int first = -1, last = -1;
+        for (var entry : coverage.entrySet()) {
+            int column = entry.getKey();
+            if (entry.getValue() != height || (last >= 0 && column != last + 1)) {
+                addSeed(seeds, units, bounds, first, last);
+                first = last = -1;
+            }
+            if (entry.getValue() == height) {
+                if (first < 0) first = column;
+                last = column;
+            }
+        }
+        addSeed(seeds, units, bounds, first, last);
+        return seeds;
+    }
+    private void addSeed(List<CellRangeAddress> seeds, List<CellRangeAddress> units, CellRangeAddress bounds, int first, int last) {
+        if (first < 0) return;
+        CellRangeAddress seed = new CellRangeAddress(bounds.getFirstRow(), bounds.getLastRow(), first, last);
+        long count = 0;
+        for (CellRangeAddress unit : units) if (seed.intersects(unit)) {
+            if (unit.getFirstColumn() < first || unit.getLastColumn() > last) return;
+            count++;
+        }
+        if (count >= 2 && closed(seed)) seeds.add(seed);
     }
     private void horizontal(int r, int c) {
         horizontal.add(key(r, c)); candidates.add(key(r, c));
@@ -87,15 +126,11 @@ final class BorderTables {
             if (!vertical.contains(key(r, range.getFirstColumn())) || !vertical.contains(key(r, range.getLastColumn() + 1))) return false;
         return true;
     }
-    /** A partial grid attached to this rectangle makes its extent ambiguous. */
-    private boolean protruding(CellRangeAddress range) {
+    /** Horizontal attachments belong to expansion; do not extend a seed above or below its rows. */
+    private boolean protrudingVertically(CellRangeAddress range) {
         for (int c = range.getFirstColumn(); c <= range.getLastColumn() + 1; c++) {
             if (range.getFirstRow() > 0 && vertical.contains(key(range.getFirstRow() - 1, c))) return true;
             if (vertical.contains(key(range.getLastRow() + 1, c))) return true;
-        }
-        for (int r = range.getFirstRow(); r <= range.getLastRow() + 1; r++) {
-            if (range.getFirstColumn() > 0 && horizontal.contains(key(r, range.getFirstColumn() - 1))) return true;
-            if (horizontal.contains(key(r, range.getLastColumn() + 1))) return true;
         }
         return false;
     }

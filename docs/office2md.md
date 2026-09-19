@@ -32,7 +32,7 @@ Javaのルートパッケージは `com.convertx2x.office2md` です。`conversi
 
 | 形式 | 構造・読む順番 | 表・除外対象 |
 | --- | --- | --- |
-| Excel | 表示シート順、シート名だけH1、座標順 | 直接罫線を持つ矩形表。非表示の行列・シートを除外 |
+| Excel | 表示シート順、シート名だけH1、座標順 | 直接罫線を持つ通常表と、同じ行範囲の左右の関連値・表。非表示の行列・シートを除外 |
 | Word | 文書順、見出しスタイルまたはoutlineのH1〜H6、箇条書き、保存された番号 | ネイティブ表は罫線不要。挿入・移動先を残し、削除・移動元・コメント・ヘッダー・フッター・非表示文字を除外 |
 | PowerPoint | 表示スライドごとのH1、タイトルの後に上→下・左→右 | ネイティブ表は罫線不要。非表示スライド・図形、ノート、ヘッダー・フッターを除外 |
 
@@ -42,7 +42,7 @@ Javaのルートパッケージは `com.convertx2x.office2md` です。`conversi
 
 1. `ExcelMarkdownService.validate` が拡張子・実データの形式・入力サイズを検査する。入力を変換専用の一時ディレクトリへ保存し、マクロ・暗号化などの対象外形式を拒否する。
 2. `WorkbookFactory.create(file, null, true)` で読み取り専用のWorkbookを開く。シート数と、書式だけのセルも含む実体セル数を検査する。POIのWorkbookモデルはメモリーに展開される。
-3. 表示シートをブック順に処理する。`BorderTables` は元の罫線から表を検出し、`CellMarkdown` は表示対象セルの文字列を生成する。非表示行・列と、結合アンカー以外のセルを除外する。
+3. 表示シートをブック順に処理する。`BorderTables` は元の罫線から通常表を検出し、`TableExpansion` は同じ行範囲にある左右の値・表を取り込む。`CellMarkdown` は表示対象セルの文字列を生成する。非表示行・列と、結合アンカー以外のセルを除外する。
 4. `DrawingExtractor` が表示対象の埋め込み画像と図形を読み、画像ファイルと配置用の `DrawingBlock` を生成する。
 5. 本文・表・図形を行、列、同位置での優先順に並べる。表に重なる図形は、最後に重なる表の直後へ置く。内容があるシートだけH1を付け、H2以降や意味上の読む順番は推測しない。
 6. `document.md` と `report.json` を確定して入力一時ファイルを削除する。戻り値の `ConversionResult` が成果物の寿命を引き継ぐ。
@@ -63,9 +63,11 @@ Javaのルートパッケージは `com.convertx2x.office2md` です。`conversi
 
 ## Excelの表・本文・数式で維持するルール
 
-`BorderTables` はセルの上下左右の罫線を境界集合へ変換します。隣接セルの片側にだけ線がある場合も利用し、結合セルを一つの区画として扱います。複数の閉じた区画が連結し、外接範囲を過不足なく埋め、外枠が閉じている候補を表にします。図形の線、画面のグリッド線、テーブルスタイル、条件付き書式を罫線として評価しません。
+`BorderTables` はセルの上下左右の罫線を境界集合へ変換します。隣接セルの片側にだけ線がある場合も利用し、結合セルを一つの区画として扱います。複数の閉じた区画が連結し、外接範囲を過不足なく埋め、外枠が閉じている候補を通常表の起点にします。図形の線、画面のグリッド線、テーブルスタイル、条件付き書式を罫線として評価しません。
 
-検出できない値は本文へ残します。`BORDER_NOT_TABLE` はシートの罫線範囲に対する診断であり、未採用の囲み枠すべてに個別の警告を生成するものではありません。表のヘッダー判定はサービス側にあり、検出範囲と有効なExcelテーブル定義が一致する場合だけ先頭行をヘッダーにします。それ以外は空ヘッダーを追加し、元の全行を保持します。
+`TableExpansion` は、通常表と開始行・終了行が同じ横並びの表をまとめ、同じ行範囲にある左右の表示値を列として取り込みます。通常表の内部列は空でも保持し、表同士や値までの空列は省きます。行範囲の異なる表を境界にして所有範囲を分けるため、一つの値を複数表へ重複出力しません。通常表が一つもない値だけの範囲から表を作ることはありません。
+
+実結合でなくても、横に並ぶ区画の外枠と上下線が閉じ、中の縦線だけがない場合は見た目上の結合セルとして扱います。値を全角空白で連結して左端へ置き、続くMarkdown列を空欄にします。`TABLE_EXPANDED` と `TABLE_VISUAL_MERGE_FLATTENED` はこの変換を示します。検出できない値は本文へ残します。`BORDER_NOT_TABLE` はシートの罫線範囲に対する診断であり、未採用の囲み枠すべてに個別の警告を生成するものではありません。表のヘッダー判定はサービス側にあり、検出した通常表と有効なExcelテーブル定義が一致する場合だけ先頭行をヘッダーにします。それ以外は空ヘッダーを追加し、元の全行を保持します。
 
 本文と表は同じ `CellMarkdown` を通ります。取消線を除去してから太字・リンクを生成し、全削除されたリンクをURL補完で復活させません。数式結果にもセル全体の取消線を適用します。元の文字列と表示形式の位置対応が失われる場合は、取消線を安全に除去できる文字列を優先します。削除内容や未検証のURLを診断メッセージへ追加しないでください。
 
@@ -131,7 +133,7 @@ Queue JSONは [ConversionJobRequest](../functions/office2md/src/main/java/com/co
 | Wordの構造・履歴・番号・脚注・図形 | `word` パッケージ | [WordMarkdownConverterTest](../functions/office2md/src/test/java/com/convertx2x/office2md/word/WordMarkdownConverterTest.java) |
 | PPTXの順序・個別図形・座標・取消線PNG・外部参照 | `presentation` パッケージ | [PowerPointMarkdownConverterTest](../functions/office2md/src/test/java/com/convertx2x/office2md/presentation/PowerPointMarkdownConverterTest.java) |
 | 図形の種類・回転角・外接矩形・代替テキスト | `DrawingAltText`、形式別図形抽出 | [DrawingAltTextTest](../functions/office2md/src/test/java/com/convertx2x/office2md/drawing/DrawingAltTextTest.java)、[ExcelDrawingAltTextTest](../functions/office2md/src/test/java/com/convertx2x/office2md/drawing/ExcelDrawingAltTextTest.java) |
-| 表検出・結合・読み順 | `BorderTables`、`MergedRanges`、`ExcelMarkdownService` | [ExcelMarkdownServiceTest](../functions/office2md/src/test/java/com/convertx2x/office2md/conversion/ExcelMarkdownServiceTest.java) |
+| 表検出・左右展開・結合・読み順 | `BorderTables`、`TableExpansion`、`MergedRanges`、`ExcelMarkdownService` | [TableExpansionTest](../functions/office2md/src/test/java/com/convertx2x/office2md/conversion/TableExpansionTest.java)、[ExcelMarkdownServiceTest](../functions/office2md/src/test/java/com/convertx2x/office2md/conversion/ExcelMarkdownServiceTest.java) |
 | 表示形式・太字・リンク・取消線 | `CellMarkdown`、`Markdown` | 同上の表示値・書式・リンク・削除優先ケース |
 | 数式処理・外部参照 | `CellMarkdown`、ブック読み込み | [ExternalFormulaIsolationTest](../functions/office2md/src/test/java/com/convertx2x/office2md/conversion/ExternalFormulaIsolationTest.java) |
 | 画像形式・図形種類・グループ・配置 | `DrawingExtractor`、`DrawingScene`、`SheetCoordinates` | [DrawingExtractorTest](../functions/office2md/src/test/java/com/convertx2x/office2md/drawing/DrawingExtractorTest.java) |
