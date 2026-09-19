@@ -21,6 +21,8 @@ test('queue trigger derivation switches connection modes without carrying a prev
 
 test('local launcher mode switching clears stale connection and user-assigned identity values', () => {
   const code = `import importlib.util
+import tempfile
+from pathlib import Path
 spec=importlib.util.spec_from_file_location('launcher','scripts/run_local.py')
 m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
 old={'CONVERSION_STORAGE_CONNECTION_STRING':'old-secret','CONVERSION_QUEUE_CONNECTION_STRING':'old-secret','CONVERSION_QUEUE_CONNECTION_STRING__clientId':'old-client'}
@@ -36,6 +38,19 @@ assert 'CONVERSION_QUEUE_CONNECTION_STRING__queueServiceUri' not in value
 assert value['CONVERSION_QUEUE_CONNECTION_STRING']=='new-secret'
 value=m.prepare_environment(value,{'CONVERSION_STORAGE_CONNECTION_STRING':''})
 assert 'CONVERSION_QUEUE_CONNECTION_STRING' not in value
+original=m.WINDOWS
+m.WINDOWS=True
+m.shutil.which=lambda name: 'C:/Tools/'+name if name in ('npm.cmd','func.cmd','node.exe') else None
+assert m.find_tool('npm').lower().endswith('npm.cmd')
+assert m.find_tool('func').lower().endswith('func.cmd')
+arguments,shell=m.command_arguments(['C:/Program Files/nodejs/npm.cmd','ci','--ignore-scripts'])
+assert shell and 'npm.cmd' in arguments
+with tempfile.TemporaryDirectory() as directory:
+    source=Path(directory)/'source'; source.mkdir(); (source/'file.txt').write_text('copied')
+    destination=Path(directory)/'destination'
+    m.stage_entry(source,destination)
+    assert not destination.is_symlink() and (destination/'file.txt').read_text()=='copied'
+m.WINDOWS=original
 `;
   const result = spawnSync('python3', ['-c', code], { cwd: root, encoding: 'utf8' });
   assert.equal(result.status, 0, result.stderr);

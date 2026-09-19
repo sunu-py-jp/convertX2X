@@ -12,7 +12,8 @@ Node.js から独立した子プロセスとして呼び出します。アプリ
 | FFmpeg ライセンス | `COPYING.LGPLv2.1` / `LICENSE.md` |
 | Linux C ランタイムの通知 | `LICENSE-musl.txt` |
 | GCC ランタイムの通知 | `COPYING.GCC-RUNTIME` / `COPYING.GPLv3` |
-| 実行ファイル | `resources/ffmpeg/{linux-x86_64,macos-aarch64}/` |
+| MinGW-w64 ランタイムの通知 | `COPYING.MinGW-w64-runtime.txt` |
+| 実行ファイル | `resources/ffmpeg/{linux-x86_64,macos-aarch64,windows-x86_64}/` |
 | 再ビルド手順 | `scripts/build_ffmpeg.py` |
 
 ソースアーカイブの SHA256:
@@ -36,8 +37,10 @@ FCF986EA15E6E293A5644F10B4322F04D67658D8
 Linux x64 は固定 digest の Alpine 3.22.2 上で GCC 14.2.0 / musl 1.2.5 を使い、
 ライブラリを静的リンクしています。glibc や別途配置する `.so` ファイルは不要です。
 musl の小さい既定スレッドスタックでは MPEG-TS の AAC ADTS 処理が失敗するため、
-ELF の `GNU_STACK` を 8 MiB に設定しています。macOS Apple Silicon 版は Apple clang で
-ビルドし、OS 標準の `libSystem` を使います。
+ELF の `GNU_STACK` を 8 MiB に設定しています。Windows x64版は同じAlpine環境の
+MinGW-w64でFFmpegとコンパイラーランタイムを静的リンクするクロスビルドです。OS標準DLL以外の
+追加DLLは不要です。macOS Apple Silicon版はApple clangで
+ビルドし、OS標準の `libSystem` を使います。
 
 両者とも次の構成です。各バイナリ横の `manifest.json` に実際の configure 引数、
 ビルド環境、サイズ、SHA256 を記録しています。
@@ -58,12 +61,14 @@ AAC/M4Aまたは16bit PCM/WAVへ変換できます。外部の音声エンコー
 ## 再ビルド
 
 Python 3.12 以降、curl、Docker が必要です。Mac 版には Apple Silicon の macOS と
-Command Line Tools（clang / make）も必要です。Linux 版のみなら Linux 上でも実行できます。
+Command Line Tools（clang / make）も必要です。Linux版とWindows版はDocker上でビルドします。
 
 ```sh
 python3 scripts/build_ffmpeg.py --target all
 # Linux x64 のみ
 python3 scripts/build_ffmpeg.py --target linux-x86_64
+# Windows x64 のみ
+python3 scripts/build_ffmpeg.py --target windows-x86_64
 ```
 
 ソース・鍵・通知ファイルは固定 SHA256 を検証し、公式署名も固定 fingerprint で検証します。
@@ -90,3 +95,5 @@ Linux の musl 部分は `LICENSE-musl.txt` の MIT と付随する通知に従�
 GCC のランタイムコードには GCC Runtime Library Exception 3.1 が適用されるため、
 通知として GPLv3 本文と例外の本文を同梱しています。これは FFmpeg の GPL オプションを有効にした
 ビルドという意味ではありません。GCC はコンパイル時だけ使用し、実行ファイルとして同梱しません。
+Windows版に含まれるMinGW-w64ランタイムの著作権・ライセンス通知は
+`COPYING.MinGW-w64-runtime.txt` に保持します。

@@ -36,7 +36,7 @@
 <div class="table-wrap"><table><thead><tr><th scope="col">メソッド / パス</th><th scope="col">入力</th><th scope="col">結果</th></tr></thead><tbody><tr><td><code>POST /api/convert</code></td><td>動画ファイルの生バイト列</td><td><a href="http.html">audio.m4aを同じレスポンスで返す</a></td></tr><tr><td><code>POST /api/convert-url</code></td><td><code>{"url":"https://…"}</code></td><td><a href="url.html">許可済みURLを取得してaudio.m4aを返す</a></td></tr><tr><td><code>POST /api/convert-to-blob</code></td><td>動画またはURL + 出力先SAS</td><td><a href="storage.html">Blob保存後に201 JSONを返す</a></td></tr><tr><td><code>POST /api/jobs</code><br><code>POST /api/jobs-url</code></td><td>動画 / URL</td><td><a href="jobs.html">202で受付・状態確認後にM4Aを取得</a></td></tr><tr><td>Queue <code>movie2audio-jobs</code></td><td>入出力Blobを指定するJSON</td><td><a href="queue.html">登録済みStorageへM4Aを保存</a></td></tr><tr><td><code>GET /api/capabilities</code></td><td>なし / 匿名</td><td><a href="settings.html#capabilities">適用中の上限・URL機能の有効状態</a></td></tr></tbody></table></div>
 <p>同期HTTP・非同期HTTP・直接Queueの3経路が、同じFFmpeg処理を使います。同期のダウンロードAPIは音声を返し、SAS保存APIは保存完了後に結果JSONを返します。非同期はジョブIDで状態と音声を取得します。</p>
 <h2 id="quickstart">ローカルで試す</h2>
-<p>Node.js 22または24・npm・Python 3.10以上・Azure Functions Core Tools v4を用意し、リポジトリルートから起動します。FFmpegは同梱済みです。対応環境はLinux x64とmacOS Apple Siliconです。</p>
+<p>Node.js 22または24・npm・Python 3.10以上・Azure Functions Core Tools v4を用意し、リポジトリルートから起動します。FFmpegは同梱済みです。対応環境はLinux x64、macOS Apple Silicon、Windows x64です。</p>
 <pre><code class="language-shell">cd functions/movie2audio
 npm ci
 npm start</code></pre>

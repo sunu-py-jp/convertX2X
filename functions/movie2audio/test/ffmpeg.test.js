@@ -6,11 +6,18 @@ import { fileURLToPath } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
 import test from 'node:test';
 import { ConversionError } from '../src/errors.js';
-import { extractAudio, loadBundledFfmpeg, prepareBundledFfmpeg, runProcess } from '../src/ffmpeg.js';
+import { bundledFfmpegPlatform, extractAudio, loadBundledFfmpeg, prepareBundledFfmpeg, runProcess } from '../src/ffmpeg.js';
 import { audioOptionsFromQuery, audioOutput, normalizeAudioOptions } from '../src/audio-options.js';
 
 const FIXTURES = fileURLToPath(new URL('./fixtures/', import.meta.url));
 const LIMITS = { maxInputBytes: 100 * 1024 * 1024, maxOutputBytes: 100 * 1024 * 1024, timeoutSeconds: 10 };
+
+test('selects bundled executable names for each supported OS', () => {
+  assert.deepEqual(bundledFfmpegPlatform('linux', 'x64'), { directory: 'linux-x86_64', suffix: '' });
+  assert.deepEqual(bundledFfmpegPlatform('darwin', 'arm64'), { directory: 'macos-aarch64', suffix: '' });
+  assert.deepEqual(bundledFfmpegPlatform('win32', 'x64'), { directory: 'windows-x86_64', suffix: '.exe' });
+  assert.throws(() => bundledFfmpegPlatform('win32', 'arm64'), code('FFMPEG_UNAVAILABLE', 503));
+});
 
 async function workspace(t) {
   const directory = await mkdtemp(path.join(tmpdir(), 'movie2audio-test-'));

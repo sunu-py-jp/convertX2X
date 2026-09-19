@@ -1,4 +1,4 @@
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { createHash, timingSafeEqual } from 'node:crypto';
 import { createReadStream, createWriteStream, lstatSync, rmSync } from 'node:fs';
 import { chmod, lstat, mkdtemp, readFile, rm } from 'node:fs/promises';
@@ -31,33 +31,35 @@ const outputTooLarge = () => new ConversionError(413, 'OUTPUT_TOO_LARGE',
 const storageError = () => new ConversionError(500, 'STORAGE_ERROR',
   'The temporary media file could not be inspected or written.');
 
-function platformName() {
-  if (process.platform === 'linux' && process.arch === 'x64') return 'linux-x86_64';
-  if (process.platform === 'darwin' && process.arch === 'arm64') return 'macos-aarch64';
+export function bundledFfmpegPlatform(platform = process.platform, architecture = process.arch) {
+  if (platform === 'linux' && architecture === 'x64') return { directory: 'linux-x86_64', suffix: '' };
+  if (platform === 'darwin' && architecture === 'arm64') return { directory: 'macos-aarch64', suffix: '' };
+  if (platform === 'win32' && architecture === 'x64') return { directory: 'windows-x86_64', suffix: '.exe' };
   throw new ConversionError(503, 'FFMPEG_UNAVAILABLE',
-    'Bundled FFmpeg supports Linux x64 and macOS Apple Silicon.');
+    'Bundled FFmpeg supports Linux x64, macOS Apple Silicon and Windows x64.');
 }
 
 /** Only trusted, packaged resources are passed here; HTTP input never selects an executable. */
 export async function prepareBundledFfmpeg(resourceDirectory = RESOURCE_DIRECTORY) {
-  const platform = platformName();
+  const platform = bundledFfmpegPlatform();
   let directory;
   try {
     directory = await mkdtemp(path.join(tmpdir(), 'movie2audio-runtime-'));
-    await chmod(directory, 0o700);
+    if (process.platform !== 'win32') await chmod(directory, 0o700);
     for (const name of ['ffmpeg', 'ffprobe']) {
-      const source = path.join(resourceDirectory, platform, name);
+      const filename = name + platform.suffix;
+      const source = path.join(resourceDirectory, platform.directory, filename);
       const expected = (await readFile(`${source}.sha256`, 'ascii')).trim();
       if (!/^[0-9a-f]{64}$/.test(expected) || !(await lstat(source)).isFile()) throw unavailable();
       const digest = createHash('sha256');
       await pipeline(createReadStream(source), new Transform({
         transform(chunk, encoding, callback) { digest.update(chunk); callback(null, chunk); },
-      }), createWriteStream(path.join(directory, name), { flags: 'wx', mode: 0o700 }));
+      }), createWriteStream(path.join(directory, filename), { flags: 'wx', mode: 0o700 }));
       if (!timingSafeEqual(Buffer.from(expected, 'hex'), digest.digest())) throw unavailable();
-      await chmod(path.join(directory, name), 0o700);
+      if (process.platform !== 'win32') await chmod(path.join(directory, filename), 0o700);
     }
-    const runtime = Object.freeze({ directory, ffmpeg: path.join(directory, 'ffmpeg'),
-      ffprobe: path.join(directory, 'ffprobe') });
+    const runtime = Object.freeze({ directory, ffmpeg: path.join(directory, `ffmpeg${platform.suffix}`),
+      ffprobe: path.join(directory, `ffprobe${platform.suffix}`) });
     return runtime;
   } catch {
     if (directory) await rm(directory, { recursive: true, force: true }).catch(() => {});
@@ -80,7 +82,7 @@ export async function loadBundledFfmpeg() {
     if (!(await lstat(runtime.directory)).isDirectory()) throw unavailable();
     for (const executable of [runtime.ffmpeg, runtime.ffprobe]) {
       const info = await lstat(executable);
-      if (!info.isFile() || (info.mode & 0o777) !== 0o700) throw unavailable();
+      if (!info.isFile() || (process.platform !== 'win32' && (info.mode & 0o777) !== 0o700)) throw unavailable();
     }
   } catch { throw unavailable(); }
   return runtime;
@@ -105,16 +107,21 @@ export async function runProcess(executable, args, { cwd, outputPath, maxOutputB
   return new Promise((resolve, reject) => {
     let child;
     try {
-      child = spawn(executable, args, { cwd, shell: false, detached: true,
+      child = spawn(executable, args, { cwd, shell: false, detached: process.platform !== 'win32', windowsHide: true,
         env: { LANG: 'C', LC_ALL: 'C' }, stdio: ['ignore', 'pipe', 'pipe'] });
     } catch { reject(unavailable()); return; }
     let failure;
     let stdoutBytes = 0;
     let stderrBytes = 0;
     const stdout = [];
+    let windowsTreeKillStarted = false;
     const killGroup = () => {
-      // Both supported platforms are POSIX. A private process group also covers descendants.
-      if (child.pid) {
+      if (child.pid && process.platform === 'win32' && !windowsTreeKillStarted && child.exitCode === null) {
+        windowsTreeKillStarted = true;
+        const systemRoot = process.env.SystemRoot ?? process.env.WINDIR;
+        if (systemRoot) spawnSync(path.join(systemRoot, 'System32', 'taskkill.exe'),
+          ['/pid', String(child.pid), '/t', '/f'], { stdio: 'ignore', windowsHide: true });
+      } else if (child.pid && process.platform !== 'win32') {
         try { process.kill(-child.pid, 'SIGKILL'); } catch { /* Already exited. */ }
       }
       try { child.kill('SIGKILL'); } catch { /* Already exited. */ }

@@ -35,7 +35,7 @@ cd functions/ppt-pdf-to-images
 python3 scripts/run_local.py
 ```
 
-Movie → AudioはNode.jsで起動します。JDK・Mavenは不要です。同梱FFmpegはLinux x64・macOS Apple Siliconに対応します。
+Movie → AudioはNode.jsで起動します。JDK・Mavenは不要です。同梱FFmpegはLinux x64・macOS Apple Silicon・Windows x64に対応します。
 
 ```sh
 cd functions/movie2audio

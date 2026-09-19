@@ -18,7 +18,9 @@ try {
   await mkdir(join(stage, 'scripts'));
   await copyFile(join(root, 'scripts/build_ffmpeg.py'), join(stage, 'scripts/build_ffmpeg.py'));
   await copyFile(join(root, 'scripts/patch-sdk.mjs'), join(stage, 'scripts/patch-sdk.mjs'));
-  const npm = spawnSync('npm', ['ci', '--omit=dev', '--ignore-scripts'], { cwd: stage, stdio: 'inherit' });
+  const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+  const npm = spawnSync(npmCommand, ['ci', '--omit=dev', '--ignore-scripts'],
+    { cwd: stage, stdio: 'inherit', shell: process.platform === 'win32' });
   if (npm.status !== 0) throw new Error('Installing production dependencies failed');
   const patch = spawnSync(process.execPath, ['scripts/patch-sdk.mjs'], { cwd: stage, stdio: 'inherit' });
   if (patch.status !== 0) throw new Error('Applying the pinned streaming SDK compatibility patch failed');

@@ -10,11 +10,65 @@ import sys
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
+WINDOWS = os.name == 'nt'
 
 
 CONTROL_KEYS = ('CONVERSION_STORAGE_CONNECTION_STRING', 'CONVERSION_STORAGE__blobServiceUri',
                 'CONVERSION_STORAGE__queueServiceUri', 'CONVERSION_STORAGE__clientId')
 BINDING_PREFIX = 'CONVERSION_QUEUE_CONNECTION_STRING'
+
+
+def find_tool(name):
+    """Resolve Windows command shims explicitly so subprocess does not miss .cmd files."""
+    candidates = (f'{name}.exe', f'{name}.cmd', name) if WINDOWS else (name,)
+    for candidate in candidates:
+        executable = shutil.which(candidate)
+        if executable:
+            return str(Path(executable).resolve())
+    return None
+
+
+def command_arguments(command):
+    """Return a subprocess-safe command, using cmd.exe only for trusted batch launchers."""
+    batch = WINDOWS and Path(command[0]).suffix.lower() in ('.cmd', '.bat')
+    if not batch:
+        return command, False
+    arguments = f'"{command[0]}" ' + subprocess.list2cmdline(command[1:])
+    return arguments, True
+
+
+def run_command(command, **kwargs):
+    arguments, shell = command_arguments(command)
+    return subprocess.run(arguments, shell=shell, **kwargs)
+
+
+def popen_command(command, **kwargs):
+    arguments, shell = command_arguments(command)
+    return subprocess.Popen(arguments, shell=shell, **kwargs)
+
+
+def stage_entry(source, destination):
+    """Avoid Windows symlink privileges; the temporary stage is deleted after shutdown."""
+    if WINDOWS:
+        if source.is_dir():
+            shutil.copytree(source, destination)
+        else:
+            shutil.copy2(source, destination)
+    else:
+        destination.symlink_to(source, target_is_directory=source.is_dir())
+
+
+def error_summary(error):
+    """Report actionable OS/exit codes without printing settings or secret command data."""
+    details = [type(error).__name__]
+    if isinstance(error, OSError):
+        if getattr(error, 'winerror', None) is not None:
+            details.append(f'WinError {error.winerror}')
+        if error.errno is not None:
+            details.append(f'errno {error.errno}')
+    if isinstance(error, subprocess.CalledProcessError):
+        details.append(f'exit code {error.returncode}')
+    return '; '.join(details)
 
 
 def prepare_environment(values, environ):
@@ -51,25 +105,27 @@ def main():
     parser.add_argument('--skip-build', action='store_true', help='Reuse installed npm dependencies')
     parser.add_argument('--port', type=int, default=7073)
     args = parser.parse_args()
-    for tool in ('node', 'npm', 'func'):
-        if not shutil.which(tool):
-            parser.error(f'{tool} is required (Node.js 22/24 and Functions Core Tools v4).')
-    major = int(subprocess.check_output(['node', '-p', 'process.versions.node.split(".")[0]'], text=True))
+    tools = {name: find_tool(name) for name in ('node', 'npm', 'func')}
+    for name, executable in tools.items():
+        if not executable:
+            parser.error(f'{name} is required (Node.js 22/24 and Functions Core Tools v4).')
+    major = int(run_command([tools['node'], '-p', 'process.versions.node.split(".")[0]'],
+                            text=True, capture_output=True, check=True).stdout)
     if major not in (22, 24):
         parser.error('Use Node.js 22 or 24.')
     if not args.skip_build:
-        subprocess.run(['npm', 'ci', '--ignore-scripts'], cwd=ROOT, check=True)
+        run_command([tools['npm'], 'ci', '--ignore-scripts'], cwd=ROOT, check=True)
     if not (ROOT / 'node_modules/@azure/functions').is_dir():
         parser.error('Run npm ci first, or omit --skip-build.')
-    subprocess.run(['node', 'scripts/patch-sdk.mjs'], cwd=ROOT, check=True)
+    run_command([tools['node'], 'scripts/patch-sdk.mjs'], cwd=ROOT, check=True)
     settings_file = ROOT / 'local.settings.json'
     if not settings_file.exists():
-        data = json.loads((ROOT / 'local.settings.example.json').read_text())
+        data = json.loads((ROOT / 'local.settings.example.json').read_text(encoding='utf-8'))
         fd = os.open(settings_file, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-        with os.fdopen(fd, 'w') as output:
+        with os.fdopen(fd, 'w', encoding='utf-8') as output:
             json.dump(data, output, indent=2)
             output.write('\n')
-    settings = json.loads(settings_file.read_text())
+    settings = json.loads(settings_file.read_text(encoding='utf-8'))
     if settings.get('IsEncrypted'):
         parser.error('Decrypt local.settings.json before using this launcher.')
     values = settings.get('Values', {})
@@ -78,8 +134,9 @@ def main():
         values['FUNCTIONS_WORKER_RUNTIME'] = 'node'
         settings['Values'] = values
         fd = os.open(settings_file, os.O_WRONLY | os.O_TRUNC)
-        os.fchmod(fd, 0o600)
-        with os.fdopen(fd, 'w') as output:
+        if not WINDOWS:
+            os.fchmod(fd, 0o600)
+        with os.fdopen(fd, 'w', encoding='utf-8') as output:
             json.dump(settings, output, indent=2)
             output.write('\n')
     child_env = prepare_environment(values, dict(os.environ))
@@ -90,15 +147,15 @@ def main():
     with tempfile.TemporaryDirectory(prefix='movie2audio-local-') as directory:
         stage = Path(directory)
         for name in ('host.json', 'package.json', 'src', 'resources', 'node_modules'):
-            (stage / name).symlink_to(ROOT / name, target_is_directory=(ROOT / name).is_dir())
+            stage_entry(ROOT / name, stage / name)
         names = set(values) | {key for key in child_env if key.startswith('CONVERSION_')}
         names |= {'FUNCTIONS_WORKER_RUNTIME', 'AzureWebJobsStorage'}
         staged_settings = dict(settings)
         staged_settings['Values'] = {key: child_env[key] for key in names if key in child_env}
         descriptor = os.open(stage / 'local.settings.json', os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-        with os.fdopen(descriptor, 'w') as output:
+        with os.fdopen(descriptor, 'w', encoding='utf-8') as output:
             json.dump(staged_settings, output)
-        child = subprocess.Popen(['func', 'start', '--port', str(args.port)], cwd=stage, env=child_env)
+        child = popen_command([tools['func'], 'start', '--port', str(args.port)], cwd=stage, env=child_env)
         try:
             returncode = child.wait()
         except KeyboardInterrupt:
@@ -117,5 +174,5 @@ if __name__ == '__main__':
     try:
         main()
     except (OSError, ValueError, subprocess.CalledProcessError) as failure:
-        print(f'Local startup failed ({type(failure).__name__}).', file=sys.stderr)
+        print(f'Local startup failed ({error_summary(failure)}).', file=sys.stderr)
         sys.exit(1)

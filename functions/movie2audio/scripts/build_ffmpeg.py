@@ -41,6 +41,9 @@ NOTICES = [
      "9d6b43ce4d8de0c878bf16b54d8e7a10d9bd42b75178153e3af6a815bdc90f74"),
     ("COPYING.GPLv3", "https://raw.githubusercontent.com/gcc-mirror/gcc/releases/gcc-14.2.0/COPYING3",
      "8ceb4b9ee5adedde47b31e975c1d90c73ad27b6b165a1dcd80c7c545eb65b903"),
+    ("COPYING.MinGW-w64-runtime.txt",
+     "https://raw.githubusercontent.com/mingw-w64/mingw-w64/v12.0.0/COPYING.MinGW-w64-runtime/COPYING.MinGW-w64-runtime.txt",
+     "e9b2dc02451ea29092a1f25fa0f3c07207ed421f1807dffb0c4e6dce69dee7bd"),
 ]
 
 
@@ -93,7 +96,9 @@ def package(work, target, tools, flags, build_metadata):
     destination.mkdir(parents=True, exist_ok=True)
     manifest = {"version": VERSION, "sourceSha256": SOURCE_SHA256,
                 "target": target, "configure": flags, "build": build_metadata, "binaries": {}}
-    for name in ("ffmpeg", "ffprobe"):
+    suffix = ".exe" if target == "windows-x86_64" else ""
+    for command in ("ffmpeg", "ffprobe"):
+        name = command + suffix
         shutil.copy2(tools / name, destination / name)
         (destination / name).chmod(0o755)
         digest = sha256(destination / name)
@@ -105,7 +110,7 @@ def package(work, target, tools, flags, build_metadata):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--target", choices=["all", "linux-x86_64", "macos-aarch64"], default="all")
+    parser.add_argument("--target", choices=["all", "linux-x86_64", "macos-aarch64", "windows-x86_64"], default="all")
     parser.add_argument("--jobs", type=int, default=min(os.cpu_count() or 2, 8))
     args = parser.parse_args()
     if not 1 <= args.jobs <= 64:
@@ -159,6 +164,23 @@ def main():
             package(work, "linux-x86_64", work / "linux-x86_64", flags,
                     {"image": ALPINE, "compiler": (work / "linux-compiler.txt").read_text().splitlines()[0],
                      "packages": (work / "linux-toolchain.txt").read_text().splitlines()})
+        if args.target in ("all", "windows-x86_64"):
+            flags = FLAGS + ["--target-os=mingw32", "--arch=x86_64", "--enable-cross-compile",
+                             "--cross-prefix=x86_64-w64-mingw32-", "--extra-ldflags=-static"]
+            shell = "\n".join([
+                "apk add --no-cache build-base mingw-w64-gcc > /work/windows-packages.log",
+                "mkdir -p /work/windows-x86_64",
+                "cd /work/windows-x86_64",
+                "/work/ffmpeg-" + VERSION + "/configure " + shlex.join(flags),
+                f"make -j{args.jobs} ffmpeg.exe ffprobe.exe",
+                "x86_64-w64-mingw32-gcc --version > /work/windows-compiler.txt",
+                "apk list --installed mingw-w64-gcc mingw-w64-crt > /work/windows-toolchain.txt",
+            ])
+            docker_run(work, shell)
+            package(work, "windows-x86_64", work / "windows-x86_64", flags,
+                    {"image": ALPINE,
+                     "compiler": (work / "windows-compiler.txt").read_text().splitlines()[0],
+                     "packages": (work / "windows-toolchain.txt").read_text().splitlines()})
     print("Rebuild complete; source archive and matching notices are retained in", THIRD_PARTY)
 
 

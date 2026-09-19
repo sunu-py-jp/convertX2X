@@ -59,7 +59,7 @@ FFmpegにはユーザーのURLやファイル名を渡しません。アプリ�
 | `src/url.js` | HTTPS/443・完全一致ホスト・公開IPの検証、検証済みIPへの接続、上限付き取得 |
 | `src/blob.js` | 単一Blob SAS・保存先ホストの検証、条件付きPUT、SASを除く保存結果 |
 | `src/ffmpeg.js` | バイナリのSHA-256照合・展開、子プロセスの期限と出力制限、FFprobe検証、AACコピー |
-| `resources/ffmpeg/` | Linux x64・macOS Apple SiliconのFFmpeg / FFprobeとmanifest・チェックサム |
+| `resources/ffmpeg/` | Linux x64・macOS Apple Silicon・Windows x64のFFmpeg / FFprobeとmanifest・チェックサム |
 | `resources/playground/` | ビルド不要のHTML・CSS・JavaScript |
 | `test/fixtures/` | 自作の動画・音声テスト入力 |
 | `scripts/patch-sdk.mjs` | 固定バージョンのFunctions SDKに対するHTTPストリーム互換修正・SHA-256検証 |
@@ -150,7 +150,7 @@ npm run package
 
 Node.js 22または24を使い、`.nvmrc` は24を指定します。配布物は `dist/` に作成し、実行用ソース・アセット・本番用依存パッケージと、FFmpegのソース・ライセンス・ビルドスクリプトを含めます。JDK・Mavenは不要です。ローカルは `npm start` または `python3 scripts/run_local.py` で起動します。どちらもPythonの起動スクリプトを使うため、Python 3.10以上が必要です。Python版の `--skip-build` は依存インストールの省略を意味します。
 
-起動済みホストに対する確認は `python3 scripts/test_http_e2e.py` を使います。音声選択、AACパケットの保持、M4Aのボックス順序、メタデータ除去、期限・出力上限、URL制限、HTTPの正常・異常応答に加え、入力・出力へ伝搬したキャンセルや、出力ファイルの読み取りストリームが閉じるまでの実行枠保持を確認します。macOS、Linux x64バイナリ、Azure配置の検証は区別します。
+起動済みホストに対する確認は `python3 scripts/test_http_e2e.py` を使います。音声選択、AACパケットの保持、M4Aのボックス順序、メタデータ除去、期限・出力上限、URL制限、HTTPの正常・異常応答に加え、入力・出力へ伝搬したキャンセルや、出力ファイルの読み取りストリームが閉じるまでの実行枠保持を確認します。macOS、Linux x64、Windows x64バイナリ、Azure配置の検証は区別します。
 
 同梱FFmpegの出典と再ビルドは [third-party/ffmpeg/README.md](../functions/movie2audio/third-party/ffmpeg/README.md) にまとめています。実行ファイルだけ置き換えず、対応するソース・ライセンス・manifest・チェックサムもそろえて更新してください。
 

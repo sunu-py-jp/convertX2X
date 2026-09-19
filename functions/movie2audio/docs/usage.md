@@ -37,7 +37,7 @@
 
 ## ローカルで起動する
 
-必要なものはNode.js 22または24、npm、Python 3.10以上、Azure Functions Core Tools v4です。`.nvmrc` は24を指定します。`npm start` はPythonの起動スクリプトを呼びます。JDK・Mavenは不要です。FFmpegの別途インストールや起動時ダウンロードは不要です。同梱バイナリの対応環境はLinux x64とmacOS Apple Siliconです。
+必要なものはNode.js 22または24、npm、Python 3.10以上、Azure Functions Core Tools v4です。`.nvmrc` は24を指定します。`npm start` はPythonの起動スクリプトを呼びます。JDK・Mavenは不要です。FFmpegの別途インストールや起動時ダウンロードは不要です。同梱バイナリの対応環境はLinux x64、macOS Apple Silicon、Windows x64です。Windowsでは `npm.cmd` と `func.cmd` を起動スクリプトが自動で解決します。
 
 ```bash
 cd functions/movie2audio
@@ -434,7 +434,7 @@ cd dist
 func azure functionapp publish YOUR_FUNCTION_APP --no-build
 ```
 
-FFmpeg 9.0.1とFFprobeを公式ソースからビルドし、`resources/ffmpeg/` に同梱します。Linux x64はmuslによる静的ビルド、macOS Apple Siliconはローカル用です。実行時はSHA-256を照合し、所有者のみアクセス可能な一時ディレクトリへ展開します。ネットワークプロトコルはビルド時に無効にしています。
+FFmpeg 9.0.1とFFprobeを公式ソースからビルドし、`resources/ffmpeg/` に同梱します。Linux x64はmuslによる静的ビルド、Windows x64はMinGW-w64によるクロスビルド、macOS Apple Siliconはローカル用です。実行時はSHA-256を照合し、専用の一時ディレクトリへ展開します。ネットワークプロトコルはビルド時に無効にしています。
 
 再ビルドする場合は、Cコンパイラー・make・Docker・Pythonを用意して実行します。両プラットフォームをまとめて作る場合はApple Silicon Macが必要です。
 
