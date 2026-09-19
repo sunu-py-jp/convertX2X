@@ -23,13 +23,14 @@
 <p>Excel・Word・PowerPointを、文章として扱えるMarkdownと、埋め込み画像・図形の画像に変換します。Java 21 / Apache POIを使う独立したAzure Functionsアプリです。同期HTTP・非同期HTTP・直接Queueは同じ変換コアを利用します。</p>
 <div class="cards"><a class="card" href="http.html#convert"><h3>同期HTTP</h3><p>ファイルを送信し、その応答でZIPを受け取る。</p></a><a class="card" href="jobs.html#submit"><h3>非同期HTTP</h3><p>ジョブを登録し、状態を確認して成果物を取得する。</p></a><a class="card" href="queue.html#message"><h3>直接Queue</h3><p>外部システムからBlob参照のJSONを投入する。</p></a></div>
 <h2 id="formats">対応形式と読み取る構造</h2>
-<div class="table-wrap"><table><thead><tr><th scope="col">項目</th><th scope="col">Excel</th><th scope="col">Word</th><th scope="col">PowerPoint</th></tr></thead><tbody><tr><td>拡張子</td><td><code>.xlsx / .xls</code></td><td><code>.docx</code></td><td><code>.pptx</code></td></tr><tr><td>見出し</td><td>内容がある表示シートごとにH1。H2以下は作らない</td><td>明示的な見出しスタイル・outlineのH1〜H6を保持</td><td>表示スライドごとにH1。タイトルがなければスライド番号</td></tr><tr><td>読む順序</td><td>シート順、セル・図形の位置順</td><td>本文XMLの順序。印刷ページを復元しない</td><td>タイトルを優先し、その後は上→下・左→右</td></tr><tr><td>表</td><td>直接セル罫線から通常表を検出し、同じ行範囲の左右の値・表を取り込む</td><td>罫線がなくてもネイティブ表を変換</td><td>罫線がなくてもネイティブ表を変換</td></tr><tr><td>除外</td><td>非表示シート・行・列、結合の続き</td><td>削除・移動元・非表示文字・コメント・ヘッダー・フッター</td><td>非表示スライド・図形、ノート・コメント・ヘッダー・フッター</td></tr></tbody></table></div>
+<div class="table-wrap"><table><thead><tr><th scope="col">項目</th><th scope="col">Excel</th><th scope="col">Word</th><th scope="col">PowerPoint</th></tr></thead><tbody><tr><td>拡張子</td><td><code>.xlsx / .xls</code></td><td><code>.docx</code></td><td><code>.pptx</code></td></tr><tr><td>区切り・見出し</td><td><code># [シート名] シート</code></td><td><code>[page n]</code>と明示的な見出しH1〜H6</td><td><code>[page n]</code>の後にタイトルのH1</td></tr><tr><td>読む順序</td><td>シート順、セル・図形の位置順</td><td>本文XMLの順序。保存済み・明示改ページを表示</td><td>タイトルを優先し、その後は上→下・左→右</td></tr><tr><td>表</td><td>直接セル罫線から通常表を検出し、同じ行範囲の左右の値・表を取り込む</td><td>罫線がなくてもネイティブ表を変換</td><td>罫線がなくてもネイティブ表を変換</td></tr><tr><td>除外</td><td>非表示シート・行・列、結合の続き</td><td>削除・移動元・非表示文字・コメント・ヘッダー・フッター</td><td>非表示スライド・図形、ノート・コメント・ヘッダー・フッター</td></tr></tbody></table></div>
 <div class="callout warning"><p>旧形式のWord <code>.doc</code> とPowerPoint <code>.ppt</code>、PDF、マクロ有効形式・テンプレート、暗号化ファイルは対象外です。拡張子だけでなく、実際のファイル内容も検査します。</p>
 </div>
 <h2 id="text-tables">文字・表・変更履歴</h2>
 <p>本文と表の太字・HTTP/HTTPS/mailtoリンクを保持します。取消線の文字は出力から除去し、リンクや図形altにも復活させません。箇条書きと番号は元の表示を優先し、Markdown閲覧側の再採番を防ぐため番号をエスケープした文字列として出す場合があります。</p>
 <p>表は明示ヘッダーがなければ空のヘッダーを追加し、元の全行を残します。Excelは罫線で通常表を検出してから、同じ行範囲にある左右の値と横並びの表を一つの表へ取り込みます。通常表がない値だけの範囲から表は作りません。実結合と、外枠・上下線があり中の縦線だけがない見た目上の結合は、値を左側へ一度出して続きの列を空欄にします。Wordの入れ子表など、表現できない構造は文字や警告として残します。</p>
 <p>Wordは挿入・移動先を保持し、削除・移動元を除外します。参照された脚注・文末脚注だけを <code>[^footnote-N]</code> / <code>[^endnote-N]</code> として末尾へまとめます。削除された段落記号による段落連結や、結合セルの変更履歴からの構造復元は対象外です。</p>
+<p>PowerPointは各表示スライドの先頭に、元のスライド番号による <code>[page n]</code> を付けます。Wordは先頭を <code>[page 1]</code> とし、明示改ページ・段落の改ページ前・Wordが保存した改ページ境界を連番にします。Wordのページ組版は再計算しないため、保存されていない自動改ページの位置は追加しません。</p>
 <h2 id="artifacts">返されるファイル</h2>
 <pre><code>document.md
 report.json

@@ -32,7 +32,7 @@ import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
-/** DOCX semantic conversion. Does not evaluate fields, update links, or reconstruct pages. */
+/** DOCX semantic conversion. Does not evaluate fields, update links, or calculate pagination. */
 public final class WordMarkdownConverter {
     private static final String DOCUMENT_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml";
     private final ConversionLimits limits;
@@ -91,6 +91,8 @@ public final class WordMarkdownConverter {
     }
 
     private static final class Reader {
+        /** XML 1.0 cannot contain this noncharacter, so source text cannot collide with it. */
+        private static final String PAGE_BREAK = "\uFDD0";
         private final XWPFDocument document;
         private final ConversionWorkspace workspace;
         private final WordStyles styles;
@@ -107,6 +109,8 @@ public final class WordMarkdownConverter {
         private long readItems;
         private long textCharacters;
         private int outputLine = 1;
+        private int pageNumber = 1;
+        private boolean documentContent;
         private record Note(String key, int id, boolean endnote) { }
         private record Visit(Node node, int depth) { }
 
@@ -119,6 +123,8 @@ public final class WordMarkdownConverter {
         String convert() {
             Node body = document.getDocument().getBody().getDomNode();
             checkTree(body);
+            append(output, "[page 1]\n\n");
+            outputLine = 3;
             body(body, document.getPackagePart(), output, false);
             Set<String> emitted = new HashSet<>();
             // A note may reference another note; each definition is emitted once and all limits are shared.
@@ -158,7 +164,7 @@ public final class WordMarkdownConverter {
                 if (omitted(node)) continue;
                 if (is(node, "p")) {
                     String range = "paragraph:" + (++paragraphNumber);
-                    String text = paragraph(node, part, range, false);
+                    String text = paragraph(node, part, range, false, !note);
                     if (!text.isBlank()) emit(destination, text, "paragraph", range, note);
                 } else if (is(node, "tbl")) {
                     String range = "table:" + (++tableNumber);
@@ -174,6 +180,14 @@ public final class WordMarkdownConverter {
             }
         }
         private void emit(StringBuilder destination, String text, String type, String range, boolean note) {
+            if (!note && text.contains(PAGE_BREAK)) {
+                String[] pages = text.split(PAGE_BREAK, -1);
+                for (int index = 0; index < pages.length; index++) {
+                    if (index > 0) nextPage(destination);
+                    if (!pages[index].isBlank()) emit(destination, pages[index], type, range, false);
+                }
+                return;
+            }
             int line = outputLine;
             append(destination, text.stripTrailing() + "\n\n");
             if (!note) {
@@ -181,30 +195,43 @@ public final class WordMarkdownConverter {
                 workspace.block(Map.of("type", type, "section", section, "range", range,
                         "markdownStartLine", line, "markdownEndLine", line + lines));
                 outputLine += lines + 2;
+                documentContent = true;
             }
         }
-        private String paragraph(Node p, PackagePart part, String range, boolean cell) {
+        private void nextPage(StringBuilder destination) {
+            // A break-before marker on the first paragraph still starts page 1.
+            if (!documentContent && pageNumber == 1) return;
+            pageNumber++;
+            append(destination, "[page " + pageNumber + "]\n\n");
+            outputLine += 2;
+        }
+        private String paragraph(Node p, PackagePart part, String range, boolean cell, boolean pages) {
             String prefix = numbering.prefix(p, section, range);
             StringBuilder text = new StringBuilder();
-            inlineChildren(p, p, part, range, text, false);
+            inlineChildren(p, p, part, range, text, false, pages);
             String result = text.toString();
-            if (result.isBlank()) return "";
+            boolean breakBefore = pages && on(child(child(p, "pPr"), "pageBreakBefore"));
+            if (result.isBlank()) return breakBefore ? PAGE_BREAK : "";
             int heading = styles.heading(p);
             if (!cell && heading > 0) result = "#".repeat(heading) + " " + result;
-            return prefix + result;
+            return (breakBefore ? PAGE_BREAK : "") + prefix + result;
         }
-        private void inlineChildren(Node parent, Node paragraph, PackagePart part, String range, StringBuilder out, boolean plain) {
-            for (Node node : children(parent)) inline(node, paragraph, part, range, out, plain);
+        private void inlineChildren(Node parent, Node paragraph, PackagePart part, String range, StringBuilder out, boolean plain, boolean pages) {
+            for (Node node : children(parent)) inline(node, paragraph, part, range, out, plain, pages);
         }
-        private void inline(Node node, Node paragraph, PackagePart part, String range, StringBuilder out, boolean plain) {
+        private void inline(Node node, Node paragraph, PackagePart part, String range, StringBuilder out, boolean plain, boolean pages) {
             if (omitted(node)) return;
             if (is(node, "r")) {
                 WordStyles.RunStyle style = styles.run(paragraph, node);
                 if (style.strike() || style.hidden()) {
                     if (!plain) notice(style.strike() ? "STRIKETHROUGH_REMOVED" : "HIDDEN_TEXT_REMOVED", range,
                             style.strike() ? "取消線の文字を除外しました。" : "非表示の文字を除外しました。", true);
-                    // Still process field boundary markers, but never read their deleted instructions or text.
-                    for (Node child : children(node)) if (is(child, "fldChar")) field(child, range, plain);
+                    // Keep structural markers, but never read the removed instructions or text.
+                    for (Node child : children(node)) {
+                        if (is(child, "fldChar")) field(child, range, plain);
+                        else if (pages && fieldVisible() && (is(child, "lastRenderedPageBreak")
+                                || is(child, "br") && "page".equals(attr(child, "type")))) append(out, PAGE_BREAK);
+                    }
                     return;
                 }
                 for (Node child : children(node)) {
@@ -215,11 +242,11 @@ public final class WordMarkdownConverter {
                         if (textCharacters > workspace.limits().maxMarkdownBytes()) throw ConversionWorkspace.limit("MARKDOWN_BYTES_LIMIT", "文字量が上限を超えています。");
                         String text = plain ? value : Markdown.escape(value);
                         append(out, !plain && style.bold() ? Markdown.bold(text) : text);
-                    } else inline(child, paragraph, part, range, out, plain);
+                    } else inline(child, paragraph, part, range, out, plain, pages);
                 }
             } else if (is(node, "hyperlink")) {
                 StringBuilder label = new StringBuilder();
-                inlineChildren(node, paragraph, part, range, label, plain);
+                inlineChildren(node, paragraph, part, range, label, plain, pages);
                 if (label.isEmpty()) return;
                 if (plain) { append(out, label.toString()); return; }
                 String id = node instanceof Element e ? e.getAttributeNS(R, "id") : "";
@@ -236,8 +263,12 @@ public final class WordMarkdownConverter {
                     || is(node, "commentReference") || is(node, "footnoteRef") || is(node, "endnoteRef")) { /* metadata / instructions */ }
             else if (is(node, "fldSimple")) {
                 if (!plain) notice("FIELD_CACHED_RESULT", range, "フィールドは実行せず、保存済みの表示だけを保持しました。", true);
-                inlineChildren(node, paragraph, part, range, out, plain);
-            } else if (is(node, "br") || is(node, "cr")) { if (fieldVisible()) append(out, "\n"); }
+                inlineChildren(node, paragraph, part, range, out, plain, pages);
+            } else if (is(node, "br")) {
+                if (fieldVisible()) append(out, pages && "page".equals(attr(node, "type")) ? PAGE_BREAK : "\n");
+            } else if (is(node, "lastRenderedPageBreak")) {
+                if (fieldVisible() && pages) append(out, PAGE_BREAK);
+            } else if (is(node, "cr")) { if (fieldVisible()) append(out, "\n"); }
             else if (is(node, "tab")) { if (fieldVisible()) append(out, "    "); }
             else if (is(node, "noBreakHyphen")) { if (fieldVisible()) append(out, plain ? "‑" : Markdown.escape("‑")); }
             else if (is(node, "softHyphen")) { /* discretionary line break is unnecessary in Markdown */ }
@@ -251,7 +282,7 @@ public final class WordMarkdownConverter {
                 append(out, "[^" + key + "]");
             } else if (is(node, "drawing") || is(node, "pict") || is(node, "object")) {
                 if (!plain && fieldVisible()) append(out, drawings.render(node, part, section, range, this::visibleText));
-            } else if (is(node, "sdt")) inlineChildren(child(node, "sdtContent"), paragraph, part, range, out, plain);
+            } else if (is(node, "sdt")) inlineChildren(child(node, "sdtContent"), paragraph, part, range, out, plain, pages);
             else if ("http://schemas.openxmlformats.org/markup-compatibility/2006".equals(node.getNamespaceURI())
                     && "AlternateContent".equals(node.getLocalName())) {
                 Node chosen = null;
@@ -259,10 +290,10 @@ public final class WordMarkdownConverter {
                     if ("Choice".equals(candidate.getLocalName())) { chosen = candidate; break; }
                     if ("Fallback".equals(candidate.getLocalName())) chosen = candidate;
                 }
-                inlineChildren(chosen, paragraph, part, range, out, plain);
+                inlineChildren(chosen, paragraph, part, range, out, plain, pages);
             }
             else if (is(node, "ins") || is(node, "moveTo") || is(node, "smartTag") || is(node, "customXml") || is(node, "sdtContent"))
-                inlineChildren(node, paragraph, part, range, out, plain);
+                inlineChildren(node, paragraph, part, range, out, plain, pages);
             else if ("http://schemas.openxmlformats.org/officeDocument/2006/math".equals(node.getNamespaceURI())) {
                 if (!plain) {
                     notice("EQUATION_UNSUPPORTED", range, "数式オブジェクトの変換は未対応です。", false);
@@ -292,7 +323,7 @@ public final class WordMarkdownConverter {
             if (node == null || omitted(node)) return;
             if (is(node, "p")) {
                 StringBuilder line = new StringBuilder();
-                inlineChildren(node, node, document.getPackagePart(), "drawing", line, true);
+                inlineChildren(node, node, document.getPackagePart(), "drawing", line, true, false);
                 if (!line.isEmpty()) { if (!out.isEmpty()) append(out, "\n"); append(out, line.toString()); }
             } else for (Node child : children(node)) visibleParagraphs(child, out);
         }
@@ -369,7 +400,7 @@ public final class WordMarkdownConverter {
             for (Node n : children(cell)) {
                 if (omitted(n)) continue;
                 String value = "";
-                if (is(n, "p")) value = paragraph(n, part, range, true);
+                if (is(n, "p")) value = paragraph(n, part, range, true, false);
                 else if (is(n, "tbl")) {
                     notice("NESTED_TABLE_UNSUPPORTED", range, "入れ子の表は文字だけを保持しました。", false);
                     value = Markdown.escape(visibleText(n));

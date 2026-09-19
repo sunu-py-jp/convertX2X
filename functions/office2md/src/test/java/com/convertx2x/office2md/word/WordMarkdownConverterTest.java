@@ -35,9 +35,20 @@ class WordMarkdownConverterTest {
                 </w:tbl><w:p><w:r><w:t>表の後</w:t></w:r></w:p>
                 """, document -> { });
         Converted result = convert(bytes);
-        assertEquals("## 節の見出し\n\n**大きい通常文**\n\n|  |  |\n| --- | --- |\n| 元の一行目 | 値 |\n\n表の後\n\n", result.markdown());
+        assertEquals("[page 1]\n\n## 節の見出し\n\n**大きい通常文**\n\n|  |  |\n| --- | --- |\n| 元の一行目 | 値 |\n\n表の後\n\n", result.markdown());
         assertTrue(result.report().contains("\"sectionKind\" : \"document\""));
         assertTrue(result.report().contains("\"sectionCount\" : 1"));
+    }
+
+    @Test void marksSavedAndExplicitWordPageBoundaries() throws Exception {
+        byte[] bytes = doc("""
+                <w:p><w:r><w:t>1ページ目</w:t></w:r></w:p>
+                <w:p><w:r><w:br w:type="page"/><w:t>2ページ目</w:t></w:r></w:p>
+                <w:p><w:pPr><w:pageBreakBefore/></w:pPr><w:r><w:t>3ページ目</w:t></w:r></w:p>
+                <w:p><w:r><w:lastRenderedPageBreak/><w:t>4ページ目</w:t></w:r></w:p>
+                """, document -> { });
+        assertEquals("[page 1]\n\n1ページ目\n\n[page 2]\n\n2ページ目\n\n[page 3]\n\n3ページ目\n\n[page 4]\n\n4ページ目\n\n",
+                convert(bytes).markdown());
     }
 
     @Test void resolvesInheritedOutlineAndRunStylesIncludingExplicitFalse() throws Exception {
@@ -72,7 +83,7 @@ class WordMarkdownConverterTest {
                 <w:ins><w:p><w:r><w:t>追加段落</w:t></w:r></w:p></w:ins>
                 """, d -> d.getPackagePart().addExternalRelationship("https://secret.invalid/STRIKE_URL_SECRET", "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink", "rStrike"));
         Converted result = convert(bytes);
-        assertEquals("保持追加移動先\n\n追加段落\n\n", result.markdown());
+        assertEquals("[page 1]\n\n保持追加移動先\n\n追加段落\n\n", result.markdown());
         assertFalse((result.markdown() + result.report()).contains("SECRET"));
         assertFalse(result.report().contains("UNSUPPORTED_LINK"));
         assertTrue(result.report().contains("STRIKETHROUGH_REMOVED"));
@@ -88,7 +99,7 @@ class WordMarkdownConverterTest {
             d.getPackagePart().addExternalRelationship("file:///FILE_TARGET_SECRET", "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink", "rFile");
         });
         Converted result = convert(bytes);
-        assertEquals("[**公式**](https://example.com/a%28b%29)ファイル内部\n\n", result.markdown());
+        assertEquals("[page 1]\n\n[**公式**](https://example.com/a%28b%29)ファイル内部\n\n", result.markdown());
         assertFalse((result.markdown() + result.report()).contains("FILE_TARGET_SECRET"));
         assertTrue(result.report().contains("UNSUPPORTED_LINK"));
     }
@@ -104,7 +115,7 @@ class WordMarkdownConverterTest {
                 <w:r><w:fldChar w:fldCharType="end"/></w:r><w:r><w:fldChar w:fldCharType="end"/></w:r></w:p>
                 """, d -> { });
         Converted result = convert(bytes);
-        assertEquals("保存済み表示\n\n外側内側\n\n", result.markdown());
+        assertEquals("[page 1]\n\n保存済み表示\n\n外側内側\n\n", result.markdown());
         assertFalse((result.markdown() + result.report()).contains("SECRET"));
         assertTrue(result.report().contains("FIELD_CACHED_RESULT"));
     }
@@ -120,7 +131,7 @@ class WordMarkdownConverterTest {
                 </w:tbl>
                 """, d -> { });
         Converted result = convert(bytes);
-        assertEquals("| 結合 |  | 列3 |\n| --- | --- | --- |\n|  |  | 入れ子本文 |\n\n", result.markdown());
+        assertEquals("[page 1]\n\n| 結合 |  | 列3 |\n| --- | --- | --- |\n|  |  | 入れ子本文 |\n\n", result.markdown());
         assertTrue(result.report().contains("NESTED_TABLE_UNSUPPORTED"));
         assertFalse((result.markdown() + result.report()).contains("SECRET"));
     }
@@ -136,7 +147,7 @@ class WordMarkdownConverterTest {
             } catch (Exception e) { throw new RuntimeException(e); }
         });
         Converted result = convert(bytes);
-        assertEquals("8\\. 一\n\n10\\. 三\n\n", result.markdown());
+        assertEquals("[page 1]\n\n8\\. 一\n\n10\\. 三\n\n", result.markdown());
         assertFalse((result.markdown() + result.report()).contains("NUMBER_SECRET"));
     }
 
@@ -154,7 +165,7 @@ class WordMarkdownConverterTest {
             } catch (Exception e) { throw new RuntimeException(e); }
         });
         Converted result = convert(bytes);
-        assertEquals("本文[^footnote-1][^endnote-2][^footnote-1]\n\n[^footnote-1]: 脚注本文\n\n[^endnote-2]: 文末脚注\n\n", result.markdown());
+        assertEquals("[page 1]\n\n本文[^footnote-1][^endnote-2][^footnote-1]\n\n[^footnote-1]: 脚注本文\n\n[^endnote-2]: 文末脚注\n\n", result.markdown());
         assertFalse((result.markdown() + result.report()).contains("SECRET"));
     }
 

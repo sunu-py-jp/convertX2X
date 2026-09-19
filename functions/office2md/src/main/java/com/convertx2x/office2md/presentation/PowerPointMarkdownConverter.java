@@ -94,6 +94,7 @@ public final class PowerPointMarkdownConverter {
                 }
                 Entry title = entries.stream().filter(entry -> isTitle(entry.shape) && !entry.text.plain().isBlank())
                         .min(readingOrder()).orElse(null);
+                append("[page " + ordinal + "]\n\n");
                 append("# " + Markdown.escape(title == null ? section : DrawingAltText.singleLine(title.text.plain())) + "\n\n");
                 workspace.block(Map.of("type", "heading", "section", section, "range", "slide-" + ordinal, "level", 1));
                 if (title != null) entries.remove(title);

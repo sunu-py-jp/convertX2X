@@ -48,7 +48,7 @@ class ExcelMarkdownServiceTest {
             cell(sheet,1,0,"2行目\nセル内改行"); cell(sheet,4,0,"次の段落");
             book.createSheet("空白"); Sheet second = book.createSheet("補足"); cell(second,0,0,"内容");
             try (ConversionResult result = convert(book)) {
-                assertEquals("# 売上\n\n大きなタイトル　同じ行  \n2行目  \nセル内改行\n\n次の段落\n\n# 補足\n\n内容\n", markdown(result));
+                assertEquals("# [売上] シート\n\n大きなタイトル　同じ行  \n2行目  \nセル内改行\n\n次の段落\n\n# [補足] シート\n\n内容\n", markdown(result));
                 assertEquals(2, result.sectionCount()); assertTrue(report(result).toString().contains("EMPTY_SHEET_OMITTED"));
             }
         }
@@ -102,7 +102,7 @@ class ExcelMarkdownServiceTest {
             Cell b=cell(sheet,1,0,"");b.setCellFormula("HYPERLINK(\"https://secret.example/formula\",\"秘密\")");b.setCellStyle(style);
             Cell c=cell(sheet,2,0,"");RichTextString rich=book.getCreationHelper().createRichTextString("旧価格新価格"); rich.applyFont(0,3,strike);c.setCellValue(rich);
             try(ConversionResult result=convert(book)) {
-                String md=markdown(result);assertEquals("# 文字\n\n新価格\n",md);
+                String md=markdown(result);assertEquals("# [文字] シート\n\n新価格\n",md);
                 String report=report(result).toString(); assertTrue(report.contains("STRIKETHROUGH_REMOVED"));
                 for(String forbidden:List.of("削除秘密","旧価格","secret.example","HYPERLINK")) {assertFalse(md.contains(forbidden));assertFalse(report.contains(forbidden));}
             }
@@ -115,7 +115,7 @@ class ExcelMarkdownServiceTest {
             CellStyle style=book.createCellStyle();style.setFont(bold);
             Cell cell=cell(sheet,0,0,"");cell.setCellStyle(style);
             RichTextString rich=book.getCreationHelper().createRichTextString("太字通常太字");rich.applyFont(2,4,normal);cell.setCellValue(rich);
-            try(ConversionResult result=convert(book)){assertEquals("# 書式\n\n**太字**通常**太字**\n",markdown(result));}
+            try(ConversionResult result=convert(book)){assertEquals("# [書式] シート\n\n**太字**通常**太字**\n",markdown(result));}
         }
     }
     @ParameterizedTest @ValueSource(booleans={true,false})
@@ -170,7 +170,7 @@ class ExcelMarkdownServiceTest {
             XSSFSheet sheet=book.createSheet("実テーブル");cell(sheet,0,0,"項目");cell(sheet,0,1,"値");cell(sheet,1,0,"A");cell(sheet,1,1,"B");table(sheet,0,1,0,1);
             sheet.createTable(new AreaReference("A1:B2",book.getSpreadsheetVersion()));
             XSSFSheet second=book.createSheet("スタイルのみ");cell(second,0,0,"項目");cell(second,0,1,"値");cell(second,1,0,"C");cell(second,1,1,"D");second.createTable(new AreaReference("A1:B2",book.getSpreadsheetVersion()));
-            try(ConversionResult result=convert(book)){String md=markdown(result);assertTrue(md.contains("| 項目 | 値 |\n| --- | --- |\n| A | B |"));assertTrue(md.contains("# スタイルのみ\n\n項目　値  \nC　D"));assertEquals("excel-table",report(result).path("blocks").get(0).path("header").asText());}
+            try(ConversionResult result=convert(book)){String md=markdown(result);assertTrue(md.contains("| 項目 | 値 |\n| --- | --- |\n| A | B |"));assertTrue(md.contains("# [スタイルのみ] シート\n\n項目　値  \nC　D"));assertEquals("excel-table",report(result).path("blocks").get(0).path("header").asText());}
         }
     }
     @Test void outputZipContainsOnlyArtifactsAndTemporaryFilesAreDeleted() throws Exception {
@@ -211,7 +211,7 @@ class ExcelMarkdownServiceTest {
             try(ConversionResult result=convert(book)) {
                 String md=markdown(result);assertEquals(2,result.sectionCount());assertTrue(md.indexOf("表の末尾")<md.indexOf("!["));
                 assertTrue(md.contains("|  |  | 表外本文 |"));assertTrue(md.indexOf("表外本文")<md.indexOf("!["));
-                assertTrue(md.contains("# 画像のみ"));assertEquals(1,report(result).path("assets").size());
+                assertTrue(md.contains("# [画像のみ] シート"));assertEquals(1,report(result).path("assets").size());
             }
         }
     }

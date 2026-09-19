@@ -102,7 +102,7 @@ public class ExcelMarkdownService {
                     }
                     workspace.sectionIncluded();
                     if (!markdown.isEmpty()) { markdown.append('\n'); line++; }
-                    String heading = "# " + Markdown.escape(sheet.getSheetName()) + "\n\n";
+                    String heading = "# [" + Markdown.escape(sheet.getSheetName()) + "] シート\n\n";
                     markdown.append(heading); line += 2;
                     Block previous = null;
                     for (Block block : blocks) {

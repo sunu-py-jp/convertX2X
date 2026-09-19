@@ -70,8 +70,9 @@ class PowerPointMarkdownConverterTest {
                 directory = result.directory();
                 String md = md(result), report = Files.readString(result.files().get("report.json"));
                 assertEquals(2, result.sectionCount());
-                assertTrue(md.startsWith("# 表示タイトル\n\n"));
-                assertTrue(md.contains("# スライド3\n"));
+                assertTrue(md.startsWith("[page 1]\n\n# 表示タイトル\n\n"));
+                assertTrue(md.contains("[page 3]\n\n# スライド3\n"));
+                assertEquals(2, md.lines().filter(line -> line.matches("\\[page \\d+]")).count());
                 assertEquals(2, md.lines().filter(line -> line.startsWith("# ")).count());
                 assertTrue(md.indexOf("先頭の本文") < md.indexOf("下段の本文"));
                 assertTrue(md.contains("4\\. 元の番号")); assertTrue(md.contains("6\\. 後続の番号"));
