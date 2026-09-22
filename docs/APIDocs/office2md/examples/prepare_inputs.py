@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Copy original repo fixtures, correcting three stale descriptive Excel labels only."""
+"""Copy original repo fixtures, correcting stale descriptive Excel labels only."""
 from pathlib import Path
 import shutil
 import zipfile
@@ -9,7 +9,7 @@ ROOT = HERE.parents[3]
 SOURCE = ROOT / "functions/office2md/samples"
 REPLACEMENTS = {
     "GRP01  明示グループ：図形・線・画像を1枚に合成":
-        "GRP01  明示グループ：図形・線・画像を個別に出力",
+        "GRP01  明示グループ：文字を本文へ、図形・線・画像は確認用に合成",
     "GRP04  未グループ：描画領域の重なりで1枚にまとめる":
         "GRP04  未グループ：重なった図形も個別に出力",
     "GRP05  背景図形＋PNG：合成画像として一度だけ出力":

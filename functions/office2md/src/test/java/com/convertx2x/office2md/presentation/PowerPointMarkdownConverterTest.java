@@ -527,11 +527,12 @@ class PowerPointMarkdownConverterTest {
     }
 
     @Test void storedEndpointsAndArrowheadsProduceDirectionalSearchableConnections() throws Exception {
-        var none = LineDecoration.DecorationShape.NONE;
         var triangle = LineDecoration.DecorationShape.TRIANGLE;
+        var oval = LineDecoration.DecorationShape.OVAL;
+        var diamond = LineDecoration.DecorationShape.DIAMOND;
         var combinations = List.of(
-                List.of(none, triangle), List.of(triangle, none),
-                List.of(triangle, triangle), List.of(none, none));
+                List.of(oval, triangle), List.of(triangle, diamond),
+                List.of(triangle, triangle), List.of(oval, diamond));
         var directions = List.of("start-to-end", "end-to-start", "bidirectional", "undirected");
         for (int i = 0; i < combinations.size(); i++) {
             try (XMLSlideShow deck = deck()) {
@@ -549,14 +550,24 @@ class PowerPointMarkdownConverterTest {
                     assertEquals("shape-" + end.getShapeId(), edge.path("endId").asText());
                     assertEquals("resolved", edge.path("status").asText());
                     assertEquals(directions.get(i), edge.path("direction").asText());
-                    assertEquals(combinations.get(i).get(0) == none ? "none" : "triangle", edge.path("startArrow").asText());
-                    assertEquals(combinations.get(i).get(1) == none ? "none" : "triangle", edge.path("endArrow").asText());
+                    assertEquals(combinations.get(i).get(0).name().toLowerCase(Locale.ROOT), edge.path("startArrow").asText());
+                    assertEquals(combinations.get(i).get(1).name().toLowerCase(Locale.ROOT), edge.path("endArrow").asText());
+                    if (directions.get(i).equals("start-to-end")) {
+                        assertEquals(edge.path("startId"), edge.path("fromId")); assertEquals(edge.path("endId"), edge.path("toId"));
+                    } else if (directions.get(i).equals("end-to-start")) {
+                        assertEquals(edge.path("endId"), edge.path("fromId")); assertEquals(edge.path("startId"), edge.path("toId"));
+                    } else {
+                        assertFalse(edge.has("fromId")); assertFalse(edge.has("toId"));
+                    }
                     String body = withoutImages(md(result));
                     assertTrue(body.contains("図中の項目：")); assertTrue(body.contains("接続関係"));
                     assertTrue(body.contains("**申請**"), "Inline bold must remain available to a normal Markdown reader");
                     assertTrue(body.contains("確認"));
                     assertTrue(body.contains("shape-" + start.getShapeId()));
                     assertTrue(body.contains("shape-" + end.getShapeId()));
+                    assertFalse(body.contains("接続関係不明"));
+                    assertFalse(report(result).path("warnings").toString().contains("DIAGRAM_CONNECTION_UNRESOLVED"));
+                    if (directions.get(i).equals("undirected")) assertTrue(body.contains("（向きなし）"));
                     assertEquals(1, imageLines(md(result)).size());
                 }
             }
@@ -572,7 +583,8 @@ class PowerPointMarkdownConverterTest {
             text(slide, "承認なら進む", 220, 80, 140, 35);
             XSLFConnectorShape unattached = slide.createConnector();
             unattached.setAnchor(new Rectangle2D.Double(220, 170, 140, 0));
-            unattached.setLineTailDecoration(LineDecoration.DecorationShape.TRIANGLE);
+            unattached.setLineHeadDecoration(LineDecoration.DecorationShape.OVAL);
+            unattached.setLineTailDecoration(LineDecoration.DecorationShape.DIAMOND);
             try (ConversionResult result = convert(bytes(deck))) {
                 JsonNode graph = diagram(result);
                 assertEquals(2, graph.path("nodes").size(), "An adjacent caption remains ordinary text, not a fabricated graph node");
@@ -580,7 +592,10 @@ class PowerPointMarkdownConverterTest {
                 JsonNode unknown = edgeById(result, "shape-" + unattached.getShapeId());
                 assertEquals("unresolved", unknown.path("status").asText());
                 assertTrue(unknown.path("startId").isMissingNode()); assertTrue(unknown.path("endId").isMissingNode());
-                assertFalse(unknown.path("reason").asText().isBlank());
+                assertEquals("MISSING_ENDPOINT", unknown.path("reason").asText());
+                assertEquals("undirected", unknown.path("direction").asText());
+                assertEquals("oval", unknown.path("startArrow").asText());
+                assertEquals("diamond", unknown.path("endArrow").asText());
                 for (JsonNode edge : graph.path("edges")) {
                     assertFalse(edge.has("label"));
                     assertFalse(edge.toString().contains("承認なら進む"), "Proximity alone is never evidence for a branch label");

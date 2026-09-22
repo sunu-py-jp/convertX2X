@@ -2,7 +2,7 @@
   "specVersion" : 2,
   "source" : {
     "filename" : "input.xlsx",
-    "sha256" : "7c13e6a3c57c0eac46c0c104b17f57e6567c09f41b9597a54406ae309386eb15",
+    "sha256" : "75833b82b8fdff3b7deb7e1df26c89496beea38996426c965a9ecc97714e3805",
     "format" : "xlsx"
   },
   "sectionKind" : "sheet",
@@ -30,7 +30,7 @@
     "code" : "BORDER_NOT_TABLE",
     "section" : "02_罫線の表",
     "range" : "A3:I42",
-    "message" : "囲み枠または不完全な罫線は表として確定できないため、本文として保持します。"
+    "message" : "罫線だけでは表として確定できない部分があります。検出した表の左右の値は表に取り込み、それ以外は本文として保持します。"
   }, {
     "code" : "TABLE_MERGE_FLATTENED",
     "section" : "02_罫線の表",
@@ -62,6 +62,21 @@
     "range" : "C26",
     "message" : "数式の保存済み計算結果がありません。再計算せず、数式または確定できるリンク表示を残しました。"
   }, {
+    "code" : "DIAGRAM_CONNECTION_UNRESOLVED",
+    "section" : "05_基本図形",
+    "range" : "A25:E25",
+    "message" : "図形の接続関係を確定できません。接続先の保存情報がありません。配置からは推測しません。図形ID: shape-8"
+  }, {
+    "code" : "DIAGRAM_CONNECTION_UNRESOLVED",
+    "section" : "05_基本図形",
+    "range" : "G25:K25",
+    "message" : "図形の接続関係を確定できません。接続先の保存情報がありません。配置からは推測しません。図形ID: shape-1-9"
+  }, {
+    "code" : "DIAGRAM_CONNECTION_UNRESOLVED",
+    "section" : "06_グループと接続",
+    "range" : "A5:M11",
+    "message" : "図形の接続関係を確定できません。接続先の保存情報がありません。配置からは推測しません。図形ID: shape-1-3"
+  }, {
     "code" : "GRAPHIC_FRAME_UNSUPPORTED",
     "section" : "07_未対応と加工",
     "range" : "E4:Q15",
@@ -85,7 +100,7 @@
     "code" : "IMAGE_EFFECTS_IGNORED",
     "section" : "07_未対応と加工",
     "range" : "A33:G44",
-    "message" : "元画像を抽出します。切り抜き前の領域を含み、切り抜き・回転・反転・画像効果は反映しません。配置は代替テキストに記録します。"
+    "message" : "切り抜き・画像効果は反映しません。プレビューには回転・反転を反映します。"
   }, {
     "code" : "IMAGE_FORMAT_ATTACHMENT",
     "section" : "07_未対応と加工",
@@ -167,6 +182,16 @@
     "range" : "A20:C20",
     "message" : "結合セルは表示中の左上セルの値だけを出力します。"
   }, {
+    "code" : "TABLE_EXPANDED",
+    "section" : "02_罫線の表",
+    "range" : "A13:G16",
+    "message" : "検出した表と同じ行の左右の値・表を取り込みました。"
+  }, {
+    "code" : "TABLE_EXPANDED",
+    "section" : "02_罫線の表",
+    "range" : "A27:H30",
+    "message" : "検出した表と同じ行の左右の値・表を取り込みました。"
+  }, {
     "code" : "EMPTY_TABLE_OMITTED",
     "section" : "02_罫線の表",
     "range" : "A40:C41",
@@ -192,6 +217,11 @@
     "range" : "35:35",
     "message" : "非表示行を除外しました。"
   }, {
+    "code" : "TABLE_EXPANDED",
+    "section" : "04_画像",
+    "range" : "A24:H29",
+    "message" : "検出した表と同じ行の左右の値・表を取り込みました。"
+  }, {
     "code" : "HIDDEN_DRAWING",
     "section" : "04_画像",
     "message" : "明示的に非表示の描画オブジェクトを除外しました。"
@@ -207,154 +237,169 @@
     "message" : "左上アンカーの行または列が非表示の描画オブジェクトを除外しました。"
   }, {
     "code" : "DRAWING_SIMPLIFIED",
+    "section" : "04_画像",
+    "range" : "A4:E10",
+    "message" : "保存されたグループ・接続単位で図を簡易描画しました。セル内容は画像に含みません。"
+  }, {
+    "code" : "DRAWING_SIMPLIFIED",
+    "section" : "04_画像",
+    "range" : "G4:K10",
+    "message" : "保存されたグループ・接続単位で図を簡易描画しました。セル内容は画像に含みません。"
+  }, {
+    "code" : "DRAWING_SIMPLIFIED",
+    "section" : "04_画像",
+    "range" : "A14:E20",
+    "message" : "保存されたグループ・接続単位で図を簡易描画しました。セル内容は画像に含みません。"
+  }, {
+    "code" : "DRAWING_SIMPLIFIED",
+    "section" : "04_画像",
+    "range" : "G14:K20",
+    "message" : "保存されたグループ・接続単位で図を簡易描画しました。セル内容は画像に含みません。"
+  }, {
+    "code" : "DRAWING_SIMPLIFIED",
+    "section" : "04_画像",
+    "range" : "B26:D29",
+    "message" : "保存されたグループ・接続単位で図を簡易描画しました。セル内容は画像に含みません。"
+  }, {
+    "code" : "DRAWING_SIMPLIFIED",
     "section" : "05_基本図形",
     "range" : "A4:E10",
-    "message" : "基本図形を個別に簡易描画しました。セル内容は画像に含みません。図形ID: 1"
+    "message" : "保存されたグループ・接続単位で図を簡易描画しました。セル内容は画像に含みません。"
   }, {
     "code" : "DRAWING_SIMPLIFIED",
     "section" : "05_基本図形",
     "range" : "G4:K10",
-    "message" : "基本図形を個別に簡易描画しました。セル内容は画像に含みません。図形ID: 2"
+    "message" : "保存されたグループ・接続単位で図を簡易描画しました。セル内容は画像に含みません。"
   }, {
     "code" : "DRAWING_SIMPLIFIED",
     "section" : "05_基本図形",
     "range" : "M4:Q10",
-    "message" : "基本図形を個別に簡易描画しました。セル内容は画像に含みません。図形ID: 3"
+    "message" : "保存されたグループ・接続単位で図を簡易描画しました。セル内容は画像に含みません。"
   }, {
     "code" : "DRAWING_SIMPLIFIED",
     "section" : "05_基本図形",
     "range" : "A14:D21",
-    "message" : "基本図形を個別に簡易描画しました。セル内容は画像に含みません。図形ID: 4"
+    "message" : "保存されたグループ・接続単位で図を簡易描画しました。セル内容は画像に含みません。"
   }, {
     "code" : "DRAWING_SIMPLIFIED",
     "section" : "05_基本図形",
     "range" : "F14:I21",
-    "message" : "基本図形を個別に簡易描画しました。セル内容は画像に含みません。図形ID: 5"
+    "message" : "保存されたグループ・接続単位で図を簡易描画しました。セル内容は画像に含みません。"
   }, {
     "code" : "DRAWING_SIMPLIFIED",
     "section" : "05_基本図形",
     "range" : "K14:N21",
-    "message" : "基本図形を個別に簡易描画しました。セル内容は画像に含みません。図形ID: 6"
+    "message" : "保存されたグループ・接続単位で図を簡易描画しました。セル内容は画像に含みません。"
   }, {
     "code" : "DRAWING_SIMPLIFIED",
     "section" : "05_基本図形",
     "range" : "P14:S21",
-    "message" : "基本図形を個別に簡易描画しました。セル内容は画像に含みません。図形ID: 7"
+    "message" : "保存されたグループ・接続単位で図を簡易描画しました。セル内容は画像に含みません。"
   }, {
     "code" : "DRAWING_SIMPLIFIED",
     "section" : "05_基本図形",
     "range" : "A25:E25",
-    "message" : "基本図形を個別に簡易描画しました。セル内容は画像に含みません。図形ID: 8"
+    "message" : "保存されたグループ・接続単位で図を簡易描画しました。セル内容は画像に含みません。"
   }, {
     "code" : "DRAWING_SIMPLIFIED",
     "section" : "05_基本図形",
     "range" : "G25:K25",
-    "message" : "基本図形を個別に簡易描画しました。セル内容は画像に含みません。図形ID: 1"
+    "message" : "保存されたグループ・接続単位で図を簡易描画しました。セル内容は画像に含みません。"
   }, {
     "code" : "DRAWING_SIMPLIFIED",
     "section" : "05_基本図形",
     "range" : "A31:G38",
-    "message" : "基本図形を個別に簡易描画しました。セル内容は画像に含みません。図形ID: 10"
+    "message" : "保存されたグループ・接続単位で図を簡易描画しました。セル内容は画像に含みません。"
   }, {
     "code" : "DRAWING_SIMPLIFIED",
     "section" : "05_基本図形",
     "range" : "I31:O38",
-    "message" : "基本図形を個別に簡易描画しました。セル内容は画像に含みません。図形ID: 11"
+    "message" : "保存されたグループ・接続単位で図を簡易描画しました。セル内容は画像に含みません。"
   }, {
     "code" : "DRAWING_SIMPLIFIED",
     "section" : "05_基本図形",
     "range" : "A41:G48",
-    "message" : "基本図形を個別に簡易描画しました。セル内容は画像に含みません。図形ID: 12"
+    "message" : "保存されたグループ・接続単位で図を簡易描画しました。セル内容は画像に含みません。"
   }, {
     "code" : "DRAWING_SIMPLIFIED",
     "section" : "05_基本図形",
     "range" : "I41:O48",
-    "message" : "基本図形を個別に簡易描画しました。セル内容は画像に含みません。図形ID: 13"
+    "message" : "保存されたグループ・接続単位で図を簡易描画しました。セル内容は画像に含みません。"
   }, {
     "code" : "DRAWING_SIMPLIFIED",
     "section" : "05_基本図形",
     "range" : "A51:H59",
-    "message" : "基本図形を個別に簡易描画しました。セル内容は画像に含みません。図形ID: 14"
+    "message" : "保存されたグループ・接続単位で図を簡易描画しました。セル内容は画像に含みません。"
   }, {
     "code" : "DRAWING_SIMPLIFIED",
     "section" : "05_基本図形",
     "range" : "K52:P58",
-    "message" : "基本図形を個別に簡易描画しました。セル内容は画像に含みません。図形ID: 15"
+    "message" : "保存されたグループ・接続単位で図を簡易描画しました。セル内容は画像に含みません。"
   }, {
     "code" : "DRAWING_SIMPLIFIED",
     "section" : "05_基本図形",
     "range" : "A61:G71",
-    "message" : "基本図形を個別に簡易描画しました。セル内容は画像に含みません。図形ID: 16"
+    "message" : "保存されたグループ・接続単位で図を簡易描画しました。セル内容は画像に含みません。"
   }, {
     "code" : "DRAWING_SIMPLIFIED",
     "section" : "05_基本図形",
     "range" : "I63:O70",
-    "message" : "基本図形を個別に簡易描画しました。セル内容は画像に含みません。図形ID: 17"
+    "message" : "保存されたグループ・接続単位で図を簡易描画しました。セル内容は画像に含みません。"
   }, {
     "code" : "DRAWING_SIMPLIFIED",
     "section" : "06_グループと接続",
-    "range" : "A5:D11",
-    "message" : "基本図形を個別に簡易描画しました。セル内容は画像に含みません。図形ID: 1"
+    "range" : "A5:M11",
+    "message" : "保存されたグループ・接続単位で図を簡易描画しました。セル内容は画像に含みません。"
   }, {
     "code" : "DRAWING_SIMPLIFIED",
     "section" : "06_グループと接続",
-    "range" : "E5:H11",
-    "message" : "基本図形を個別に簡易描画しました。セル内容は画像に含みません。図形ID: 1"
+    "range" : "A17:I26",
+    "message" : "保存されたグループ・接続単位で図を簡易描画しました。セル内容は画像に含みません。"
   }, {
     "code" : "DRAWING_SIMPLIFIED",
     "section" : "06_グループと接続",
-    "range" : "D8:E8",
-    "message" : "基本図形を個別に簡易描画しました。セル内容は画像に含みません。図形ID: 1"
-  }, {
-    "code" : "DRAWING_SIMPLIFIED",
-    "section" : "06_グループと接続",
-    "range" : "A17:D24",
-    "message" : "基本図形を個別に簡易描画しました。セル内容は画像に含みません。図形ID: 1"
-  }, {
-    "code" : "DRAWING_SIMPLIFIED",
-    "section" : "06_グループと接続",
-    "range" : "E19:I26",
-    "message" : "基本図形を個別に簡易描画しました。セル内容は画像に含みません。図形ID: 1"
-  }, {
-    "code" : "DRAWING_SIMPLIFIED",
-    "section" : "06_グループと接続",
-    "range" : "A35:F41",
-    "message" : "基本図形を個別に簡易描画しました。セル内容は画像に含みません。図形ID: 3"
-  }, {
-    "code" : "DRAWING_SIMPLIFIED",
-    "section" : "06_グループと接続",
-    "range" : "J35:O41",
-    "message" : "基本図形を個別に簡易描画しました。セル内容は画像に含みません。図形ID: 4"
-  }, {
-    "code" : "DRAWING_SIMPLIFIED",
-    "section" : "06_グループと接続",
-    "range" : "F38:J38",
-    "message" : "基本図形を個別に簡易描画しました。セル内容は画像に含みません。図形ID: 1"
+    "range" : "A35:O41",
+    "message" : "保存されたグループ・接続単位で図を簡易描画しました。セル内容は画像に含みません。"
   }, {
     "code" : "DRAWING_SIMPLIFIED",
     "section" : "06_グループと接続",
     "range" : "A47:G55",
-    "message" : "基本図形を個別に簡易描画しました。セル内容は画像に含みません。図形ID: 6"
+    "message" : "保存されたグループ・接続単位で図を簡易描画しました。セル内容は画像に含みません。"
   }, {
     "code" : "DRAWING_SIMPLIFIED",
     "section" : "06_グループと接続",
     "range" : "C49:I57",
-    "message" : "基本図形を個別に簡易描画しました。セル内容は画像に含みません。図形ID: 7"
+    "message" : "保存されたグループ・接続単位で図を簡易描画しました。セル内容は画像に含みません。"
   }, {
     "code" : "DRAWING_SIMPLIFIED",
     "section" : "06_グループと接続",
     "range" : "A63:J73",
-    "message" : "基本図形を個別に簡易描画しました。セル内容は画像に含みません。図形ID: 8"
+    "message" : "保存されたグループ・接続単位で図を簡易描画しました。セル内容は画像に含みません。"
+  }, {
+    "code" : "DRAWING_SIMPLIFIED",
+    "section" : "06_グループと接続",
+    "range" : "C65:H71",
+    "message" : "保存されたグループ・接続単位で図を簡易描画しました。セル内容は画像に含みません。"
   }, {
     "code" : "DRAWING_SIMPLIFIED",
     "section" : "07_未対応と加工",
     "range" : "G20:L28",
-    "message" : "基本図形を個別に簡易描画しました。セル内容は画像に含みません。図形ID: 3"
+    "message" : "保存されたグループ・接続単位で図を簡易描画しました。セル内容は画像に含みません。"
   }, {
     "code" : "DRAWING_SIMPLIFIED",
     "section" : "07_未対応と加工",
     "range" : "N20:Q30",
-    "message" : "基本図形を個別に簡易描画しました。セル内容は画像に含みません。図形ID: 4"
+    "message" : "保存されたグループ・接続単位で図を簡易描画しました。セル内容は画像に含みません。"
+  }, {
+    "code" : "DRAWING_SIMPLIFIED",
+    "section" : "07_未対応と加工",
+    "range" : "A33:G44",
+    "message" : "保存されたグループ・接続単位で図を簡易描画しました。セル内容は画像に含みません。"
+  }, {
+    "code" : "DRAWING_SIMPLIFIED",
+    "section" : "08_画像だけ",
+    "range" : "A3:J16",
+    "message" : "保存されたグループ・接続単位で図を簡易描画しました。セル内容は画像に含みません。"
   }, {
     "code" : "HIDDEN_SHEET_OMITTED",
     "section" : "非表示シート",
@@ -543,857 +588,1524 @@
     "markdownStartLine" : 42,
     "markdownEndLine" : 42
   }, {
-    "sourceColumns" : [ 1, 2, 3, 4 ],
-    "mergedRanges" : [ ],
-    "sourceRows" : [ 4, 5, 6, 7, 8, 9 ],
     "header" : "empty-generated",
+    "inferredMergedRanges" : [ ],
+    "sourceColumns" : [ 1, 2, 3, 4 ],
+    "sourceRows" : [ 4, 5, 6, 7, 8, 9 ],
+    "mergedRanges" : [ ],
+    "detectedRanges" : [ "A4:D9" ],
     "type" : "table",
     "section" : "02_罫線の表",
     "range" : "A4:D9",
     "markdownStartLine" : 44,
     "markdownEndLine" : 51
   }, {
-    "sourceColumns" : [ 6, 7, 8 ],
-    "mergedRanges" : [ ],
-    "sourceRows" : [ 4, 5, 6, 7 ],
     "header" : "empty-generated",
+    "inferredMergedRanges" : [ ],
+    "sourceColumns" : [ 6, 7, 8 ],
+    "sourceRows" : [ 4, 5, 6, 7 ],
+    "mergedRanges" : [ ],
+    "detectedRanges" : [ "F4:H7" ],
     "type" : "table",
     "section" : "02_罫線の表",
     "range" : "F4:H7",
     "markdownStartLine" : 53,
     "markdownEndLine" : 58
   }, {
-    "sourceColumns" : [ 1, 2, 3 ],
-    "mergedRanges" : [ ],
-    "sourceRows" : [ 13, 15, 16 ],
     "header" : "empty-generated",
+    "inferredMergedRanges" : [ ],
+    "sourceColumns" : [ 1, 2, 3, 6, 7 ],
+    "sourceRows" : [ 13, 15, 16 ],
+    "mergedRanges" : [ ],
+    "detectedRanges" : [ "A13:C16", "F13:G16" ],
     "type" : "table",
     "section" : "02_罫線の表",
-    "range" : "A13:C16",
+    "range" : "A13:G16",
     "markdownStartLine" : 60,
     "markdownEndLine" : 64
   }, {
-    "sourceColumns" : [ 6, 7 ],
-    "mergedRanges" : [ ],
-    "sourceRows" : [ 13, 15, 16 ],
     "header" : "empty-generated",
-    "type" : "table",
-    "section" : "02_罫線の表",
-    "range" : "F13:G16",
-    "markdownStartLine" : 66,
-    "markdownEndLine" : 70
-  }, {
+    "inferredMergedRanges" : [ ],
     "sourceColumns" : [ 1, 2, 3 ],
-    "mergedRanges" : [ "A20:C20" ],
     "sourceRows" : [ 20, 21, 22, 23 ],
-    "header" : "empty-generated",
+    "mergedRanges" : [ "A20:C20" ],
+    "detectedRanges" : [ "A20:C23" ],
     "type" : "table",
     "section" : "02_罫線の表",
     "range" : "A20:C23",
-    "markdownStartLine" : 72,
-    "markdownEndLine" : 77
+    "markdownStartLine" : 66,
+    "markdownEndLine" : 71
   }, {
-    "sourceColumns" : [ 1, 2, 3 ],
-    "mergedRanges" : [ ],
-    "sourceRows" : [ 27, 28, 29, 30 ],
     "header" : "excel-table",
+    "inferredMergedRanges" : [ ],
+    "sourceColumns" : [ 1, 2, 3, 6, 7, 8 ],
+    "sourceRows" : [ 27, 28, 29, 30 ],
+    "mergedRanges" : [ ],
+    "detectedRanges" : [ "A27:C30" ],
     "type" : "table",
     "section" : "02_罫線の表",
-    "range" : "A27:C30",
+    "range" : "A27:H30",
+    "markdownStartLine" : 73,
+    "markdownEndLine" : 77
+  }, {
+    "type" : "text",
+    "section" : "02_罫線の表",
+    "range" : "A34:H34",
     "markdownStartLine" : 79,
+    "markdownEndLine" : 79
+  }, {
+    "type" : "text",
+    "section" : "02_罫線の表",
+    "range" : "F35:H35",
+    "markdownStartLine" : 80,
+    "markdownEndLine" : 80
+  }, {
+    "type" : "text",
+    "section" : "02_罫線の表",
+    "range" : "F36:H36",
+    "markdownStartLine" : 81,
+    "markdownEndLine" : 81
+  }, {
+    "type" : "text",
+    "section" : "02_罫線の表",
+    "range" : "A38",
+    "markdownStartLine" : 83,
     "markdownEndLine" : 83
   }, {
     "type" : "text",
     "section" : "02_罫線の表",
-    "range" : "F27:H27",
+    "range" : "A44",
     "markdownStartLine" : 85,
     "markdownEndLine" : 85
   }, {
     "type" : "text",
     "section" : "02_罫線の表",
-    "range" : "F28:H28",
+    "range" : "A45",
     "markdownStartLine" : 86,
     "markdownEndLine" : 86
   }, {
     "type" : "text",
-    "section" : "02_罫線の表",
-    "range" : "F29:H29",
-    "markdownStartLine" : 87,
-    "markdownEndLine" : 87
-  }, {
-    "type" : "text",
-    "section" : "02_罫線の表",
-    "range" : "F30:G30",
-    "markdownStartLine" : 88,
-    "markdownEndLine" : 88
-  }, {
-    "type" : "text",
-    "section" : "02_罫線の表",
-    "range" : "A34:H34",
+    "section" : "03_表示値と数式",
+    "range" : "A1",
     "markdownStartLine" : 90,
     "markdownEndLine" : 90
   }, {
     "type" : "text",
-    "section" : "02_罫線の表",
-    "range" : "F35:H35",
+    "section" : "03_表示値と数式",
+    "range" : "A2",
     "markdownStartLine" : 91,
     "markdownEndLine" : 91
   }, {
     "type" : "text",
-    "section" : "02_罫線の表",
-    "range" : "F36:H36",
-    "markdownStartLine" : 92,
-    "markdownEndLine" : 92
+    "section" : "03_表示値と数式",
+    "range" : "A4:C4",
+    "markdownStartLine" : 93,
+    "markdownEndLine" : 93
   }, {
     "type" : "text",
-    "section" : "02_罫線の表",
-    "range" : "A38",
+    "section" : "03_表示値と数式",
+    "range" : "A5:C5",
     "markdownStartLine" : 94,
     "markdownEndLine" : 94
   }, {
     "type" : "text",
-    "section" : "02_罫線の表",
-    "range" : "A44",
+    "section" : "03_表示値と数式",
+    "range" : "A6:C6",
+    "markdownStartLine" : 95,
+    "markdownEndLine" : 95
+  }, {
+    "type" : "text",
+    "section" : "03_表示値と数式",
+    "range" : "A7:C7",
     "markdownStartLine" : 96,
     "markdownEndLine" : 96
   }, {
     "type" : "text",
-    "section" : "02_罫線の表",
-    "range" : "A45",
+    "section" : "03_表示値と数式",
+    "range" : "A8:C8",
     "markdownStartLine" : 97,
     "markdownEndLine" : 97
   }, {
     "type" : "text",
     "section" : "03_表示値と数式",
-    "range" : "A1",
+    "range" : "A9:C9",
+    "markdownStartLine" : 98,
+    "markdownEndLine" : 98
+  }, {
+    "type" : "text",
+    "section" : "03_表示値と数式",
+    "range" : "A10:C10",
+    "markdownStartLine" : 99,
+    "markdownEndLine" : 99
+  }, {
+    "type" : "text",
+    "section" : "03_表示値と数式",
+    "range" : "A11:C11",
+    "markdownStartLine" : 100,
+    "markdownEndLine" : 100
+  }, {
+    "type" : "text",
+    "section" : "03_表示値と数式",
+    "range" : "A12:C12",
     "markdownStartLine" : 101,
     "markdownEndLine" : 101
   }, {
     "type" : "text",
     "section" : "03_表示値と数式",
-    "range" : "A2",
+    "range" : "A13:C13",
     "markdownStartLine" : 102,
     "markdownEndLine" : 102
   }, {
     "type" : "text",
     "section" : "03_表示値と数式",
-    "range" : "A4:C4",
+    "range" : "A14:C14",
+    "markdownStartLine" : 103,
+    "markdownEndLine" : 103
+  }, {
+    "type" : "text",
+    "section" : "03_表示値と数式",
+    "range" : "A15",
     "markdownStartLine" : 104,
     "markdownEndLine" : 104
   }, {
     "type" : "text",
     "section" : "03_表示値と数式",
-    "range" : "A5:C5",
-    "markdownStartLine" : 105,
-    "markdownEndLine" : 105
-  }, {
-    "type" : "text",
-    "section" : "03_表示値と数式",
-    "range" : "A6:C6",
+    "range" : "A17:C17",
     "markdownStartLine" : 106,
     "markdownEndLine" : 106
   }, {
     "type" : "text",
     "section" : "03_表示値と数式",
-    "range" : "A7:C7",
+    "range" : "A18:C18",
     "markdownStartLine" : 107,
     "markdownEndLine" : 107
   }, {
     "type" : "text",
     "section" : "03_表示値と数式",
-    "range" : "A8:C8",
-    "markdownStartLine" : 108,
-    "markdownEndLine" : 108
-  }, {
-    "type" : "text",
-    "section" : "03_表示値と数式",
-    "range" : "A9:C9",
+    "range" : "A20:C20",
     "markdownStartLine" : 109,
     "markdownEndLine" : 109
   }, {
     "type" : "text",
     "section" : "03_表示値と数式",
-    "range" : "A10:C10",
-    "markdownStartLine" : 110,
-    "markdownEndLine" : 110
-  }, {
-    "type" : "text",
-    "section" : "03_表示値と数式",
-    "range" : "A11:C11",
+    "range" : "A22:C22",
     "markdownStartLine" : 111,
     "markdownEndLine" : 111
   }, {
     "type" : "text",
     "section" : "03_表示値と数式",
-    "range" : "A12:C12",
+    "range" : "A23:C23",
     "markdownStartLine" : 112,
     "markdownEndLine" : 112
   }, {
     "type" : "text",
     "section" : "03_表示値と数式",
-    "range" : "A13:C13",
+    "range" : "A24:C24",
     "markdownStartLine" : 113,
     "markdownEndLine" : 113
   }, {
     "type" : "text",
     "section" : "03_表示値と数式",
-    "range" : "A14:C14",
-    "markdownStartLine" : 114,
-    "markdownEndLine" : 114
-  }, {
-    "type" : "text",
-    "section" : "03_表示値と数式",
-    "range" : "A15",
+    "range" : "A26:C26",
     "markdownStartLine" : 115,
     "markdownEndLine" : 115
   }, {
     "type" : "text",
     "section" : "03_表示値と数式",
-    "range" : "A17:C17",
+    "range" : "A28",
     "markdownStartLine" : 117,
     "markdownEndLine" : 117
   }, {
     "type" : "text",
-    "section" : "03_表示値と数式",
-    "range" : "A18:C18",
-    "markdownStartLine" : 118,
-    "markdownEndLine" : 118
-  }, {
-    "type" : "text",
-    "section" : "03_表示値と数式",
-    "range" : "A20:C20",
-    "markdownStartLine" : 120,
-    "markdownEndLine" : 120
-  }, {
-    "type" : "text",
-    "section" : "03_表示値と数式",
-    "range" : "A22:C22",
-    "markdownStartLine" : 122,
-    "markdownEndLine" : 122
-  }, {
-    "type" : "text",
-    "section" : "03_表示値と数式",
-    "range" : "A23:C23",
-    "markdownStartLine" : 123,
-    "markdownEndLine" : 123
-  }, {
-    "type" : "text",
-    "section" : "03_表示値と数式",
-    "range" : "A24:C24",
-    "markdownStartLine" : 124,
-    "markdownEndLine" : 124
-  }, {
-    "type" : "text",
-    "section" : "03_表示値と数式",
-    "range" : "A26:C26",
-    "markdownStartLine" : 126,
-    "markdownEndLine" : 126
-  }, {
-    "type" : "text",
-    "section" : "03_表示値と数式",
-    "range" : "A28",
-    "markdownStartLine" : 128,
-    "markdownEndLine" : 128
-  }, {
-    "type" : "text",
     "section" : "04_画像",
     "range" : "A1",
-    "markdownStartLine" : 132,
-    "markdownEndLine" : 132
+    "markdownStartLine" : 121,
+    "markdownEndLine" : 121
   }, {
     "type" : "text",
     "section" : "04_画像",
     "range" : "A3:G3",
-    "markdownStartLine" : 134,
-    "markdownEndLine" : 134
+    "markdownStartLine" : 123,
+    "markdownEndLine" : 123
   }, {
+    "nodes" : [ {
+      "type" : "画像",
+      "text" : "PNGの日本語サンプル",
+      "x" : 0,
+      "y" : 84,
+      "width" : 252.061,
+      "height" : 144,
+      "id" : "shape-1"
+    } ],
+    "edges" : [ ],
+    "path" : "images/diagram-0001.png",
+    "metadata" : {
+      "type" : "図",
+      "text" : "",
+      "x" : 0,
+      "y" : 84,
+      "width" : 252.061,
+      "height" : 144
+    },
     "type" : "drawing",
     "section" : "04_画像",
     "range" : "A4:E10",
-    "markdownStartLine" : 136,
-    "markdownEndLine" : 136
+    "markdownStartLine" : 125,
+    "markdownEndLine" : 131
   }, {
+    "nodes" : [ {
+      "type" : "画像",
+      "text" : "JPEGの日本語サンプル",
+      "x" : 378.092,
+      "y" : 84,
+      "width" : 252.061,
+      "height" : 144,
+      "id" : "shape-2"
+    } ],
+    "edges" : [ ],
+    "path" : "images/diagram-0002.png",
+    "metadata" : {
+      "type" : "図",
+      "text" : "",
+      "x" : 378.092,
+      "y" : 84,
+      "width" : 252.061,
+      "height" : 144
+    },
     "type" : "drawing",
     "section" : "04_画像",
     "range" : "G4:K10",
-    "markdownStartLine" : 138,
-    "markdownEndLine" : 138
+    "markdownStartLine" : 133,
+    "markdownEndLine" : 139
   }, {
     "type" : "text",
     "section" : "04_画像",
     "range" : "A13",
-    "markdownStartLine" : 140,
-    "markdownEndLine" : 140
+    "markdownStartLine" : 141,
+    "markdownEndLine" : 141
   }, {
+    "nodes" : [ {
+      "type" : "画像",
+      "text" : "同一PNGの配置1",
+      "x" : 0,
+      "y" : 324,
+      "width" : 252.061,
+      "height" : 144,
+      "id" : "shape-3"
+    } ],
+    "edges" : [ ],
+    "path" : "images/diagram-0001.png",
+    "metadata" : {
+      "type" : "図",
+      "text" : "",
+      "x" : 0,
+      "y" : 324,
+      "width" : 252.061,
+      "height" : 144
+    },
     "type" : "drawing",
     "section" : "04_画像",
     "range" : "A14:E20",
-    "markdownStartLine" : 142,
-    "markdownEndLine" : 142
+    "markdownStartLine" : 143,
+    "markdownEndLine" : 149
   }, {
+    "nodes" : [ {
+      "type" : "画像",
+      "text" : "同一PNGの配置2",
+      "x" : 378.092,
+      "y" : 324,
+      "width" : 252.061,
+      "height" : 144,
+      "id" : "shape-4"
+    } ],
+    "edges" : [ ],
+    "path" : "images/diagram-0001.png",
+    "metadata" : {
+      "type" : "図",
+      "text" : "",
+      "x" : 378.092,
+      "y" : 324,
+      "width" : 252.061,
+      "height" : 144
+    },
     "type" : "drawing",
     "section" : "04_画像",
     "range" : "G14:K20",
-    "markdownStartLine" : 144,
-    "markdownEndLine" : 144
-  }, {
-    "type" : "text",
-    "section" : "04_画像",
-    "range" : "A23",
-    "markdownStartLine" : 146,
-    "markdownEndLine" : 146
-  }, {
-    "sourceColumns" : [ 1, 2, 3, 4, 5 ],
-    "mergedRanges" : [ ],
-    "sourceRows" : [ 24, 25, 26, 27, 28, 29 ],
-    "header" : "empty-generated",
-    "type" : "table",
-    "section" : "04_画像",
-    "range" : "A24:E29",
-    "markdownStartLine" : 148,
-    "markdownEndLine" : 155
-  }, {
-    "type" : "drawing",
-    "section" : "04_画像",
-    "range" : "B26:D29",
-    "markdownStartLine" : 157,
+    "markdownStartLine" : 151,
     "markdownEndLine" : 157
   }, {
     "type" : "text",
     "section" : "04_画像",
-    "range" : "H25",
+    "range" : "A23",
     "markdownStartLine" : 159,
     "markdownEndLine" : 159
+  }, {
+    "header" : "empty-generated",
+    "inferredMergedRanges" : [ ],
+    "sourceColumns" : [ 1, 2, 3, 4, 5, 8 ],
+    "sourceRows" : [ 24, 25, 26, 27, 28, 29 ],
+    "mergedRanges" : [ ],
+    "detectedRanges" : [ "A24:E29" ],
+    "type" : "table",
+    "section" : "04_画像",
+    "range" : "A24:H29",
+    "markdownStartLine" : 161,
+    "markdownEndLine" : 168
+  }, {
+    "nodes" : [ {
+      "type" : "画像",
+      "text" : "罫線表に重なるPNG",
+      "x" : 63.015,
+      "y" : 612,
+      "width" : 126.031,
+      "height" : 72,
+      "id" : "shape-5"
+    } ],
+    "edges" : [ ],
+    "path" : "images/diagram-0003.png",
+    "metadata" : {
+      "type" : "図",
+      "text" : "",
+      "x" : 63.015,
+      "y" : 612,
+      "width" : 126.031,
+      "height" : 72
+    },
+    "type" : "drawing",
+    "section" : "04_画像",
+    "range" : "B26:D29",
+    "markdownStartLine" : 170,
+    "markdownEndLine" : 176
   }, {
     "type" : "text",
     "section" : "04_画像",
     "range" : "A33",
-    "markdownStartLine" : 161,
-    "markdownEndLine" : 161
+    "markdownStartLine" : 178,
+    "markdownEndLine" : 178
   }, {
     "type" : "text",
     "section" : "05_基本図形",
     "range" : "A1",
-    "markdownStartLine" : 165,
-    "markdownEndLine" : 165
+    "markdownStartLine" : 182,
+    "markdownEndLine" : 182
   }, {
     "type" : "text",
     "section" : "05_基本図形",
     "range" : "A3:M3",
-    "markdownStartLine" : 167,
-    "markdownEndLine" : 167
+    "markdownStartLine" : 184,
+    "markdownEndLine" : 184
   }, {
+    "nodes" : [ {
+      "type" : "長方形",
+      "text" : "四角\n受付内容",
+      "x" : 0,
+      "y" : 84,
+      "width" : 252.061,
+      "height" : 144,
+      "id" : "shape-1-1"
+    } ],
+    "edges" : [ ],
+    "path" : "images/diagram-0004.png",
+    "metadata" : {
+      "type" : "図",
+      "text" : "",
+      "x" : 0,
+      "y" : 84,
+      "width" : 252.061,
+      "height" : 144
+    },
     "type" : "drawing",
     "section" : "05_基本図形",
     "range" : "A4:E10",
-    "markdownStartLine" : 169,
-    "markdownEndLine" : 169
+    "markdownStartLine" : 186,
+    "markdownEndLine" : 192
   }, {
+    "nodes" : [ {
+      "type" : "角丸長方形",
+      "text" : "角丸四角\n承認待ち",
+      "x" : 378.092,
+      "y" : 84,
+      "width" : 252.061,
+      "height" : 144,
+      "id" : "shape-2"
+    } ],
+    "edges" : [ ],
+    "path" : "images/diagram-0005.png",
+    "metadata" : {
+      "type" : "図",
+      "text" : "",
+      "x" : 378.092,
+      "y" : 84,
+      "width" : 252.061,
+      "height" : 144
+    },
     "type" : "drawing",
     "section" : "05_基本図形",
     "range" : "G4:K10",
-    "markdownStartLine" : 171,
-    "markdownEndLine" : 171
+    "markdownStartLine" : 194,
+    "markdownEndLine" : 200
   }, {
+    "nodes" : [ {
+      "type" : "楕円",
+      "text" : "楕円\n完了",
+      "x" : 756.184,
+      "y" : 84,
+      "width" : 252.061,
+      "height" : 144,
+      "id" : "shape-3"
+    } ],
+    "edges" : [ ],
+    "path" : "images/diagram-0006.png",
+    "metadata" : {
+      "type" : "図",
+      "text" : "",
+      "x" : 756.184,
+      "y" : 84,
+      "width" : 252.061,
+      "height" : 144
+    },
     "type" : "drawing",
     "section" : "05_基本図形",
     "range" : "M4:Q10",
-    "markdownStartLine" : 173,
-    "markdownEndLine" : 173
+    "markdownStartLine" : 202,
+    "markdownEndLine" : 208
   }, {
     "type" : "text",
     "section" : "05_基本図形",
     "range" : "A13",
-    "markdownStartLine" : 175,
-    "markdownEndLine" : 175
+    "markdownStartLine" : 210,
+    "markdownEndLine" : 210
   }, {
+    "nodes" : [ {
+      "type" : "右矢印",
+      "text" : "右",
+      "x" : 0,
+      "y" : 324,
+      "width" : 189.046,
+      "height" : 168,
+      "id" : "shape-4"
+    } ],
+    "edges" : [ ],
+    "path" : "images/diagram-0007.png",
+    "metadata" : {
+      "type" : "図",
+      "text" : "",
+      "x" : 0,
+      "y" : 324,
+      "width" : 189.046,
+      "height" : 168
+    },
     "type" : "drawing",
     "section" : "05_基本図形",
     "range" : "A14:D21",
-    "markdownStartLine" : 177,
-    "markdownEndLine" : 177
+    "markdownStartLine" : 212,
+    "markdownEndLine" : 218
   }, {
+    "nodes" : [ {
+      "type" : "左矢印",
+      "text" : "左",
+      "x" : 315.077,
+      "y" : 324,
+      "width" : 189.046,
+      "height" : 168,
+      "id" : "shape-5"
+    } ],
+    "edges" : [ ],
+    "path" : "images/diagram-0008.png",
+    "metadata" : {
+      "type" : "図",
+      "text" : "",
+      "x" : 315.077,
+      "y" : 324,
+      "width" : 189.046,
+      "height" : 168
+    },
     "type" : "drawing",
     "section" : "05_基本図形",
     "range" : "F14:I21",
-    "markdownStartLine" : 179,
-    "markdownEndLine" : 179
+    "markdownStartLine" : 220,
+    "markdownEndLine" : 226
   }, {
+    "nodes" : [ {
+      "type" : "上矢印",
+      "text" : "上",
+      "x" : 630.153,
+      "y" : 324,
+      "width" : 189.046,
+      "height" : 168,
+      "id" : "shape-6"
+    } ],
+    "edges" : [ ],
+    "path" : "images/diagram-0009.png",
+    "metadata" : {
+      "type" : "図",
+      "text" : "",
+      "x" : 630.153,
+      "y" : 324,
+      "width" : 189.046,
+      "height" : 168
+    },
     "type" : "drawing",
     "section" : "05_基本図形",
     "range" : "K14:N21",
-    "markdownStartLine" : 181,
-    "markdownEndLine" : 181
+    "markdownStartLine" : 228,
+    "markdownEndLine" : 234
   }, {
+    "nodes" : [ {
+      "type" : "下矢印",
+      "text" : "下",
+      "x" : 945.23,
+      "y" : 324,
+      "width" : 189.046,
+      "height" : 168,
+      "id" : "shape-7"
+    } ],
+    "edges" : [ ],
+    "path" : "images/diagram-0010.png",
+    "metadata" : {
+      "type" : "図",
+      "text" : "",
+      "x" : 945.23,
+      "y" : 324,
+      "width" : 189.046,
+      "height" : 168
+    },
     "type" : "drawing",
     "section" : "05_基本図形",
     "range" : "P14:S21",
-    "markdownStartLine" : 183,
-    "markdownEndLine" : 183
+    "markdownStartLine" : 236,
+    "markdownEndLine" : 242
   }, {
     "type" : "text",
     "section" : "05_基本図形",
     "range" : "A24:G24",
-    "markdownStartLine" : 185,
-    "markdownEndLine" : 185
+    "markdownStartLine" : 244,
+    "markdownEndLine" : 244
   }, {
+    "nodes" : [ ],
+    "edges" : [ {
+      "id" : "shape-8",
+      "startArrow" : "none",
+      "endArrow" : "none",
+      "direction" : "undirected",
+      "status" : "unresolved",
+      "reason" : "MISSING_ENDPOINT",
+      "type" : "直線",
+      "text" : "",
+      "x" : 0,
+      "y" : 588,
+      "width" : 252.061,
+      "height" : 0
+    } ],
+    "path" : "images/diagram-0011.png",
+    "metadata" : {
+      "type" : "図",
+      "text" : "",
+      "x" : 0,
+      "y" : 588,
+      "width" : 252.061,
+      "height" : 0
+    },
     "type" : "drawing",
     "section" : "05_基本図形",
     "range" : "A25:E25",
-    "markdownStartLine" : 187,
-    "markdownEndLine" : 187
+    "markdownStartLine" : 246,
+    "markdownEndLine" : 252
   }, {
+    "nodes" : [ ],
+    "edges" : [ {
+      "id" : "shape-1-9",
+      "startArrow" : "none",
+      "endArrow" : "triangle",
+      "direction" : "start-to-end",
+      "status" : "unresolved",
+      "reason" : "MISSING_ENDPOINT",
+      "type" : "直線コネクタ",
+      "text" : "",
+      "x" : 378.092,
+      "y" : 588,
+      "width" : 252.061,
+      "height" : 0
+    } ],
+    "path" : "images/diagram-0012.png",
+    "metadata" : {
+      "type" : "図",
+      "text" : "",
+      "x" : 378.092,
+      "y" : 588,
+      "width" : 252.061,
+      "height" : 0
+    },
     "type" : "drawing",
     "section" : "05_基本図形",
     "range" : "G25:K25",
-    "markdownStartLine" : 189,
-    "markdownEndLine" : 189
+    "markdownStartLine" : 254,
+    "markdownEndLine" : 260
   }, {
     "type" : "text",
     "section" : "05_基本図形",
     "range" : "A30",
-    "markdownStartLine" : 191,
-    "markdownEndLine" : 191
+    "markdownStartLine" : 262,
+    "markdownEndLine" : 262
   }, {
+    "nodes" : [ {
+      "type" : "長方形",
+      "text" : "日本語の表示確認\nひらがな あいうえお\nカタカナ アイウエオ",
+      "x" : 0,
+      "y" : 732,
+      "width" : 378.092,
+      "height" : 168,
+      "id" : "shape-10"
+    } ],
+    "edges" : [ ],
+    "path" : "images/diagram-0013.png",
+    "metadata" : {
+      "type" : "図",
+      "text" : "",
+      "x" : 0,
+      "y" : 732,
+      "width" : 378.092,
+      "height" : 168
+    },
     "type" : "drawing",
     "section" : "05_基本図形",
     "range" : "A31:G38",
-    "markdownStartLine" : 193,
-    "markdownEndLine" : 193
+    "markdownStartLine" : 264,
+    "markdownEndLine" : 270
   }, {
+    "nodes" : [ {
+      "type" : "長方形",
+      "text" : "日本語の表示確認\n東京都・株式会社\n売上報告 ABC 123",
+      "x" : 504.122,
+      "y" : 732,
+      "width" : 378.092,
+      "height" : 168,
+      "id" : "shape-11"
+    } ],
+    "edges" : [ ],
+    "path" : "images/diagram-0014.png",
+    "metadata" : {
+      "type" : "図",
+      "text" : "",
+      "x" : 504.122,
+      "y" : 732,
+      "width" : 378.092,
+      "height" : 168
+    },
     "type" : "drawing",
     "section" : "05_基本図形",
     "range" : "I31:O38",
-    "markdownStartLine" : 195,
-    "markdownEndLine" : 195
+    "markdownStartLine" : 272,
+    "markdownEndLine" : 278
   }, {
     "type" : "text",
     "section" : "05_基本図形",
     "range" : "A40",
-    "markdownStartLine" : 197,
-    "markdownEndLine" : 197
+    "markdownStartLine" : 280,
+    "markdownEndLine" : 280
   }, {
+    "nodes" : [ {
+      "type" : "長方形",
+      "text" : "明朝体の表示確認\nひらがな あいうえお\n東京都・株式会社",
+      "x" : 0,
+      "y" : 972,
+      "width" : 378.092,
+      "height" : 168,
+      "id" : "shape-12"
+    } ],
+    "edges" : [ ],
+    "path" : "images/diagram-0015.png",
+    "metadata" : {
+      "type" : "図",
+      "text" : "",
+      "x" : 0,
+      "y" : 972,
+      "width" : 378.092,
+      "height" : 168
+    },
     "type" : "drawing",
     "section" : "05_基本図形",
     "range" : "A41:G48",
-    "markdownStartLine" : 199,
-    "markdownEndLine" : 199
+    "markdownStartLine" : 282,
+    "markdownEndLine" : 288
   }, {
+    "nodes" : [ {
+      "type" : "長方形",
+      "text" : "明朝体の表示確認\n日本語と English\n２０２６年９月",
+      "x" : 504.122,
+      "y" : 972,
+      "width" : 378.092,
+      "height" : 168,
+      "id" : "shape-13"
+    } ],
+    "edges" : [ ],
+    "path" : "images/diagram-0016.png",
+    "metadata" : {
+      "type" : "図",
+      "text" : "",
+      "x" : 504.122,
+      "y" : 972,
+      "width" : 378.092,
+      "height" : 168
+    },
     "type" : "drawing",
     "section" : "05_基本図形",
     "range" : "I41:O48",
-    "markdownStartLine" : 201,
-    "markdownEndLine" : 201
+    "markdownStartLine" : 290,
+    "markdownEndLine" : 296
   }, {
     "type" : "text",
     "section" : "05_基本図形",
     "range" : "A50",
-    "markdownStartLine" : 203,
-    "markdownEndLine" : 203
+    "markdownStartLine" : 298,
+    "markdownEndLine" : 298
   }, {
+    "nodes" : [ {
+      "type" : "長方形",
+      "text" : "価格：1,200円（更新後）\nApache POIの公式サイト",
+      "x" : 0,
+      "y" : 1212,
+      "width" : 441.107,
+      "height" : 192,
+      "id" : "shape-14"
+    } ],
+    "edges" : [ ],
+    "path" : "images/diagram-0017.png",
+    "metadata" : {
+      "type" : "図",
+      "text" : "",
+      "x" : 0,
+      "y" : 1212,
+      "width" : 441.107,
+      "height" : 192
+    },
     "type" : "drawing",
     "section" : "05_基本図形",
     "range" : "A51:H59",
-    "markdownStartLine" : 205,
-    "markdownEndLine" : 207
+    "markdownStartLine" : 300,
+    "markdownEndLine" : 306
   }, {
     "type" : "text",
     "section" : "05_基本図形",
     "range" : "K51",
-    "markdownStartLine" : 209,
-    "markdownEndLine" : 209
+    "markdownStartLine" : 308,
+    "markdownEndLine" : 308
   }, {
+    "nodes" : [ {
+      "type" : "右矢印",
+      "text" : "",
+      "x" : 630.153,
+      "y" : 1236,
+      "width" : 315.077,
+      "height" : 144,
+      "id" : "shape-15"
+    } ],
+    "edges" : [ ],
+    "path" : "images/diagram-0018.png",
+    "metadata" : {
+      "type" : "図",
+      "text" : "",
+      "x" : 630.153,
+      "y" : 1236,
+      "width" : 315.077,
+      "height" : 144
+    },
     "type" : "drawing",
     "section" : "05_基本図形",
     "range" : "K52:P58",
-    "markdownStartLine" : 211,
-    "markdownEndLine" : 211
+    "markdownStartLine" : 310,
+    "markdownEndLine" : 310
   }, {
     "type" : "text",
     "section" : "05_基本図形",
     "range" : "A60:I60",
-    "markdownStartLine" : 213,
-    "markdownEndLine" : 213
+    "markdownStartLine" : 312,
+    "markdownEndLine" : 312
   }, {
+    "nodes" : [ {
+      "type" : "角丸長方形",
+      "text" : "回転した図形\n位置と文字を保持",
+      "x" : -15.299,
+      "y" : 1453.934,
+      "width" : 408.69,
+      "height" : 260.133,
+      "id" : "shape-16"
+    } ],
+    "edges" : [ ],
+    "path" : "images/diagram-0019.png",
+    "metadata" : {
+      "type" : "図",
+      "text" : "",
+      "x" : -15.299,
+      "y" : 1453.934,
+      "width" : 408.69,
+      "height" : 260.133
+    },
     "type" : "drawing",
     "section" : "05_基本図形",
     "range" : "A61:G71",
-    "markdownStartLine" : 215,
-    "markdownEndLine" : 215
+    "markdownStartLine" : 314,
+    "markdownEndLine" : 320
   }, {
+    "nodes" : [ {
+      "type" : "角丸長方形",
+      "text" : "テーマ色\naccent1",
+      "x" : 504.122,
+      "y" : 1500,
+      "width" : 378.092,
+      "height" : 168,
+      "id" : "shape-17"
+    } ],
+    "edges" : [ ],
+    "path" : "images/diagram-0020.png",
+    "metadata" : {
+      "type" : "図",
+      "text" : "",
+      "x" : 504.122,
+      "y" : 1500,
+      "width" : 378.092,
+      "height" : 168
+    },
     "type" : "drawing",
     "section" : "05_基本図形",
     "range" : "I63:O70",
-    "markdownStartLine" : 217,
-    "markdownEndLine" : 217
+    "markdownStartLine" : 322,
+    "markdownEndLine" : 328
   }, {
     "type" : "text",
     "section" : "06_グループと接続",
     "range" : "A1",
-    "markdownStartLine" : 221,
-    "markdownEndLine" : 221
+    "markdownStartLine" : 332,
+    "markdownEndLine" : 332
   }, {
     "type" : "text",
     "section" : "06_グループと接続",
     "range" : "A3",
-    "markdownStartLine" : 223,
-    "markdownEndLine" : 223
+    "markdownStartLine" : 334,
+    "markdownEndLine" : 334
   }, {
+    "nodes" : [ {
+      "type" : "角丸長方形",
+      "text" : "グループ\n受付",
+      "x" : 0,
+      "y" : 114,
+      "width" : 227.555,
+      "height" : 160,
+      "id" : "shape-1-1"
+    }, {
+      "type" : "楕円",
+      "text" : "確認\n完了",
+      "x" : 284.444,
+      "y" : 114,
+      "width" : 204.8,
+      "height" : 160,
+      "id" : "shape-1-2"
+    }, {
+      "type" : "画像",
+      "text" : "明示グループに含まれるPNG",
+      "x" : 546.133,
+      "y" : 139,
+      "width" : 238.933,
+      "height" : 126,
+      "id" : "shape-1-4"
+    } ],
+    "edges" : [ {
+      "id" : "shape-1-3",
+      "startArrow" : "none",
+      "endArrow" : "triangle",
+      "direction" : "start-to-end",
+      "status" : "unresolved",
+      "reason" : "MISSING_ENDPOINT",
+      "type" : "直線コネクタ",
+      "text" : "",
+      "x" : 227.555,
+      "y" : 194,
+      "width" : 56.889,
+      "height" : 0
+    } ],
+    "path" : "images/diagram-0021.png",
+    "metadata" : {
+      "type" : "図",
+      "text" : "",
+      "x" : 0,
+      "y" : 114,
+      "width" : 785.066,
+      "height" : 160
+    },
     "type" : "drawing",
     "section" : "06_グループと接続",
-    "range" : "A5:D11",
-    "markdownStartLine" : 225,
-    "markdownEndLine" : 225
-  }, {
-    "type" : "drawing",
-    "section" : "06_グループと接続",
-    "range" : "E5:H11",
-    "markdownStartLine" : 227,
-    "markdownEndLine" : 227
-  }, {
-    "type" : "drawing",
-    "section" : "06_グループと接続",
-    "range" : "I6:M11",
-    "markdownStartLine" : 229,
-    "markdownEndLine" : 229
-  }, {
-    "type" : "drawing",
-    "section" : "06_グループと接続",
-    "range" : "D8:E8",
-    "markdownStartLine" : 231,
-    "markdownEndLine" : 231
+    "range" : "A5:M11",
+    "markdownStartLine" : 336,
+    "markdownEndLine" : 348
   }, {
     "type" : "text",
     "section" : "06_グループと接続",
     "range" : "A17",
-    "markdownStartLine" : 233,
-    "markdownEndLine" : 233
+    "markdownStartLine" : 350,
+    "markdownEndLine" : 350
   }, {
+    "nodes" : [ {
+      "type" : "長方形",
+      "text" : "内側のグループ\n左の図形",
+      "x" : 7.458,
+      "y" : 399.848,
+      "width" : 222.429,
+      "height" : 181.706,
+      "id" : "shape-1-5"
+    }, {
+      "type" : "角丸長方形",
+      "text" : "内側のグループ\n右の図形",
+      "x" : 269.653,
+      "y" : 446.287,
+      "width" : 237.556,
+      "height" : 184.385,
+      "id" : "shape-1-6"
+    } ],
+    "edges" : [ ],
+    "path" : "images/diagram-0022.png",
+    "metadata" : {
+      "type" : "図",
+      "text" : "",
+      "x" : 7.458,
+      "y" : 399.848,
+      "width" : 499.751,
+      "height" : 230.824
+    },
     "type" : "drawing",
     "section" : "06_グループと接続",
-    "range" : "A17:D24",
-    "markdownStartLine" : 235,
-    "markdownEndLine" : 235
-  }, {
-    "type" : "drawing",
-    "section" : "06_グループと接続",
-    "range" : "E19:I26",
-    "markdownStartLine" : 237,
-    "markdownEndLine" : 237
+    "range" : "A17:I26",
+    "markdownStartLine" : 352,
+    "markdownEndLine" : 361
   }, {
     "type" : "text",
     "section" : "06_グループと接続",
     "range" : "A34",
-    "markdownStartLine" : 239,
-    "markdownEndLine" : 239
+    "markdownStartLine" : 363,
+    "markdownEndLine" : 363
   }, {
+    "nodes" : [ {
+      "type" : "角丸長方形",
+      "text" : "受付",
+      "x" : 0,
+      "y" : 828,
+      "width" : 315.077,
+      "height" : 144,
+      "id" : "shape-3"
+    }, {
+      "type" : "角丸長方形",
+      "text" : "完了",
+      "x" : 567.138,
+      "y" : 828,
+      "width" : 315.077,
+      "height" : 144,
+      "id" : "shape-4"
+    } ],
+    "edges" : [ {
+      "id" : "shape-1-9",
+      "startId" : "shape-3",
+      "endId" : "shape-4",
+      "startArrow" : "none",
+      "endArrow" : "triangle",
+      "direction" : "start-to-end",
+      "status" : "resolved",
+      "reason" : "",
+      "fromId" : "shape-3",
+      "toId" : "shape-4",
+      "type" : "直線コネクタ",
+      "text" : "",
+      "x" : 315.077,
+      "y" : 900,
+      "width" : 252.061,
+      "height" : 0
+    } ],
+    "path" : "images/diagram-0023.png",
+    "metadata" : {
+      "type" : "図",
+      "text" : "",
+      "x" : 0,
+      "y" : 828,
+      "width" : 882.214,
+      "height" : 144
+    },
     "type" : "drawing",
     "section" : "06_グループと接続",
-    "range" : "A35:F41",
-    "markdownStartLine" : 241,
-    "markdownEndLine" : 241
-  }, {
-    "type" : "drawing",
-    "section" : "06_グループと接続",
-    "range" : "J35:O41",
-    "markdownStartLine" : 243,
-    "markdownEndLine" : 243
-  }, {
-    "type" : "drawing",
-    "section" : "06_グループと接続",
-    "range" : "F38:J38",
-    "markdownStartLine" : 245,
-    "markdownEndLine" : 245
+    "range" : "A35:O41",
+    "markdownStartLine" : 365,
+    "markdownEndLine" : 376
   }, {
     "type" : "text",
     "section" : "06_グループと接続",
     "range" : "A46",
-    "markdownStartLine" : 247,
-    "markdownEndLine" : 247
+    "markdownStartLine" : 378,
+    "markdownEndLine" : 378
   }, {
+    "nodes" : [ {
+      "type" : "長方形",
+      "text" : "背面の四角",
+      "x" : 0,
+      "y" : 1116,
+      "width" : 378.092,
+      "height" : 192,
+      "id" : "shape-6"
+    } ],
+    "edges" : [ ],
+    "path" : "images/diagram-0024.png",
+    "metadata" : {
+      "type" : "図",
+      "text" : "",
+      "x" : 0,
+      "y" : 1116,
+      "width" : 378.092,
+      "height" : 192
+    },
     "type" : "drawing",
     "section" : "06_グループと接続",
     "range" : "A47:G55",
-    "markdownStartLine" : 249,
-    "markdownEndLine" : 249
+    "markdownStartLine" : 380,
+    "markdownEndLine" : 386
   }, {
+    "nodes" : [ {
+      "type" : "楕円",
+      "text" : "前面の楕円",
+      "x" : 126.031,
+      "y" : 1164,
+      "width" : 378.092,
+      "height" : 192,
+      "id" : "shape-7"
+    } ],
+    "edges" : [ ],
+    "path" : "images/diagram-0025.png",
+    "metadata" : {
+      "type" : "図",
+      "text" : "",
+      "x" : 126.031,
+      "y" : 1164,
+      "width" : 378.092,
+      "height" : 192
+    },
     "type" : "drawing",
     "section" : "06_グループと接続",
     "range" : "C49:I57",
-    "markdownStartLine" : 251,
-    "markdownEndLine" : 251
+    "markdownStartLine" : 388,
+    "markdownEndLine" : 394
   }, {
     "type" : "text",
     "section" : "06_グループと接続",
     "range" : "A62",
-    "markdownStartLine" : 253,
-    "markdownEndLine" : 253
+    "markdownStartLine" : 396,
+    "markdownEndLine" : 396
   }, {
+    "nodes" : [ {
+      "type" : "角丸長方形",
+      "text" : "",
+      "x" : 0,
+      "y" : 1500,
+      "width" : 567.138,
+      "height" : 240,
+      "id" : "shape-8"
+    } ],
+    "edges" : [ ],
+    "path" : "images/diagram-0026.png",
+    "metadata" : {
+      "type" : "図",
+      "text" : "",
+      "x" : 0,
+      "y" : 1500,
+      "width" : 567.138,
+      "height" : 240
+    },
     "type" : "drawing",
     "section" : "06_グループと接続",
     "range" : "A63:J73",
-    "markdownStartLine" : 255,
-    "markdownEndLine" : 255
+    "markdownStartLine" : 398,
+    "markdownEndLine" : 398
   }, {
+    "nodes" : [ {
+      "type" : "画像",
+      "text" : "背景図形に重なるPNG",
+      "x" : 126.031,
+      "y" : 1548,
+      "width" : 315.077,
+      "height" : 144,
+      "id" : "shape-9"
+    } ],
+    "edges" : [ ],
+    "path" : "images/diagram-0027.png",
+    "metadata" : {
+      "type" : "図",
+      "text" : "",
+      "x" : 126.031,
+      "y" : 1548,
+      "width" : 315.077,
+      "height" : 144
+    },
     "type" : "drawing",
     "section" : "06_グループと接続",
     "range" : "C65:H71",
-    "markdownStartLine" : 257,
-    "markdownEndLine" : 257
+    "markdownStartLine" : 400,
+    "markdownEndLine" : 406
   }, {
     "type" : "text",
     "section" : "07_未対応と加工",
     "range" : "A1",
-    "markdownStartLine" : 261,
-    "markdownEndLine" : 261
+    "markdownStartLine" : 410,
+    "markdownEndLine" : 410
   }, {
     "type" : "text",
     "section" : "07_未対応と加工",
     "range" : "A3",
-    "markdownStartLine" : 263,
-    "markdownEndLine" : 263
+    "markdownStartLine" : 412,
+    "markdownEndLine" : 412
   }, {
+    "nodes" : [ {
+      "type" : "グラフ・SmartArt等",
+      "text" : "",
+      "x" : 252.061,
+      "y" : 84,
+      "width" : 756.184,
+      "height" : 264,
+      "id" : "shape-0"
+    } ],
+    "edges" : [ ],
     "type" : "drawing",
     "section" : "07_未対応と加工",
     "range" : "E4:Q15",
-    "markdownStartLine" : 265,
-    "markdownEndLine" : 265
+    "markdownStartLine" : 414,
+    "markdownEndLine" : 414
   }, {
     "type" : "text",
     "section" : "07_未対応と加工",
     "range" : "A5:B5",
-    "markdownStartLine" : 267,
-    "markdownEndLine" : 267
+    "markdownStartLine" : 416,
+    "markdownEndLine" : 416
   }, {
     "type" : "text",
     "section" : "07_未対応と加工",
     "range" : "A6:B6",
-    "markdownStartLine" : 268,
-    "markdownEndLine" : 268
+    "markdownStartLine" : 417,
+    "markdownEndLine" : 417
   }, {
     "type" : "text",
     "section" : "07_未対応と加工",
     "range" : "A7:B7",
-    "markdownStartLine" : 269,
-    "markdownEndLine" : 269
+    "markdownStartLine" : 418,
+    "markdownEndLine" : 418
   }, {
     "type" : "text",
     "section" : "07_未対応と加工",
     "range" : "A19:N19",
-    "markdownStartLine" : 271,
-    "markdownEndLine" : 271
+    "markdownStartLine" : 420,
+    "markdownEndLine" : 420
   }, {
+    "nodes" : [ {
+      "type" : "星（5角）",
+      "text" : "星形の文字",
+      "x" : 0,
+      "y" : 468,
+      "width" : 252.061,
+      "height" : 192,
+      "id" : "shape-2"
+    } ],
+    "edges" : [ ],
     "type" : "drawing",
     "section" : "07_未対応と加工",
     "range" : "A20:E28",
-    "markdownStartLine" : 273,
-    "markdownEndLine" : 273
+    "markdownStartLine" : 422,
+    "markdownEndLine" : 428
   }, {
+    "nodes" : [ {
+      "type" : "長方形",
+      "text" : "グラデーション\n簡略化の通知を確認",
+      "x" : 378.092,
+      "y" : 468,
+      "width" : 315.077,
+      "height" : 192,
+      "id" : "shape-3"
+    } ],
+    "edges" : [ ],
+    "path" : "images/diagram-0028.png",
+    "metadata" : {
+      "type" : "図",
+      "text" : "",
+      "x" : 378.092,
+      "y" : 468,
+      "width" : 315.077,
+      "height" : 192
+    },
     "type" : "drawing",
     "section" : "07_未対応と加工",
     "range" : "G20:L28",
-    "markdownStartLine" : 275,
-    "markdownEndLine" : 275
+    "markdownStartLine" : 430,
+    "markdownEndLine" : 436
   }, {
+    "nodes" : [ {
+      "type" : "長方形",
+      "text" : "縦書きの日本語\n簡易描画の対象",
+      "x" : 819.199,
+      "y" : 468,
+      "width" : 189.046,
+      "height" : 240,
+      "id" : "shape-4"
+    } ],
+    "edges" : [ ],
+    "path" : "images/diagram-0029.png",
+    "metadata" : {
+      "type" : "図",
+      "text" : "",
+      "x" : 819.199,
+      "y" : 468,
+      "width" : 189.046,
+      "height" : 240
+    },
     "type" : "drawing",
     "section" : "07_未対応と加工",
     "range" : "N20:Q30",
-    "markdownStartLine" : 277,
-    "markdownEndLine" : 277
+    "markdownStartLine" : 438,
+    "markdownEndLine" : 444
   }, {
     "type" : "text",
     "section" : "07_未対応と加工",
     "range" : "A33:J33",
-    "markdownStartLine" : 279,
-    "markdownEndLine" : 279
+    "markdownStartLine" : 446,
+    "markdownEndLine" : 446
   }, {
+    "nodes" : [ {
+      "type" : "画像",
+      "text" : "加工前の原本画像",
+      "x" : -13.798,
+      "y" : 796.631,
+      "width" : 405.688,
+      "height" : 254.738,
+      "id" : "shape-5"
+    } ],
+    "edges" : [ ],
+    "path" : "images/diagram-0030.png",
+    "metadata" : {
+      "type" : "図",
+      "text" : "",
+      "x" : -13.798,
+      "y" : 796.631,
+      "width" : 405.688,
+      "height" : 254.738
+    },
     "type" : "drawing",
     "section" : "07_未対応と加工",
     "range" : "A33:G44",
-    "markdownStartLine" : 281,
-    "markdownEndLine" : 281
+    "markdownStartLine" : 448,
+    "markdownEndLine" : 454
   }, {
+    "nodes" : [ {
+      "type" : "画像",
+      "text" : "BMPのオリジナル画像",
+      "x" : 567.138,
+      "y" : 828,
+      "width" : 378.092,
+      "height" : 192,
+      "id" : "shape-6"
+    } ],
+    "edges" : [ ],
+    "attachments" : [ {
+      "id" : "shape-6",
+      "path" : "images/image-0001.bmp",
+      "metadata" : {
+        "type" : "画像",
+        "text" : "BMPのオリジナル画像",
+        "x" : 567.138,
+        "y" : 828,
+        "width" : 378.092,
+        "height" : 192
+      }
+    } ],
     "type" : "drawing",
     "section" : "07_未対応と加工",
     "range" : "J35:P43",
-    "markdownStartLine" : 283,
-    "markdownEndLine" : 283
+    "markdownStartLine" : 456,
+    "markdownEndLine" : 462
   }, {
+    "nodes" : [ {
+      "type" : "画像",
+      "text" : "セル値を持たないシートの画像",
+      "x" : 0,
+      "y" : 48,
+      "width" : 567.138,
+      "height" : 312,
+      "id" : "shape-1"
+    } ],
+    "edges" : [ ],
+    "path" : "images/diagram-0031.png",
+    "metadata" : {
+      "type" : "図",
+      "text" : "",
+      "x" : 0,
+      "y" : 48,
+      "width" : 567.138,
+      "height" : 312
+    },
     "type" : "drawing",
     "section" : "08_画像だけ",
     "range" : "A3:J16",
-    "markdownStartLine" : 287,
-    "markdownEndLine" : 287
+    "markdownStartLine" : 466,
+    "markdownEndLine" : 472
   } ],
   "assets" : [ {
-    "sha256" : "92092639ea9cdaf7b3c316ef6d4651d278a738347217a0d0d3bc4015bb4340dc",
-    "sizeBytes" : 28452,
+    "sizeBytes" : 15707,
     "contentType" : "image/png",
-    "path" : "images/image-0001.png"
+    "path" : "images/diagram-0001.png",
+    "sha256" : "ad60cc7750f935d48632674c26e8376def658e4de0a5e5fb552170300c2b1ce9"
   }, {
-    "sha256" : "19f63d464adaca1b853eaab6c273331ad4942a4f73d084433d8f8d01d7b5dc15",
-    "sizeBytes" : 22462,
-    "contentType" : "image/jpeg",
-    "path" : "images/image-0002.jpg"
+    "sizeBytes" : 33924,
+    "contentType" : "image/png",
+    "path" : "images/diagram-0002.png",
+    "sha256" : "31725436596e47176cd7a7e11cbce6fefcd65abc21275dd5ceaa8e37bdbf7c8c"
   }, {
-    "sha256" : "a10404683252f071d9bb76f661c37f05f427443c82328edc415de83bf6bd65d5",
+    "sizeBytes" : 5259,
+    "contentType" : "image/png",
+    "path" : "images/diagram-0003.png",
+    "sha256" : "c5863ec492dedfafdbdc99378838e4a2692ed374ff8466c1bc8479299d521b51"
+  }, {
     "sizeBytes" : 3771,
     "contentType" : "image/png",
-    "path" : "images/diagram-0001.png"
+    "path" : "images/diagram-0004.png",
+    "sha256" : "a10404683252f071d9bb76f661c37f05f427443c82328edc415de83bf6bd65d5"
   }, {
-    "sha256" : "3244328c34299b4672f122188cb6acf66454c119d7c07634e312160db5e172ac",
     "sizeBytes" : 5835,
     "contentType" : "image/png",
-    "path" : "images/diagram-0002.png"
+    "path" : "images/diagram-0005.png",
+    "sha256" : "3244328c34299b4672f122188cb6acf66454c119d7c07634e312160db5e172ac"
   }, {
-    "sha256" : "d3e9558e0ef55f1af10b5b3a1ddf6a1a33b5f266ba97dbb01bd8b2515cf89520",
     "sizeBytes" : 8619,
     "contentType" : "image/png",
-    "path" : "images/diagram-0003.png"
+    "path" : "images/diagram-0006.png",
+    "sha256" : "d3e9558e0ef55f1af10b5b3a1ddf6a1a33b5f266ba97dbb01bd8b2515cf89520"
   }, {
-    "sha256" : "9a7e459865dd4225f07164e41c08ecd663d34ae339e6decc5d91deedb2e9fc2b",
     "sizeBytes" : 5193,
     "contentType" : "image/png",
-    "path" : "images/diagram-0004.png"
+    "path" : "images/diagram-0007.png",
+    "sha256" : "9a7e459865dd4225f07164e41c08ecd663d34ae339e6decc5d91deedb2e9fc2b"
   }, {
-    "sha256" : "17ce8ba6aa2c9588966ad7a346ca48d4edc83b5135f78393099e3eb384cec86d",
     "sizeBytes" : 5364,
     "contentType" : "image/png",
-    "path" : "images/diagram-0005.png"
+    "path" : "images/diagram-0008.png",
+    "sha256" : "17ce8ba6aa2c9588966ad7a346ca48d4edc83b5135f78393099e3eb384cec86d"
   }, {
-    "sha256" : "7895170e0b2cc2f0fe7878798214f87025db070f557e6c077a7615b48318d62d",
     "sizeBytes" : 4495,
     "contentType" : "image/png",
-    "path" : "images/diagram-0006.png"
+    "path" : "images/diagram-0009.png",
+    "sha256" : "7895170e0b2cc2f0fe7878798214f87025db070f557e6c077a7615b48318d62d"
   }, {
-    "sha256" : "fd48f34f3d2462529b0c3df942b3c086cb856ba7daf64b268ab5079510e7b4ac",
     "sizeBytes" : 2377,
     "contentType" : "image/png",
-    "path" : "images/diagram-0007.png"
+    "path" : "images/diagram-0010.png",
+    "sha256" : "fd48f34f3d2462529b0c3df942b3c086cb856ba7daf64b268ab5079510e7b4ac"
   }, {
-    "sha256" : "d01b97af321cdf4658b55544ac6a729cb8776a655b921080c841957eb046d0b4",
     "sizeBytes" : 141,
     "contentType" : "image/png",
-    "path" : "images/diagram-0008.png"
+    "path" : "images/diagram-0011.png",
+    "sha256" : "d01b97af321cdf4658b55544ac6a729cb8776a655b921080c841957eb046d0b4"
   }, {
-    "sha256" : "ee4d97734325c9663d7bee39b546b843a6703c0f44db2bd16857152371566033",
     "sizeBytes" : 278,
     "contentType" : "image/png",
-    "path" : "images/diagram-0009.png"
+    "path" : "images/diagram-0012.png",
+    "sha256" : "ee4d97734325c9663d7bee39b546b843a6703c0f44db2bd16857152371566033"
   }, {
-    "sha256" : "c99a1aa712d5b5d25db487919ee848528ca3d53741a1a9df088871feefb441e5",
     "sizeBytes" : 10773,
     "contentType" : "image/png",
-    "path" : "images/diagram-0010.png"
+    "path" : "images/diagram-0013.png",
+    "sha256" : "c99a1aa712d5b5d25db487919ee848528ca3d53741a1a9df088871feefb441e5"
   }, {
-    "sha256" : "efa6082e3b6daa66fd680358bb69766f2f525f309a2d363882003119e5bb06e2",
     "sizeBytes" : 10839,
     "contentType" : "image/png",
-    "path" : "images/diagram-0011.png"
+    "path" : "images/diagram-0014.png",
+    "sha256" : "efa6082e3b6daa66fd680358bb69766f2f525f309a2d363882003119e5bb06e2"
   }, {
-    "sha256" : "f9ce1d6fc18a2d9cd613ce5aef0411fb6e557c0a43f08de002c754c8471aed3f",
     "sizeBytes" : 11606,
     "contentType" : "image/png",
-    "path" : "images/diagram-0012.png"
+    "path" : "images/diagram-0015.png",
+    "sha256" : "f9ce1d6fc18a2d9cd613ce5aef0411fb6e557c0a43f08de002c754c8471aed3f"
   }, {
-    "sha256" : "2884475946de395100572a2c0d83c6bd18f81715c52fc34ecf65020cba993f1f",
     "sizeBytes" : 10551,
     "contentType" : "image/png",
-    "path" : "images/diagram-0013.png"
+    "path" : "images/diagram-0016.png",
+    "sha256" : "2884475946de395100572a2c0d83c6bd18f81715c52fc34ecf65020cba993f1f"
   }, {
-    "sha256" : "29d582b03135e628cbad43738658a4417534054ad4c8886c2980e2d14ed0cab9",
     "sizeBytes" : 9554,
     "contentType" : "image/png",
-    "path" : "images/diagram-0014.png"
+    "path" : "images/diagram-0017.png",
+    "sha256" : "29d582b03135e628cbad43738658a4417534054ad4c8886c2980e2d14ed0cab9"
   }, {
-    "sha256" : "e08e04dbde48b4b185faab22f11515287f2469c8b6f314c0d2697b661378a95a",
     "sizeBytes" : 2000,
     "contentType" : "image/png",
-    "path" : "images/diagram-0015.png"
+    "path" : "images/diagram-0018.png",
+    "sha256" : "e08e04dbde48b4b185faab22f11515287f2469c8b6f314c0d2697b661378a95a"
   }, {
-    "sha256" : "bcbf8560d62cc6b4286132fca854bd6d117b89b878ac1ed6b3d6343d85f0d711",
     "sizeBytes" : 24305,
     "contentType" : "image/png",
-    "path" : "images/diagram-0016.png"
+    "path" : "images/diagram-0019.png",
+    "sha256" : "bcbf8560d62cc6b4286132fca854bd6d117b89b878ac1ed6b3d6343d85f0d711"
   }, {
-    "sha256" : "8afcbcdae0448f0660c50283f7445800261408043fa04ccd930065472e4c5141",
     "sizeBytes" : 5158,
     "contentType" : "image/png",
-    "path" : "images/diagram-0017.png"
+    "path" : "images/diagram-0020.png",
+    "sha256" : "8afcbcdae0448f0660c50283f7445800261408043fa04ccd930065472e4c5141"
   }, {
-    "sha256" : "8263f434e7c7deee246973ec9b0f0cc4987467ff5df26b980669094e885bcc03",
-    "sizeBytes" : 5171,
+    "sizeBytes" : 30795,
     "contentType" : "image/png",
-    "path" : "images/diagram-0018.png"
+    "path" : "images/diagram-0021.png",
+    "sha256" : "01d1cea9623966a902043493fdfe03e4c2677ddac079fcd0426b49ea894fc4aa"
   }, {
-    "sha256" : "f6e8dc2203d934d60993d876c5b6fbb5b3aebfd077bcfe05523816575589db8f",
-    "sizeBytes" : 9616,
+    "sizeBytes" : 29120,
     "contentType" : "image/png",
-    "path" : "images/diagram-0019.png"
+    "path" : "images/diagram-0022.png",
+    "sha256" : "06e7c448795ecd97cae8df80edc73f50b7e022b4f1339883b3d97a21374c52be"
   }, {
-    "sha256" : "ce6f471043e1cf0048f568750503f11bd4f20f9b1c5b7657813f7779766b7405",
-    "sizeBytes" : 258,
+    "sizeBytes" : 7552,
     "contentType" : "image/png",
-    "path" : "images/diagram-0020.png"
+    "path" : "images/diagram-0023.png",
+    "sha256" : "c3b0d087a18b82229c6511f87f59e874f1bb15260077b602e2a4a38e8338b0b8"
   }, {
-    "sha256" : "2fb3264e678dfbce59b2d059d9d6667938d164e39d52a616edc16b5be5c1a377",
-    "sizeBytes" : 14263,
-    "contentType" : "image/png",
-    "path" : "images/diagram-0021.png"
-  }, {
-    "sha256" : "2b2a36b8995480fc04a673e9d066307a695fddc5c6e14778ce2824a608f937c5",
-    "sizeBytes" : 13400,
-    "contentType" : "image/png",
-    "path" : "images/diagram-0022.png"
-  }, {
-    "sha256" : "500042d46a5a9c765b4947ab876f70fc1fe98a33bbf94dfdfc394a3b511832fb",
-    "sizeBytes" : 3533,
-    "contentType" : "image/png",
-    "path" : "images/diagram-0023.png"
-  }, {
-    "sha256" : "907262dcae27a1d31d8aa0e364f8158b137336d102a23f7319e9e1d54dff1546",
-    "sizeBytes" : 3141,
-    "contentType" : "image/png",
-    "path" : "images/diagram-0024.png"
-  }, {
-    "sha256" : "9d8175d0ac22c7f95e39b38ebd5276e296e847dfe95acc4aaf9670f6527464e5",
-    "sizeBytes" : 294,
-    "contentType" : "image/png",
-    "path" : "images/diagram-0025.png"
-  }, {
-    "sha256" : "6f4833a4ed024c923e78bf98c0e41b10a9969bf62c313fa8767f5054216b14e5",
     "sizeBytes" : 3544,
     "contentType" : "image/png",
-    "path" : "images/diagram-0026.png"
+    "path" : "images/diagram-0024.png",
+    "sha256" : "6f4833a4ed024c923e78bf98c0e41b10a9969bf62c313fa8767f5054216b14e5"
   }, {
-    "sha256" : "7b233a8a680480f3ff6c99011b5903ebba2a074d19b898ed27873127a613c18f",
     "sizeBytes" : 12507,
     "contentType" : "image/png",
-    "path" : "images/diagram-0027.png"
+    "path" : "images/diagram-0025.png",
+    "sha256" : "7b233a8a680480f3ff6c99011b5903ebba2a074d19b898ed27873127a613c18f"
   }, {
-    "sha256" : "ef70c1e860f780c85f9b4df5d6581902b8524c9a639c888c094d170fc67c7a7d",
     "sizeBytes" : 4190,
     "contentType" : "image/png",
-    "path" : "images/diagram-0028.png"
+    "path" : "images/diagram-0026.png",
+    "sha256" : "ef70c1e860f780c85f9b4df5d6581902b8524c9a639c888c094d170fc67c7a7d"
   }, {
-    "sha256" : "0cb9b7746f89b9fcece174f78a76b434a5c0969c982f31310d46069824368ff6",
+    "sizeBytes" : 17853,
+    "contentType" : "image/png",
+    "path" : "images/diagram-0027.png",
+    "sha256" : "e33d32bceb5ca9460582ac0b68d054951cb89c69d1152b2fcbf5de4f5590a5e7"
+  }, {
     "sizeBytes" : 7208,
     "contentType" : "image/png",
-    "path" : "images/diagram-0029.png"
+    "path" : "images/diagram-0028.png",
+    "sha256" : "0cb9b7746f89b9fcece174f78a76b434a5c0969c982f31310d46069824368ff6"
   }, {
-    "sha256" : "11fc2b1be070585b319661396385de36744b78f389874f5e8fd5610eb9313fea",
     "sizeBytes" : 6803,
     "contentType" : "image/png",
-    "path" : "images/diagram-0030.png"
+    "path" : "images/diagram-0029.png",
+    "sha256" : "11fc2b1be070585b319661396385de36744b78f389874f5e8fd5610eb9313fea"
   }, {
-    "sha256" : "6d43b3973f1f93fc63fd81fe99f634b440aef06fc74004b2af3483d92cb195ec",
-    "sizeBytes" : 29824,
+    "sizeBytes" : 37744,
     "contentType" : "image/png",
-    "path" : "images/image-0003.png"
+    "path" : "images/diagram-0030.png",
+    "sha256" : "7e3e985399c6d46d28d311e2b4dbe22c7f34ce2776caa10b1eae450c021094f4"
   }, {
-    "sha256" : "f259c4c60577e261310dcbf8dbbd4c55457b48c0f0786f33a51dfa2048c01505",
     "sizeBytes" : 933174,
     "contentType" : "image/bmp",
-    "path" : "images/image-0004.bmp"
+    "path" : "images/image-0001.bmp",
+    "sha256" : "f259c4c60577e261310dcbf8dbbd4c55457b48c0f0786f33a51dfa2048c01505"
+  }, {
+    "sizeBytes" : 57324,
+    "contentType" : "image/png",
+    "path" : "images/diagram-0031.png",
+    "sha256" : "426bede3a1787ab4c6343ac0aa8647ba217c568c042424fa786f6159d4fbcbfd"
   } ]
 }

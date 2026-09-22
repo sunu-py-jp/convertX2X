@@ -1,0 +1,213 @@
+{
+  "specVersion" : 2,
+  "source" : {
+    "filename" : "input.docx",
+    "sha256" : "77bbbe893b44471a906a70b7163da80df7b50d71536f93fb57fec5a37114f45c",
+    "format" : "docx"
+  },
+  "sectionKind" : "document",
+  "sectionCount" : 1,
+  "warnings" : [ {
+    "code" : "DRAWING_TEXT_APPROXIMATED",
+    "section" : "document",
+    "range" : "paragraph:3",
+    "message" : "Word図形内の文字は取消線・非表示を除去して簡易描画します。段落ごとの書式・余白・文字回転は近似です。"
+  }, {
+    "code" : "DRAWING_TEXT_APPROXIMATED",
+    "section" : "document",
+    "range" : "paragraph:3",
+    "message" : "Word図形内の文字は取消線・非表示を除去して簡易描画します。段落ごとの書式・余白・文字回転は近似です。"
+  }, {
+    "code" : "DRAWING_TEXT_APPROXIMATED",
+    "section" : "document",
+    "range" : "paragraph:3",
+    "message" : "Word図形内の文字は取消線・非表示を除去して簡易描画します。段落ごとの書式・余白・文字回転は近似です。"
+  }, {
+    "code" : "DRAWING_TEXT_APPROXIMATED",
+    "section" : "document",
+    "range" : "paragraph:3",
+    "message" : "Word図形内の文字は取消線・非表示を除去して簡易描画します。段落ごとの書式・余白・文字回転は近似です。"
+  }, {
+    "code" : "DIAGRAM_CONNECTION_UNRESOLVED",
+    "section" : "document",
+    "range" : "paragraph:3/drawing:1",
+    "message" : "図形の接続関係を確定できません。接続先の保存情報がありません。配置からは推測しません。図形ID: shape-9"
+  } ],
+  "information" : [ {
+    "code" : "HIDDEN_DRAWING",
+    "section" : "document",
+    "range" : "paragraph:3",
+    "message" : "非表示の描画オブジェクトを除外しました。"
+  }, {
+    "code" : "DRAWING_SIMPLIFIED",
+    "section" : "document",
+    "range" : "paragraph:3/drawing:1",
+    "message" : "Wordの図形・保存された接続を文字として保持し、同じ描画領域を確認用画像にまとめました。ページ全体の配置は再現しません。"
+  } ],
+  "blocks" : [ {
+    "markdownEndLine" : 3,
+    "section" : "document",
+    "markdownStartLine" : 3,
+    "range" : "paragraph:1",
+    "type" : "paragraph"
+  }, {
+    "markdownEndLine" : 5,
+    "section" : "document",
+    "markdownStartLine" : 5,
+    "range" : "paragraph:2",
+    "type" : "paragraph"
+  }, {
+    "type" : "diagram",
+    "section" : "document",
+    "range" : "paragraph:3/drawing:1",
+    "placement" : "本文内、paragraph:3、ローカル座標（ページ位置未算出）",
+    "nodes" : [ {
+      "type" : "角丸長方形",
+      "text" : "申請者\n申請を作成",
+      "x" : 16,
+      "y" : 32,
+      "width" : 120,
+      "height" : 60,
+      "id" : "shape-1"
+    }, {
+      "type" : "角丸長方形",
+      "text" : "担当者\n内容を確認",
+      "x" : 206,
+      "y" : 32,
+      "width" : 120,
+      "height" : 60,
+      "id" : "shape-2"
+    }, {
+      "type" : "角丸長方形",
+      "text" : "完了\n登録・通知",
+      "x" : 396,
+      "y" : 32,
+      "width" : 120,
+      "height" : 60,
+      "id" : "shape-3"
+    }, {
+      "type" : "角丸長方形",
+      "text" : "申請者\n修正して再申請",
+      "x" : 206,
+      "y" : 172,
+      "width" : 120,
+      "height" : 60,
+      "id" : "shape-4"
+    } ],
+    "edges" : [ {
+      "id" : "shape-5",
+      "startId" : "shape-1",
+      "endId" : "shape-2",
+      "startArrow" : "none",
+      "endArrow" : "triangle",
+      "direction" : "start-to-end",
+      "status" : "resolved",
+      "reason" : "",
+      "fromId" : "shape-1",
+      "toId" : "shape-2",
+      "type" : "直線",
+      "text" : "",
+      "x" : 136,
+      "y" : 62,
+      "width" : 70,
+      "height" : 0
+    }, {
+      "id" : "shape-6",
+      "startId" : "shape-2",
+      "endId" : "shape-3",
+      "startArrow" : "none",
+      "endArrow" : "triangle",
+      "direction" : "start-to-end",
+      "status" : "resolved",
+      "reason" : "",
+      "fromId" : "shape-2",
+      "toId" : "shape-3",
+      "type" : "直線",
+      "text" : "",
+      "x" : 326,
+      "y" : 62,
+      "width" : 70,
+      "height" : 0
+    }, {
+      "id" : "shape-7",
+      "startId" : "shape-2",
+      "endId" : "shape-4",
+      "startArrow" : "none",
+      "endArrow" : "triangle",
+      "direction" : "start-to-end",
+      "status" : "resolved",
+      "reason" : "",
+      "fromId" : "shape-2",
+      "toId" : "shape-4",
+      "type" : "直線",
+      "text" : "",
+      "x" : 266,
+      "y" : 92,
+      "width" : 0,
+      "height" : 80
+    }, {
+      "id" : "shape-8",
+      "startId" : "shape-4",
+      "endId" : "shape-1",
+      "startArrow" : "none",
+      "endArrow" : "triangle",
+      "direction" : "start-to-end",
+      "status" : "resolved",
+      "reason" : "",
+      "fromId" : "shape-4",
+      "toId" : "shape-1",
+      "type" : "直線",
+      "text" : "",
+      "x" : 76,
+      "y" : 92,
+      "width" : 130,
+      "height" : 110
+    }, {
+      "id" : "shape-9",
+      "startArrow" : "none",
+      "endArrow" : "triangle",
+      "direction" : "start-to-end",
+      "status" : "unresolved",
+      "reason" : "MISSING_ENDPOINT",
+      "type" : "直線",
+      "text" : "",
+      "x" : 40,
+      "y" : 282,
+      "width" : 430,
+      "height" : 0
+    } ],
+    "path" : "images/diagram-0001.png",
+    "metadata" : {
+      "type" : "図",
+      "text" : "",
+      "x" : 16,
+      "y" : 32,
+      "width" : 500,
+      "height" : 250
+    }
+  }, {
+    "markdownEndLine" : 26,
+    "section" : "document",
+    "markdownStartLine" : 7,
+    "range" : "paragraph:3",
+    "type" : "paragraph"
+  }, {
+    "markdownEndLine" : 28,
+    "section" : "document",
+    "markdownStartLine" : 28,
+    "range" : "paragraph:4",
+    "type" : "paragraph"
+  }, {
+    "markdownEndLine" : 33,
+    "section" : "document",
+    "markdownStartLine" : 30,
+    "range" : "table:1",
+    "type" : "table"
+  } ],
+  "assets" : [ {
+    "sizeBytes" : 21064,
+    "contentType" : "image/png",
+    "path" : "images/diagram-0001.png",
+    "sha256" : "8a6d40441b5bc2271ee1754217006bf0081a564aa971e15d3585a671a92d257c"
+  } ]
+}

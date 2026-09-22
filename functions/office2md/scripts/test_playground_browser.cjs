@@ -119,7 +119,7 @@ async function main() {
       if (!mock) {
         assert((await page.locator('#preview img').count()) > 0);
         const markdownSource = await page.locator('#markdown-source').textContent();
-        if (extension === 'pptx') {
+        { // All native Office formats now use the JSON image metadata contract.
           const blocks = JSON.parse(await page.locator('#report-source').textContent()).blocks;
           const imageReferences = markdownSource.split('\n').filter(line => line.startsWith('!['));
           assert.equal(await page.locator('#preview img').count(), imageReferences.length);
@@ -131,11 +131,7 @@ async function main() {
             assert.equal(Object.hasOwn(metadata, 'origin'), false); assert.equal(Object.hasOwn(metadata, 'unit'), false);
             assert(blocks.some(block => block.path === imagePath && JSON.stringify(block.metadata) === JSON.stringify(metadata)), `Missing report metadata for ${imagePath}`);
           }
-          assert.equal(markdownSource.includes('時計回り'), false);
-        } else {
-          assert(markdownSource.includes('時計回り'));
-          assert(markdownSource.includes('外接矩形'));
-          assert(markdownSource.includes('基準='));
+          assert(markdownSource.includes('図中の項目：'));
         }
         const evt = page.waitForEvent('download'); await page.locator('#download-archive').click();
         await (await evt).saveAs(path.join(work, `${extension}-result.zip`));

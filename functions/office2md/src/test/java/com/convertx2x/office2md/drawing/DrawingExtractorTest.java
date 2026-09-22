@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class DrawingExtractorTest {
     private final DrawingExtractor extractor = new DrawingExtractor();
 
-    @Test void xlsxPicturesKeepOriginalBytesDeduplicateAndRetainEachAnchor() throws Exception {
+    @Test void xlsxPicturesRenderAtSavedAnchorsAndRetainDescriptions() throws Exception {
         byte[] original = png(Color.MAGENTA);
         try (var book = new XSSFWorkbook(); var workspace = workspace()) {
             var sheet = book.createSheet("画像");
@@ -36,11 +36,11 @@ class DrawingExtractorTest {
             assertEquals(3, blocks.getFirst().firstRow());
             assertEquals(2, blocks.getFirst().firstColumn());
             assertEquals(1, workspace.files().size());
-            assertArrayEquals(original, Files.readAllBytes(workspace.files().values().iterator().next()));
+            assertTrue(countColor(image(workspace), Color.MAGENTA) > 100);
             assertTrue(blocks.getFirst().markdown().contains("\\[画像\\] &lt;script&gt;"));
-            assertTrue(blocks.getLast().markdown().contains("images/image-0001.png"));
-            assertTrue(blocks.getFirst().markdown().contains("Y=45pt"));
-            assertTrue(blocks.getLast().markdown().contains("Y=180pt"));
+            assertTrue(blocks.getLast().markdown().contains("images/diagram-0001.png"));
+            assertTrue(blocks.getFirst().markdown().contains("\"y\":45"));
+            assertTrue(blocks.getLast().markdown().contains("\"y\":180"));
         }
     }
 
@@ -55,7 +55,7 @@ class DrawingExtractorTest {
                 assertEquals(1, blocks.size());
                 assertEquals(4, blocks.getFirst().firstRow());
                 assertEquals(3, blocks.getFirst().firstColumn());
-                assertArrayEquals(original, Files.readAllBytes(workspace.files().values().iterator().next()));
+                assertTrue(countColor(image(workspace), Color.ORANGE) > 100);
             }
         }
     }
@@ -91,7 +91,7 @@ class DrawingExtractorTest {
         assertVisiblePng(actual);
     }
 
-    @Test void groupLeavesAreSeparateImagesAndApplyTheirChildCoordinateSpace() throws Exception {
+    @Test void explicitGroupRendersOnePreviewAndAppliesChildCoordinates() throws Exception {
         try (var book = new XSSFWorkbook(); var workspace = workspace()) {
             var sheet = book.createSheet("グループ");
             var group = sheet.createDrawingPatriarch().createGroup(anchor(1, 2, 9, 14));
@@ -101,28 +101,19 @@ class DrawingExtractorTest {
             var blue = group.createSimpleShape(new XSSFChildAnchor(220 * 12700, 0, 400 * 12700, 200 * 12700));
             blue.setShapeType(ShapeTypes.ELLIPSE); blue.setFillColor(0, 0, 255); blue.setLineStyleColor(0, 0, 255);
             var blocks = extractor.extract(sheet, workspace);
-            assertEquals(2, blocks.size());
-            assertEquals(2, workspace.files().size());
-            assertTrue(blocks.getFirst().markdown().contains("images/diagram-0001.png"));
-            assertTrue(blocks.getLast().markdown().contains("images/diagram-0002.png"));
-            BufferedImage first = image(workspace, "images/diagram-0001.png");
-            BufferedImage second = image(workspace, "images/diagram-0002.png");
+            assertEquals(1, blocks.size()); assertEquals(1, workspace.files().size());
+            BufferedImage preview = image(workspace, "images/diagram-0001.png");
             try {
-                assertTrue(countColor(first, Color.RED) > 1000);
-                assertEquals(0, countColor(first, Color.BLUE));
-                assertTrue(countColor(second, Color.BLUE) > 1000);
-                assertEquals(0, countColor(second, Color.RED));
-                assertEquals(first.getHeight(), second.getHeight());
+                assertTrue(countColor(preview, Color.RED) > 1000);
+                assertTrue(countColor(preview, Color.BLUE) > 1000);
+                assertTrue(preview.getRGB(preview.getWidth() / 4, preview.getHeight() / 2) == Color.RED.getRGB());
+                assertTrue(preview.getRGB(preview.getWidth() * 3 / 4, preview.getHeight() / 2) == Color.BLUE.getRGB());
                 assertEquals(2, blocks.getFirst().firstRow());
-                assertEquals(2, blocks.getLast().firstRow());
-                assertTrue(blocks.getFirst().firstColumn() < blocks.getLast().firstColumn());
-                assertTrue(blocks.getFirst().markdown().contains("Y=30pt"));
-                assertTrue(blocks.getLast().markdown().contains("Y=30pt"));
-            } finally { first.flush(); second.flush(); }
+            } finally { preview.flush(); }
         }
     }
 
-    @Test void overlappingShapeAndPictureKeepSeparateImageReferencesAndOriginalPictureBytes() throws Exception {
+    @Test void overlapAloneDoesNotGroupUnrelatedDrawings() throws Exception {
         byte[] original = png(Color.RED);
         try (var book = new XSSFWorkbook(); var workspace = workspace()) {
             var sheet = book.createSheet("図");
@@ -131,45 +122,37 @@ class DrawingExtractorTest {
             rectangle.setShapeType(ShapeTypes.RECT); rectangle.setFillColor(0, 128, 0);
             drawing.createPicture(anchor(2, 3, 6, 9), book.addPicture(original, Workbook.PICTURE_TYPE_PNG));
             List<DrawingBlock> blocks = extractor.extract(sheet, workspace);
-            assertEquals(2, blocks.size());
-            assertEquals(2, workspace.files().size());
-            assertTrue(workspace.files().containsKey("images/diagram-0001.png"));
-            assertArrayEquals(original, Files.readAllBytes(workspace.files().get("images/image-0001.png")));
+            assertEquals(2, blocks.size()); assertEquals(2, workspace.files().size());
             assertTrue(blocks.getFirst().markdown().contains("images/diagram-0001.png"));
-            assertTrue(blocks.getLast().markdown().contains("images/image-0001.png"));
-            assertEquals(1, blocks.getFirst().firstRow());
-            assertEquals(3, blocks.getLast().firstRow());
-            BufferedImage image = image(workspace, "images/diagram-0001.png");
+            assertTrue(blocks.getLast().markdown().contains("images/diagram-0002.png"));
+            assertEquals(1, blocks.getFirst().firstRow()); assertEquals(3, blocks.getLast().firstRow());
+            BufferedImage first = image(workspace, "images/diagram-0001.png");
+            BufferedImage second = image(workspace, "images/diagram-0002.png");
             try {
-                assertEquals(0, countColor(image, Color.RED));
-                assertTrue(countColor(image, new Color(0, 128, 0)) > 100);
-            } finally { image.flush(); }
+                assertEquals(0, countColor(first, Color.RED));
+                assertTrue(countColor(first, new Color(0, 128, 0)) > 100);
+                assertTrue(countColor(second, Color.RED) > 100);
+            } finally { first.flush(); second.flush(); }
         }
     }
 
-    @Test void connectorAndReferencedShapesAreSeparateWithoutRerouting() throws Exception {
+    @Test void connectorAndReferencedShapesSharePreviewWithoutRerouting() throws Exception {
         try (var book = new XSSFWorkbook(); var workspace = workspace()) {
             var sheet = book.createSheet("接続");
             var drawing = sheet.createDrawingPatriarch();
-            var left = drawing.createSimpleShape(anchor(1, 1, 3, 4));
-            left.setShapeType(ShapeTypes.RECT);
-            var right = drawing.createSimpleShape(anchor(10, 1, 12, 4));
-            right.setShapeType(ShapeTypes.ELLIPSE);
-            // Deliberately off the boxes: connection IDs must not move or merge any object.
-            var connector = drawing.createConnector(anchor(4, 10, 9, 11));
-            connector.setShapeType(ShapeTypes.LINE);
+            var left = drawing.createSimpleShape(anchor(1, 1, 3, 4)); left.setShapeType(ShapeTypes.RECT);
+            var right = drawing.createSimpleShape(anchor(10, 1, 12, 4)); right.setShapeType(ShapeTypes.ELLIPSE);
+            // Deliberately off the boxes: saved connection IDs combine but never move any object.
+            var connector = drawing.createConnector(anchor(4, 10, 9, 11)); connector.setShapeType(ShapeTypes.LINE);
             var properties = connector.getCTConnector().getNvCxnSpPr().getCNvCxnSpPr();
-            properties.addNewStCxn().setId(left.getShapeId());
-            properties.addNewEndCxn().setId(right.getShapeId());
+            properties.addNewStCxn().setId(left.getShapeId()); properties.addNewEndCxn().setId(right.getShapeId());
             List<DrawingBlock> blocks = extractor.extract(sheet, workspace);
-            assertEquals(3, blocks.size());
-            assertEquals(3, workspace.files().size());
-            assertEquals(1, blocks.get(0).firstRow());
-            assertEquals(1, blocks.get(1).firstRow());
-            assertEquals(10, blocks.get(2).firstRow());
-            assertEquals(11, blocks.get(2).lastRow());
-            assertTrue(blocks.get(2).markdown().contains("Y=150pt"));
-            assertTrue(blocks.get(2).markdown().contains("images/diagram-0003.png"));
+            assertEquals(1, blocks.size()); assertEquals(1, workspace.files().size());
+            assertEquals(1, blocks.getFirst().firstRow()); assertEquals(11, blocks.getFirst().lastRow());
+            assertTrue(blocks.getFirst().markdown().contains("接続関係"));
+            var edges = (List<?>) blocks.getFirst().metadata().get("edges");
+            assertEquals(1, edges.size());
+            assertTrue(edges.toString().contains("undirected"));
         }
     }
 
@@ -220,7 +203,7 @@ class DrawingExtractorTest {
         }
     }
 
-    @Test void xlsNativeGroupKeepsSeparateTransformedShapesAfterRoundTrip() throws Exception {
+    @Test void xlsNativeGroupKeepsTransformedShapesTogetherAfterRoundTrip() throws Exception {
         try (var original = new HSSFWorkbook()) {
             var group = original.createSheet("グループ").createDrawingPatriarch().createGroup(hssfAnchor(1, 1, 9, 12));
             group.setCoordinates(0, 0, 1000, 1000);
@@ -230,18 +213,12 @@ class DrawingExtractorTest {
             ellipse.setShapeType(HSSFShapeTypes.Ellipse); ellipse.setFillColor(0, 0, 255);
             try (Workbook book = roundTrip(original); var workspace = workspace()) {
                 var blocks = extractor.extract(book.getSheetAt(0), workspace);
-                assertEquals(2, blocks.size());
-                assertEquals(2, workspace.files().size());
-                assertEquals(blocks.getFirst().firstRow(), blocks.getLast().firstRow());
-                assertTrue(blocks.getFirst().firstColumn() < blocks.getLast().firstColumn());
-                BufferedImage first = image(workspace, "images/diagram-0001.png");
-                BufferedImage second = image(workspace, "images/diagram-0002.png");
+                assertEquals(1, blocks.size()); assertEquals(1, workspace.files().size());
+                BufferedImage preview = image(workspace, "images/diagram-0001.png");
                 try {
-                    assertTrue(countColor(first, Color.RED) > 100);
-                    assertEquals(0, countColor(first, Color.BLUE));
-                    assertTrue(countColor(second, Color.BLUE) > 100);
-                    assertEquals(0, countColor(second, Color.RED));
-                } finally { first.flush(); second.flush(); }
+                    assertTrue(countColor(preview, Color.RED) > 100);
+                    assertTrue(countColor(preview, Color.BLUE) > 100);
+                } finally { preview.flush(); }
             }
         }
     }
@@ -289,7 +266,7 @@ class DrawingExtractorTest {
         }
     }
 
-    @Test void documentKeepsTextBetweenIndividualGroupLeavesInPhysicalRowOrder() throws Exception {
+    @Test void documentPlacesWholeGroupAtItsAnchorAndKeepsCellTextOutsidePreview() throws Exception {
         try (var book = new XSSFWorkbook()) {
             var sheet = book.createSheet("本文と図形");
             sheet.createRow(0).createCell(0).setCellValue("図形より前");
@@ -297,7 +274,7 @@ class DrawingExtractorTest {
             sheet.createRow(20).createCell(0).setCellValue("図形より後");
             var group = sheet.createDrawingPatriarch().createGroup(anchor(1, 2, 6, 18));
             group.setCoordinates(0, 0, 100 * 12700, 160 * 12700);
-            // Reverse XML order intentionally; document order follows transformed sheet positions.
+            // Native shape source order is retained inside the single group; cell blocks retain row order.
             var lower = group.createSimpleShape(new XSSFChildAnchor(0, 100 * 12700, 100 * 12700, 150 * 12700));
             lower.setShapeType(ShapeTypes.RECT); lower.setText("下の図形");
             var upper = group.createSimpleShape(new XSSFChildAnchor(0, 0, 100 * 12700, 50 * 12700));
@@ -308,8 +285,8 @@ class DrawingExtractorTest {
                 int before = markdown.indexOf("図形より前"), first = markdown.indexOf("上の図形");
                 int middle = markdown.indexOf("図形の間の本文"), second = markdown.indexOf("下の図形");
                 int after = markdown.indexOf("図形より後");
-                assertTrue(before >= 0 && before < first && first < middle && middle < second && second < after, markdown);
-                assertEquals(2, markdown.lines().filter(line -> line.startsWith("![")).count());
+                assertTrue(before >= 0 && before < second && second < first && first < middle && middle < after, markdown);
+                assertEquals(1, markdown.lines().filter(line -> line.startsWith("![")).count());
             }
         }
     }

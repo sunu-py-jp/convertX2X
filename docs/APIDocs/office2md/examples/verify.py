@@ -8,8 +8,9 @@ import zipfile
 
 HERE = Path(__file__).resolve().parent
 EXPECTED = {
-    "excel-complex": (8, 34, 17),
+    "excel-complex": (8, 32, 20),
     "word-complex": (1, 2, 1),
+    "word-rag-flow": (1, 1, 5),
     "powerpoint-complex": (4, 2, 2),
     "powerpoint-rag-flow": (3, 3, 1),
 }
@@ -34,6 +35,7 @@ def main():
                 assert member in ("document.md", "report.json") or re.fullmatch(
                     r"images/[a-z]+-[0-9]+\.[a-z0-9]{1,8}", member), member
                 assert archive.read(member) == (directory / "output" / member).read_bytes()
+            assert set(archive.namelist()) == {str(p.relative_to(directory / "output")) for p in (directory / "output").rglob("*") if p.is_file()}
         for asset in report["assets"]:
             assert (directory / "output" / asset["path"]).is_file()
             assert asset["path"] in markdown
@@ -42,13 +44,14 @@ def main():
             assert "DELETE_" not in markdown and "HIDDEN_" not in markdown
             assert "キャッシュ999" in markdown and "　999" in markdown
             assert any(item["code"] == "GRAPHIC_FRAME_UNSUPPORTED" for item in report["warnings"])
+        metadata = [json.loads(label) for label in re.findall(r'^!\[(.+)\]\(images/[^)]+\)$', markdown, re.M)]
+        assert metadata == [block["metadata"] for block in report["blocks"] if "metadata" in block]
+        assert metadata and all(set(item) == {"type", "text", "x", "y", "width", "height"} for item in metadata)
+        assert "図中の項目：" in markdown
         if name.startswith("powerpoint-"):
             assert "取消線の秘密" not in markdown and "非表示の秘密" not in markdown
             assert "非表示のスライドは出力しない" not in markdown
-            metadata = [json.loads(label) for label in re.findall(r'^!\[(.+)\]\(images/[^)]+\)$', markdown, re.M)]
-            assert metadata == [block["metadata"] for block in report["blocks"] if "metadata" in block]
-            assert len(metadata) == expected[1] and all(set(item) == {"type", "text", "x", "y", "width", "height"} for item in metadata)
-            assert "図中の項目：" in markdown
+            assert len(metadata) == expected[1]
         if name == "powerpoint-rag-flow":
             diagrams = [block for block in report["blocks"] if block["type"] == "diagram"]
             edges = [edge for block in diagrams for edge in block["edges"]]
@@ -56,6 +59,14 @@ def main():
             assert "接続関係不明" in markdown and "↔" in markdown
             assert "STRIKE_SECRET_RAG_DEMO" not in markdown and "HIDDEN_SECRET_RAG_DEMO" not in markdown
             assert "STRIKE_SECRET_RAG_DEMO" not in json.dumps(report) and "HIDDEN_SECRET_RAG_DEMO" not in json.dumps(report)
+        if name in ("excel-complex", "word-rag-flow"):
+            edges = [edge for block in report["blocks"] for edge in block.get("edges", [])]
+            assert (len(edges), sum(edge["status"] == "resolved" for edge in edges)) == ((4, 1) if name == "excel-complex" else (5, 4))
+            assert "接続関係不明" in markdown
+        if name == "word-rag-flow":
+            assert "STRIKE_SECRET_RAG_DEMO" not in markdown and "HIDDEN_SECRET_RAG_DEMO" not in markdown
+            assert "STRIKE_SECRET_RAG_DEMO" not in json.dumps(report) and "HIDDEN_SECRET_RAG_DEMO" not in json.dumps(report)
+            assert markdown.index("本文の前後関係") < markdown.index("図中の項目") < markdown.index("図の後の説明")
         print(f"PASS {name}: input/output/screenshot hashes, ZIP contents, expected actual result")
 
 

@@ -211,7 +211,7 @@ class ExcelMarkdownServiceTest {
             try(ConversionResult result=convert(book)) {
                 String md=markdown(result);assertEquals(2,result.sectionCount());assertTrue(md.indexOf("表の末尾")<md.indexOf("!["));
                 assertTrue(md.contains("|  |  | 表外本文 |"));assertTrue(md.indexOf("表外本文")<md.indexOf("!["));
-                assertTrue(md.contains("# [画像のみ] シート"));assertEquals(1,report(result).path("assets").size());
+                assertTrue(md.contains("# [画像のみ] シート"));assertEquals(2,report(result).path("assets").size());
             }
         }
     }

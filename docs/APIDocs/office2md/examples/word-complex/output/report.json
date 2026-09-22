@@ -21,103 +21,156 @@
   }, {
     "code" : "DRAWING_SIMPLIFIED",
     "section" : "document",
-    "range" : "paragraph:11",
-    "message" : "Wordの基本図形を個別に簡易描画しました。ページ全体の配置は再現しません。"
+    "range" : "paragraph:11/drawing:1",
+    "message" : "Wordの図形・保存された接続を文字として保持し、同じ描画領域を確認用画像にまとめました。ページ全体の配置は再現しません。"
+  }, {
+    "code" : "DRAWING_SIMPLIFIED",
+    "section" : "document",
+    "range" : "paragraph:13/drawing:2",
+    "message" : "Wordの図形・保存された接続を文字として保持し、同じ描画領域を確認用画像にまとめました。ページ全体の配置は再現しません。"
   } ],
   "blocks" : [ {
-    "type" : "paragraph",
-    "markdownEndLine" : 1,
-    "section" : "document",
-    "markdownStartLine" : 1,
-    "range" : "paragraph:1"
-  }, {
-    "type" : "paragraph",
     "markdownEndLine" : 3,
     "section" : "document",
     "markdownStartLine" : 3,
-    "range" : "paragraph:2"
+    "range" : "paragraph:1",
+    "type" : "paragraph"
   }, {
-    "type" : "paragraph",
     "markdownEndLine" : 5,
     "section" : "document",
     "markdownStartLine" : 5,
-    "range" : "paragraph:3"
+    "range" : "paragraph:2",
+    "type" : "paragraph"
   }, {
-    "type" : "paragraph",
     "markdownEndLine" : 7,
     "section" : "document",
     "markdownStartLine" : 7,
-    "range" : "paragraph:4"
+    "range" : "paragraph:3",
+    "type" : "paragraph"
   }, {
-    "type" : "paragraph",
     "markdownEndLine" : 9,
     "section" : "document",
     "markdownStartLine" : 9,
-    "range" : "paragraph:5"
+    "range" : "paragraph:4",
+    "type" : "paragraph"
   }, {
-    "type" : "paragraph",
     "markdownEndLine" : 11,
     "section" : "document",
     "markdownStartLine" : 11,
-    "range" : "paragraph:6"
+    "range" : "paragraph:5",
+    "type" : "paragraph"
   }, {
-    "type" : "table",
-    "markdownEndLine" : 16,
+    "markdownEndLine" : 13,
     "section" : "document",
     "markdownStartLine" : 13,
-    "range" : "table:1"
+    "range" : "paragraph:6",
+    "type" : "paragraph"
   }, {
-    "type" : "paragraph",
     "markdownEndLine" : 18,
     "section" : "document",
-    "markdownStartLine" : 18,
-    "range" : "paragraph:7"
+    "markdownStartLine" : 15,
+    "range" : "table:1",
+    "type" : "table"
   }, {
-    "type" : "paragraph",
     "markdownEndLine" : 20,
     "section" : "document",
     "markdownStartLine" : 20,
-    "range" : "paragraph:8"
+    "range" : "paragraph:7",
+    "type" : "paragraph"
   }, {
-    "type" : "paragraph",
     "markdownEndLine" : 22,
     "section" : "document",
     "markdownStartLine" : 22,
-    "range" : "paragraph:9"
+    "range" : "paragraph:8",
+    "type" : "paragraph"
   }, {
-    "type" : "paragraph",
     "markdownEndLine" : 24,
     "section" : "document",
     "markdownStartLine" : 24,
-    "range" : "paragraph:10"
+    "range" : "paragraph:9",
+    "type" : "paragraph"
   }, {
-    "type" : "paragraph",
     "markdownEndLine" : 26,
     "section" : "document",
     "markdownStartLine" : 26,
-    "range" : "paragraph:11"
+    "range" : "paragraph:10",
+    "type" : "paragraph"
   }, {
-    "type" : "paragraph",
-    "markdownEndLine" : 28,
+    "type" : "diagram",
+    "section" : "document",
+    "range" : "paragraph:11/drawing:1",
+    "placement" : "VML、paragraph:11、ローカル座標（ページ位置未算出）、保存配置: position=不明、水平基準=不明、垂直基準=不明、left未指定、top未指定",
+    "nodes" : [ {
+      "type" : "角丸長方形",
+      "text" : "日本語の図形\n時計回り 15 度",
+      "x" : null,
+      "y" : null,
+      "width" : null,
+      "height" : null,
+      "id" : "shape-1"
+    } ],
+    "edges" : [ ],
+    "path" : "images/diagram-0001.png",
+    "metadata" : {
+      "type" : "角丸長方形",
+      "text" : "日本語の図形\n時計回り 15 度",
+      "x" : null,
+      "y" : null,
+      "width" : null,
+      "height" : null
+    }
+  }, {
+    "markdownEndLine" : 36,
     "section" : "document",
     "markdownStartLine" : 28,
-    "range" : "paragraph:12"
+    "range" : "paragraph:11",
+    "type" : "paragraph"
   }, {
-    "type" : "paragraph",
-    "markdownEndLine" : 30,
+    "markdownEndLine" : 38,
     "section" : "document",
-    "markdownStartLine" : 30,
-    "range" : "paragraph:13"
+    "markdownStartLine" : 38,
+    "range" : "paragraph:12",
+    "type" : "paragraph"
+  }, {
+    "type" : "diagram",
+    "section" : "document",
+    "range" : "paragraph:13/drawing:2",
+    "placement" : "本文内、paragraph:13、ローカル座標（ページ位置未算出）",
+    "nodes" : [ {
+      "type" : "画像",
+      "text" : "shapes.png",
+      "x" : 0,
+      "y" : 0,
+      "width" : 360,
+      "height" : 120,
+      "id" : "shape-1"
+    } ],
+    "edges" : [ ],
+    "path" : "images/diagram-0002.png",
+    "metadata" : {
+      "type" : "画像",
+      "text" : "shapes.png",
+      "x" : 0,
+      "y" : 0,
+      "width" : 360,
+      "height" : 120
+    }
+  }, {
+    "markdownEndLine" : 48,
+    "section" : "document",
+    "markdownStartLine" : 40,
+    "range" : "paragraph:13",
+    "type" : "paragraph"
   } ],
   "assets" : [ {
-    "sha256" : "8734d06539cb11fc728ae7e9ed296f23f75891a6313d0cf2cf9e832e1f1fe74d",
     "sizeBytes" : 16637,
     "contentType" : "image/png",
-    "path" : "images/diagram-0001.png"
+    "path" : "images/diagram-0001.png",
+    "sha256" : "8734d06539cb11fc728ae7e9ed296f23f75891a6313d0cf2cf9e832e1f1fe74d"
   }, {
-    "sha256" : "020adfae6e24d51a78361d61d71fbe2a71decd0be1f6b54f78f4474688798092",
-    "sizeBytes" : 6154,
+    "sizeBytes" : 9816,
     "contentType" : "image/png",
-    "path" : "images/image-0001.png"
+    "path" : "images/diagram-0002.png",
+    "sha256" : "23d6b7b88699dabcd097078ecf232742f426068496d3a40abe78bf86ebf99a69"
   } ]
 }

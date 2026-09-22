@@ -30,7 +30,10 @@ final class DrawingScene {
     static final class Item {
         int order;
         long id;
-        final List<Long> connections = new ArrayList<>();
+        String groupKey;
+        String graphId, sourceId, startId, endId;
+        boolean connector;
+        String startArrowType = "none", endArrowType = "none";
         Kind kind = Kind.UNSUPPORTED;
         double width, height;
         AffineTransform transform = new AffineTransform();

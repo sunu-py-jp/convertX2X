@@ -29,7 +29,17 @@ class PresentationConnectionsTest {
                     new Case(DecorationShape.NONE, DecorationShape.TRIANGLE, "start-to-end"),
                     new Case(DecorationShape.STEALTH, DecorationShape.NONE, "end-to-start"),
                     new Case(DecorationShape.ARROW, DecorationShape.TRIANGLE, "bidirectional"),
-                    new Case(DecorationShape.NONE, DecorationShape.NONE, "undirected"))) {
+                    new Case(DecorationShape.NONE, DecorationShape.NONE, "undirected"),
+                    new Case(DecorationShape.OVAL, DecorationShape.NONE, "undirected"),
+                    new Case(DecorationShape.NONE, DecorationShape.OVAL, "undirected"),
+                    new Case(DecorationShape.DIAMOND, DecorationShape.NONE, "undirected"),
+                    new Case(DecorationShape.NONE, DecorationShape.DIAMOND, "undirected"),
+                    new Case(DecorationShape.OVAL, DecorationShape.DIAMOND, "undirected"),
+                    new Case(DecorationShape.DIAMOND, DecorationShape.OVAL, "undirected"),
+                    new Case(DecorationShape.OVAL, DecorationShape.TRIANGLE, "start-to-end"),
+                    new Case(DecorationShape.DIAMOND, DecorationShape.ARROW, "start-to-end"),
+                    new Case(DecorationShape.STEALTH, DecorationShape.OVAL, "end-to-start"),
+                    new Case(DecorationShape.TRIANGLE, DecorationShape.DIAMOND, "end-to-start"))) {
                 XSLFConnectorShape line = connect(slide.createConnector(), start, end);
                 line.setFlipHorizontal(true); line.setRotation(90);
                 line.setLineHeadDecoration(test.head()); line.setLineTailDecoration(test.tail());
@@ -40,6 +50,8 @@ class PresentationConnectionsTest {
                 assertEquals("resolved", edge.status()); assertEquals("", edge.reason());
                 assertEquals(test.head().name().toLowerCase(java.util.Locale.ROOT), edge.startArrow());
                 assertEquals(test.tail().name().toLowerCase(java.util.Locale.ROOT), edge.endArrow());
+                assertEquals(edge.startArrow(), edge.metadata().get("startArrow"));
+                assertEquals(edge.endArrow(), edge.metadata().get("endArrow"));
                 if (test.direction().equals("start-to-end")) {
                     assertEquals(id(start), edge.metadata().get("fromId"));
                     assertEquals(id(end), edge.metadata().get("toId"));
@@ -62,9 +74,12 @@ class PresentationConnectionsTest {
             end.setAnchor(new Rectangle2D.Double(200, 0, 100, 100));
             XSLFConnectorShape line = slide.createConnector();
             line.setAnchor(new Rectangle2D.Double(100, 50, 100, 0));
-            line.setLineTailDecoration(DecorationShape.TRIANGLE);
+            line.setLineHeadDecoration(DecorationShape.OVAL);
+            line.setLineTailDecoration(DecorationShape.DIAMOND);
             var edge = only(start, end, line);
             assertEquals("unresolved", edge.status()); assertEquals("MISSING_ENDPOINT", edge.reason());
+            assertEquals("undirected", edge.direction());
+            assertEquals("oval", edge.startArrow()); assertEquals("diamond", edge.endArrow());
             assertNull(edge.startId()); assertNull(edge.endId());
             assertFalse(edge.metadata().containsKey("startId")); assertFalse(edge.metadata().containsKey("endId"));
             assertFalse(edge.metadata().containsKey("fromId")); assertFalse(edge.metadata().containsValue(null));
@@ -110,24 +125,27 @@ class PresentationConnectionsTest {
         }
     }
 
-    @Test void ornamentalAndUnknownMarkersDoNotBecomeSemanticArrows() throws Exception {
+    @Test void unknownMarkersAtEitherEndpointRemainUnresolvedAndRetainRawTypes() throws Exception {
         try (XMLSlideShow deck = new XMLSlideShow()) {
             XSLFSlide slide = deck.createSlide();
             XSLFAutoShape start = box(slide), end = box(slide);
             XSLFConnectorShape line = connect(slide.createConnector(), start, end);
-            line.setLineTailDecoration(DecorationShape.TRIANGLE);
-            for (DecorationShape ornament : List.of(DecorationShape.OVAL, DecorationShape.DIAMOND)) {
-                line.setLineHeadDecoration(ornament);
+            for (boolean unknownAtStart : List.of(true, false)) {
+                line.setLineHeadDecoration(DecorationShape.OVAL);
+                line.setLineTailDecoration(DecorationShape.DIAMOND);
+                var lineProperties = xml(line).getSpPr().getLn();
+                var marker = unknownAtStart ? lineProperties.getHeadEnd() : lineProperties.getTailEnd();
+                ((Element) marker.getDomNode()).setAttribute("type", "future-decoration");
                 var edge = only(start, end, line);
                 assertEquals("unknown", edge.direction()); assertEquals("UNKNOWN_ARROWHEAD", edge.reason());
                 assertEquals("unresolved", edge.status());
                 assertEquals(id(start), edge.startId()); assertEquals(id(end), edge.endId());
-                assertFalse(edge.metadata().containsKey("fromId"));
+                assertEquals(unknownAtStart ? "future-decoration" : "oval", edge.startArrow());
+                assertEquals(unknownAtStart ? "diamond" : "future-decoration", edge.endArrow());
+                assertEquals(edge.startArrow(), edge.metadata().get("startArrow"));
+                assertEquals(edge.endArrow(), edge.metadata().get("endArrow"));
+                assertFalse(edge.metadata().containsKey("fromId")); assertFalse(edge.metadata().containsKey("toId"));
             }
-            ((Element) xml(line).getSpPr().getLn().getHeadEnd().getDomNode()).setAttribute("type", "future-decoration");
-            var edge = only(start, end, line);
-            assertEquals("future-decoration", edge.startArrow());
-            assertEquals("UNKNOWN_ARROWHEAD", edge.reason());
         }
     }
 

@@ -94,7 +94,7 @@ public class ExcelMarkdownService {
                         CellRangeAddress drawingRange = drawing.firstRow() < 0 || drawing.firstColumn() < 0 || drawing.firstRow() == Integer.MAX_VALUE ? null
                                 : new CellRangeAddress(drawing.firstRow(), drawing.lastRow(), drawing.firstColumn(), drawing.lastColumn());
                         blocks.add(new Block("drawing", drawingRange, drawing.markdown(), row < 0 ? Integer.MAX_VALUE : row,
-                                column < 0 ? Integer.MAX_VALUE : column, 2, Map.of()));
+                                column < 0 ? Integer.MAX_VALUE : column, 2, drawing.metadata()));
                     }
                     blocks.sort(Comparator.comparingInt(Block::row).thenComparingInt(Block::column).thenComparingInt(Block::order));
                     if (blocks.isEmpty()) {

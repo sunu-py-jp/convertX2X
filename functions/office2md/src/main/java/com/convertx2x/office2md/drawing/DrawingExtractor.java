@@ -8,6 +8,9 @@ import java.awt.geom.AffineTransform;
 import java.awt.geom.Rectangle2D;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -38,7 +41,7 @@ public final class DrawingExtractor {
         private final Sheet sheet;
         private final ConversionWorkspace workspace;
         private final SheetCoordinates coordinates;
-        private int sequence;
+        private int sequence, groupSequence;
 
         Reader(Sheet sheet, ConversionWorkspace workspace) {
             this.sheet = sheet;
@@ -50,30 +53,104 @@ public final class DrawingExtractor {
             List<DrawingScene.Item> items = new ArrayList<>();
             var drawing = sheet.getDrawingPatriarch();
             if (drawing != null) for (Shape shape : drawing) {
-                read(shape, new AffineTransform(), false, true, false, 1, items);
+                read(shape, new AffineTransform(), false, true, false, 1, null, items);
             }
-            List<DrawingBlock> blocks = new ArrayList<>();
-            // Each leaf keeps its transformed sheet coordinates, even when it overlaps or is connected.
-            for (DrawingScene.Item item : items) {
-                String markdown;
-                if (item.kind == Kind.PICTURE) {
-                    markdown = pictureMarkdown(item);
-                } else if (item.kind == Kind.UNSUPPORTED) {
-                    markdown = "[" + item.placeholder + "] " + alternativeText(item);
+            List<DiagramGraph.Vertex> vertices = new ArrayList<>();
+            List<DiagramGraph.Connection> connections = new ArrayList<>();
+            Map<String, Map<String, Object>> connectorMetadata = new HashMap<>();
+            Map<String, String> connectorText = new HashMap<>();
+            Map<String, Long> counts = new HashMap<>();
+            for (var item : items) if (item.sourceId != null) counts.merge(item.sourceId, 1L, Long::sum);
+            for (var item : items) {
+                item.graphId = item.sourceId == null ? "shape-generated-" + item.order
+                        : "shape-" + item.sourceId + (counts.get(item.sourceId) > 1 ? "-" + item.order : "");
+                if (item.connector) {
+                    connections.add(new DiagramGraph.Connection(item.graphId, item.startId, item.endId,
+                            item.startArrowType, item.endArrowType));
+                    String text = DrawingText.plainText(item.text);
+                    connectorMetadata.put(item.graphId, DiagramMetadata.of(item.typeName, text,
+                            item.positionKnown ? item.placementBounds() : null));
+                    if (!text.isBlank()) connectorText.put(item.graphId,
+                            "接続線 " + Markdown.escape(item.graphId) + " の文字：" + textMarkdown(item).replace("\n", "<br>"));
                 } else {
-                    String alt = alternativeText(item);
-                    String path = workspace.addAsset("diagram", DrawingScene.render(List.of(item), workspace), "png", "image/png");
-                    markdown = "![" + alt + "](" + path + ")";
-                    workspace.info("DRAWING_SIMPLIFIED", sheet.getSheetName(), item.positionKnown ? range(item.placementBounds()) : null,
-                            "基本図形を個別に簡易描画しました。セル内容は画像に含みません。図形ID: " + item.id);
+                    String type = item.kind == Kind.PICTURE ? "画像" : item.typeName;
+                    String text = item.kind == Kind.PICTURE ? item.alt : DrawingText.plainText(item.text);
+                    vertices.add(new DiagramGraph.Vertex(item.graphId, item.sourceId, type, text,
+                            item.kind == Kind.PICTURE ? Markdown.escape(text) : textMarkdown(item),
+                            DiagramMetadata.of(type, text, item.positionKnown ? item.placementBounds() : null)));
                 }
-                Set<String> links = new LinkedHashSet<>();
-                for (var run : item.text) {
-                    if (run.hyperlink() != null && !run.text().isBlank() && Markdown.safeLink(run.hyperlink()))
-                        links.add(Markdown.link(Markdown.escape(run.text()), run.hyperlink()));
+            }
+            // Resolve against the complete visible sheet before grouping, so duplicated or filtered
+            // source ids cannot silently become valid in a smaller preview component.
+            List<DiagramGraph.Edge> edges = DiagramGraph.resolve(vertices, connections);
+            Map<String, DiagramGraph.Vertex> verticesById = new HashMap<>();
+            for (var vertex : vertices) verticesById.put(vertex.id(), vertex);
+            Map<String, DiagramGraph.Edge> edgesById = new HashMap<>();
+            for (var edge : edges) edgesById.put(edge.id(), edge);
+            Map<String, String> parents = new LinkedHashMap<>();
+            Map<String, String> groupRoots = new HashMap<>();
+            for (var item : items) {
+                parents.put(item.graphId, item.graphId);
+                if (item.groupKey != null) {
+                    String previous = groupRoots.putIfAbsent(item.groupKey, item.graphId);
+                    if (previous != null) union(parents, item.graphId, previous);
                 }
-                if (!links.isEmpty()) markdown += "\n\n" + String.join("\n\n", links);
-                blocks.add(block(item, markdown));
+            }
+            for (var edge : edges) if ("resolved".equals(edge.status())) {
+                union(parents, edge.id(), edge.startId());
+                union(parents, edge.id(), edge.endId());
+            }
+            Map<String, List<DrawingScene.Item>> components = new LinkedHashMap<>();
+            for (var item : items) components.computeIfAbsent(root(parents, item.graphId), ignored -> new ArrayList<>()).add(item);
+            List<DrawingBlock> blocks = new ArrayList<>();
+            for (var component : components.values()) {
+                List<DiagramGraph.Vertex> componentVertices = new ArrayList<>();
+                List<DiagramGraph.Edge> componentEdges = new ArrayList<>();
+                for (var item : component) {
+                    if (verticesById.containsKey(item.graphId)) componentVertices.add(verticesById.get(item.graphId));
+                    if (edgesById.containsKey(item.graphId)) componentEdges.add(edgesById.get(item.graphId));
+                }
+                Rectangle2D bounds = placementBounds(component);
+                String location = bounds == null ? null : range(bounds);
+                String markdown = DiagramGraph.markdown(componentVertices, componentEdges, workspace, sheet.getSheetName(), location);
+                Map<String, Object> metadata = new LinkedHashMap<>();
+                metadata.put("nodes", componentVertices.stream().map(DiagramGraph.Vertex::metadata).toList());
+                List<Map<String, Object>> edgeMetadata = new ArrayList<>();
+                for (var edge : componentEdges) {
+                    Map<String, Object> detail = new LinkedHashMap<>(edge.metadata());
+                    detail.putAll(connectorMetadata.get(edge.id()));
+                    edgeMetadata.add(detail);
+                    if (connectorText.containsKey(edge.id())) markdown = append(markdown, connectorText.get(edge.id()));
+                }
+                metadata.put("edges", edgeMetadata);
+                checkMarkdownLimit(markdown);
+                List<DrawingScene.Item> rendered = component.stream()
+                        .filter(item -> item.kind != Kind.UNSUPPORTED && (item.kind != Kind.PICTURE || inline(item))).toList();
+                if (!rendered.isEmpty()) {
+                    Map<String, Object> imageMetadata = DiagramMetadata.of("図", "", placementBounds(rendered));
+                    String alt = limitedAlt(imageMetadata);
+                    String path = workspace.addAsset("diagram", DrawingScene.render(rendered, workspace), "png", "image/png");
+                    markdown = append(markdown, "![" + alt + "](" + path + ")");
+                    metadata.put("path", path);
+                    metadata.put("metadata", imageMetadata);
+                    workspace.info("DRAWING_SIMPLIFIED", sheet.getSheetName(), location,
+                            "保存されたグループ・接続単位で図を簡易描画しました。セル内容は画像に含みません。");
+                }
+                List<Map<String, Object>> attachments = new ArrayList<>();
+                for (var item : component) {
+                    if (item.kind == Kind.PICTURE && !inline(item)) {
+                        Map<String, Object> imageMetadata = DiagramMetadata.of("画像", item.alt,
+                                item.positionKnown ? item.placementBounds() : null);
+                        String alt = limitedAlt(imageMetadata);
+                        String path = workspace.addAsset("image", item.picture, item.extension, item.contentType);
+                        markdown = append(markdown, "[" + alt + "](" + path + ")");
+                        attachments.add(Map.of("id", item.graphId, "path", path, "metadata", imageMetadata));
+                    } else if (item.kind == Kind.UNSUPPORTED) {
+                        markdown = append(markdown, "[" + item.placeholder + "]");
+                    }
+                }
+                if (!attachments.isEmpty()) metadata.put("attachments", attachments);
+                blocks.add(block(bounds, markdown, metadata));
             }
             // BIFF chart records can exist independently of an Escher shape tree.
             if (sheet instanceof HSSFSheet hssf && HSSFChart.getSheetCharts(hssf).length > 0) {
@@ -84,7 +161,7 @@ public final class DrawingExtractor {
         }
 
         private void read(Shape shape, AffineTransform parent, boolean child, boolean knownPosition,
-                          boolean parentFlipped, int depth, List<DrawingScene.Item> output) {
+                          boolean parentFlipped, int depth, String groupKey, List<DrawingScene.Item> output) {
             workspace.shapeVisited(depth);
             if (shape instanceof HSSFComment) return;
             Node xml = xml(shape);
@@ -134,7 +211,8 @@ public final class DrawingExtractor {
                 }
                 transform.scale(anchor.getWidth() / width, anchor.getHeight() / height);
                 transform.translate(-attribute(offset, "x", 0) / 12700, -attribute(offset, "y", 0) / 12700);
-                for (XSSFShape member : group) read(member, transform, true, known, textFlipped, depth + 1, output);
+                String nestedGroup = groupKey == null ? "group-" + (++groupSequence) : groupKey;
+                for (XSSFShape member : group) read(member, transform, true, known, textFlipped, depth + 1, nestedGroup, output);
                 return;
             }
             if (shape instanceof HSSFShapeGroup group) {
@@ -146,14 +224,16 @@ public final class DrawingExtractor {
                 }
                 transform.scale(anchor.getWidth() / width, anchor.getHeight() / height);
                 transform.translate(-group.getX1(), -group.getY1());
-                for (HSSFShape member : group) read(member, transform, true, known, textFlipped, depth + 1, output);
+                String nestedGroup = groupKey == null ? "group-" + (++groupSequence) : groupKey;
+                for (HSSFShape member : group) read(member, transform, true, known, textFlipped, depth + 1, nestedGroup, output);
                 return;
             }
             DrawingScene.Item item = new DrawingScene.Item();
             item.order = ++sequence;
             item.id = identifier(shape, xml, item.order);
+            item.sourceId = item.id >= 0 ? Long.toString(item.id) : null;
+            item.groupKey = groupKey;
             item.transform = transform;
-            item.altRotation = altRotation(transform, rotation, textFlipped);
             item.width = anchor.getWidth(); item.height = anchor.getHeight();
             item.positionKnown = known;
             if (shape instanceof Picture picture) {
@@ -166,10 +246,19 @@ public final class DrawingExtractor {
                     if (scale > 0) item.textScale = 1 / scale;
                 }
             }
+            item.connector = shape instanceof XSSFConnector || item.kind == Kind.LINE;
+            if (item.connector && shape instanceof XSSFConnector) {
+                Node properties = child(child(xml, "nvCxnSpPr"), "cNvCxnSpPr");
+                item.startId = connectionId(child(properties, "stCxn"));
+                item.endId = connectionId(child(properties, "endCxn"));
+            } else if (item.connector && shape instanceof HSSFShape) {
+                warning("XLS_CONNECTION_UNSUPPORTED", item, "XLSの接続先IDは抽出しません。接続関係は不明として扱います。");
+            }
             output.add(item);
         }
 
         private void readPicture(Picture picture, Node xml, DrawingScene.Item item) {
+            item.alt = "";
             try {
                 var data = picture.getPictureData();
                 if (data == null) throw new IllegalArgumentException("Missing embedded picture");
@@ -180,23 +269,21 @@ public final class DrawingExtractor {
                 item.extension = format[0]; item.contentType = format[1]; item.kind = Kind.PICTURE;
                 Node properties = child(child(xml, "nvPicPr"), "cNvPr");
                 String description = attr(properties, "descr");
+                if (description.isBlank()) description = attr(properties, "title");
                 if (!description.isBlank()) item.alt = description;
                 if (inline(item)) DrawingScene.verifyPicture(item.picture, workspace);
                 else warning("IMAGE_FORMAT_ATTACHMENT", item, "この画像形式は元ファイルの添付として保持します。");
                 if (picture instanceof XSSFPicture) {
                     Node blipFill = child(xml, "blipFill");
                     Node blip = child(blipFill, "blip");
-                    if (child(blipFill, "srcRect") != null || rotation((Shape) picture, xml) != 0
-                            || flip((Shape) picture, xml, true) || flip((Shape) picture, xml, false)
-                            || child(child(xml, "spPr"), "effectLst") != null || hasElementChildren(blip))
-                        warning("IMAGE_EFFECTS_IGNORED", item, "元画像を抽出します。切り抜き前の領域を含み、切り抜き・回転・反転・画像効果は反映しません。配置は代替テキストに記録します。");
+                    if (child(blipFill, "srcRect") != null || child(child(xml, "spPr"), "effectLst") != null || hasElementChildren(blip))
+                        warning("IMAGE_EFFECTS_IGNORED", item, "切り抜き・画像効果は反映しません。プレビューには回転・反転を反映します。");
                 } else if (picture instanceof HSSFPicture hssf) {
-                    if (hssf.getRotationDegree() != 0 || hssf.isFlipHorizontal() || hssf.isFlipVertical()
-                            || escher(hssf, EscherPropertyTypes.BLIP__CROPFROMTOP, 0) != 0
+                    if (escher(hssf, EscherPropertyTypes.BLIP__CROPFROMTOP, 0) != 0
                             || escher(hssf, EscherPropertyTypes.BLIP__CROPFROMBOTTOM, 0) != 0
                             || escher(hssf, EscherPropertyTypes.BLIP__CROPFROMLEFT, 0) != 0
                             || escher(hssf, EscherPropertyTypes.BLIP__CROPFROMRIGHT, 0) != 0)
-                        warning("IMAGE_EFFECTS_IGNORED", item, "元画像には切り抜き前の領域を含みます。単独画像の回転・反転は反映しません。");
+                        warning("IMAGE_EFFECTS_IGNORED", item, "切り抜き前の領域を含みます。プレビューには回転・反転を反映します。");
                 }
             } catch (IOException | RuntimeException ex) {
                 if (ex instanceof ConversionException conversion) throw conversion;
@@ -267,6 +354,8 @@ public final class DrawingExtractor {
                 item.dashed = simple.getLineStyle() != HSSFShape.LINESTYLE_SOLID;
                 item.startArrow = escher(simple, EscherPropertyTypes.LINESTYLE__LINESTARTARROWHEAD, 0) != 0;
                 item.endArrow = escher(simple, EscherPropertyTypes.LINESTYLE__LINEENDARROWHEAD, 0) != 0;
+                item.startArrowType = item.startArrow ? "unknown" : "none";
+                item.endArrowType = item.endArrow ? "unknown" : "none";
                 item.leftInset = escher(simple, EscherPropertyTypes.TEXT__TEXTLEFT, 91440) / 12700d;
                 item.rightInset = escher(simple, EscherPropertyTypes.TEXT__TEXTRIGHT, 91440) / 12700d;
                 item.topInset = escher(simple, EscherPropertyTypes.TEXT__TEXTTOP, 45720) / 12700d;
@@ -301,8 +390,12 @@ public final class DrawingExtractor {
             Node line = child(properties, "ln");
             item.line = child(line, "noFill") != null ? null : color(child(line, "solidFill"), defaultLine);
             item.lineWidth = (float) Math.max(0, attribute(line, "w", 12700) / 12700);
-            item.startArrow = !Set.of("", "none").contains(attr(child(line, "headEnd"), "type"));
-            item.endArrow = !Set.of("", "none").contains(attr(child(line, "tailEnd"), "type"));
+            item.startArrowType = attr(child(line, "headEnd"), "type");
+            item.endArrowType = attr(child(line, "tailEnd"), "type");
+            if (item.startArrowType.isBlank()) item.startArrowType = "none";
+            if (item.endArrowType.isBlank()) item.endArrowType = "none";
+            item.startArrow = Set.of("triangle", "stealth", "arrow").contains(item.startArrowType);
+            item.endArrow = Set.of("triangle", "stealth", "arrow").contains(item.endArrowType);
             String dash = attr(child(line, "prstDash"), "val");
             item.dashed = !dash.isEmpty() && !dash.equals("solid");
             if (child(properties, "gradFill") != null || child(properties, "blipFill") != null
@@ -345,24 +438,42 @@ public final class DrawingExtractor {
             return value;
         }
 
-        private String alternativeText(DrawingScene.Item item) {
-            String description = DrawingAltText.describe(item.kind == Kind.PICTURE ? "画像" : item.typeName,
-                    item.altRotation, item.kind == Kind.PICTURE ? item.alt : DrawingText.plainText(item.text));
-            String geometry = DrawingAltText.geometry("シート左上", item.positionKnown ? item.placementBounds() : null);
-            return DrawingAltText.imageAlt(List.of(description + "、" + geometry), workspace.limits().maxMarkdownBytes());
+        private String limitedAlt(Map<String, Object> metadata) {
+            String alt = DiagramMetadata.imageAlt(metadata);
+            checkMarkdownLimit(alt);
+            return alt;
         }
 
-        private String pictureMarkdown(DrawingScene.Item item) {
-            String label = alternativeText(item);
-            String path = workspace.addAsset("image", item.picture, item.extension, item.contentType);
-            return inline(item) ? "![" + label + "](" + path + ")" : "[" + label + "（元画像）](" + path + ")";
+        private void checkMarkdownLimit(String markdown) {
+            if (markdown.getBytes(java.nio.charset.StandardCharsets.UTF_8).length > workspace.limits().maxMarkdownBytes())
+                throw ConversionWorkspace.limit("MARKDOWN_BYTES_LIMIT", "Markdownのサイズが上限を超えました。");
         }
-        private DrawingBlock block(DrawingScene.Item item, String markdown) {
-            if (!item.positionKnown)
-                return new DrawingBlock(Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE, markdown);
-            Rectangle2D bounds = item.placementBounds();
+
+        private String textMarkdown(DrawingScene.Item item) {
+            StringBuilder result = new StringBuilder();
+            for (var run : item.text) {
+                String value = Markdown.escape(run.text());
+                if (run.bold()) value = Markdown.bold(value);
+                if (run.hyperlink() != null) value = Markdown.link(value, run.hyperlink());
+                result.append(value);
+            }
+            return result.toString();
+        }
+
+        private Rectangle2D placementBounds(List<DrawingScene.Item> items) {
+            Rectangle2D result = null;
+            for (var item : items) {
+                if (!item.positionKnown) return null;
+                result = result == null ? item.placementBounds() : result.createUnion(item.placementBounds());
+            }
+            return result;
+        }
+
+        private DrawingBlock block(Rectangle2D bounds, String markdown, Map<String, Object> metadata) {
+            if (bounds == null)
+                return new DrawingBlock(Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE, markdown, metadata);
             return new DrawingBlock(coordinates.row(bounds.getMinY()), coordinates.column(bounds.getMinX()),
-                    coordinates.row(bounds.getMaxY()), coordinates.column(bounds.getMaxX()), markdown);
+                    coordinates.row(bounds.getMaxY()), coordinates.column(bounds.getMaxX()), markdown, metadata);
         }
         private String range(Rectangle2D bounds) {
             String first = new CellReference(coordinates.row(bounds.getMinY()), coordinates.column(bounds.getMinX())).formatAsString();
@@ -375,16 +486,26 @@ public final class DrawingExtractor {
     }
 
     private static boolean inline(DrawingScene.Item item) { return item.extension.equals("png") || item.extension.equals("jpg"); }
-    private static String altRotation(AffineTransform transform, double savedRotation, boolean flipped) {
-        double x = Math.hypot(transform.getScaleX(), transform.getShearY());
-        double y = Math.hypot(transform.getShearX(), transform.getScaleY());
-        double dot = transform.getScaleX() * transform.getShearX() + transform.getShearY() * transform.getScaleY();
-        // Allow sub-ppm noise from integral EMU coordinates; genuine nonuniform scaling stays explicit.
-        if (!flipped && Double.isFinite(x) && Double.isFinite(y) && x > 0 && y > 0
-                && transform.getDeterminant() > 0 && Math.abs(x - y) <= Math.max(x, y) * 1e-6
-                && Math.abs(dot) <= x * y * 1e-6)
-            return DrawingAltText.rotation(Math.toDegrees(Math.atan2(transform.getShearY(), transform.getScaleX())));
-        return DrawingAltText.rotation(savedRotation) + "（図形の保存値。反転・グループ変形後の角度は未算出）";
+    private static String append(String markdown, String next) {
+        return markdown.isBlank() ? next : markdown + "\n\n" + next;
+    }
+    private static String root(Map<String, String> parents, String id) {
+        String parent = parents.get(id);
+        if (parent == null) throw new IllegalArgumentException("Unknown diagram id");
+        while (!parent.equals(parents.get(parent))) parent = parents.get(parent);
+        String current = id;
+        while (!parents.get(current).equals(parent)) {
+            String next = parents.get(current); parents.put(current, parent); current = next;
+        }
+        return parent;
+    }
+    private static void union(Map<String, String> parents, String left, String right) {
+        parents.put(root(parents, right), root(parents, left));
+    }
+    private static String connectionId(Node node) {
+        String value = attr(node, "id");
+        try { long id = Long.parseLong(value); return id < 0 ? null : Long.toString(id); }
+        catch (NumberFormatException ignored) { return null; }
     }
     private static int clamp(double value) { return (int) Math.max(0, Math.min(255, Math.round(value))); }
 

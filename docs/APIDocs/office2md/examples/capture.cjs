@@ -15,6 +15,7 @@ const hash = data => crypto.createHash('sha256').update(data).digest('hex');
 const cases = [
   { name: 'excel-complex', file: 'input.xlsx', sections: [0, 1, 5, 6] },
   { name: 'word-complex', file: 'input.docx', sections: [0] },
+  { name: 'word-rag-flow', file: 'input.docx', sections: [0] },
   { name: 'powerpoint-complex', file: 'input.pptx', sections: [1, 2] },
   { name: 'powerpoint-rag-flow', file: 'input.pptx', sections: [0, 1, 2] },
 ];
@@ -121,7 +122,7 @@ async function main() {
       const markdown = await page.locator('#markdown-source').textContent();
       const reportText = await page.locator('#report-source').textContent();
       const report=JSON.parse(reportText);
-      if (sample.name.startsWith('powerpoint-')) {
+      { // Every format uses JSON alt and structured diagram metadata.
         const rawMetadata = [...markdown.matchAll(/^!\[(.+)\]\(images\/[^)]+\)$/gm)]
           .map(match => JSON.parse(match[1]));
         const previewMetadata = await page.locator('#preview img').evaluateAll(images =>
@@ -130,12 +131,13 @@ async function main() {
         assert.deepEqual(rawMetadata, report.blocks.filter(block => block.metadata).map(block => block.metadata));
         assert(rawMetadata.length > 0 && rawMetadata.every(metadata =>
           !('rotation' in metadata) && !('origin' in metadata) && !('unit' in metadata)));
-        for (const block of report.blocks.filter(block => block.type === 'diagram')) {
+        const renderedText = (await page.locator('#preview').textContent()).replace(/\s+/g, ' ');
+        for (const block of report.blocks.filter(block => Array.isArray(block.nodes))) {
           assert(Array.isArray(block.nodes) && Array.isArray(block.edges));
           for (const node of block.nodes) {
             // Text is ordinary Markdown, not just image alt or report data.
-            if (node.text && !/[\\*_\[\]<>]/.test(node.text))
-              assert(markdown.includes(node.text.split('\n')[0]), node.id);
+            if (node.text)
+              assert(renderedText.includes(node.text.split('\n')[0].replace(/\s+/g, ' ')), node.id);
           }
         }
       }
@@ -144,6 +146,8 @@ async function main() {
         await page.locator('#warning-panel').evaluate(el=>{el.open=true;});
         await screenshot('warnings.png','#warning-panel',null,true);
       }
+      // Replace only this case's generated output, removing assets from earlier conversion versions.
+      await fs.rm(path.join(directory, 'output'), {recursive: true, force: true});
       // Extract only fixed safe ZIP member paths; preserve every original response byte separately.
       execFileSync('python3',['-c',
         'import pathlib,re,sys,zipfile\np=pathlib.Path(sys.argv[1]); out=p/"output"\nwith zipfile.ZipFile(p/"result.zip") as z:\n for n in z.namelist():\n  assert n in ("document.md","report.json") or re.fullmatch(r"images/[a-z]+-[0-9]+\\.[a-z0-9]{1,8}",n),n\n  f=out/n; f.parent.mkdir(parents=True,exist_ok=True); f.write_bytes(z.read(n))',directory]);

@@ -1,0 +1,87 @@
+{
+  "capturedAt": "2026-09-22T10:40:17.921Z",
+  "mode": "actual local Functions HTTP through unmodified Playground",
+  "sourceCommit": "38d991e0c5bc7c1ca412a54f6a6e946470f7755b",
+  "sourceWorkingTreeDirty": true,
+  "runtime": {
+    "platform": "darwin",
+    "architecture": "arm64",
+    "node": "v24.2.0",
+    "java": "openjdk version \"21\" 2023-09-19 LTS\nOpenJDK Runtime Environment Temurin-21+35 (build 21+35-LTS)\nOpenJDK 64-Bit Server VM Temurin-21+35 (build 21+35-LTS, mixed mode)",
+    "coreTools": "4.9.0",
+    "browser": "153.0.8010.53"
+  },
+  "input": {
+    "path": "input.docx",
+    "sizeBytes": 3812,
+    "sha256": "77bbbe893b44471a906a70b7163da80df7b50d71536f93fb57fec5a37114f45c"
+  },
+  "request": {
+    "method": "POST",
+    "path": "/api/convert?filename=input.docx",
+    "contentType": "application/octet-stream",
+    "options": "default; no custom conversion options"
+  },
+  "response": {
+    "status": 200,
+    "contentType": "application/zip",
+    "elapsedMs": 1895
+  },
+  "timingNote": "Local macOS measurement from submit click to completed Playground result (HTTP response, unzip and preview construction included). Not an Azure latency or throughput benchmark.",
+  "sectionCount": 1,
+  "sectionTitles": [
+    "Word / 購入申請フロー"
+  ],
+  "assetCount": 1,
+  "warningCount": 5,
+  "warningCodes": [
+    "DRAWING_TEXT_APPROXIMATED",
+    "DIAGRAM_CONNECTION_UNRESOLVED"
+  ],
+  "informationCount": 2,
+  "files": [
+    {
+      "path": "result.zip",
+      "sizeBytes": 22017,
+      "sha256": "46014e601ba5a9fac94bbc67d715ae030907367630263d96ce7d0dc21c02c227"
+    },
+    {
+      "path": "output/document.md",
+      "sizeBytes": 1408,
+      "sha256": "7f184234f29c79a0762d392ac064246b8400889ed5a2e267c4bf196490d7863d"
+    },
+    {
+      "path": "output/report.json",
+      "sizeBytes": 6162,
+      "sha256": "413224a00a80e9725fcb4dd70758b908f498a636c37d296a535079c508ffd2a1"
+    },
+    {
+      "path": "output/images/diagram-0001.png",
+      "sizeBytes": 21064,
+      "sha256": "8a6d40441b5bc2271ee1754217006bf0081a564aa971e15d3585a671a92d257c"
+    },
+    {
+      "path": "screenshots/overview.png",
+      "sizeBytes": 235928,
+      "sha256": "69ed5e14ee6afc080ed0c4732ac4f4f5ca1315eab5de3f07b94724b45c29c9f1"
+    },
+    {
+      "path": "screenshots/section-01.png",
+      "sizeBytes": 132652,
+      "sha256": "d2f259fb3073e993400f496d8b1770656299c369e2c9614d0d9ea3a99ae300f0"
+    },
+    {
+      "path": "screenshots/markdown-source.png",
+      "sizeBytes": 152363,
+      "sha256": "1bc946b4493ff2d658e877766f3491e211979825ffe170ea8f79c69b26fc9b0d"
+    },
+    {
+      "path": "screenshots/warnings.png",
+      "sizeBytes": 58930,
+      "sha256": "94c1dba5121aa46948492e1f823c3de8994afac9e74ce2ecefd63378d62dbbae"
+    }
+  ],
+  "screenshotLayout": "Overview/source use normal Playground. Section screenshots expand the preview scroll region and image maximum height, and hide other sections. Excel tables-detail and group-detail crop the top 790 and 1000 CSS pixels; full sections are also included. Warnings expand the warning list. No original text, images or outputs are changed.",
+  "browserErrors": [],
+  "externalBrowserRequests": []
+}

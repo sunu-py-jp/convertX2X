@@ -1,14 +1,15 @@
 {
-  "capturedAt": "2026-09-16T12:17:30.057Z",
+  "capturedAt": "2026-09-22T10:41:39.697Z",
   "mode": "actual local Functions HTTP through unmodified Playground",
-  "sourceCommit": "4923032ca0c641e9e5864397cdba7aaaceb1fe4f",
+  "sourceCommit": "38d991e0c5bc7c1ca412a54f6a6e946470f7755b",
+  "sourceWorkingTreeDirty": true,
   "runtime": {
     "platform": "darwin",
     "architecture": "arm64",
-    "node": "v24.19.0",
+    "node": "v24.2.0",
     "java": "openjdk version \"21\" 2023-09-19 LTS\nOpenJDK Runtime Environment Temurin-21+35 (build 21+35-LTS)\nOpenJDK 64-Bit Server VM Temurin-21+35 (build 21+35-LTS, mixed mode)",
     "coreTools": "4.9.0",
-    "browser": "152.0.7977.83"
+    "browser": "153.0.8010.53"
   },
   "input": {
     "path": "input.docx",
@@ -24,7 +25,7 @@
   "response": {
     "status": 200,
     "contentType": "application/zip",
-    "elapsedMs": 83
+    "elapsedMs": 162
   },
   "timingNote": "Local macOS measurement from submit click to completed Playground result (HTTP response, unzip and preview construction included). Not an Azure latency or throughput benchmark.",
   "sectionCount": 1,
@@ -36,22 +37,22 @@
   "warningCodes": [
     "DRAWING_TEXT_APPROXIMATED"
   ],
-  "informationCount": 2,
+  "informationCount": 3,
   "files": [
     {
       "path": "result.zip",
-      "sizeBytes": 24100,
-      "sha256": "ef7d52fae57978731e78f4fea6d3dbdf05faad57fc4907b1e0ca91a863be5e3f"
+      "sizeBytes": 27676,
+      "sha256": "9e03167a9cb03c61f8c35ed5f90dec58be25cd2f94c3de2103bc8debd854921a"
     },
     {
       "path": "output/document.md",
-      "sizeBytes": 1389,
-      "sha256": "c7a68e166731c4c8efc2b90ee736fcd4602e004afd3cb7f83447bec223332b0b"
+      "sizeBytes": 1241,
+      "sha256": "678f0eaa62269358c632992f1c1c74b40cd82b342d9d430ba904f911ead7efab"
     },
     {
       "path": "output/report.json",
-      "sizeBytes": 3383,
-      "sha256": "2e6a121a618820d9c06266c68300dfadbd4de39983cd9893764c91c97956c8a1"
+      "sizeBytes": 5129,
+      "sha256": "c01d15ce6fc47c9354f9a20a2037eb78a24e4064097d70a2495948715f812647"
     },
     {
       "path": "output/images/diagram-0001.png",
@@ -59,24 +60,24 @@
       "sha256": "8734d06539cb11fc728ae7e9ed296f23f75891a6313d0cf2cf9e832e1f1fe74d"
     },
     {
-      "path": "output/images/image-0001.png",
-      "sizeBytes": 6154,
-      "sha256": "020adfae6e24d51a78361d61d71fbe2a71decd0be1f6b54f78f4474688798092"
+      "path": "output/images/diagram-0002.png",
+      "sizeBytes": 9816,
+      "sha256": "23d6b7b88699dabcd097078ecf232742f426068496d3a40abe78bf86ebf99a69"
     },
     {
       "path": "screenshots/overview.png",
-      "sizeBytes": 183067,
-      "sha256": "9542b8bc496869f779ddf40161ad1c7f30ffdbdf555e7447b59ba2de0da749db"
+      "sizeBytes": 174999,
+      "sha256": "a03cc2680107236ff7a6de3a5c68d42df812135704bffa01d0f2fb5d818b2317"
     },
     {
       "path": "screenshots/section-01.png",
-      "sizeBytes": 107224,
-      "sha256": "f47a930c3139b7cc9349c0d7ae38fdc5be291d54c66c5bcd9936d7fea6adf845"
+      "sizeBytes": 124591,
+      "sha256": "b02c94d0edaca1ac8350c7313b4236c96f07e228a0e09d068c32b13cd530f643"
     },
     {
       "path": "screenshots/markdown-source.png",
-      "sizeBytes": 99562,
-      "sha256": "5322e8fce3f61701688e274d62ad08141a27e5a03089f3afa3a7516bd3526d29"
+      "sizeBytes": 90979,
+      "sha256": "4cb18bb13b52caf51482d39e0da92776718cb39c10f62a8f7dc12f4e9ccc3bd7"
     },
     {
       "path": "screenshots/warnings.png",

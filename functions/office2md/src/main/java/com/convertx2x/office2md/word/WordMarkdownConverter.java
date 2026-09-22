@@ -281,7 +281,10 @@ public final class WordMarkdownConverter {
                 notes.putIfAbsent(key, new Note(key, id, end));
                 append(out, "[^" + key + "]");
             } else if (is(node, "drawing") || is(node, "pict") || is(node, "object")) {
-                if (!plain && fieldVisible()) append(out, drawings.render(node, part, section, range, this::visibleText));
+                if (!plain && fieldVisible()) {
+                    String drawing = drawings.render(node, part, section, range, this::visibleText);
+                    if (!drawing.isBlank()) append(out, "\n\n" + drawing + "\n\n");
+                }
             } else if (is(node, "sdt")) inlineChildren(child(node, "sdtContent"), paragraph, part, range, out, plain, pages);
             else if ("http://schemas.openxmlformats.org/markup-compatibility/2006".equals(node.getNamespaceURI())
                     && "AlternateContent".equals(node.getLocalName())) {

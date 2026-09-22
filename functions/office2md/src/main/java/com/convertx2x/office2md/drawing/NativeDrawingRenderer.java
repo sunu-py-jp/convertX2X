@@ -15,7 +15,7 @@ public final class NativeDrawingRenderer {
     public record Shape(String preset, double width, double height, AffineTransform transform,
             Color fill, Color line, float lineWidth, String text, String fontFamily, float fontSize,
             boolean bold, Color textColor, int horizontalAlignment, int verticalAlignment,
-            byte[] picture, String extension) { }
+            byte[] picture, String extension, boolean startArrow, boolean endArrow) { }
 
     public static boolean supports(String preset) { return kind(preset) != DrawingScene.Kind.UNSUPPORTED; }
 
@@ -31,6 +31,7 @@ public final class NativeDrawingRenderer {
             item.kind = shape.picture() == null ? kind(shape.preset()) : DrawingScene.Kind.PICTURE;
             item.width = shape.width(); item.height = shape.height();
             item.transform = new AffineTransform(shape.transform());
+            item.startArrow = shape.startArrow(); item.endArrow = shape.endArrow();
             item.fill = shape.fill(); item.line = shape.line(); item.lineWidth = shape.lineWidth();
             item.picture = shape.picture(); item.extension = shape.extension() == null ? "png" : shape.extension();
             String text = shape.text() == null ? "" : shape.text();

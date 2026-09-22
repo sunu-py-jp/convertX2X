@@ -4,6 +4,8 @@ import com.convertx2x.office2md.conversion.ConversionException;
 import com.convertx2x.office2md.conversion.ConversionWorkspace;
 import com.convertx2x.office2md.conversion.Markdown;
 import com.convertx2x.office2md.drawing.DrawingAltText;
+import com.convertx2x.office2md.drawing.DiagramMetadata;
+import com.convertx2x.office2md.drawing.DiagramGraph;
 import com.convertx2x.office2md.drawing.NativeDrawingRenderer;
 import java.awt.Color;
 import java.awt.geom.AffineTransform;
@@ -25,6 +27,7 @@ final class WordDrawings {
     private static final String REL = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
     private static final String WP = "http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing";
     private final ConversionWorkspace workspace;
+    private int drawingNumber;
     private record Frame(AffineTransform transform, boolean known, boolean sizeKnown) { }
 
     WordDrawings(ConversionWorkspace workspace) { this.workspace = workspace; }
@@ -43,14 +46,22 @@ final class WordDrawings {
         String font = "Noto Sans CJK JP";
         boolean bold, flipped, geometryKnown, rotationKnown = true;
         Double savedWidth, savedHeight;
-        String reference;
+        String reference, sourceId, startId, endId;
+        String startArrow = "none", endArrow = "none";
+        boolean connector, renderable = true;
+        String unsupportedMessage;
         int horizontal = 1, vertical = 1;
         byte[] picture;
         boolean inlineImage() { return extension.equals("png") || extension.equals("jpg"); }
         NativeDrawingRenderer.Shape shape() {
-            return new NativeDrawingRenderer.Shape(preset, width, height, transform, fill, line, lineWidth,
-                    text, font, fontSize, bold, textColor, horizontal, vertical, picture, extension);
+            return new NativeDrawingRenderer.Shape(connector ? "line" : preset, width, height, transform, fill, line, lineWidth,
+                    text, font, fontSize, bold, textColor, horizontal, vertical, picture, extension,
+                    directional(startArrow), directional(endArrow));
         }
+    }
+
+    private static final class Scope {
+        final List<Object> outputs = new ArrayList<>();
     }
 
     private final class Reader {
@@ -59,6 +70,7 @@ final class WordDrawings {
         private final Function<Node, String> visibleText;
         private final List<Object> outputs = new ArrayList<>();
         private boolean handled;
+        private Scope activeScope;
 
         Reader(PackagePart part, String section, String range, Function<Node, String> visibleText) {
             this.part = part; this.section = section; this.range = range; this.visibleText = visibleText;
@@ -79,15 +91,79 @@ final class WordDrawings {
             }
             List<String> result = new ArrayList<>();
             for (Object output : outputs) {
-                if (output instanceof String text) { result.add(text); continue; }
-                Item item = (Item) output;
-                if (item.picture != null) { result.add(picture(item)); continue; }
-                String alt = DrawingAltText.imageAlt(List.of(description(item)), workspace.limits().maxMarkdownBytes());
-                String path = workspace.addAsset("diagram", NativeDrawingRenderer.render(List.of(item.shape()), workspace), "png", "image/png");
-                result.add("![" + alt + "](" + path + ")");
-                workspace.info("DRAWING_SIMPLIFIED", section, range, "Wordの基本図形を個別に簡易描画しました。ページ全体の配置は再現しません。");
+                if (output instanceof String text) result.add(text);
+                else result.add(renderScope((Scope) output));
             }
             return String.join("\n\n", result);
+        }
+
+        private String renderScope(Scope scope) {
+            List<Item> items = scope.outputs.stream().filter(Item.class::isInstance).map(Item.class::cast).toList();
+            if (items.isEmpty()) return String.join("\n\n", scope.outputs.stream().map(Object::toString).toList());
+            String diagramRange = range + "/drawing:" + (++drawingNumber);
+            List<DiagramGraph.Vertex> vertices = new ArrayList<>();
+            List<DiagramGraph.Connection> connections = new ArrayList<>();
+            List<NativeDrawingRenderer.Shape> shapes = new ArrayList<>();
+            List<String> attachments = new ArrayList<>();
+            List<Map<String, Object>> attachmentMetadata = new ArrayList<>();
+            List<String> connectorText = new ArrayList<>();
+            Map<String, Map<String, Object>> connectorMetadata = new LinkedHashMap<>();
+            Rectangle2D union = null;
+            boolean geometryKnown = true;
+            int ordinal = 0;
+            for (Item item : items) {
+                String id = "shape-" + (++ordinal);
+                Rectangle2D bounds = item.geometryKnown ? item.transform.createTransformedShape(
+                        new Rectangle2D.Double(0, 0, item.width, item.height)).getBounds2D() : null;
+                if (item.renderable && (item.picture == null || item.inlineImage())) {
+                    geometryKnown &= bounds != null;
+                    if (bounds != null) union = union == null ? bounds : union.createUnion(bounds);
+                }
+                String type = item.picture == null ? DrawingAltText.typeName(item.preset) : "画像";
+                String text = item.picture == null ? item.text : item.alt.equals("画像") ? "" : item.alt;
+                Map<String, Object> metadata = DiagramMetadata.of(type, text, bounds);
+                if (item.connector) {
+                    connections.add(new DiagramGraph.Connection(id, item.startId, item.endId, item.startArrow, item.endArrow));
+                    connectorMetadata.put(id, metadata);
+                    if (!text.isBlank()) connectorText.add("接続線 " + Markdown.escape(id) + " の文字：" + Markdown.escape(text).replace("\n", "<br>"));
+                } else vertices.add(new DiagramGraph.Vertex(id, item.sourceId, type, text, Markdown.escape(text), metadata));
+                if (item.picture != null && !item.inlineImage()) {
+                    String path = workspace.addAsset("image", item.picture, item.extension, item.contentType);
+                    attachments.add("[" + DiagramMetadata.imageAlt(metadata) + "](" + path + ")");
+                    attachmentMetadata.add(Map.of("id", id, "path", path, "metadata", metadata));
+                } else if (item.renderable) shapes.add(item.shape());
+            }
+            var edges = DiagramGraph.resolve(vertices, connections);
+            List<String> output = new ArrayList<>();
+            String body = DiagramGraph.markdown(vertices, edges, workspace, section, diagramRange);
+            if (!body.isBlank()) output.add(body);
+            output.addAll(connectorText);
+            for (Item item : items) if (item.unsupportedMessage != null) output.add("[" + Markdown.escape(item.unsupportedMessage) + "]");
+            for (Object entry : scope.outputs) if (entry instanceof String text) output.add(text);
+            Map<String, Object> block = new LinkedHashMap<>();
+            block.put("type", "diagram"); block.put("section", section); block.put("range", diagramRange);
+            block.put("placement", items.get(0).reference);
+            block.put("nodes", vertices.stream().map(DiagramGraph.Vertex::metadata).toList());
+            if (!attachmentMetadata.isEmpty()) block.put("attachments", attachmentMetadata);
+            block.put("edges", edges.stream().map(edge -> {
+                Map<String, Object> metadata = new LinkedHashMap<>(edge.metadata());
+                metadata.putAll(connectorMetadata.get(edge.id()));
+                return metadata;
+            }).toList());
+            if (!shapes.isEmpty()) {
+                String path = workspace.addAsset("diagram", NativeDrawingRenderer.render(shapes, workspace), "png", "image/png");
+                Map<String, Object> metadata = items.size() == 1
+                        ? DiagramMetadata.of(items.get(0).picture == null ? DrawingAltText.typeName(items.get(0).preset) : "画像",
+                                items.get(0).picture == null ? items.get(0).text : items.get(0).alt, geometryKnown ? union : null)
+                        : DiagramMetadata.of("図", "", geometryKnown ? union : null);
+                output.add("![" + DiagramMetadata.imageAlt(metadata) + "](" + path + ")");
+                block.put("path", path); block.put("metadata", metadata);
+                workspace.info("DRAWING_SIMPLIFIED", section, diagramRange,
+                        "Wordの図形・保存された接続を文字として保持し、同じ描画領域を確認用画像にまとめました。ページ全体の配置は再現しません。");
+            }
+            output.addAll(attachments);
+            workspace.block(block);
+            return String.join("\n\n", output);
         }
 
         private void read(Node node, Frame parent, double width, double height,
@@ -100,10 +176,18 @@ final class WordDrawings {
                 handled = true;
                 workspace.info("HIDDEN_DRAWING", section, range, "非表示の描画オブジェクトを除外しました。"); return;
             }
+            if (activeScope == null && (WP.equals(node.getNamespaceURI()) && List.of("inline", "anchor").contains(name)
+                    || List.of("wpc", "wgp", "grpSp").contains(name)
+                    || VML.equals(node.getNamespaceURI()) && name.equals("group"))) {
+                Scope scope = new Scope(); outputs.add(scope); activeScope = scope;
+                try { read(node, parent, width, height, flipped, groupDepth, xmlDepth); }
+                finally { activeScope = null; }
+                return;
+            }
             if (name.equals("AlternateContent")) {
                 Node selected = null;
                 for (Node candidate : children(node)) {
-                    if (local(candidate).equals("Choice") && (find(candidate, "wsp") != null || find(candidate, "pic") != null || find(candidate, "wgp") != null)) {
+                    if (local(candidate).equals("Choice") && (find(candidate, "wsp") != null || find(candidate, "pic") != null || find(candidate, "wgp") != null || find(candidate, "wpc") != null)) {
                         selected = candidate; break;
                     }
                     if (local(candidate).equals("Fallback")) selected = candidate;
@@ -147,10 +231,21 @@ final class WordDrawings {
                 Node line = child(props, "ln");
                 item.line = child(line, "noFill") == null ? color(child(line, "solidFill"), Color.BLACK) : null;
                 item.lineWidth = (float) Math.min(100, number(attr(line, "w"), 12700) / 12700);
+                Node connection = find(node, "cNvCnPr");
+                if (connection == null) connection = find(node, "cNvCxnSpPr");
+                item.connector = name.equals("cxnSp") || connection != null
+                        || item.preset.equals("line") || item.preset.startsWith("straightConnector")
+                        || item.preset.startsWith("bentConnector") || item.preset.startsWith("curvedConnector");
+                item.startId = attr(child(connection, "stCxn"), "id");
+                item.endId = attr(child(connection, "endCxn"), "id");
+                item.startArrow = arrow(child(line, "headEnd")); item.endArrow = arrow(child(line, "tailEnd"));
                 textStyle(node, item);
-                if (NativeDrawingRenderer.supports(item.preset)) {
+                if (NativeDrawingRenderer.supports(item.preset) || item.connector) {
+                    if (item.connector && !NativeDrawingRenderer.supports(item.preset))
+                        workspace.warning("DRAWING_SIMPLIFIED", section, range,
+                                "接続線の保存された接続先を保持します。折れ線・曲線の経路は直線で近似します。");
                     add(item, node); textApproximation(item);
-                } else unsupported("SHAPE_UNSUPPORTED", "この種類のWord図形は未対応です（" + DrawingAltText.typeName(item.preset) + "）。", node);
+                } else unsupportedShape(item, node, "この種類のWord図形は未対応です（" + DrawingAltText.typeName(item.preset) + "）。文字と接続情報は保持します。");
                 return;
             }
             if (VML.equals(node.getNamespaceURI()) && List.of("shape", "rect", "roundrect", "oval", "line").contains(name)) {
@@ -161,7 +256,7 @@ final class WordDrawings {
                 if (image != null) {
                     if (image(node, image, item)) add(item, node);
                     String text = visible(node);
-                    if (!text.isBlank()) outputs.add(Markdown.escape(text));
+                    if (!text.isBlank()) output(Markdown.escape(text));
                     return;
                 }
                 item.preset = switch (name) {
@@ -172,9 +267,12 @@ final class WordDrawings {
                 item.fill = flag(attr(node, "filled"), true) ? parseColor(attr(node, "fillcolor"), Color.WHITE) : null;
                 item.line = flag(attr(node, "stroked"), true) ? parseColor(attr(node, "strokecolor"), Color.BLACK) : null;
                 item.lineWidth = (float) Math.min(100, points(attr(node, "strokeweight"), 1));
+                item.connector = item.preset.equals("line");
+                Node stroke = child(node, "stroke");
+                item.startArrow = vmlArrow(attr(stroke, "startarrow")); item.endArrow = vmlArrow(attr(stroke, "endarrow"));
                 textStyle(node, item);
                 if (NativeDrawingRenderer.supports(item.preset)) { add(item, node); textApproximation(item); }
-                else unsupported("SHAPE_UNSUPPORTED", "この種類のVML図形は未対応です（" + DrawingAltText.typeName(item.preset) + "）。", node);
+                else unsupportedShape(item, node, "この種類のVML図形は未対応です（" + DrawingAltText.typeName(item.preset) + "）。文字は保持します。");
                 return;
             }
             if (List.of("chart", "relIds", "OLEObject").contains(name)) {
@@ -248,8 +346,8 @@ final class WordDrawings {
                 if (!alt.isBlank()) item.alt = alt;
                 if (item.inlineImage()) NativeDrawingRenderer.verifyPicture(item.picture, workspace);
                 else workspace.warning("IMAGE_FORMAT_ATTACHMENT", section, range, "この画像形式は元ファイルの添付として保持します。");
-                if (find(node, "srcRect") != null || item.rotation != 0 || item.flipped)
-                    workspace.warning("IMAGE_EFFECTS_IGNORED", section, range, "画像は原本を個別に抽出し、切り抜き・回転・グループ変換は適用しません。説明の座標は元文書の配置です。");
+                if (find(node, "srcRect") != null)
+                    workspace.warning("IMAGE_EFFECTS_IGNORED", section, range, "画像の切り抜きは未対応です。回転・反転・グループ変換はPNG/JPEGの確認用画像に反映します。");
                 return true;
             } catch (Exception error) {
                 if (error instanceof ConversionException conversion) throw conversion;
@@ -257,25 +355,35 @@ final class WordDrawings {
             }
         }
 
-        private String picture(Item item) {
-            String path = workspace.addAsset("image", item.picture, item.extension, item.contentType);
-            String alt = DrawingAltText.imageAlt(List.of(description(item)), workspace.limits().maxMarkdownBytes());
-            return item.inlineImage() ? "![" + alt + "](" + path + ")" : "[" + alt + "（元画像）](" + path + ")";
+        private void unsupportedShape(Item item, Node node, String message) {
+            item.renderable = false; item.unsupportedMessage = message;
+            workspace.warning("SHAPE_UNSUPPORTED", section, range, message);
+            add(item, node);
+        }
+
+        private void output(String text) {
+            if (activeScope == null) outputs.add(text); else activeScope.outputs.add(text);
         }
         private void add(Item item, Node source) {
             item.reference = placement(source);
-            outputs.add(item);
-        }
-        private String description(Item item) {
-            String description = item.picture == null
-                    ? DrawingAltText.describe(DrawingAltText.typeName(item.preset), rotation(item), item.text)
-                    : DrawingAltText.describe("画像", rotation(item), item.alt);
-            Rectangle2D bounds = item.geometryKnown ? item.transform.createTransformedShape(
-                    new Rectangle2D.Double(0, 0, item.width, item.height)).getBounds2D() : null;
-            description += "、" + DrawingAltText.geometry(item.reference, bounds);
-            if (bounds == null && item.savedWidth != null && item.savedHeight != null)
-                description += "（保存サイズ 幅=" + pt(item.savedWidth) + "、高さ=" + pt(item.savedHeight) + "）";
-            return description;
+            Node properties = child(source, "cNvPr");
+            if (properties == null) {
+                for (String container : List.of("nvSpPr", "nvPicPr", "nvCxnSpPr")) {
+                    properties = child(child(source, container), "cNvPr");
+                    if (properties != null) break;
+                }
+            }
+            item.sourceId = VML.equals(source.getNamespaceURI()) ? attr(source, "id") : attr(properties, "id");
+            if (item.sourceId.isBlank()) {
+                for (Node ancestor = source.getParentNode(); ancestor != null; ancestor = ancestor.getParentNode()) {
+                    if (List.of("wpc", "wgp", "grpSp", "group").contains(local(ancestor))) break;
+                    if (WP.equals(ancestor.getNamespaceURI()) && List.of("inline", "anchor").contains(local(ancestor))) {
+                        item.sourceId = attr(child(ancestor, "docPr"), "id"); break;
+                    }
+                }
+            }
+            if (activeScope == null) { Scope scope = new Scope(); scope.outputs.add(item); outputs.add(scope); }
+            else activeScope.outputs.add(item);
         }
         private String placement(Node source) {
             for (Node n = source; n != null; n = n.getParentNode()) {
@@ -340,7 +448,7 @@ final class WordDrawings {
         private void unsupported(String code, String message, Node node) {
             workspace.warning(code, section, range, message);
             String text = visible(node);
-            outputs.add("[" + Markdown.escape(message) + "]" + (text.isBlank() ? "" : " " + Markdown.escape(text)));
+            output("[" + Markdown.escape(message) + "]" + (text.isBlank() ? "" : " " + Markdown.escape(text)));
         }
         private void textApproximation(Item item) {
             if (!item.text.isBlank()) workspace.warning("DRAWING_TEXT_APPROXIMATED", section, range,
@@ -409,15 +517,11 @@ final class WordDrawings {
         transform.scale(flipH ? -1 : 1, flipV ? -1 : 1); transform.translate(-width / 2, -height / 2);
         return transform;
     }
-    private static String rotation(Item item) {
-        if (!item.rotationKnown) return "回転角度不明";
-        var t = item.transform;
-        double x = Math.hypot(t.getScaleX(), t.getShearY()), y = Math.hypot(t.getShearX(), t.getScaleY());
-        double dot = t.getScaleX() * t.getShearX() + t.getShearY() * t.getScaleY();
-        if (!item.flipped && x > 0 && y > 0 && t.getDeterminant() > 0 && Math.abs(x-y) <= Math.max(x,y)*1e-6 && Math.abs(dot) <= x*y*1e-6)
-            return DrawingAltText.rotation(Math.toDegrees(Math.atan2(t.getShearY(), t.getScaleX())));
-        return DrawingAltText.rotation(item.rotation) + "（図形の保存値。反転・グループ変形後の角度は未算出）";
+    private static String arrow(Node node) { return node == null ? "none" : attr(node, "type").isBlank() ? "none" : attr(node, "type"); }
+    private static String vmlArrow(String value) {
+        return switch (value) { case "", "none" -> "none"; case "block" -> "triangle"; case "classic" -> "stealth"; case "open" -> "arrow"; default -> value; };
     }
+    private static boolean directional(String type) { return List.of("triangle", "stealth", "arrow").contains(type); }
     private static void textStyle(Node shape, Item item) {
         Node textbox = find(shape, "txbxContent"), paragraph = find(textbox, "p"), props = child(paragraph, "pPr");
         String align = wval(child(props, "jc"));

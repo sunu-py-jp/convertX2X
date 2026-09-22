@@ -1,19 +1,20 @@
 {
-  "capturedAt": "2026-09-16T12:17:28.971Z",
+  "capturedAt": "2026-09-22T10:41:29.375Z",
   "mode": "actual local Functions HTTP through unmodified Playground",
-  "sourceCommit": "4923032ca0c641e9e5864397cdba7aaaceb1fe4f",
+  "sourceCommit": "38d991e0c5bc7c1ca412a54f6a6e946470f7755b",
+  "sourceWorkingTreeDirty": true,
   "runtime": {
     "platform": "darwin",
     "architecture": "arm64",
-    "node": "v24.19.0",
+    "node": "v24.2.0",
     "java": "openjdk version \"21\" 2023-09-19 LTS\nOpenJDK Runtime Environment Temurin-21+35 (build 21+35-LTS)\nOpenJDK 64-Bit Server VM Temurin-21+35 (build 21+35-LTS, mixed mode)",
     "coreTools": "4.9.0",
-    "browser": "152.0.7977.83"
+    "browser": "153.0.8010.53"
   },
   "input": {
     "path": "input.xlsx",
-    "sizeBytes": 151182,
-    "sha256": "7c13e6a3c57c0eac46c0c104b17f57e6567c09f41b9597a54406ae309386eb15"
+    "sizeBytes": 151200,
+    "sha256": "75833b82b8fdff3b7deb7e1df26c89496beea38996426c965a9ecc97714e3805"
   },
   "request": {
     "method": "POST",
@@ -24,22 +25,22 @@
   "response": {
     "status": 200,
     "contentType": "application/zip",
-    "elapsedMs": 549
+    "elapsedMs": 618
   },
   "timingNote": "Local macOS measurement from submit click to completed Playground result (HTTP response, unzip and preview construction included). Not an Azure latency or throughput benchmark.",
   "sectionCount": 8,
   "sectionTitles": [
-    "01_文章と書式",
-    "02_罫線の表",
-    "03_表示値と数式",
-    "04_画像",
-    "05_基本図形",
-    "06_グループと接続",
-    "07_未対応と加工",
-    "08_画像だけ"
+    "[01_文章と書式] シート",
+    "[02_罫線の表] シート",
+    "[03_表示値と数式] シート",
+    "[04_画像] シート",
+    "[05_基本図形] シート",
+    "[06_グループと接続] シート",
+    "[07_未対応と加工] シート",
+    "[08_画像だけ] シート"
   ],
-  "assetCount": 34,
-  "warningCount": 17,
+  "assetCount": 32,
+  "warningCount": 20,
   "warningCodes": [
     "LINK_UNSUPPORTED",
     "CONDITIONAL_FORMATTING_UNEVALUATED",
@@ -48,6 +49,7 @@
     "FORMULA_CACHE_MISSING",
     "DYNAMIC_HYPERLINK_UNSUPPORTED",
     "CELL_IMAGE_UNSUPPORTED",
+    "DIAGRAM_CONNECTION_UNRESOLVED",
     "GRAPHIC_FRAME_UNSUPPORTED",
     "SHAPE_UNSUPPORTED",
     "DRAWING_EFFECTS_SIMPLIFIED",
@@ -55,237 +57,227 @@
     "IMAGE_EFFECTS_IGNORED",
     "IMAGE_FORMAT_ATTACHMENT"
   ],
-  "informationCount": 60,
+  "informationCount": 66,
   "files": [
     {
       "path": "result.zip",
-      "sizeBytes": 301579,
-      "sha256": "c7c2531842004a47dcdc1b3124066affb07dd3bb040f4b702f7afa5e82992ff4"
+      "sizeBytes": 406939,
+      "sha256": "34681bcdf2d449d305aa1b09c0d5a65fd7be8ce2239074f388ba5a49dcf473dc"
     },
     {
       "path": "output/document.md",
-      "sizeBytes": 14469,
-      "sha256": "589ba807aee1ef75a437d3a402b647c7f8dae21ca9ae5ae56d6636bb1789755b"
+      "sizeBytes": 13503,
+      "sha256": "af9c9dc7ce0555430e7380742d0bddb5514e3c06a5313c77aa8e0c8d73f85055"
     },
     {
       "path": "output/report.json",
-      "sizeBytes": 43345,
-      "sha256": "31349f74f98f1c4a8d9fce1a8dad15d943aa53e52c616ac10dca2eac52fe460c"
-    },
-    {
-      "path": "output/images/image-0001.png",
-      "sizeBytes": 28452,
-      "sha256": "92092639ea9cdaf7b3c316ef6d4651d278a738347217a0d0d3bc4015bb4340dc"
-    },
-    {
-      "path": "output/images/image-0002.jpg",
-      "sizeBytes": 22462,
-      "sha256": "19f63d464adaca1b853eaab6c273331ad4942a4f73d084433d8f8d01d7b5dc15"
+      "sizeBytes": 60555,
+      "sha256": "fac7d57900f56d98abab3b37d2e6e92033cec15bce032790eb6cf82b66c0e6fb"
     },
     {
       "path": "output/images/diagram-0001.png",
+      "sizeBytes": 15707,
+      "sha256": "ad60cc7750f935d48632674c26e8376def658e4de0a5e5fb552170300c2b1ce9"
+    },
+    {
+      "path": "output/images/diagram-0002.png",
+      "sizeBytes": 33924,
+      "sha256": "31725436596e47176cd7a7e11cbce6fefcd65abc21275dd5ceaa8e37bdbf7c8c"
+    },
+    {
+      "path": "output/images/diagram-0003.png",
+      "sizeBytes": 5259,
+      "sha256": "c5863ec492dedfafdbdc99378838e4a2692ed374ff8466c1bc8479299d521b51"
+    },
+    {
+      "path": "output/images/diagram-0004.png",
       "sizeBytes": 3771,
       "sha256": "a10404683252f071d9bb76f661c37f05f427443c82328edc415de83bf6bd65d5"
     },
     {
-      "path": "output/images/diagram-0002.png",
+      "path": "output/images/diagram-0005.png",
       "sizeBytes": 5835,
       "sha256": "3244328c34299b4672f122188cb6acf66454c119d7c07634e312160db5e172ac"
     },
     {
-      "path": "output/images/diagram-0003.png",
+      "path": "output/images/diagram-0006.png",
       "sizeBytes": 8619,
       "sha256": "d3e9558e0ef55f1af10b5b3a1ddf6a1a33b5f266ba97dbb01bd8b2515cf89520"
     },
     {
-      "path": "output/images/diagram-0004.png",
+      "path": "output/images/diagram-0007.png",
       "sizeBytes": 5193,
       "sha256": "9a7e459865dd4225f07164e41c08ecd663d34ae339e6decc5d91deedb2e9fc2b"
     },
     {
-      "path": "output/images/diagram-0005.png",
+      "path": "output/images/diagram-0008.png",
       "sizeBytes": 5364,
       "sha256": "17ce8ba6aa2c9588966ad7a346ca48d4edc83b5135f78393099e3eb384cec86d"
     },
     {
-      "path": "output/images/diagram-0006.png",
+      "path": "output/images/diagram-0009.png",
       "sizeBytes": 4495,
       "sha256": "7895170e0b2cc2f0fe7878798214f87025db070f557e6c077a7615b48318d62d"
     },
     {
-      "path": "output/images/diagram-0007.png",
+      "path": "output/images/diagram-0010.png",
       "sizeBytes": 2377,
       "sha256": "fd48f34f3d2462529b0c3df942b3c086cb856ba7daf64b268ab5079510e7b4ac"
     },
     {
-      "path": "output/images/diagram-0008.png",
+      "path": "output/images/diagram-0011.png",
       "sizeBytes": 141,
       "sha256": "d01b97af321cdf4658b55544ac6a729cb8776a655b921080c841957eb046d0b4"
     },
     {
-      "path": "output/images/diagram-0009.png",
+      "path": "output/images/diagram-0012.png",
       "sizeBytes": 278,
       "sha256": "ee4d97734325c9663d7bee39b546b843a6703c0f44db2bd16857152371566033"
     },
     {
-      "path": "output/images/diagram-0010.png",
+      "path": "output/images/diagram-0013.png",
       "sizeBytes": 10773,
       "sha256": "c99a1aa712d5b5d25db487919ee848528ca3d53741a1a9df088871feefb441e5"
     },
     {
-      "path": "output/images/diagram-0011.png",
+      "path": "output/images/diagram-0014.png",
       "sizeBytes": 10839,
       "sha256": "efa6082e3b6daa66fd680358bb69766f2f525f309a2d363882003119e5bb06e2"
     },
     {
-      "path": "output/images/diagram-0012.png",
+      "path": "output/images/diagram-0015.png",
       "sizeBytes": 11606,
       "sha256": "f9ce1d6fc18a2d9cd613ce5aef0411fb6e557c0a43f08de002c754c8471aed3f"
     },
     {
-      "path": "output/images/diagram-0013.png",
+      "path": "output/images/diagram-0016.png",
       "sizeBytes": 10551,
       "sha256": "2884475946de395100572a2c0d83c6bd18f81715c52fc34ecf65020cba993f1f"
     },
     {
-      "path": "output/images/diagram-0014.png",
+      "path": "output/images/diagram-0017.png",
       "sizeBytes": 9554,
       "sha256": "29d582b03135e628cbad43738658a4417534054ad4c8886c2980e2d14ed0cab9"
     },
     {
-      "path": "output/images/diagram-0015.png",
+      "path": "output/images/diagram-0018.png",
       "sizeBytes": 2000,
       "sha256": "e08e04dbde48b4b185faab22f11515287f2469c8b6f314c0d2697b661378a95a"
     },
     {
-      "path": "output/images/diagram-0016.png",
+      "path": "output/images/diagram-0019.png",
       "sizeBytes": 24305,
       "sha256": "bcbf8560d62cc6b4286132fca854bd6d117b89b878ac1ed6b3d6343d85f0d711"
     },
     {
-      "path": "output/images/diagram-0017.png",
+      "path": "output/images/diagram-0020.png",
       "sizeBytes": 5158,
       "sha256": "8afcbcdae0448f0660c50283f7445800261408043fa04ccd930065472e4c5141"
     },
     {
-      "path": "output/images/diagram-0018.png",
-      "sizeBytes": 5171,
-      "sha256": "8263f434e7c7deee246973ec9b0f0cc4987467ff5df26b980669094e885bcc03"
-    },
-    {
-      "path": "output/images/diagram-0019.png",
-      "sizeBytes": 9616,
-      "sha256": "f6e8dc2203d934d60993d876c5b6fbb5b3aebfd077bcfe05523816575589db8f"
-    },
-    {
-      "path": "output/images/diagram-0020.png",
-      "sizeBytes": 258,
-      "sha256": "ce6f471043e1cf0048f568750503f11bd4f20f9b1c5b7657813f7779766b7405"
-    },
-    {
       "path": "output/images/diagram-0021.png",
-      "sizeBytes": 14263,
-      "sha256": "2fb3264e678dfbce59b2d059d9d6667938d164e39d52a616edc16b5be5c1a377"
+      "sizeBytes": 30795,
+      "sha256": "01d1cea9623966a902043493fdfe03e4c2677ddac079fcd0426b49ea894fc4aa"
     },
     {
       "path": "output/images/diagram-0022.png",
-      "sizeBytes": 13400,
-      "sha256": "2b2a36b8995480fc04a673e9d066307a695fddc5c6e14778ce2824a608f937c5"
+      "sizeBytes": 29120,
+      "sha256": "06e7c448795ecd97cae8df80edc73f50b7e022b4f1339883b3d97a21374c52be"
     },
     {
       "path": "output/images/diagram-0023.png",
-      "sizeBytes": 3533,
-      "sha256": "500042d46a5a9c765b4947ab876f70fc1fe98a33bbf94dfdfc394a3b511832fb"
+      "sizeBytes": 7552,
+      "sha256": "c3b0d087a18b82229c6511f87f59e874f1bb15260077b602e2a4a38e8338b0b8"
     },
     {
       "path": "output/images/diagram-0024.png",
-      "sizeBytes": 3141,
-      "sha256": "907262dcae27a1d31d8aa0e364f8158b137336d102a23f7319e9e1d54dff1546"
-    },
-    {
-      "path": "output/images/diagram-0025.png",
-      "sizeBytes": 294,
-      "sha256": "9d8175d0ac22c7f95e39b38ebd5276e296e847dfe95acc4aaf9670f6527464e5"
-    },
-    {
-      "path": "output/images/diagram-0026.png",
       "sizeBytes": 3544,
       "sha256": "6f4833a4ed024c923e78bf98c0e41b10a9969bf62c313fa8767f5054216b14e5"
     },
     {
-      "path": "output/images/diagram-0027.png",
+      "path": "output/images/diagram-0025.png",
       "sizeBytes": 12507,
       "sha256": "7b233a8a680480f3ff6c99011b5903ebba2a074d19b898ed27873127a613c18f"
     },
     {
-      "path": "output/images/diagram-0028.png",
+      "path": "output/images/diagram-0026.png",
       "sizeBytes": 4190,
       "sha256": "ef70c1e860f780c85f9b4df5d6581902b8524c9a639c888c094d170fc67c7a7d"
     },
     {
-      "path": "output/images/diagram-0029.png",
+      "path": "output/images/diagram-0027.png",
+      "sizeBytes": 17853,
+      "sha256": "e33d32bceb5ca9460582ac0b68d054951cb89c69d1152b2fcbf5de4f5590a5e7"
+    },
+    {
+      "path": "output/images/diagram-0028.png",
       "sizeBytes": 7208,
       "sha256": "0cb9b7746f89b9fcece174f78a76b434a5c0969c982f31310d46069824368ff6"
     },
     {
-      "path": "output/images/diagram-0030.png",
+      "path": "output/images/diagram-0029.png",
       "sizeBytes": 6803,
       "sha256": "11fc2b1be070585b319661396385de36744b78f389874f5e8fd5610eb9313fea"
     },
     {
-      "path": "output/images/image-0003.png",
-      "sizeBytes": 29824,
-      "sha256": "6d43b3973f1f93fc63fd81fe99f634b440aef06fc74004b2af3483d92cb195ec"
+      "path": "output/images/diagram-0030.png",
+      "sizeBytes": 37744,
+      "sha256": "7e3e985399c6d46d28d311e2b4dbe22c7f34ce2776caa10b1eae450c021094f4"
     },
     {
-      "path": "output/images/image-0004.bmp",
+      "path": "output/images/image-0001.bmp",
       "sizeBytes": 933174,
       "sha256": "f259c4c60577e261310dcbf8dbbd4c55457b48c0f0786f33a51dfa2048c01505"
     },
     {
+      "path": "output/images/diagram-0031.png",
+      "sizeBytes": 57324,
+      "sha256": "426bede3a1787ab4c6343ac0aa8647ba217c568c042424fa786f6159d4fbcbfd"
+    },
+    {
       "path": "screenshots/overview.png",
-      "sizeBytes": 241422,
-      "sha256": "5e27f53b454d7fe99d9599b33ec442c9bf63aff097b377600a5c04061156620b"
+      "sizeBytes": 244270,
+      "sha256": "108dee094848dfddf331890eae88cf03abfe572e3cbadc117d72a3395d709440"
     },
     {
       "path": "screenshots/section-01.png",
-      "sizeBytes": 104375,
-      "sha256": "997089bb4d33d6f19b9dd903b6133d0ac6e9c7c4bd47aa959118c9fb15a87a42"
+      "sizeBytes": 105337,
+      "sha256": "ff42a94bc5985fcef8ff05e2dbb71f105ce94417eb5ca2a5c1a2a7aa6e7391a2"
     },
     {
       "path": "screenshots/section-02.png",
-      "sizeBytes": 107483,
-      "sha256": "db48946ebdea76ababf11ef7cfb182eb8692c15951f6e48b23ec21b9ab13bb9b"
+      "sizeBytes": 105282,
+      "sha256": "935b1e4b4b414086e33f2ed8fe6c055b948d9617d3b2b5a5f989d77f77af958c"
     },
     {
       "path": "screenshots/section-06.png",
-      "sizeBytes": 199598,
-      "sha256": "61e6cdcbfe7e61b699b0d7f0fcbf8bb3021b4eaa7de3e86c319a3bd170776dfd"
+      "sizeBytes": 241287,
+      "sha256": "8336df095390cea5e04cea0b5aabe62d9a45c546d802620ff3dfccb78e3e9edf"
     },
     {
       "path": "screenshots/section-07.png",
-      "sizeBytes": 141279,
-      "sha256": "976d2be1074211be0052bcd7fc7162e9fdbd4c8c6cc0240365e5398b5eb9d9e6"
+      "sizeBytes": 162848,
+      "sha256": "45d0837871fb8362ea9239cba4204a5a31cced991accdbc4583e46ed213d1515"
     },
     {
       "path": "screenshots/tables-detail.png",
-      "sizeBytes": 49303,
-      "sha256": "04b20cbc70be13e4a5a035e7f94cb2a25cc6cecea828c52a41f8e6049174f672"
+      "sizeBytes": 54651,
+      "sha256": "894da28a4660dba22bdd5876770246317d30504dd94aea934dde0377e511158f"
     },
     {
       "path": "screenshots/group-detail.png",
-      "sizeBytes": 62461,
-      "sha256": "93f6147baa06d3f957f4b271a17449146ef900b75cbae8660c60c7059a20af6f"
+      "sizeBytes": 126196,
+      "sha256": "f2a2c6374a1fe0e30c06db7c37bc9c162cb714edbe92a046b963e49046124b5c"
     },
     {
       "path": "screenshots/markdown-source.png",
-      "sizeBytes": 156943,
-      "sha256": "5661526748f7a726ea1ff4d287dc8d0a1d39957eb15159269b8ad3aa98c4c111"
+      "sizeBytes": 160235,
+      "sha256": "8ff4ce16a00d89f1932e5f56a64a0fd0181de033dfcd038690d600bdd0b0b76c"
     },
     {
       "path": "screenshots/warnings.png",
-      "sizeBytes": 145329,
-      "sha256": "27669e2491d2a0331fa92d35d5b01fc15d7d0d96e69dd8f2709c9b0752f56119"
+      "sizeBytes": 177470,
+      "sha256": "0c65fcfd142782fffa7d11684e034bd505b90354f19ff20c5009abc802384601"
     }
   ],
   "screenshotLayout": "Overview/source use normal Playground. Section screenshots expand the preview scroll region and image maximum height, and hide other sections. Excel tables-detail and group-detail crop the top 790 and 1000 CSS pixels; full sections are also included. Warnings expand the warning list. No original text, images or outputs are changed.",

@@ -2,11 +2,14 @@
 
 Officeの各形式を編集可能な元ファイルで試せます。すべてこのリポジトリの生成プログラムによるオリジナル資料です。
 
+図形は各形式とも文字と確認できた接続関係をMarkdown本文に残し、図形・接続のJSONと参考画像を添えます。Excelは明示グループまたは保存済み接続でつながる図、Wordは描画オブジェクト内のグループ・キャンバス、PowerPointはスライドを画像の単位にします。見た目の近さから接続を推測しません。
+
 | サンプル | 確認する内容 |
 | --- | --- |
 | [office-sample.docx](office-sample.docx) | H1/H2、太字・リンク、取消線、最終変更履歴、罫線なし表・結合、3からの番号、脚注、日本語の回転図形、埋め込み画像 |
 | [office-sample.pptx](office-sample.pptx) | 4表示＋1非表示スライド、タイトル・本文、番号、罫線なし結合表、図形内文字・座標・取消線・リンク、埋め込み画像 |
-| [RAG向け業務フロー](../../../docs/APIDocs/office2md/examples/powerpoint-rag-flow/input.pptx) | 分岐・差戻し・グループ・双方向・始点矢印・接続先不明の線。[実変換結果と再生成手順](../../../docs/APIDocs/office2md/examples/powerpoint-rag-flow/README.md) |
+| [PowerPointのRAG向け業務フロー](../../../docs/APIDocs/office2md/examples/powerpoint-rag-flow/input.pptx) | 分岐・差戻し・グループ・双方向・始点矢印・接続先不明の線。[実変換結果と再生成手順](../../../docs/APIDocs/office2md/examples/powerpoint-rag-flow/README.md) |
+| [WordのRAG向け業務フロー](../../../docs/APIDocs/office2md/examples/word-rag-flow/input.docx) | グループ・描画キャンバス内の図形文字と保存済み接続、本文位置、まとめた参考画像。[生成プログラム](../examples/WordRagSample.java) |
 | [full-feature.xlsx](full-feature.xlsx) | Excelの包括ケース。罫線表を起点にした左右の値・横並び表の取り込みも含む。詳細は以下 |
 | [shape-text.xlsx](shape-text.xlsx) | Excel図形内の文字配置・書式。[比較項目](shape-text.md) |
 
@@ -42,6 +45,15 @@ java -Djava.awt.headless=true -cp 'target/sample-tools:target/azure-functions/of
 node scripts/test_playground_browser.cjs --base http://localhost:7072 --fixtures target/fixtures --out target/office-browser
 ```
 
+WordのRAG向け業務フローは、図の前後の本文、4つの表示ノード、4つの解決済み接続と1つの接続先不明の線、通常表を含みます。次のコマンドで再生成できます。
+
+```sh
+javac -encoding UTF-8 -cp 'target/azure-functions/office2md-local/lib/*' \
+  -d target/sample-tools examples/WordRagSample.java
+java -Djava.awt.headless=true -cp 'target/sample-tools:target/azure-functions/office2md-local/lib/*' \
+  WordRagSample target/fixtures/word-rag-flow.docx
+```
+
 ## Excelの包括サンプル
 
 [full-feature.xlsx](full-feature.xlsx) は、文章・表・表示値・画像・基本図形をまとめて試すオリジナルExcelです。編集可能なセル、図形、グループ、実データ付きグラフを含み、画像素材も生成プログラムが作成します。
@@ -53,10 +65,10 @@ node scripts/test_playground_browser.cjs --base http://localhost:7072 --fixtures
 | 01_文章と書式 | 日本語、段落、複数セル、全体・部分太字、通常書式の明示、全体・部分取消線、取り消したリンクと数式の除外、HTTP/HTTPS/mailto、太字リンク、空の表示名、不正・内部・ファイルリンクの文字保持、Markdown/HTMLのエスケープ、改行、結合文章、非表示行・列 |
 | 02_罫線の表 | 閉じた罫線、空のヘッダー追加、元の先頭行、空行・空列、表内の書式・リンク・改行・縦棒、横並びの別表、同じ行範囲の左右取り込み、片側罫線、非表示行、結合見出し、Excelテーブルのヘッダー、スタイルだけの表、囲み・不完全な罫線・下線、空の表、条件付き書式 |
 | 03_表示値と数式 | 先頭ゼロ、桁区切り、通貨、割合、日付、時刻、負数、指数、真偽値、エラー、ゼロと空欄、数式キャッシュ、キャッシュなし、固定・動的HYPERLINK、IMAGEの代替表示、数値の取消線 |
-| 04_画像 | PNG/JPEG原本、重複データ共有、罫線表の直後への配置、非表示画像と非表示アンカーの除外 |
+| 04_画像 | PNG/JPEGの参考画像への描画、重複データ共有、罫線表の直後への配置、非表示画像と非表示アンカーの除外 |
 | 05_基本図形 | 長方形、角丸、楕円、上下左右矢印、直線、コネクター、テキストボックス、日本語Sans/Serifの通常・太字、部分取消線、リンク、回転、反転、テーマ色 |
-| 06_グループと接続 | 明示的・入れ子グループの変形後座標、接続線、重なった図形、グループ内の画像をそれぞれ個別に出力 |
-| 07_未対応と加工 | 実グラフと星形の未対応表示、グラデーション・縦書きの簡略化、加工画像の原本抽出、BMPの添付 |
+| 06_グループと接続 | 明示的・入れ子グループをまとめた参考画像、変形後座標、図形文字・保存済み接続の本文とJSON、接続情報がない線の未解決表示。重なりだけでは図をまとめない |
+| 07_未対応と加工 | 実グラフと星形の未対応表示、グラデーション・縦書きの簡略化、画像の回転・反転、BMPの添付 |
 | 08_画像だけ | セルに文章がなくても画像のあるシートを残す |
 | 末尾の5シート | 非表示・VeryHiddenと、出力内容のないシートを除外 |
 

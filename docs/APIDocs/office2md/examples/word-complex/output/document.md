@@ -1,3 +1,5 @@
+[page 1]
+
 # **Word → Markdown の表示確認**
 
 日本語の通常文です。見た目の文字サイズから見出しは推測しません。
@@ -23,11 +25,27 @@
 
 ## **時計回りに回転した日本語の図形**
 
-![角丸長方形、時計回り15度、日本語の図形 時計回り 15 度、基準=VML、paragraph:11、ローカル座標（ページ位置未算出）、保存配置: position=不明、水平基準=不明、垂直基準=不明、left未指定、top未指定、位置・サイズ不明（保存サイズ 幅=280pt、高さ=100pt）](images/diagram-0001.png)
+
+
+図中の項目：
+
+- shape-1（角丸長方形）：日本語の図形<br>時計回り 15 度
+
+
+
+![{"type":"角丸長方形","text":"日本語の図形\n時計回り 15 度","x":null,"y":null,"width":null,"height":null}](images/diagram-0001.png)
 
 ## **埋め込み PNG 画像**
 
-![画像、時計回り0度、shapes.png、基準=本文内、paragraph:13、ローカル座標（ページ位置未算出）、外接矩形 X=0pt、Y=0pt、幅=360pt、高さ=120pt](images/image-0001.png)
+
+
+図中の項目：
+
+- shape-1（画像）：shapes.png
+
+
+
+![{"type":"画像","text":"shapes.png","x":0,"y":0,"width":360,"height":120}](images/diagram-0002.png)
 
 [^footnote-1]: 脚注は本文の参照順に末尾へまとめます。
 

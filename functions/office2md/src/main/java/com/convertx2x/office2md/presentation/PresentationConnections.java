@@ -17,6 +17,7 @@ import org.w3c.dom.Element;
 /** Extracts only saved connector relationships; geometry and nearby labels never imply an edge. */
 final class PresentationConnections {
     private static final Set<String> ARROWS = Set.of("triangle", "stealth", "arrow");
+    private static final Set<String> NON_DIRECTIONAL_MARKERS = Set.of("none", "oval", "diamond");
 
     private PresentationConnections() { }
 
@@ -76,8 +77,8 @@ final class PresentationConnections {
     }
 
     private static String direction(String start, String end) {
-        if ((!start.equals("none") && !ARROWS.contains(start))
-                || (!end.equals("none") && !ARROWS.contains(end))) return "unknown";
+        if ((!NON_DIRECTIONAL_MARKERS.contains(start) && !ARROWS.contains(start))
+                || (!NON_DIRECTIONAL_MARKERS.contains(end) && !ARROWS.contains(end))) return "unknown";
         if (ARROWS.contains(start)) return ARROWS.contains(end) ? "bidirectional" : "end-to-start";
         return ARROWS.contains(end) ? "start-to-end" : "undirected";
     }
