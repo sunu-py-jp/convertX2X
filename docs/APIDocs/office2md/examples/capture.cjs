@@ -16,13 +16,17 @@ const cases = [
   { name: 'excel-complex', file: 'input.xlsx', sections: [0, 1, 5, 6] },
   { name: 'word-complex', file: 'input.docx', sections: [0] },
   { name: 'powerpoint-complex', file: 'input.pptx', sections: [1, 2] },
+  { name: 'powerpoint-rag-flow', file: 'input.pptx', sections: [0, 1, 2] },
 ];
+const selectedCases = process.env.OFFICE_EXAMPLE_CASE
+  ? cases.filter(sample => sample.name === process.env.OFFICE_EXAMPLE_CASE) : cases;
+assert(selectedCases.length, 'OFFICE_EXAMPLE_CASE must match an example directory.');
 
 async function main() {
   const browser = await chromium.launch({headless: true,
     ...(process.env.PLAYWRIGHT_CHANNEL ? {channel: process.env.PLAYWRIGHT_CHANNEL} : {})});
   try {
-    for (const sample of cases) {
+    for (const sample of selectedCases) {
       const directory = path.join(__dirname, sample.name);
       const inputPath = path.join(directory, sample.file);
       const input = await fs.readFile(inputPath);
@@ -68,7 +72,8 @@ async function main() {
         const names=[]; let index=-1;
         for(const node of preview.children) {
           if(node.tagName==='H1'){index++; names.push(node.textContent);}
-          node.dataset.captureSection=String(index);
+          // A page marker precedes its H1 and belongs to the upcoming section.
+          node.dataset.captureSection=String(node.tagName==='P' && /^\[page \d+\]$/.test(node.textContent) ? index+1 : index);
         }
         return names;
       });
@@ -116,6 +121,24 @@ async function main() {
       const markdown = await page.locator('#markdown-source').textContent();
       const reportText = await page.locator('#report-source').textContent();
       const report=JSON.parse(reportText);
+      if (sample.name.startsWith('powerpoint-')) {
+        const rawMetadata = [...markdown.matchAll(/^!\[(.+)\]\(images\/[^)]+\)$/gm)]
+          .map(match => JSON.parse(match[1]));
+        const previewMetadata = await page.locator('#preview img').evaluateAll(images =>
+          images.map(image => JSON.parse(image.alt)));
+        assert.deepEqual(rawMetadata, previewMetadata);
+        assert.deepEqual(rawMetadata, report.blocks.filter(block => block.metadata).map(block => block.metadata));
+        assert(rawMetadata.length > 0 && rawMetadata.every(metadata =>
+          !('rotation' in metadata) && !('origin' in metadata) && !('unit' in metadata)));
+        for (const block of report.blocks.filter(block => block.type === 'diagram')) {
+          assert(Array.isArray(block.nodes) && Array.isArray(block.edges));
+          for (const node of block.nodes) {
+            // Text is ordinary Markdown, not just image alt or report data.
+            if (node.text && !/[\\*_\[\]<>]/.test(node.text))
+              assert(markdown.includes(node.text.split('\n')[0]), node.id);
+          }
+        }
+      }
       await page.locator('#tab-preview').click();
       if(report.warnings.length) {
         await page.locator('#warning-panel').evaluate(el=>{el.open=true;});
@@ -138,6 +161,7 @@ async function main() {
       const run={
         capturedAt:new Date().toISOString(), mode:'actual local Functions HTTP through unmodified Playground',
         sourceCommit:execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim(),
+        sourceWorkingTreeDirty:Boolean(execFileSync('git',['status','--porcelain'],{cwd:root,encoding:'utf8'}).trim()),
         runtime:{platform:os.platform(),architecture:os.arch(),node:process.version,
           java:spawnSync('java',['-version'],{encoding:'utf8'}).stderr.trim(),
           coreTools:execFileSync('func',['--version'],{encoding:'utf8'}).trim(),browser:browser.version()},

@@ -200,12 +200,15 @@
   // This deliberately supports only generated headings, paragraphs, lists, tables and inline markup.
   // All other HTML stays text; images resolve exclusively to validated local result assets.
   const decoded = value => value.replace(/&(?:amp|lt|gt);/g, token => ({ '&amp;': '&', '&lt;': '<', '&gt;': '>' })[token]);
+  // Markdown only consumes a backslash before ASCII punctuation. Preserve JSON \uXXXX and \n.
+  const escapable = value => value != null && /^[\x21-\x2f\x3a-\x40\x5b-\x60\x7b-\x7e]$/.test(value);
+  const unescapeMarkdown = value => value.replace(/\\([\x21-\x2f\x3a-\x40\x5b-\x60\x7b-\x7e])/g, '$1');
   function inline(parent, source, assets, depth = 0, footnotes = new Map()) {
     if (depth > 8) { parent.append(document.createTextNode(decoded(source))); return; }
     let text = '';
     const flush = () => { if (text) { parent.append(document.createTextNode(decoded(text))); text = ''; } };
     for (let i = 0; i < source.length;) {
-      if (source[i] === '\\' && i + 1 < source.length) { text += source[i + 1]; i += 2; continue; }
+      if (source[i] === '\\' && escapable(source[i + 1])) { text += source[i + 1]; i += 2; continue; }
       if (source.startsWith('<br>', i)) { flush(); parent.append(document.createElement('br')); i += 4; continue; }
       const reference = /^\[\^((?:footnote|endnote)-[0-9]+)\]/.exec(source.slice(i));
       if (reference && footnotes.has(reference[1])) {
@@ -229,7 +232,7 @@
           flush();
           const label = source.slice(begin, end), destination = source.slice(end + 2, close), asset = assets.get(destination);
           if (image) {
-            if (asset?.image) { const node = document.createElement('img'); node.src = asset.url; node.alt = decoded(label.replace(/\\(.)/g, '$1')); node.loading = 'lazy'; parent.append(node); }
+            if (asset?.image) { const node = document.createElement('img'); node.src = asset.url; node.alt = decoded(unescapeMarkdown(label)); node.loading = 'lazy'; parent.append(node); }
             else { const node = document.createElement('span'); node.className = 'missing-image'; node.textContent = `[画像を表示できません: ${decoded(label)}]`; parent.append(node); }
           } else {
             let href = asset?.url;

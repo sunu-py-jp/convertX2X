@@ -43,7 +43,7 @@ public final class PowerPointSample {
             }
             table.mergeCells(3, 3, 0, 2);
 
-            XSLFSlide diagram = deck.createSlide(); title(diagram, "図は画像と説明文として残す");
+            XSLFSlide diagram = deck.createSlide(); title(diagram, "図中の文字を検索可能な本文へ");
             XSLFGroupShape group = diagram.createGroup(); group.setAnchor(new Rectangle2D.Double(60, 130, 800, 230));
             group.setInteriorAnchor(new Rectangle2D.Double(0, 0, 800, 230));
             XSLFAutoShape first = group.createAutoShape(); first.setShapeType(ShapeType.ROUND_RECT);
@@ -57,7 +57,7 @@ public final class PowerPointSample {
             XSLFConnectorShape connector = group.createConnector(); connector.setAnchor(new Rectangle2D.Double(280, 110, 200, 0)); connector.setLineColor(new Color(50, 40, 100)); connector.setLineWidth(3);
             XSLFTextBox hidden = group.createTextBox(); hidden.setText("非表示の秘密"); hidden.setAnchor(new Rectangle2D.Double(300, 10, 200, 40));
             ((CTShape) hidden.getXmlObject()).getNvSpPr().getCNvPr().setHidden(true);
-            text(diagram, "図内の文字は画像説明に含め、本文に重ねて出力しません。", 50, 410, 860, 60);
+            text(diagram, "図内の文字は本文へ。接続先が保存されていない線の関係は推測しません。", 50, 410, 860, 60);
 
             XSLFSlide images = deck.createSlide(); title(images, "保存済みの埋め込み画像");
             BufferedImage image = new BufferedImage(320, 180, BufferedImage.TYPE_INT_RGB);

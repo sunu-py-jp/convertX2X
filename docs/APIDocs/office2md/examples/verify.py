@@ -10,7 +10,8 @@ HERE = Path(__file__).resolve().parent
 EXPECTED = {
     "excel-complex": (8, 34, 17),
     "word-complex": (1, 2, 1),
-    "powerpoint-complex": (4, 4, 1),
+    "powerpoint-complex": (4, 2, 2),
+    "powerpoint-rag-flow": (3, 3, 1),
 }
 
 
@@ -41,9 +42,20 @@ def main():
             assert "DELETE_" not in markdown and "HIDDEN_" not in markdown
             assert "キャッシュ999" in markdown and "　999" in markdown
             assert any(item["code"] == "GRAPHIC_FRAME_UNSUPPORTED" for item in report["warnings"])
-        if name == "powerpoint-complex":
+        if name.startswith("powerpoint-"):
             assert "取消線の秘密" not in markdown and "非表示の秘密" not in markdown
             assert "非表示のスライドは出力しない" not in markdown
+            metadata = [json.loads(label) for label in re.findall(r'^!\[(.+)\]\(images/[^)]+\)$', markdown, re.M)]
+            assert metadata == [block["metadata"] for block in report["blocks"] if "metadata" in block]
+            assert len(metadata) == expected[1] and all(set(item) == {"type", "text", "x", "y", "width", "height"} for item in metadata)
+            assert "図中の項目：" in markdown
+        if name == "powerpoint-rag-flow":
+            diagrams = [block for block in report["blocks"] if block["type"] == "diagram"]
+            edges = [edge for block in diagrams for edge in block["edges"]]
+            assert len(edges) == 14 and sum(edge["status"] == "resolved" for edge in edges) == 13
+            assert "接続関係不明" in markdown and "↔" in markdown
+            assert "STRIKE_SECRET_RAG_DEMO" not in markdown and "HIDDEN_SECRET_RAG_DEMO" not in markdown
+            assert "STRIKE_SECRET_RAG_DEMO" not in json.dumps(report) and "HIDDEN_SECRET_RAG_DEMO" not in json.dumps(report)
         print(f"PASS {name}: input/output/screenshot hashes, ZIP contents, expected actual result")
 
 

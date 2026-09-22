@@ -38,8 +38,12 @@ async function main() {
   const external = [], pageErrors = [], requests = [], report = [];
   const limits = { asyncEnabled: true, supportedFormats: ['xlsx', 'xls', 'docx', 'pptx'], maxInputBytes: 20971520, maxSections: 0, maxReadItems: 0, maxTableCells: 0, maxMarkdownBytes: 20971520, maxImages: 0, maxImageBytes: 20971520, maxOutputBytes: 104857600, maxShapes: 0, maxGroupDepth: 16, maxImagePixels: 20000000 };
   const id = '3b6e6d68-41bc-4c78-b186-a8d6bb75d449', jobPath = `/api/jobs/${id}`;
-  const image = png(), md = Buffer.from('# 営業資料\n\n## 詳細\n\n- 箇条書き\n  - 子項目\n\n日本語の**太字**と<strong> 記号！ </strong><br>次の行\n\n|  |  |\n| --- | --- |\n| **商品** | 金額 |\n| りんご\\|みかん | 100 |\n\n![長方形、時計回り30度、図内の文字、基準=スライド左上、外接矩形 X=20pt、Y=100pt、幅=120pt、高さ=40pt](images/image-0001.png)\n\n本文[^footnote-1]\n\n[^footnote-1]: 脚注の内容\n\n[公式サイト](https://example.com)\n\n<script>window.pwned=1</script>\n![外部](https://external.invalid/image.png)\n[危険](javascript:alert%281%29)\n&lt;img src=x onerror=alert(1)&gt;\n');
-  const manifest = Buffer.from(JSON.stringify({ specVersion: 2, sectionCount: 1, assets: [{ path: 'images/image-0001.png', contentType: 'image/png', sizeBytes: image.length, sha256: sha(image) }], warnings: [{ code: 'BORDER_AMBIGUOUS', section: '営業資料', range: 'A8:B9', message: '不完全な罫線を本文として残しました。' }] }));
+  // Hand-authored JSON escapes exercise the preview parser independently of the Java serializer.
+  const jsonImageLabel = String.raw`{"type":"長方形","text":"引用\u0022日本語\u0022 \u005B表示\u005D (URL)\nC:\u005Ctemp\u005Ca.png \u0026 \u003Cscript\u003E \u002A強調\u002A \u005F下線\u005F \u0060code\u0060","x":20.125,"y":100,"width":120,"height":40}`;
+  const jsonImageMetadata = { type: '長方形', text: '引用"日本語" [表示] (URL)\nC:\\temp\\a.png & <script> *強調* _下線_ `code`', x: 20.125, y: 100, width: 120, height: 40 };
+  assert.deepEqual(JSON.parse(jsonImageLabel), jsonImageMetadata);
+  const image = png(), md = Buffer.from('# 営業資料\n\n## 詳細\n\n- 箇条書き\n  - 子項目\n\n日本語の**太字**と<strong> 記号！ </strong><br>次の行\n\n|  |  |\n| --- | --- |\n| **商品** | 金額 |\n| りんご\\|みかん | 100 |\n\n![長方形、時計回り30度、図内の文字、基準=スライド左上、外接矩形 X=20pt、Y=100pt、幅=120pt、高さ=40pt](images/image-0001.png)\n\n本文[^footnote-1]\n\n[^footnote-1]: 脚注の内容\n\n[公式サイト](https://example.com)\n\n<script>window.pwned=1</script>\n![外部](https://external.invalid/image.png)\n[危険](javascript:alert%281%29)\n&lt;img src=x onerror=alert(1)&gt;\n' + `\n![${jsonImageLabel}](images/image-0001.png)\n`);
+  const manifest = Buffer.from(JSON.stringify({ specVersion: 2, sectionCount: 1, assets: [{ path: 'images/image-0001.png', contentType: 'image/png', sizeBytes: image.length, sha256: sha(image) }], blocks: [{ type: 'diagram', path: 'images/image-0001.png', metadata: jsonImageMetadata }], warnings: [{ code: 'BORDER_AMBIGUOUS', section: '営業資料', range: 'A8:B9', message: '不完全な罫線を本文として残しました。' }] }));
   const files = new Map([['document.md', md], ['report.json', manifest], ['images/image-0001.png', image]]);
   const archive = zip(files);
   const manyAssets = Array.from({ length: 1201 }, (_, index) => ({ path: `images/image-${String(index + 1).padStart(4, '0')}.png`, contentType: 'image/png', sizeBytes: image.length, sha256: sha(image) }));
@@ -91,10 +95,15 @@ async function main() {
         assert.equal(await page.locator('#preview sup a').getAttribute('href'), '#office-note-footnote-1');
         assert((await page.locator('#office-note-footnote-1').textContent()).includes('脚注の内容'));
         assert.equal(await page.locator('#preview img').first().getAttribute('alt'), '長方形、時計回り30度、図内の文字、基準=スライド左上、外接矩形 X=20pt、Y=100pt、幅=120pt、高さ=40pt');
+        const renderedMetadata = JSON.parse(await page.locator('#preview img').nth(1).getAttribute('alt'));
+        assert.deepEqual(renderedMetadata, jsonImageMetadata, 'JSON alt must preserve Unicode escapes, newline escapes and special characters through Markdown rendering');
+        assert.deepEqual(renderedMetadata, JSON.parse(await page.locator('#report-source').textContent()).blocks[0].metadata);
+        assert.equal(Object.hasOwn(renderedMetadata, 'rotation'), false);
       }
       assert((await page.locator('#preview table').count()) > 0);
       await page.waitForFunction(() => [...document.querySelectorAll('#preview img')].every(image => image.complete && image.naturalWidth > 0));
-      assert((await page.locator('#markdown-source').textContent()).startsWith('# '));
+      const markdownSource = await page.locator('#markdown-source').textContent();
+      assert(markdownSource.startsWith('# ') || extension === 'pptx' && /^\[page \d+\]\n\n# /.test(markdownSource));
       report.push(`${mock ? 'mock' : 'live'} ${extension} ${async ? 'async' : 'sync'} preview`);
     }
     await ready(); await page.screenshot({ path: path.join(work, 'playground-desktop.png'), fullPage: true });
@@ -109,9 +118,25 @@ async function main() {
       await page.screenshot({ path: path.join(work, `playground-${extension}.png`), fullPage: true });
       if (!mock) {
         assert((await page.locator('#preview img').count()) > 0);
-        assert((await page.locator('#markdown-source').textContent()).includes('時計回り'));
-        assert((await page.locator('#markdown-source').textContent()).includes('外接矩形'));
-        assert((await page.locator('#markdown-source').textContent()).includes('基準='));
+        const markdownSource = await page.locator('#markdown-source').textContent();
+        if (extension === 'pptx') {
+          const blocks = JSON.parse(await page.locator('#report-source').textContent()).blocks;
+          const imageReferences = markdownSource.split('\n').filter(line => line.startsWith('!['));
+          assert.equal(await page.locator('#preview img').count(), imageReferences.length);
+          for (const [index, imageReference] of imageReferences.entries()) {
+            const closing = imageReference.indexOf(']('), metadata = JSON.parse(imageReference.slice(2, closing));
+            const imagePath = imageReference.slice(closing + 2, -1);
+            assert.deepEqual(JSON.parse(await page.locator('#preview img').nth(index).getAttribute('alt')), metadata);
+            assert.equal(Object.hasOwn(metadata, 'rotation'), false);
+            assert.equal(Object.hasOwn(metadata, 'origin'), false); assert.equal(Object.hasOwn(metadata, 'unit'), false);
+            assert(blocks.some(block => block.path === imagePath && JSON.stringify(block.metadata) === JSON.stringify(metadata)), `Missing report metadata for ${imagePath}`);
+          }
+          assert.equal(markdownSource.includes('時計回り'), false);
+        } else {
+          assert(markdownSource.includes('時計回り'));
+          assert(markdownSource.includes('外接矩形'));
+          assert(markdownSource.includes('基準='));
+        }
         const evt = page.waitForEvent('download'); await page.locator('#download-archive').click();
         await (await evt).saveAs(path.join(work, `${extension}-result.zip`));
       }
@@ -141,7 +166,7 @@ async function main() {
       assert.equal(await page.locator('#preview script,#preview iframe,#preview [onerror]').count(), 0);
       assert.equal(await page.evaluate(() => window.pwned), undefined);
       assert.equal(await page.locator('#preview a[href^="javascript:"]').count(), 0);
-      assert.equal(await page.locator('#preview img').count(), 1);
+      assert.equal(await page.locator('#preview img').count(), 2);
       await page.waitForFunction(() => document.querySelector('#preview img').naturalWidth === 1);
       assert.equal(await page.locator('#preview > p strong,#preview table strong').count(), 3);
       assert.equal(await page.locator('#preview td').first().textContent(), '商品');

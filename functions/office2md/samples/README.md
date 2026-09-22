@@ -5,7 +5,8 @@ Officeの各形式を編集可能な元ファイルで試せます。すべて�
 | サンプル | 確認する内容 |
 | --- | --- |
 | [office-sample.docx](office-sample.docx) | H1/H2、太字・リンク、取消線、最終変更履歴、罫線なし表・結合、3からの番号、脚注、日本語の回転図形、埋め込み画像 |
-| [office-sample.pptx](office-sample.pptx) | 4表示＋1非表示スライド、タイトル・本文、番号、罫線なし結合表、グループ内の個別図形・座標・取消線・リンク、埋め込み画像 |
+| [office-sample.pptx](office-sample.pptx) | 4表示＋1非表示スライド、タイトル・本文、番号、罫線なし結合表、図形内文字・座標・取消線・リンク、埋め込み画像 |
+| [RAG向け業務フロー](../../../docs/APIDocs/office2md/examples/powerpoint-rag-flow/input.pptx) | 分岐・差戻し・グループ・双方向・始点矢印・接続先不明の線。[実変換結果と再生成手順](../../../docs/APIDocs/office2md/examples/powerpoint-rag-flow/README.md) |
 | [full-feature.xlsx](full-feature.xlsx) | Excelの包括ケース。罫線表を起点にした左右の値・横並び表の取り込みも含む。詳細は以下 |
 | [shape-text.xlsx](shape-text.xlsx) | Excel図形内の文字配置・書式。[比較項目](shape-text.md) |
 

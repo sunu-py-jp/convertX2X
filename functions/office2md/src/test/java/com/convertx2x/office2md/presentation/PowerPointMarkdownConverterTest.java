@@ -91,7 +91,7 @@ class PowerPointMarkdownConverterTest {
         }
     }
 
-    @Test void connectedAndOverlappingShapesStayIndividualAndInterleaveWithBodyText() throws Exception {
+    @Test void connectedAndOverlappingShapesKeepSearchableTextAndOneSlidePreview() throws Exception {
         try (XMLSlideShow deck = deck()) {
             XSLFSlide slide = deck.createSlide();
             XSLFAutoShape rectangle = box(slide, "図内の処理", 40, 80, 180, 100);
@@ -109,28 +109,31 @@ class PowerPointMarkdownConverterTest {
             try (ConversionResult result = convert(bytes(deck))) {
                 String md = md(result);
                 List<String> images = md.lines().filter(line -> line.startsWith("![")).toList();
-                assertEquals(3, images.size());
-                assertTrue(images.get(0).contains("図内の処理")); assertFalse(images.get(0).contains("図内の結果"));
-                assertTrue(images.get(1).contains("図内の結果")); assertFalse(images.get(1).contains("図内の処理"));
-                assertTrue(images.get(2).contains("接続線"));
-                assertTrue(images.stream().noneMatch(line -> line.contains(" / ")), "Every image describes exactly one leaf");
-                assertTrue(md.contains("長方形")); assertTrue(md.contains("時計回り15度"));
-                assertTrue(md.contains("基準=スライド左上、外接矩形"));
-                assertTrue(md.indexOf("https://example.invalid/details") > md.indexOf("](images/diagram-"));
+                assertEquals(1, images.size(), "The complete slide provides one optional visual reference");
+                JsonNode firstMetadata = imageMetadata(images.get(0));
+                assertEquals("図", firstMetadata.path("type").asText());
+                assertEquals("", firstMetadata.path("text").asText());
+                assertImageMetadata(result, images);
+                String searchable = withoutImages(md);
+                assertTrue(searchable.contains("図内の処理")); assertTrue(searchable.contains("図内の結果"));
+                assertTrue(searchable.contains("https://example.invalid/details"));
                 assertTrue(md.lines().anyMatch(line -> line.equals("重なる説明")), "An ordinary overlapping textbox remains Markdown");
-                assertTrue(md.indexOf(images.get(1)) < md.indexOf("\n重なる説明\n"));
-                assertTrue(md.indexOf("\n重なる説明\n") < md.indexOf(images.get(2)), "Body and images follow their individual Y/X positions");
-                JsonNode assets = report(result).path("assets"); assertEquals(3, assets.size());
+                assertTrue(md.indexOf("\n重なる説明\n") < md.indexOf(images.getFirst()), "The preview follows the searchable slide content");
+                assertEquals("長方形", nodeByText(result, "図内の処理").path("type").asText());
+                assertEquals(2, diagram(result).path("nodes").size());
+                assertEquals(1, diagram(result).path("edges").size());
+                JsonNode assets = report(result).path("assets"); assertEquals(1, assets.size());
                 assertEquals("image/png", assets.get(0).path("contentType").asText());
                 BufferedImage image = ImageIO.read(result.files().get(assets.get(0).path("path").asText()).toFile());
-                assertTrue(image.getWidth() < 350); assertTrue(image.getHeight() > 100); image.flush();
-                BufferedImage line = ImageIO.read(result.files().get(assets.get(2).path("path").asText()).toFile());
-                assertTrue(visiblePixels(line) > 150, "A zero-height horizontal connector must not become an empty PNG"); line.flush();
+                try {
+                    assertSlideCanvas(image);
+                    assertEquals(Color.BLACK.getRGB(), image.getRGB(px(290), px(130)), "A zero-height horizontal connector must survive in the preview");
+                } finally { image.flush(); }
             }
         }
     }
 
-    @Test void individualGroupLeafUsesTransformedBoundsAndParentTransformForPixels() throws Exception {
+    @Test void groupLeavesKeepTransformedBoundsAndParentTransformInWholeSlidePreview() throws Exception {
         try (XMLSlideShow deck = deck()) {
             XSLFSlide slide = deck.createSlide();
             XSLFGroupShape group = slide.createGroup();
@@ -145,17 +148,21 @@ class PowerPointMarkdownConverterTest {
             try (ConversionResult result = convert(input)) {
                 String md = md(result);
                 List<String> images = md.lines().filter(line -> line.startsWith("![")).toList();
-                assertEquals(2, images.size());
-                assertTrue(images.get(0).contains("長方形、時計回り90度"));
-                assertTrue(images.get(0).contains("外接矩形 X=320pt、Y=120pt、幅=40pt、高さ=80pt"), images.get(0));
-                assertTrue(images.get(1).contains("テキストボックス")); assertTrue(images.get(1).contains("図の文字"));
-                assertFalse(md.lines().anyMatch(line -> line.equals("図の文字")));
-                assertTrue(md.indexOf(images.get(0)) < md.indexOf("\n図の間にある本文\n"));
-                assertTrue(md.indexOf("\n図の間にある本文\n") < md.indexOf(images.get(1)));
+                assertEquals(1, images.size());
+                JsonNode firstNode = diagram(result).path("nodes").get(0);
+                assertEquals("長方形", firstNode.path("type").asText());
+                assertBounds(firstNode, 320, 120, 40, 80);
+                assertImageMetadata(result, images);
+                assertEquals("テキストボックス", nodeByText(result, "図の文字").path("type").asText());
+                assertTrue(withoutImages(md).contains("図の文字"));
+                assertTrue(md.indexOf("\n図の間にある本文\n") < md.indexOf(images.getFirst()));
                 String imagePath = report(result).path("assets").get(0).path("path").asText();
                 BufferedImage image = ImageIO.read(result.files().get(imagePath).toFile());
-                assertEquals(70, image.getWidth()); assertEquals(123, image.getHeight());
-                assertTrue(visiblePixels(image) > 5000, "The group transform must place the leaf inside its individual canvas"); image.flush();
+                try {
+                    assertSlideCanvas(image);
+                    assertEquals(Color.BLUE.getRGB(), image.getRGB(px(340), px(160)), "The transformed leaf must retain its slide position");
+                    assertNotEquals(Color.BLUE.getRGB(), image.getRGB(px(130), px(250)), "The untransformed leaf position must stay empty");
+                } finally { image.flush(); }
             }
             assertArrayEquals(untouched, input, "Flattening groups must not mutate the saved source bytes");
         }
@@ -172,13 +179,19 @@ class PowerPointMarkdownConverterTest {
             assertEquals(0, picture.getRotation());
             try (ConversionResult result = convert(bytes(deck))) {
                 String md = md(result);
-                assertTrue(md.contains("画像、時計回り90度"));
-                assertTrue(md.contains("外接矩形 X=340pt、Y=80pt、幅=40pt、高さ=120pt"), md);
+                List<String> images = imageLines(md);
+                JsonNode node = diagram(result).path("nodes").get(0);
+                assertEquals("画像", node.path("type").asText());
+                assertBounds(node, 340, 80, 40, 120);
+                assertImageMetadata(result, images);
                 String path = report(result).path("assets").get(0).path("path").asText();
                 assertTrue(path.startsWith("images/diagram-"), "A parent's transform must prevent unmodified image extraction");
                 BufferedImage image = ImageIO.read(result.files().get(path).toFile());
-                assertEquals(70, image.getWidth()); assertEquals(176, image.getHeight());
-                assertTrue(visiblePixels(image) > 5000); image.flush();
+                try {
+                    assertSlideCanvas(image);
+                    assertEquals(Color.BLUE.getRGB(), image.getRGB(px(360), px(140)));
+                    assertNotEquals(Color.BLUE.getRGB(), image.getRGB(px(250), px(140)));
+                } finally { image.flush(); }
                 assertFalse(Arrays.equals(original, Files.readAllBytes(result.files().get(path))));
             }
         }
@@ -207,21 +220,24 @@ class PowerPointMarkdownConverterTest {
         }
     }
 
-    @Test void nestedUniformGroupRotationIsComposedForEachLeafDescription() throws Exception {
+    @Test void nestedUniformGroupRotationIsRenderedWithoutRotationMetadata() throws Exception {
         try (XMLSlideShow deck = transformedGroupDeck(false, false); ConversionResult result = convert(bytes(deck))) {
-            String md = md(result);
-            assertTrue(md.contains("長方形、時計回り65度、図内テキスト"), md);
-            assertFalse(md.contains("保存値"));
+            List<String> images = imageLines(md(result));
+            JsonNode node = nodeByText(result, "図内テキスト");
+            assertEquals("長方形", node.path("type").asText());
+            assertFalse(node.has("rotation"));
+            assertTrue(withoutImages(md(result)).contains("図内テキスト"));
+            assertImageMetadata(result, images);
             assertEquals(1, report(result).path("assets").size());
         }
     }
 
-    @Test void reflectedOrNonuniformGroupsQualifySavedLeafRotation() throws Exception {
+    @Test void reflectedOrNonuniformGroupsUseTheSameMetadataContract() throws Exception {
         for (boolean reflection : new boolean[]{false, true}) {
             try (XMLSlideShow deck = transformedGroupDeck(reflection, !reflection); ConversionResult result = convert(bytes(deck))) {
-                String md = md(result);
-                assertTrue(md.contains("時計回り15度（図形の保存値。反転・グループ変形後の角度は未算出）"), md);
-                assertTrue(md.contains("図内テキスト"));
+                List<String> images = imageLines(md(result));
+                assertEquals("図内テキスト", nodeByText(result, "図内テキスト").path("text").asText());
+                assertImageMetadata(result, images);
                 assertEquals(1, report(result).path("assets").size());
             }
         }
@@ -233,16 +249,110 @@ class PowerPointMarkdownConverterTest {
         try (ConversionResult clean = convert(sanitized); ConversionResult removed = convert(withDeleted)) {
             assertEquals(md(clean), md(removed));
             assertFalse(md(removed).contains("SECRET"));
-            assertEquals(2, report(removed).path("assets").size());
+            assertEquals(1, report(removed).path("assets").size());
             for (JsonNode asset : report(removed).path("assets")) {
                 String path = asset.path("path").asText();
-                assertArrayEquals(Files.readAllBytes(clean.files().get(path)), Files.readAllBytes(removed.files().get(path)), "Deleted glyphs must also disappear from every individual shape PNG");
+                assertArrayEquals(Files.readAllBytes(clean.files().get(path)), Files.readAllBytes(removed.files().get(path)), "Deleted glyphs must also disappear from the complete slide preview");
             }
             assertTrue(md(removed).contains("長方形")); assertTrue(md(removed).contains("楕円"));
         }
     }
 
-    @Test void embeddedPicturesArePreservedAndExternalPicturesNeverFetched() throws Exception {
+    @Test void wholeSlidePreviewAlsoRemovesHiddenAndStruckOrdinaryTextAndTableCells() throws Exception {
+        try (XMLSlideShow a = previewSanitizationDeck(false); XMLSlideShow b = previewSanitizationDeck(true);
+             ConversionResult clean = convert(bytes(a)); ConversionResult removed = convert(bytes(b))) {
+            assertEquals(md(clean), md(removed));
+            assertFalse(report(removed).toString().contains("SECRET"));
+            String path = diagram(removed).path("path").asText();
+            assertArrayEquals(Files.readAllBytes(clean.files().get(path)), Files.readAllBytes(removed.files().get(path)),
+                    "The whole-slide preview must retain the same omission policy as text extraction");
+        }
+    }
+
+    @Test void slideAndInheritedSolidBackgroundsKeepWhiteTextReadable() throws Exception {
+        Color dark = new Color(18, 36, 64);
+        for (int source = 0; source < 3; source++) {
+            try (XMLSlideShow deck = deck()) {
+                XSLFSlide slide = deck.createSlide();
+                var common = switch (source) {
+                    case 0 -> slide.getXmlObject().getCSld();
+                    case 1 -> slide.getSlideLayout().getXmlObject().getCSld();
+                    default -> slide.getSlideMaster().getXmlObject().getCSld();
+                };
+                if (common.isSetBg()) common.unsetBg();
+                common.addNewBg().addNewBgPr().addNewSolidFill().addNewSrgbClr().setVal(new byte[]{18, 36, 64});
+                XSLFAutoShape shape = box(slide, "白い文字", 40, 80, 200, 80);
+                shape.setFillColor(null); shape.setLineColor(null);
+                shape.getTextParagraphs().getFirst().getTextRuns().getFirst().setFontColor(Color.WHITE);
+                try (ConversionResult result = convert(bytes(deck))) {
+                    BufferedImage image = ImageIO.read(result.files().get(diagram(result).path("path").asText()).toFile());
+                    try {
+                        assertEquals(dark.getRGB(), image.getRGB(px(600), px(400)), "Slide/layout/master solid background must be retained");
+                        long whiteGlyphs = 0;
+                        for (int y = px(80); y < px(160); y++) for (int x = px(40); x < px(240); x++)
+                            if (image.getRGB(x, y) == Color.WHITE.getRGB()) whiteGlyphs++;
+                        assertTrue(whiteGlyphs > 100, "White text must remain visible over the dark background");
+                    } finally { image.flush(); }
+                    assertFalse(report(result).toString().contains("UNSUPPORTED_SLIDE_BACKGROUND"));
+                }
+            }
+        }
+    }
+
+    @Test void solidThemeBackgroundReferenceIsResolvedWithoutRenderingMasterShapes() throws Exception {
+        try (XMLSlideShow deck = deck()) {
+            XSLFSlide slide = deck.createSlide();
+            var reference = slide.getXmlObject().getCSld().addNewBg().addNewBgRef();
+            reference.setIdx(1001);
+            reference.addNewSchemeClr().setVal(org.openxmlformats.schemas.drawingml.x2006.main.STSchemeColorVal.DK_1);
+            box(slide, "確認", 40, 80, 180, 80);
+            XSLFAutoShape masterShape = slide.getSlideMaster().createAutoShape();
+            masterShape.setAnchor(new Rectangle2D.Double(500, 350, 180, 120)); masterShape.setFillColor(Color.RED);
+            try (ConversionResult result = convert(bytes(deck))) {
+                BufferedImage image = ImageIO.read(result.files().get(diagram(result).path("path").asText()).toFile());
+                try {
+                    assertEquals(Color.BLACK.getRGB(), image.getRGB(px(600), px(400)), "Resolve the theme's solid color without painting master shapes");
+                } finally { image.flush(); }
+                assertFalse(report(result).toString().contains("UNSUPPORTED_SLIDE_BACKGROUND"));
+            }
+        }
+    }
+
+    @Test void directAndThemePictureBackgroundsUseWhiteWithoutExternalRequests() throws Exception {
+        AtomicInteger requests = new AtomicInteger();
+        HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server.createContext("/", exchange -> { requests.incrementAndGet(); exchange.sendResponseHeaders(200, 0); exchange.close(); });
+        server.start();
+        try {
+            for (boolean theme : new boolean[]{false, true}) {
+                try (XMLSlideShow deck = deck()) {
+                    XSLFSlide slide = deck.createSlide(); box(slide, "安全な本文", 40, 80, 200, 80);
+                    String url = "http://127.0.0.1:" + server.getAddress().getPort() + "/background.png";
+                    var part = theme ? slide.getTheme().getPackagePart() : slide.getPackagePart();
+                    var relationship = part.addRelationship(java.net.URI.create(url), TargetMode.EXTERNAL,
+                            "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image");
+                    var background = slide.getXmlObject().getCSld().addNewBg();
+                    if (theme) {
+                        var reference = background.addNewBgRef(); reference.setIdx(1001);
+                        reference.addNewSchemeClr().setVal(org.openxmlformats.schemas.drawingml.x2006.main.STSchemeColorVal.DK_1);
+                        var styles = org.openxmlformats.schemas.drawingml.x2006.main.CTBackgroundFillStyleList.Factory.newInstance();
+                        styles.addNewBlipFill().addNewBlip().setLink(relationship.getId());
+                        slide.getTheme().getXmlObject().getThemeElements().getFmtScheme().setBgFillStyleLst(styles);
+                    } else background.addNewBgPr().addNewBlipFill().addNewBlip().setLink(relationship.getId());
+                    try (ConversionResult result = convert(bytes(deck))) {
+                        BufferedImage image = ImageIO.read(result.files().get(diagram(result).path("path").asText()).toFile());
+                        try { assertEquals(Color.WHITE.getRGB(), image.getRGB(px(600), px(400))); }
+                        finally { image.flush(); }
+                        assertTrue(report(result).toString().contains("UNSUPPORTED_SLIDE_BACKGROUND"));
+                        assertFalse(report(result).toString().contains(url)); assertFalse(md(result).contains(url));
+                    }
+                }
+            }
+            assertEquals(0, requests.get());
+        } finally { server.stop(0); }
+    }
+
+    @Test void embeddedPicturesAreRenderedAndExternalPicturesNeverFetched() throws Exception {
         AtomicInteger requests = new AtomicInteger();
         HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
         server.createContext("/", exchange -> { requests.incrementAndGet(); exchange.sendResponseHeaders(200, 0); exchange.close(); });
@@ -262,7 +372,12 @@ class PowerPointMarkdownConverterTest {
             try (ConversionResult result = convert(bytes(deck))) {
                 JsonNode json = report(result); String md = md(result);
                 assertEquals(1, json.path("assets").size());
-                assertArrayEquals(png, Files.readAllBytes(result.files().get(json.path("assets").get(0).path("path").asText())));
+                BufferedImage preview = ImageIO.read(result.files().get(json.path("assets").get(0).path("path").asText()).toFile());
+                try {
+                    assertSlideCanvas(preview);
+                    assertEquals(Color.BLUE.getRGB(), preview.getRGB(px(50), px(50)));
+                    assertNotEquals(Color.BLUE.getRGB(), preview.getRGB(px(230), px(50)), "Skipped external pictures must not appear in the preview");
+                } finally { preview.flush(); }
                 assertTrue(md.contains("保存済みロゴ")); assertTrue(md.contains("外部参照画像"));
                 assertFalse(md.contains(url)); assertTrue(json.toString().contains("EXTERNAL_IMAGE_SKIPPED"));
             }
@@ -273,6 +388,7 @@ class PowerPointMarkdownConverterTest {
     @Test void renderingAndTextLimitsAreEnforcedBeforeLargeOutput() throws Exception {
         ConversionLimits defaults = ConversionLimits.defaults();
         try (XMLSlideShow deck = deck()) {
+            deck.setPageSize(new Dimension(100_000, 100_000));
             XSLFSlide slide = deck.createSlide(); box(slide, "大きな図", 0, 0, 100_000, 100_000);
             ConversionException failure = assertThrows(ConversionException.class, () -> convert(bytes(deck)));
             assertEquals("IMAGE_PIXELS_LIMIT", failure.code()); assertEquals(413, failure.statusCode());
@@ -311,8 +427,9 @@ class PowerPointMarkdownConverterTest {
                 assertTrue(markdown.contains("Text box 1001"));
                 assertTrue(markdown.contains("Slide 51"));
                 assertTrue(markdown.contains(largeText));
-                assertEquals(201, markdown.lines().filter(line -> line.startsWith("![")).count());
-                assertEquals(1, report(result).path("assets").size(), "Repeated images share one output file");
+                assertEquals(1, markdown.lines().filter(line -> line.startsWith("![")).count());
+                assertEquals(201, diagram(result).path("nodes").size(), "Every graphical placement stays in the graph even when picture bytes repeat");
+                assertEquals(1, report(result).path("assets").size(), "The 201 picture placements share one slide preview");
             }
         }
     }
@@ -326,10 +443,69 @@ class PowerPointMarkdownConverterTest {
             try (ConversionResult result = convert(bytes(deck))) {
                 JsonNode asset = report(result).path("assets").get(0);
                 assertTrue(asset.path("path").asText().startsWith("images/diagram-"));
-                assertTrue(md(result).contains("時計回り90度"));
+                assertImageMetadata(result, imageLines(md(result)));
                 BufferedImage output = ImageIO.read(result.files().get(asset.path("path").asText()).toFile());
-                assertTrue(output.getHeight() > output.getWidth(), "A 90 degree rotation must change the visible image orientation");
-                assertTrue(output.getWidth() > 100); output.flush();
+                try {
+                    assertSlideCanvas(output);
+                    JsonNode node = diagram(result).path("nodes").get(0);
+                    assertBounds(node, 100, 60, 120, 160);
+                    assertEquals(Color.BLUE.getRGB(), output.getRGB(px(160), px(65)));
+                    assertNotEquals(Color.BLUE.getRGB(), output.getRGB(px(85), px(140)), "Rotated pixels must leave the unrotated footprint");
+                } finally { output.flush(); }
+            }
+        }
+    }
+
+    @Test void clockwisePictureRotationIsBakedIntoPixelsWithoutRotationText() throws Exception {
+        try (XMLSlideShow deck = deck()) {
+            byte[] original = twoColorPng();
+            XSLFPictureShape picture = deck.createSlide().createPicture(deck.addPicture(original, PictureData.PictureType.PNG));
+            picture.setAnchor(new Rectangle2D.Double(80, 80, 160, 80));
+            picture.setRotation(90);
+            try (ConversionResult result = convert(bytes(deck))) {
+                List<String> images = imageLines(md(result));
+                assertImageMetadata(result, images);
+                assertBounds(diagram(result).path("nodes").get(0), 120, 40, 80, 160);
+                String path = report(result).path("assets").get(0).path("path").asText();
+                assertFalse(Arrays.equals(original, Files.readAllBytes(result.files().get(path))));
+                BufferedImage output = ImageIO.read(result.files().get(path).toFile());
+                try {
+                    assertSlideCanvas(output);
+                    assertEquals(Color.RED.getRGB(), output.getRGB(px(160), px(80)),
+                            "The red left half must become the top half after clockwise rotation");
+                    assertEquals(Color.BLUE.getRGB(), output.getRGB(px(160), px(160)),
+                            "The blue right half must become the bottom half, not a reflected image");
+                } finally { output.flush(); }
+            }
+        }
+    }
+
+    @Test void reportNodesPreserveSpecialCharactersAndNewlinesAndMarkdownRemainsSearchable() throws Exception {
+        String description = "引用\"日本語\" [表示](https://example.invalid/a)\n2行目: C:\\temp\\a.png & <script> *強調* _下線_ `code` {json}";
+        // Picture descriptions are XML attributes; use a single line to avoid XML whitespace normalization.
+        String pictureDescription = description.replace('\n', ' ');
+        try (XMLSlideShow deck = deck()) {
+            XSLFSlide slide = deck.createSlide();
+            XSLFAutoShape shape = box(slide, description, 40.123456, 80.987654, 280.567891, 120.123456);
+            XSLFTextRun removed = shape.getTextParagraphs().getLast().addNewTextRun();
+            removed.setText("STRIKE_SECRET"); removed.setStrikethrough(true);
+            XSLFPictureShape picture = slide.createPicture(deck.addPicture(png(), PictureData.PictureType.PNG));
+            picture.setAnchor(new Rectangle2D.Double(40, 300, 80, 60));
+            ((CTPicture) picture.getXmlObject()).getNvPicPr().getCNvPr().setDescr(pictureDescription);
+            try (ConversionResult result = convert(bytes(deck))) {
+                List<String> images = imageLines(md(result));
+                assertEquals(1, images.size());
+                assertImageMetadata(result, images);
+                for (JsonNode metadata : diagram(result).path("nodes")) {
+                    String expectedText = metadata.path("type").asText().equals("画像") ? pictureDescription : description;
+                    assertEquals(expectedText, metadata.path("text").asText(), "JSON must round-trip text without Markdown escaping artifacts");
+                    assertNodeFields(metadata);
+                }
+                String searchable = withoutImages(md(result));
+                assertTrue(searchable.contains("日本語")); assertTrue(searchable.contains("2行目"));
+                assertFalse(searchable.contains("STRIKE_SECRET")); assertFalse(searchable.contains("<script>"));
+                assertBounds(nodeByText(result, description), 40.123, 80.988, 280.568, 120.123);
+                assertFalse(report(result).toString().contains("STRIKE_SECRET"));
             }
         }
     }
@@ -347,6 +523,134 @@ class PowerPointMarkdownConverterTest {
                 assertTrue(report(result).toString().contains("UNSUPPORTED_DRAWING"));
                 assertEquals(0, report(result).path("assets").size());
             }
+        }
+    }
+
+    @Test void storedEndpointsAndArrowheadsProduceDirectionalSearchableConnections() throws Exception {
+        var none = LineDecoration.DecorationShape.NONE;
+        var triangle = LineDecoration.DecorationShape.TRIANGLE;
+        var combinations = List.of(
+                List.of(none, triangle), List.of(triangle, none),
+                List.of(triangle, triangle), List.of(none, none));
+        var directions = List.of("start-to-end", "end-to-start", "bidirectional", "undirected");
+        for (int i = 0; i < combinations.size(); i++) {
+            try (XMLSlideShow deck = deck()) {
+                XSLFSlide slide = deck.createSlide();
+                XSLFAutoShape start = box(slide, "申請", 40, 80, 180, 80);
+                start.getTextParagraphs().getFirst().getTextRuns().getFirst().setBold(true);
+                XSLFAutoShape end = box(slide, "確認", 360, 80, 180, 80);
+                XSLFConnectorShape connector = connected(slide, start, end);
+                connector.setLineHeadDecoration(combinations.get(i).get(0));
+                connector.setLineTailDecoration(combinations.get(i).get(1));
+                try (ConversionResult result = convert(bytes(deck))) {
+                    JsonNode graph = diagram(result), edge = graph.path("edges").get(0);
+                    assertEquals("shape-" + connector.getShapeId(), edge.path("id").asText());
+                    assertEquals("shape-" + start.getShapeId(), edge.path("startId").asText());
+                    assertEquals("shape-" + end.getShapeId(), edge.path("endId").asText());
+                    assertEquals("resolved", edge.path("status").asText());
+                    assertEquals(directions.get(i), edge.path("direction").asText());
+                    assertEquals(combinations.get(i).get(0) == none ? "none" : "triangle", edge.path("startArrow").asText());
+                    assertEquals(combinations.get(i).get(1) == none ? "none" : "triangle", edge.path("endArrow").asText());
+                    String body = withoutImages(md(result));
+                    assertTrue(body.contains("図中の項目：")); assertTrue(body.contains("接続関係"));
+                    assertTrue(body.contains("**申請**"), "Inline bold must remain available to a normal Markdown reader");
+                    assertTrue(body.contains("確認"));
+                    assertTrue(body.contains("shape-" + start.getShapeId()));
+                    assertTrue(body.contains("shape-" + end.getShapeId()));
+                    assertEquals(1, imageLines(md(result)).size());
+                }
+            }
+        }
+    }
+
+    @Test void nearbyCaptionsAndUnattachedConnectorsNeverInventRelationships() throws Exception {
+        try (XMLSlideShow deck = deck()) {
+            XSLFSlide slide = deck.createSlide();
+            XSLFAutoShape start = box(slide, "確認", 40, 80, 180, 80);
+            XSLFAutoShape end = box(slide, "承認済み", 360, 80, 180, 80);
+            connected(slide, start, end).setLineTailDecoration(LineDecoration.DecorationShape.TRIANGLE);
+            text(slide, "承認なら進む", 220, 80, 140, 35);
+            XSLFConnectorShape unattached = slide.createConnector();
+            unattached.setAnchor(new Rectangle2D.Double(220, 170, 140, 0));
+            unattached.setLineTailDecoration(LineDecoration.DecorationShape.TRIANGLE);
+            try (ConversionResult result = convert(bytes(deck))) {
+                JsonNode graph = diagram(result);
+                assertEquals(2, graph.path("nodes").size(), "An adjacent caption remains ordinary text, not a fabricated graph node");
+                assertEquals(2, graph.path("edges").size());
+                JsonNode unknown = edgeById(result, "shape-" + unattached.getShapeId());
+                assertEquals("unresolved", unknown.path("status").asText());
+                assertTrue(unknown.path("startId").isMissingNode()); assertTrue(unknown.path("endId").isMissingNode());
+                assertFalse(unknown.path("reason").asText().isBlank());
+                for (JsonNode edge : graph.path("edges")) {
+                    assertFalse(edge.has("label"));
+                    assertFalse(edge.toString().contains("承認なら進む"), "Proximity alone is never evidence for a branch label");
+                }
+                String body = withoutImages(md(result));
+                assertTrue(body.lines().anyMatch(line -> line.equals("承認なら進む")));
+                assertTrue(body.contains("shape-" + unattached.getShapeId()));
+                assertTrue(body.contains("不明") || body.contains("未確定"));
+            }
+        }
+    }
+
+    @Test void connectorTargetsIncludeTextboxesAndTablesWithoutLosingNativeMarkdown() throws Exception {
+        try (XMLSlideShow deck = deck()) {
+            XSLFSlide slide = deck.createSlide();
+            XSLFTextBox title = text(slide, "判断の根拠", 20, 10, 600, 40); title.setPlaceholder(Placeholder.TITLE);
+            XSLFTextBox body = text(slide, "担当者が確認", 20, 90, 200, 40);
+            XSLFTable table = slide.createTable(2, 2); table.setAnchor(new Rectangle2D.Double(340, 180, 300, 100));
+            table.getCTTable().getTblPr().setFirstRow(true);
+            table.getCell(0, 0).setText("項目"); table.getCell(0, 1).setText("判定");
+            table.getCell(1, 0).setText("金額"); table.getCell(1, 1).setText("100万円");
+            connected(slide, title, body); connected(slide, body, table);
+            try (ConversionResult result = convert(bytes(deck))) {
+                String bodyMd = withoutImages(md(result));
+                assertTrue(bodyMd.contains("# 判断の根拠"));
+                assertTrue(bodyMd.contains("担当者が確認"), "A connector-target textbox must remain readable Markdown text");
+                assertTrue(bodyMd.contains("| 金額 | 100万円 |"));
+                JsonNode graph = diagram(result);
+                assertEquals(3, graph.path("nodes").size());
+                for (JsonNode edge : graph.path("edges")) assertEquals("resolved", edge.path("status").asText());
+                assertEquals("shape-" + title.getShapeId(), nodeByText(result, "判断の根拠").path("id").asText());
+                assertEquals("shape-" + body.getShapeId(), nodeByText(result, "担当者が確認").path("id").asText());
+                assertFalse(nodeById(result, "shape-" + table.getShapeId()).path("text").asText().isBlank(), "The target table must supply text for relationship labels");
+            }
+        }
+    }
+
+    @Test void duplicateCaptionsKeepDistinctIdsAndHiddenEndpointsStayUnresolved() throws Exception {
+        try (XMLSlideShow deck = deck()) {
+            XSLFSlide slide = deck.createSlide();
+            XSLFAutoShape first = box(slide, "確認", 40, 80, 180, 80);
+            XSLFAutoShape second = box(slide, "確認", 360, 80, 180, 80);
+            XSLFAutoShape hidden = box(slide, "HIDDEN_SECRET", 360, 260, 180, 80);
+            ((CTShape) hidden.getXmlObject()).getNvSpPr().getCNvPr().setHidden(true);
+            connected(slide, first, second);
+            XSLFConnectorShape toHidden = connected(slide, second, hidden);
+            try (ConversionResult result = convert(bytes(deck))) {
+                JsonNode graph = diagram(result);
+                assertEquals(2, graph.path("nodes").size());
+                assertNotEquals(graph.path("nodes").get(0).path("id"), graph.path("nodes").get(1).path("id"));
+                String body = withoutImages(md(result));
+                assertTrue(body.contains("shape-" + first.getShapeId())); assertTrue(body.contains("shape-" + second.getShapeId()));
+                assertEquals("unresolved", edgeById(result, "shape-" + toHidden.getShapeId()).path("status").asText());
+                assertFalse(body.contains("HIDDEN_SECRET")); assertFalse(report(result).toString().contains("HIDDEN_SECRET"));
+            }
+        }
+    }
+
+    @Test void diagramTextStillHonorsMarkdownAndImageOutputLimits() throws Exception {
+        ConversionLimits defaults = ConversionLimits.defaults();
+        try (XMLSlideShow deck = deck()) {
+            box(deck.createSlide(), "この文字列も通常のMarkdownとして上限に含める", 40, 80, 280, 120);
+            ConversionLimits textLimit = new ConversionLimits(defaults.maxInputBytes(), defaults.maxSections(), defaults.maxReadItems(), defaults.maxTableCells(), 100,
+                    defaults.maxImages(), defaults.maxImageBytes(), defaults.maxOutputBytes(), defaults.maxShapes(), defaults.maxGroupDepth(), defaults.maxImagePixels());
+            assertEquals("MARKDOWN_BYTES_LIMIT", assertThrows(ConversionException.class,
+                    () -> new PowerPointMarkdownConverter(textLimit).convert(bytes(deck), "sample.pptx")).code());
+            ConversionLimits pixelLimit = new ConversionLimits(defaults.maxInputBytes(), defaults.maxSections(), defaults.maxReadItems(), defaults.maxTableCells(), defaults.maxMarkdownBytes(),
+                    defaults.maxImages(), defaults.maxImageBytes(), defaults.maxOutputBytes(), defaults.maxShapes(), defaults.maxGroupDepth(), 500_000);
+            assertEquals("IMAGE_PIXELS_LIMIT", assertThrows(ConversionException.class,
+                    () -> new PowerPointMarkdownConverter(pixelLimit).convert(bytes(deck), "sample.pptx")).code());
         }
     }
 
@@ -393,6 +697,29 @@ class PowerPointMarkdownConverterTest {
         }
         return deck;
     }
+    private static XMLSlideShow previewSanitizationDeck(boolean deleted) {
+        XMLSlideShow deck = deck(); XSLFSlide slide = deck.createSlide();
+        box(slide, "処理", 40, 380, 180, 80);
+        XSLFTextBox title = text(slide, "公開タイトル", 20, 20, 600, 40); title.setPlaceholder(Placeholder.TITLE);
+        XSLFTextBox body = text(slide, "公開本文", 20, 90, 600, 40);
+        XSLFTable table = slide.createTable(2, 2); table.setAnchor(new Rectangle2D.Double(40, 180, 400, 100));
+        table.getCTTable().getTblPr().setFirstRow(true);
+        table.getCell(0, 0).setText("項目"); table.getCell(0, 1).setText("値");
+        table.getCell(1, 0).setText("公開セル"); table.mergeCells(1, 1, 0, 1);
+        if (deleted) {
+            for (XSLFTextShape shape : List.of(title, body, table.getCell(0, 1))) {
+                XSLFTextRun removed = shape.getTextParagraphs().getFirst().addNewTextRun();
+                removed.setText("STRIKE_SECRET"); removed.setStrikethrough(true);
+            }
+            table.getCell(1, 1).setText("MERGED_CONTINUATION_SECRET");
+            XSLFTextBox hidden = text(slide, "HIDDEN_SECRET", 20, 130, 500, 40);
+            ((CTShape) hidden.getXmlObject()).getNvSpPr().getCNvPr().setHidden(true);
+            text(slide, "FOOTER_SECRET", 20, 490, 500, 40).setPlaceholder(Placeholder.FOOTER);
+            deck.getNotesSlide(slide).createTextBox().setText("NOTES_SECRET");
+            slide.getSlideMaster().createTextBox().setText("MASTER_SECRET");
+        }
+        return deck;
+    }
     private static XMLSlideShow transformedGroupDeck(boolean reflection, boolean nonuniform) {
         XMLSlideShow deck = deck();
         XSLFGroupShape outer = deck.createSlide().createGroup();
@@ -421,11 +748,87 @@ class PowerPointMarkdownConverterTest {
         var graphics = image.createGraphics(); graphics.setColor(Color.BLUE); graphics.fillRect(0, 0, 16, 12); graphics.dispose();
         ByteArrayOutputStream out = new ByteArrayOutputStream(); ImageIO.write(image, "png", out); image.flush(); return out.toByteArray();
     }
-    private static long visiblePixels(BufferedImage image) {
-        long pixels = 0;
-        for (int y = 0; y < image.getHeight(); y++) for (int x = 0; x < image.getWidth(); x++)
-            if ((image.getRGB(x, y) >>> 24) > 128) pixels++;
-        return pixels;
+    private static byte[] twoColorPng() throws Exception {
+        BufferedImage image = new BufferedImage(16, 12, BufferedImage.TYPE_INT_RGB);
+        var graphics = image.createGraphics();
+        graphics.setColor(Color.RED); graphics.fillRect(0, 0, 8, 12);
+        graphics.setColor(Color.BLUE); graphics.fillRect(8, 0, 8, 12); graphics.dispose();
+        ByteArrayOutputStream out = new ByteArrayOutputStream(); ImageIO.write(image, "png", out); image.flush(); return out.toByteArray();
+    }
+    private static List<String> imageLines(String markdown) { return markdown.lines().filter(line -> line.startsWith("![")).toList(); }
+    private static String withoutImages(String markdown) {
+        return String.join("\n", markdown.lines().filter(line -> !line.startsWith("![")).toList());
+    }
+    private static JsonNode diagram(ConversionResult result) throws Exception {
+        for (JsonNode block : report(result).path("blocks")) if (block.path("type").asText().equals("diagram")) return block;
+        fail("Expected a diagram report block"); return null;
+    }
+    private static JsonNode nodeByText(ConversionResult result, String text) throws Exception {
+        for (JsonNode node : diagram(result).path("nodes")) if (node.path("text").asText().equals(text)) return node;
+        fail("Expected diagram node with text: " + text); return null;
+    }
+    private static JsonNode nodeById(ConversionResult result, String id) throws Exception {
+        for (JsonNode node : diagram(result).path("nodes")) if (node.path("id").asText().equals(id)) return node;
+        fail("Expected diagram node with id: " + id); return null;
+    }
+    private static JsonNode edgeById(ConversionResult result, String id) throws Exception {
+        for (JsonNode edge : diagram(result).path("edges")) if (edge.path("id").asText().equals(id)) return edge;
+        fail("Expected diagram edge with id: " + id); return null;
+    }
+    private static XSLFConnectorShape connected(XSLFSlide slide, XSLFShape start, XSLFShape end) {
+        XSLFConnectorShape connector = slide.createConnector();
+        connector.setAnchor(new Rectangle2D.Double(220, 120, 140, 0));
+        connector.setLineColor(Color.BLACK); connector.setLineWidth(2);
+        var properties = ((org.openxmlformats.schemas.presentationml.x2006.main.CTConnector) connector.getXmlObject()).getNvCxnSpPr().getCNvCxnSpPr();
+        properties.addNewStCxn().setId(start.getShapeId()); properties.getStCxn().setIdx(0);
+        properties.addNewEndCxn().setId(end.getShapeId()); properties.getEndCxn().setIdx(0);
+        return connector;
+    }
+    private static void assertNodeFields(JsonNode node) {
+        Set<String> fields = new HashSet<>(); node.fieldNames().forEachRemaining(fields::add);
+        assertEquals(Set.of("id", "type", "text", "x", "y", "width", "height"), fields);
+        assertTrue(node.path("id").asText().matches("shape-\\d+"));
+        for (String coordinate : List.of("x", "y", "width", "height")) assertTrue(node.path(coordinate).isNumber());
+    }
+    private static void assertSlideCanvas(BufferedImage image) {
+        assertEquals(976, image.getWidth()); assertEquals(736, image.getHeight());
+    }
+    private static int px(double points) { return (int) Math.round((points + 6) * 96 / 72); }
+    private static JsonNode imageMetadata(String image) throws Exception {
+        int closing = image.indexOf("](");
+        assertTrue(closing > 2, "Expected an image reference with inline JSON alt text: " + image);
+        JsonNode metadata = JSON.readTree(image.substring(2, closing));
+        assertTrue(metadata.isObject());
+        return metadata;
+    }
+    private static void assertBounds(JsonNode metadata, double x, double y, double width, double height) {
+        assertEquals(x, metadata.path("x").asDouble(), 0.000001);
+        assertEquals(y, metadata.path("y").asDouble(), 0.000001);
+        assertEquals(width, metadata.path("width").asDouble(), 0.000001);
+        assertEquals(height, metadata.path("height").asDouble(), 0.000001);
+    }
+    private static void assertImageMetadata(ConversionResult result, List<String> images) throws Exception {
+        JsonNode blocks = report(result).path("blocks");
+        int withMetadata = 0;
+        for (JsonNode block : blocks) if (block.has("metadata")) withMetadata++;
+        assertEquals(images.size(), withMetadata);
+        for (String image : images) {
+            JsonNode metadata = imageMetadata(image);
+            Set<String> fields = new HashSet<>(); metadata.fieldNames().forEachRemaining(fields::add);
+            assertEquals(Set.of("type", "text", "x", "y", "width", "height"), fields);
+            for (String coordinate : List.of("x", "y", "width", "height")) {
+                JsonNode number = metadata.path(coordinate);
+                assertTrue(number.isNumber(), coordinate + " must remain a JSON number");
+                assertTrue(number.decimalValue().stripTrailingZeros().scale() <= 3, coordinate + " must be rounded to at most three decimal places");
+            }
+            assertFalse(image.contains("時計回り")); assertFalse(image.contains("保存値")); assertFalse(metadata.has("rotation"));
+            String path = image.substring(image.indexOf("](") + 2, image.length() - 1);
+            boolean found = false;
+            for (JsonNode block : blocks) {
+                if (path.equals(block.path("path").asText()) && metadata.equals(block.path("metadata"))) found = true;
+            }
+            assertTrue(found, "report.json must contain the same metadata object for " + path);
+        }
     }
     private static ConversionResult convert(byte[] bytes) { return new PowerPointMarkdownConverter(ConversionLimits.defaults()).convert(bytes, "sample.pptx"); }
     private static String md(ConversionResult result) throws Exception { return Files.readString(result.files().get("document.md")); }

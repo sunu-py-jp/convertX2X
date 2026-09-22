@@ -18,7 +18,7 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
-/** PPTX extraction and individual-shape rendering. This class never evaluates or follows external content. */
+/** RAG-oriented PPTX text and saved connections, with a slide preview. Never follows external content. */
 public final class PowerPointMarkdownConverter {
     private static final String CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml";
     private final ConversionLimits limits;
@@ -89,9 +89,21 @@ public final class PowerPointMarkdownConverter {
                 sequence = 0;
                 List<Entry> entries = new ArrayList<>();
                 for (XSLFShape shape : List.copyOf(slide.getShapes())) {
-                    Entry entry = inspect(shape, 0, new AffineTransform(), false);
+                    Entry entry = inspect(shape, 0, new AffineTransform());
                     if (entry != null) leaves(entry, entries);
                 }
+                List<Entry> visible = List.copyOf(entries);
+                List<PresentationConnections.Edge> edges = PresentationConnections.extract(visible.stream()
+                        .filter(entry -> entry.unsupported == null).map(entry -> entry.shape).toList());
+                Set<String> endpoints = new HashSet<>();
+                for (var edge : edges) {
+                    if (edge.startId() != null) endpoints.add(edge.startId());
+                    if (edge.endId() != null) endpoints.add(edge.endId());
+                }
+                List<Entry> nodes = visible.stream().filter(entry -> entry.unsupported == null
+                        && !(entry.shape instanceof XSLFConnectorShape)
+                        && (drawing(entry) || endpoints.contains(range(entry.shape))))
+                        .sorted(readingOrder()).toList();
                 Entry title = entries.stream().filter(entry -> isTitle(entry.shape) && !entry.text.plain().isBlank())
                         .min(readingOrder()).orElse(null);
                 append("[page " + ordinal + "]\n\n");
@@ -99,7 +111,11 @@ public final class PowerPointMarkdownConverter {
                 workspace.block(Map.of("type", "heading", "section", section, "range", "slide-" + ordinal, "level", 1));
                 if (title != null) entries.remove(title);
                 entries.sort(readingOrder());
-                for (Entry entry : entries) emit(entry);
+                for (Entry entry : entries)
+                    if (!drawing(entry) && !(entry.normalText && endpoints.contains(range(entry.shape)))) emit(entry);
+                if (!nodes.isEmpty() || !edges.isEmpty())
+                    emitDiagram(slide, visible, nodes, edges, ordinal, new Rectangle2D.Double(0, 0,
+                            presentation.getPageSize().getWidth(), presentation.getPageSize().getHeight()));
             }
             workspace.write("document.md", markdown.toString().getBytes(StandardCharsets.UTF_8));
         }
@@ -109,7 +125,7 @@ public final class PowerPointMarkdownConverter {
             if (ConversionLimits.exceeds(readItems, limits.maxReadItems())) throw ConversionWorkspace.limit("READ_ITEMS_LIMIT", "文字・読み取り要素数が上限を超えました。");
         }
 
-        private Entry inspect(XSLFShape shape, int depth, AffineTransform parent, boolean parentFlipped) throws IOException {
+        private Entry inspect(XSLFShape shape, int depth, AffineTransform parent) throws IOException {
             workspace.shapeVisited(depth);
             if (hidden(shape) || excludedPlaceholder(shape)) return null;
             Rectangle2D anchor = anchor(shape);
@@ -124,14 +140,13 @@ public final class PowerPointMarkdownConverter {
             transform.scale(flipH(shape) ? -1 : 1, flipV(shape) ? -1 : 1);
             transform.translate(-anchor.getCenterX(), -anchor.getCenterY());
             Entry entry = new Entry(shape, transform.createTransformedShape(anchor).getBounds2D(), sequence++,
-                    new AffineTransform(transform), new AffineTransform(parent), depth > 0,
-                    parentFlipped || flipH(shape) || flipV(shape));
+                    new AffineTransform(parent));
             stripExternalBlips(shape);
             if (shape instanceof XSLFTable table) {
                 long cells = (long) table.getNumberOfRows() * table.getNumberOfColumns();
                 tableCells += cells;
                 limits.checkTableCells(tableCells);
-                entry.table = table(table);
+                entry.table = table(table, entry);
             } else if (shape instanceof XSLFGroupShape group) {
                 Rectangle2D interior = group.getInteriorAnchor();
                 if (!finite(interior) || interior.getWidth() <= 0 || interior.getHeight() <= 0) {
@@ -143,7 +158,7 @@ public final class PowerPointMarkdownConverter {
                 transform.scale(anchor.getWidth() / interior.getWidth(), anchor.getHeight() / interior.getHeight());
                 transform.translate(-interior.getX(), -interior.getY());
                 for (XSLFShape child : List.copyOf(group.getShapes())) {
-                    Entry part = inspect(child, depth + 1, transform, entry.flipped);
+                    Entry part = inspect(child, depth + 1, transform);
                     if (part != null) entry.children.add(part);
                 }
                 if (entry.children.isEmpty()) return null;
@@ -188,9 +203,9 @@ public final class PowerPointMarkdownConverter {
             return entry;
         }
 
-        private String table(XSLFTable table) {
+        private String table(XSLFTable table, Entry entry) {
             if (table.getNumberOfRows() == 0 || table.getNumberOfColumns() == 0) return "";
-            StringBuilder out = new StringBuilder(); boolean merged = false;
+            StringBuilder out = new StringBuilder(), plain = new StringBuilder(); boolean merged = false;
             var properties = table.getCTTable().getTblPr();
             boolean header = properties != null && properties.isSetFirstRow() && properties.getFirstRow();
             if (!header) out.append('|').append("  |".repeat(table.getNumberOfColumns())).append('\n')
@@ -201,13 +216,20 @@ public final class PowerPointMarkdownConverter {
                     XSLFTableCell cell = table.getCell(r, c);
                     PresentationText.Content content = PresentationText.read(cell, this::count);
                     boolean covered = cell.isMerged();
+                    // POI can paint stale text stored in covered cells; keep the preview consistent with Markdown.
+                    if (covered) cell.clearText();
                     merged |= covered || cell.getGridSpan() > 1 || cell.getRowSpan() > 1;
+                    if (!covered && !content.plain().isBlank()) {
+                        if (!plain.isEmpty()) plain.append('\n');
+                        plain.append(content.plain());
+                    }
                     out.append(' ').append(covered ? "" : content.markdown().replace("  \n", "<br>").replace("\n", "<br>")).append(" |");
                 }
                 out.append('\n');
                 if (r == 0 && header) out.append('|').append(" --- |".repeat(table.getNumberOfColumns())).append('\n');
             }
             if (merged) workspace.warning("TABLE_MERGE_FLATTENED", section, range(table), "Markdown表では結合の開始セルだけに内容を残します。");
+            entry.text = new PresentationText.Content(plain.toString(), "", List.of());
             return out.toString();
         }
 
@@ -220,33 +242,87 @@ public final class PowerPointMarkdownConverter {
             } else if (first.normalText) {
                 if (first.text.markdown().isBlank()) return;
                 append(first.text.markdown() + "\n\n"); type = "paragraph";
-            } else {
-                String description = DrawingAltText.describe(typeName(first), rotationDescription(first),
-                        first.picture != null ? first.pictureDescription : first.text.plain())
-                        + "、" + DrawingAltText.geometry("スライド左上", first.bounds);
-                String alt = DrawingAltText.imageAlt(List.of(description), limits.maxMarkdownBytes());
-                String path;
-                if (first.picture != null && (first.attachment || (!first.grouped && unchangedPicture(first.shape)))) {
-                    String extension = first.pictureType.extension.replace(".", "").toLowerCase(Locale.ROOT);
-                    if (!extension.matches("[a-z0-9]{1,8}")) extension = "bin";
-                    String mime = first.pictureType.contentType;
-                    path = workspace.addAsset("image", first.picture.getData(), extension, mime == null ? "application/octet-stream" : mime);
-                    append((first.attachment ? "[" : "![") + alt + "](" + path + ")\n\n");
-                    type = first.attachment ? "attachment" : "image";
-                } else {
-                    byte[] png = PresentationRenderer.png(first.shape, first.bounds, first.parentTransform, limits);
-                    path = workspace.addAsset("diagram", png, "png", "image/png");
-                    append("![" + alt + "](" + path + ")\n\n"); type = "diagram";
-                }
-                LinkedHashSet<PresentationText.Link> links = new LinkedHashSet<>();
-                links.addAll(first.text.links());
-                if (first.shapeLink != null) links.add(new PresentationText.Link(first.text.plain().isBlank() ? "リンク" : first.text.plain(), first.shapeLink));
-                for (PresentationText.Link link : links)
-                    append(Markdown.link(Markdown.escape(DrawingAltText.singleLine(link.label())), link.address()) + "\n\n");
-                workspace.block(Map.of("type", type, "section", section, "range", range(first.shape), "path", path));
-                return;
-            }
+            } else return;
             workspace.block(Map.of("type", type, "section", section, "range", range(first.shape)));
+        }
+
+        private void emitDiagram(XSLFSlide slide, List<Entry> visible, List<Entry> nodes, List<PresentationConnections.Edge> edges,
+                                 int ordinal, Rectangle2D slideBounds) throws IOException {
+            Map<String, Entry> byId = new HashMap<>();
+            Set<String> endpoints = new HashSet<>();
+            for (var edge : edges) {
+                if (edge.startId() != null) endpoints.add(edge.startId());
+                if (edge.endId() != null) endpoints.add(edge.endId());
+            }
+            for (Entry node : nodes) byId.put(range(node.shape), node);
+            List<Map<String, Object>> nodeMetadata = new ArrayList<>();
+            boolean itemsStarted = false;
+            for (Entry node : nodes) {
+                String id = range(node.shape), plain = nodeText(node);
+                Map<String, Object> metadata = PresentationImageMetadata.of(typeName(node), plain, node.bounds);
+                metadata.put("id", id); nodeMetadata.add(metadata);
+                if (!plain.isBlank() || endpoints.contains(id)) {
+                    if (!itemsStarted) { append("図中の項目：\n\n"); itemsStarted = true; }
+                    String content = node.picture != null || node.table != null ? Markdown.escape(plain) : node.text.markdown();
+                    if (content.isBlank()) content = "文字なし";
+                    append("- " + id + "（" + Markdown.escape(typeName(node)) + "）：" + content.replace("  \n", "<br>").replace("\n", "<br>") + "\n");
+                }
+                if (node.attachment) {
+                    String extension = node.pictureType.extension.replace(".", "").toLowerCase(Locale.ROOT);
+                    if (!extension.matches("[a-z0-9]{1,8}")) extension = "bin";
+                    String path = workspace.addAsset("image", node.picture.getData(), extension,
+                            Objects.requireNonNullElse(node.pictureType.contentType, "application/octet-stream"));
+                    Map<String, Object> attachmentMetadata = PresentationImageMetadata.of(typeName(node), plain, node.bounds);
+                    append("\n[" + PresentationImageMetadata.imageAlt(attachmentMetadata)
+                            + "](" + path + ")\n\n");
+                    workspace.block(Map.of("type", "attachment", "section", section, "range", id, "path", path, "metadata", attachmentMetadata));
+                }
+                if (node.shapeLink != null && !node.text.markdown().contains(node.shapeLink))
+                    append("\n" + Markdown.link(Markdown.escape(plain.isBlank() ? "リンク" : DrawingAltText.singleLine(plain)), node.shapeLink) + "\n\n");
+            }
+            if (itemsStarted) append("\n");
+            if (!edges.isEmpty()) {
+                append("接続関係（保存情報）：\n\n");
+                for (var edge : edges) {
+                    String start = endpointLabel(edge.startId(), byId), end = endpointLabel(edge.endId(), byId);
+                    String relation;
+                    if (!edge.status().equals("resolved")) {
+                        relation = "接続関係不明（" + connectionReason(edge.reason()) + "）";
+                        workspace.warning("DIAGRAM_CONNECTION_UNRESOLVED", section, edge.id(),
+                                "図形の接続関係を確定できません。" + connectionReason(edge.reason()) + "。配置からは推測しません。");
+                    } else relation = switch (edge.direction()) {
+                        case "start-to-end" -> start + " → " + end;
+                        case "end-to-start" -> end + " → " + start;
+                        case "bidirectional" -> start + " ↔ " + end;
+                        default -> start + " — " + end + "（向きなし）";
+                    };
+                    append("- " + edge.id() + "：" + relation + "\n");
+                }
+                append("\n");
+            } else if (nodes.size() > 1) append("図形間の接続情報はありません。配置から順序や関係を推測していません。\n\n");
+            List<PresentationRenderer.Layer> layers = visible.stream()
+                    .filter(entry -> entry.unsupported == null && !entry.attachment)
+                    .sorted(Comparator.comparingInt(entry -> entry.order))
+                    .map(entry -> new PresentationRenderer.Layer(entry.shape, entry.parentTransform)).toList();
+            Map<String, Object> block = new LinkedHashMap<>();
+            block.put("type", "diagram"); block.put("section", section); block.put("range", "slide-" + ordinal + "-diagram");
+            block.put("nodes", nodeMetadata); block.put("edges", edges.stream().map(PresentationConnections.Edge::metadata).toList());
+            if (!layers.isEmpty()) {
+                var background = PresentationRenderer.background(slide);
+                if (background.approximated()) workspace.warning("UNSUPPORTED_SLIDE_BACKGROUND", section, "slide-" + ordinal,
+                        "参考画像の背景は単色のみ対応しています。画像・グラデーションなどの背景は取得せず白色に置き換えました。");
+                String path = workspace.addAsset("diagram", PresentationRenderer.png(layers, slideBounds, background.color(), limits), "png", "image/png");
+                Map<String, Object> metadata = PresentationImageMetadata.of("図", "", slideBounds);
+                append("参考画像（スライド全体）：\n\n![" + PresentationImageMetadata.imageAlt(metadata) + "](" + path + ")\n\n");
+                block.put("path", path); block.put("metadata", metadata);
+            }
+            workspace.block(block);
+        }
+
+        private String endpointLabel(String id, Map<String, Entry> nodes) {
+            Entry node = nodes.get(id);
+            String text = node == null ? "" : DrawingAltText.singleLine(nodeText(node));
+            return id + (text.isBlank() ? "（文字なし）" : "「" + Markdown.escape(text) + "」");
         }
 
         private void append(String value) {
@@ -295,43 +371,37 @@ public final class PowerPointMarkdownConverter {
 
     private static final class Entry {
         final XSLFShape shape; final Rectangle2D bounds; final int order;
-        final AffineTransform transform, parentTransform; final boolean grouped, flipped;
+        final AffineTransform parentTransform;
         final List<Entry> children = new ArrayList<>();
         PresentationText.Content text = PresentationText.Content.EMPTY;
         boolean normalText, attachment;
         String table, unsupported, shapeLink, pictureDescription = "";
         XSLFPictureData picture; PictureType pictureType;
-        Entry(XSLFShape shape, Rectangle2D bounds, int order, AffineTransform transform,
-              AffineTransform parentTransform, boolean grouped, boolean flipped) {
-            this.shape = shape; this.bounds = bounds; this.order = order; this.transform = transform;
-            this.parentTransform = parentTransform; this.grouped = grouped; this.flipped = flipped;
+        Entry(XSLFShape shape, Rectangle2D bounds, int order, AffineTransform parentTransform) {
+            this.shape = shape; this.bounds = bounds; this.order = order;
+            this.parentTransform = parentTransform;
         }
     }
     private static void leaves(Entry entry, List<Entry> target) {
         if (entry.children.isEmpty()) target.add(entry); else entry.children.forEach(child -> leaves(child, target));
     }
-    private static String rotationDescription(Entry entry) {
-        AffineTransform transform = entry.transform;
-        double x = Math.hypot(transform.getScaleX(), transform.getShearY());
-        double y = Math.hypot(transform.getShearX(), transform.getScaleY());
-        double dot = transform.getScaleX() * transform.getShearX() + transform.getShearY() * transform.getScaleY();
-        if (!entry.flipped && x > 0 && y > 0 && transform.getDeterminant() > 0
-                && Math.abs(x - y) <= Math.max(x, y) * 1e-6 && Math.abs(dot) <= x * y * 1e-6)
-            return DrawingAltText.rotation(Math.toDegrees(Math.atan2(transform.getShearY(), transform.getScaleX())));
-        return DrawingAltText.rotation(rotation(entry.shape)) + "（図形の保存値。反転・グループ変形後の角度は未算出）";
+    private static boolean drawing(Entry entry) {
+        return entry.unsupported == null && entry.table == null && !entry.normalText;
+    }
+    private static String nodeText(Entry entry) {
+        return entry.picture != null ? entry.pictureDescription : entry.text.plain();
+    }
+    private static String connectionReason(String reason) {
+        return switch (reason) {
+            case "MISSING_ENDPOINT" -> "接続先IDが保存されていません";
+            case "TARGET_UNAVAILABLE" -> "接続先が出力対象にありません";
+            case "AMBIGUOUS_TARGET" -> "接続先IDが重複しています";
+            case "UNKNOWN_ARROWHEAD" -> "矢印の向きを確定できません";
+            default -> "保存情報が不足しています";
+        };
     }
     private static Comparator<Entry> readingOrder() {
         return Comparator.comparingDouble((Entry entry) -> entry.bounds.getY()).thenComparingDouble(entry -> entry.bounds.getX()).thenComparingInt(entry -> entry.order);
-    }
-    private static boolean unchangedPicture(XSLFShape shape) {
-        if (rotation(shape) != 0 || flipH(shape) || flipV(shape)) return false;
-        Element crop = descendant(shape.getXmlObject().getDomNode(), "srcRect");
-        if (crop == null) return true;
-        for (String side : List.of("l", "t", "r", "b")) {
-            String value = crop.getAttribute(side);
-            if (!value.isBlank() && !value.equals("0")) return false;
-        }
-        return true;
     }
     private static String range(XSLFShape shape) { return "shape-" + shape.getShapeId(); }
     private static Element ownProperties(XSLFShape shape) {
@@ -365,6 +435,7 @@ public final class PowerPointMarkdownConverter {
     }
     private static String typeName(Entry entry) {
         if (entry.picture != null) return "画像";
+        if (entry.table != null) return "表";
         if (entry.shape instanceof XSLFConnectorShape) return "接続線";
         if (entry.shape instanceof XSLFTextBox) return "テキストボックス";
         if (entry.shape instanceof XSLFSimpleShape simple) return DrawingAltText.typeName(simple.getShapeType().getOoxmlName());

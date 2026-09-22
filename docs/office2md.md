@@ -14,7 +14,7 @@ Javaのルートパッケージは `com.convertx2x.office2md` です。`conversi
 | --- | --- |
 | 共通入口、形式選択、プロセス内の同時実行制御 | [OfficeMarkdownService](../functions/office2md/src/main/java/com/convertx2x/office2md/conversion/OfficeMarkdownService.java) |
 | Wordの本文・表・変更履歴・脚注、DrawingML/VML | [WordMarkdownConverter](../functions/office2md/src/main/java/com/convertx2x/office2md/word/WordMarkdownConverter.java)、[WordDrawings](../functions/office2md/src/main/java/com/convertx2x/office2md/word/WordDrawings.java) |
-| PowerPointのスライド・図形・ネイティブ表 | [PowerPointMarkdownConverter](../functions/office2md/src/main/java/com/convertx2x/office2md/presentation/PowerPointMarkdownConverter.java)、[PresentationRenderer](../functions/office2md/src/main/java/com/convertx2x/office2md/presentation/PresentationRenderer.java) |
+| PowerPointの本文・図形文字・保存された接続・参考画像 | [PowerPointMarkdownConverter](../functions/office2md/src/main/java/com/convertx2x/office2md/presentation/PowerPointMarkdownConverter.java)、[PresentationConnections](../functions/office2md/src/main/java/com/convertx2x/office2md/presentation/PresentationConnections.java)、[PresentationRenderer](../functions/office2md/src/main/java/com/convertx2x/office2md/presentation/PresentationRenderer.java) |
 | Excelの入力検査、ブック寿命、処理順、Markdownの組み立て | [ExcelMarkdownService](../functions/office2md/src/main/java/com/convertx2x/office2md/conversion/ExcelMarkdownService.java) |
 | 表示値、部分太字・取消線、数式キャッシュ、リンク | [CellMarkdown](../functions/office2md/src/main/java/com/convertx2x/office2md/conversion/CellMarkdown.java)、[Markdown](../functions/office2md/src/main/java/com/convertx2x/office2md/conversion/Markdown.java) |
 | 直接罫線による表検出、結合範囲の参照 | [BorderTables](../functions/office2md/src/main/java/com/convertx2x/office2md/conversion/BorderTables.java)、[MergedRanges](../functions/office2md/src/main/java/com/convertx2x/office2md/conversion/MergedRanges.java) |
@@ -34,9 +34,9 @@ Javaのルートパッケージは `com.convertx2x.office2md` です。`conversi
 | --- | --- | --- |
 | Excel | 表示シート順、`# [シート名] シート`、座標順 | 直接罫線を持つ通常表と、同じ行範囲の左右の関連値・表。非表示の行列・シートを除外 |
 | Word | `[page n]`、文書順、見出しスタイルまたはoutlineのH1〜H6、箇条書き、保存された番号 | ネイティブ表は罫線不要。挿入・移動先を残し、削除・移動元・コメント・ヘッダー・フッター・非表示文字を除外 |
-| PowerPoint | 元のスライド番号による `[page n]`、H1、タイトルの後に上→下・左→右 | ネイティブ表は罫線不要。非表示スライド・図形、ノート、ヘッダー・フッターを除外 |
+| PowerPoint | 元のスライド番号による `[page n]`、H1、本文・表、図中の項目・接続関係、参考画像 | ネイティブ表は罫線不要。非表示スライド・図形、ノート、ヘッダー・フッターを除外 |
 
-太字・安全なリンクを残し、取消線は本文・表・図形PNG・代替テキストから除去します。図形の文字を通常本文へ重複出力しません。表の先頭行を見た目から推定せず、明示ヘッダーがなければ空ヘッダーを追加します。結合の続きは空欄です。
+太字・安全なリンクを残し、取消線は本文・表・図形PNG・代替テキストから除去します。PowerPointでは図形文字を検索できる通常のMarkdownとしても出力し、Excel・Wordでは画像とaltに残します。表の先頭行を見た目から推定せず、明示ヘッダーがなければ空ヘッダーを追加します。結合の続きは空欄です。
 
 ### Excelの処理
 
@@ -59,7 +59,33 @@ Javaのルートパッケージは `com.convertx2x.office2md` です。`conversi
 
 ### PowerPointの処理
 
-各表示スライドの先頭に、元のスライド番号を使った `[page n]` を付けます。非表示スライドを除外すると番号は飛びます。`PresentationText` が通常テキスト・タイトル・表内文字を抽出し、続けてタイトルをH1にします。明示タイトルがないスライドは `# スライドN` になります。グループの子要素を個別に展開し、`PresentationRenderer` が親から継承した座標変換を適用して1図形ずつPNGへ描画します。重なりや接続で再結合しません。グループ内のテキストボックスも図の子要素として個別PNGにします。通常のテキストボックスや表はMarkdownへ残します。外部画像参照を除去し、描画対象の取消線Runを作業中のモデルから削除してからPOIで描画します。入力バイト列は変更しません。
+各表示スライドの先頭に、元のスライド番号を使った `[page n]` を付けます。非表示スライドを除外すると番号は飛びます。`PresentationText` が文字を抽出し、明示タイトルをH1、タイトルなしなら `# スライドN` にします。H2以降は追加しません。通常本文・表を上→下・左→右の順で出し、続けて「図中の項目：」「接続関係（保存情報）：」とスライド全体の参考画像を出します。図形文字は太字・リンクを保った通常のMarkdownであり、画像やaltを解釈しなくても取得できます。接続先になった通常テキストボックスも図中の項目へ移し、本文と重複させません。関係のない本文はそのまま残します。
+
+`PresentationConnections` は、表示対象の図形IDとコネクターに保存された `stCxn` / `endCxn` だけを使います。開始点の `headEnd`、終端の `tailEnd` にある `triangle` / `stealth` / `arrow` から向きを判定します。丸・ひし形の端点記号は向き不明です。近さ・横並び・重なりから接続や読む順序を推測せず、近くの文字を分岐ラベルへ結び付けません。参照の欠落・除外済みの対象・重複ID・未知の端点記号は本文で「接続関係不明」と表示し、`DIAGRAM_CONNECTION_UNRESOLVED` を記録します。双方向・無方向・循環・自己接続は保存された関係のまま扱い、実行順へ並べ替えません。
+
+`report.json` の `type: "diagram"` ブロックに `nodes` と `edges` を格納します。IDはスライド内の `shape-N` で、資料全体では `section` と組み合わせて識別します。
+
+| 項目 | 構造 |
+| --- | --- |
+| `nodes[]` | `id`、形状種類の `type`、取消線除去後の `text`、外接矩形の `x / y / width / height`。画像の文字情報は保存済みの `descr`、なければ `title` |
+| `edges[]` | コネクターの `id`、解決できた `startId / endId`、端点記号の `startArrow / endArrow`、`direction`、`status`、`reason` |
+| `direction` | `start-to-end / end-to-start / bidirectional / undirected / unknown` |
+| `status / reason` | 両端点と向きを確認できれば `resolved` と空文字の理由。それ以外は `unresolved` と `MISSING_ENDPOINT / TARGET_UNAVAILABLE / AMBIGUOUS_TARGET / UNKNOWN_ARROWHEAD` |
+| `fromId / toId` | `resolved` かつ片方向の接続だけに追加する、向きを反映した始点・終点。未解決の端点キーは省略 |
+
+グループを内部で子要素へ展開して座標を求めますが、個別PNGにはしません。`PresentationRenderer` が表示対象の対応要素を元の重なり順と親からの座標変換で描き、図を含むスライドにつき全体の参考PNGを1枚出します。図形・PNG/JPEGの回転・反転・グループ変形を反映し、PNG/JPEGは参考画像に含めます。原本を個別抽出する挙動ではありません。その他の画像形式は警告と原本添付にし、加工を適用しません。保存・継承された単色背景はテーマ参照を含めて反映し、背景指定がなければ白にします。画像・グラデーションなど未対応の背景は白へ置き換えて `UNSUPPORTED_SLIDE_BACKGROUND` を記録し、外部の背景画像は取得しません。外部画像参照と取消線Runは描画前に作業中のモデルから除外します。入力バイト列は変更しません。
+
+参考画像のaltは次の6項目のJSONで、`blocks[].metadata` にも格納します。`path` は画像ファイルへの参照です。
+
+```md
+![{"type":"図","text":"","x":0,"y":0,"width":960,"height":540}](images/diagram-0001.png)
+```
+
+参考画像の `type` は「図」、`text` は空文字、寸法は入力スライドの寸法です。各図形の情報は `nodes` から取得します。添付ファイルのリンクには個別の形状種類・文字・外接矩形のJSONを使います。座標はスライド左上を原点とし、右がXの正方向、下がYの正方向です。単位はpt（1/72インチ）で固定し、原点・単位・回転角のフィールドは出力しません。図形の外接矩形は変形後の範囲を小数3桁まで丸め、描画余白・ストロークを含みません。
+
+altにはコンパクトなJSONを埋め込み、Markdownの構文になる文字はJSONのUnicodeエスケープで保護します。例えば文字列内の `[`・引用符・バックスラッシュは `\u005B`・`\u0022`・`\u005C` です。JSON化した後に通常の `Markdown.escape` や1行化処理を重ねないでください。Markdownソースのaltにも、レンダリング後の画像の `alt` にも、そのまま `JSON.parse` を適用できます。
+
+RAGへの取り込みでは `[page n]` / H1でスライドを識別し、図中の項目と接続関係を同じチャンクへ残す構成を推奨します。分割する場合も、参照するノードの文字を接続と一緒に持たせ、`unresolved` を確定した関係として扱わないでください。画像に焼き込まれた文字にはOCRを行わず、LLMで意味を補完しません。参考PNGもPOIの対応範囲に限られ、元資料の完全な再現ではありません。[業務フローのデモPPTX](APIDocs/office2md/examples/powerpoint-rag-flow/input.pptx) と [実変換Markdown](APIDocs/office2md/examples/powerpoint-rag-flow/output/document.md) で確認できます。
 
 ## Excelの表・本文・数式で維持するルール
 
@@ -87,7 +113,7 @@ Excelでは `DrawingExtractor` の形式別分岐がDrawingML（`.xlsx`）また
 
 グループの子要素を単独の描画モデルへ展開し、それぞれの変換後座標で個別PNGを生成します。接続線も個別の図形です。重なりや接続を理由に画像を合成しません。貼り付け画像はそれぞれ原本を抽出し、図形と同じキャンバスへ描き込みません。背景のセル文字や罫線も描きません。単独で抽出する画像は元データなので、切り抜き前の領域も含みます。
 
-図形の代替テキストは共通の `DrawingAltText` を使い、例えば `![長方形、時計回り0度、承認、基準=スライド左上、外接矩形 X=20pt、Y=100pt、幅=120pt、高さ=40pt](images/diagram-0001.png)` とします。図形ごとに1つの画像参照を出力し、文字がない形も種類・角度・座標を残します。形の種類は保存されたpreset/型から求め、未知なら識別子を残します。角度は0〜360度へ正規化します。反転や非等方拡大を含み一つの回転角では表せない場合は、その条件を明記します。改行やMarkdown記号を無害化してから画像リンクへ埋め込みます。`DrawingAltText.geometry` は変形後の外接矩形をptで定型出力します。描画余白やストロークを含めず、未知の位置はnullを渡し、PNG生成用の仮座標を表示しません。Excelはシート左上、PPTXはスライド左上が基準です。Wordの本文配置指定とローカル座標は別々に説明し、ページ上の絶対位置を推測しません。
+Excel・Wordの代替テキストは `DrawingAltText` を使い、例えば `![長方形、時計回り0度、承認、基準=シート左上、外接矩形 X=20pt、Y=100pt、幅=120pt、高さ=40pt](images/diagram-0001.png)` とします。図形ごとに1つの画像参照を出力し、文字がない形も種類・角度・座標を残します。形の種類は保存されたpreset/型から求め、未知なら識別子を残します。角度は0〜360度へ正規化します。反転や非等方拡大を含み一つの回転角では表せない場合は、その条件を明記します。改行やMarkdown記号を無害化してから画像リンクへ埋め込みます。`DrawingAltText.geometry` は変形後の外接矩形をptで定型出力します。描画余白やストロークを含めず、未知の位置はnullを渡し、PNG生成用の仮座標を表示しません。Excelはシート左上が基準です。Wordの本文配置指定とローカル座標は別々に説明し、ページ上の絶対位置を推測しません。PowerPointの画像・図形は前述のJSON形式を使います。
 
 Wordの `WordDrawings` はDrawingML/VMLを読み、全段落の除去済み文字と先頭の代表書式を使います。混在書式・独自余白・文字だけの回転は近似として警告し、図形内リンクの別出力は未対応です。共有の `NativeDrawingRenderer` を通してExcelと同じ基本図形描画を使います。未対応のグラフ・SmartArt・OLEなどを外部取得や別アプリ実行で補完しません。PowerPointもグラフ・SmartArt・数式オブジェクトの忠実な描画は対象外です。
 
@@ -111,7 +137,7 @@ Excelとは異なる組版なので、フォント置換後の字幅・改行位
 
 `ConversionWorkspace` が出力ファイル名、SHA-256とバイト比較による同一カテゴリ内の重複排除、件数・バイト数の上限、診断を管理します。入力由来のシート名・画像名を出力パスに使いません。上限超過を警告へ落として途中成果物を成功扱いにする変更は避けてください。
 
-`report.json` は `specVersion: 2` です。`source.format` は入力拡張子、`sectionKind` は `sheet` / `slide` / `document`、`sectionCount` は出力したセクション数です。診断やブロックの `section` は形式別の位置名です。`blocks` は元の位置・範囲との対応を持ち、ExcelではMarkdown行番号も記録し、表には元の行列番号・ヘッダー判定・結合範囲を付けます。`assets` はファイルのパス・MIME・サイズ・SHA-256です。画像の加工・図形IDなどは診断へ記録されるものもあり、専用の構造化フィールドが常に存在する前提で読み取らないでください。レポート形式を変える場合はUIとQueueの成果物取得も確認します。
+`report.json` は `specVersion: 2` です。`source.format` は入力拡張子、`sectionKind` は `sheet` / `slide` / `document`、`sectionCount` は出力したセクション数です。診断やブロックの `section` は形式別の位置名です。`blocks` は元の位置・範囲との対応を持ち、ExcelではMarkdown行番号も記録し、表には元の行列番号・ヘッダー判定・結合範囲を付けます。PowerPointの `diagram` ブロックは `nodes / edges`、参考画像があれば `path / metadata` を持ちます。添付ファイルにも `path / metadata` を付けます。`assets` はファイルのパス・MIME・サイズ・SHA-256です。フィールドは形式とブロック種別ごとに読み取ってください。レポート形式を変える場合はUIとQueueの成果物取得も確認します。
 
 - 同期HTTPは `OfficeMarkdownService.convert` の結果を `ConversionResult.zipBytes()` でZIP化する。最終レスポンスは上限付きのメモリーバッファで、HTTPストリーミングではない。
 - HTTPからの非同期受付は入力と状態を保存してからQueueへ送る。直接Queueも同じ `AzureJobService.process` と変換コアへ入る。
@@ -131,8 +157,8 @@ Queue JSONは [ConversionJobRequest](../functions/office2md/src/main/java/com/co
 | --- | --- | --- |
 | 共通の形式選択、メタデータ・設定互換 | `OfficeMarkdownService`、`AppConfig` | [OfficeMarkdownServiceTest](../functions/office2md/src/test/java/com/convertx2x/office2md/conversion/OfficeMarkdownServiceTest.java) |
 | Wordの構造・履歴・番号・脚注・図形 | `word` パッケージ | [WordMarkdownConverterTest](../functions/office2md/src/test/java/com/convertx2x/office2md/word/WordMarkdownConverterTest.java) |
-| PPTXの順序・個別図形・座標・取消線PNG・外部参照 | `presentation` パッケージ | [PowerPointMarkdownConverterTest](../functions/office2md/src/test/java/com/convertx2x/office2md/presentation/PowerPointMarkdownConverterTest.java) |
-| 図形の種類・回転角・外接矩形・代替テキスト | `DrawingAltText`、形式別図形抽出 | [DrawingAltTextTest](../functions/office2md/src/test/java/com/convertx2x/office2md/drawing/DrawingAltTextTest.java)、[ExcelDrawingAltTextTest](../functions/office2md/src/test/java/com/convertx2x/office2md/drawing/ExcelDrawingAltTextTest.java) |
+| PPTXの本文・図形文字・接続・参考PNG・JSON・座標・取消線・外部参照 | `presentation` パッケージ | [PowerPointMarkdownConverterTest](../functions/office2md/src/test/java/com/convertx2x/office2md/presentation/PowerPointMarkdownConverterTest.java)、[PresentationConnectionsTest](../functions/office2md/src/test/java/com/convertx2x/office2md/presentation/PresentationConnectionsTest.java) |
+| Excel・Wordの図形種類・回転角・外接矩形・代替テキスト | `DrawingAltText`、形式別図形抽出 | [DrawingAltTextTest](../functions/office2md/src/test/java/com/convertx2x/office2md/drawing/DrawingAltTextTest.java)、[ExcelDrawingAltTextTest](../functions/office2md/src/test/java/com/convertx2x/office2md/drawing/ExcelDrawingAltTextTest.java) |
 | 表検出・左右展開・結合・読み順 | `BorderTables`、`TableExpansion`、`MergedRanges`、`ExcelMarkdownService` | [TableExpansionTest](../functions/office2md/src/test/java/com/convertx2x/office2md/conversion/TableExpansionTest.java)、[ExcelMarkdownServiceTest](../functions/office2md/src/test/java/com/convertx2x/office2md/conversion/ExcelMarkdownServiceTest.java) |
 | 表示形式・太字・リンク・取消線 | `CellMarkdown`、`Markdown` | 同上の表示値・書式・リンク・削除優先ケース |
 | 数式処理・外部参照 | `CellMarkdown`、ブック読み込み | [ExternalFormulaIsolationTest](../functions/office2md/src/test/java/com/convertx2x/office2md/conversion/ExternalFormulaIsolationTest.java) |

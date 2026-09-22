@@ -1,9 +1,9 @@
 {
   "specVersion" : 2,
   "source" : {
-    "filename" : "input.pptx",
-    "sha256" : "69aac8af15e6d87292b6fd6d085ff5666d42029e125033cc83560df2e597f97e",
-    "format" : "pptx"
+    "format" : "pptx",
+    "sha256" : "7ccc7c840c007dd2916a813228a1a9d47a94b8a86b254f07634b3d0da8512d84",
+    "filename" : "input.pptx"
   },
   "sectionKind" : "slide",
   "sectionCount" : 4,
@@ -12,88 +12,124 @@
     "section" : "スライド2",
     "range" : "shape-3",
     "message" : "Markdown表では結合の開始セルだけに内容を残します。"
+  }, {
+    "code" : "DIAGRAM_CONNECTION_UNRESOLVED",
+    "section" : "スライド3",
+    "range" : "shape-6",
+    "message" : "図形の接続関係を確定できません。接続先IDが保存されていません。配置からは推測しません。"
   } ],
   "information" : [ ],
   "blocks" : [ {
-    "type" : "heading",
+    "range" : "slide-1",
+    "section" : "スライド1",
     "level" : 1,
-    "section" : "スライド1",
-    "range" : "slide-1"
+    "type" : "heading"
   }, {
     "type" : "paragraph",
-    "section" : "スライド1",
-    "range" : "shape-3"
+    "range" : "shape-3",
+    "section" : "スライド1"
   }, {
     "type" : "paragraph",
-    "section" : "スライド1",
-    "range" : "shape-4"
+    "range" : "shape-4",
+    "section" : "スライド1"
   }, {
     "type" : "paragraph",
-    "section" : "スライド1",
-    "range" : "shape-5"
+    "range" : "shape-5",
+    "section" : "スライド1"
   }, {
-    "type" : "heading",
-    "level" : 1,
+    "range" : "slide-2",
     "section" : "スライド2",
-    "range" : "slide-2"
+    "level" : 1,
+    "type" : "heading"
   }, {
     "type" : "table",
-    "section" : "スライド2",
-    "range" : "shape-3"
+    "range" : "shape-3",
+    "section" : "スライド2"
   }, {
-    "type" : "heading",
+    "range" : "slide-3",
+    "section" : "スライド3",
     "level" : 1,
-    "section" : "スライド3",
-    "range" : "slide-3"
-  }, {
-    "path" : "images/diagram-0001.png",
-    "type" : "diagram",
-    "section" : "スライド3",
-    "range" : "shape-4"
-  }, {
-    "path" : "images/diagram-0002.png",
-    "type" : "diagram",
-    "section" : "スライド3",
-    "range" : "shape-5"
-  }, {
-    "path" : "images/diagram-0003.png",
-    "type" : "diagram",
-    "section" : "スライド3",
-    "range" : "shape-6"
+    "type" : "heading"
   }, {
     "type" : "paragraph",
+    "range" : "shape-8",
+    "section" : "スライド3"
+  }, {
+    "type" : "diagram",
     "section" : "スライド3",
-    "range" : "shape-8"
+    "range" : "slide-3-diagram",
+    "nodes" : [ {
+      "type" : "角丸長方形",
+      "text" : "入力ファイル",
+      "x" : 54.432,
+      "y" : 158.065,
+      "width" : 291.136,
+      "height" : 163.871,
+      "id" : "shape-4"
+    }, {
+      "type" : "楕円",
+      "text" : "Markdownと画像",
+      "x" : 540,
+      "y" : 170,
+      "width" : 280,
+      "height" : 140,
+      "id" : "shape-5"
+    } ],
+    "edges" : [ {
+      "id" : "shape-6",
+      "startArrow" : "none",
+      "endArrow" : "none",
+      "direction" : "undirected",
+      "status" : "unresolved",
+      "reason" : "MISSING_ENDPOINT"
+    } ],
+    "path" : "images/diagram-0001.png",
+    "metadata" : {
+      "type" : "図",
+      "text" : "",
+      "x" : 0,
+      "y" : 0,
+      "width" : 960,
+      "height" : 540
+    }
   }, {
-    "type" : "heading",
+    "range" : "slide-4",
+    "section" : "スライド4",
     "level" : 1,
-    "section" : "スライド4",
-    "range" : "slide-4"
+    "type" : "heading"
   }, {
-    "path" : "images/image-0001.png",
-    "type" : "image",
+    "type" : "diagram",
     "section" : "スライド4",
-    "range" : "shape-3"
+    "range" : "slide-4-diagram",
+    "nodes" : [ {
+      "type" : "画像",
+      "text" : "紺色背景と紫色の円",
+      "x" : 80,
+      "y" : 130,
+      "width" : 640,
+      "height" : 360,
+      "id" : "shape-3"
+    } ],
+    "edges" : [ ],
+    "path" : "images/diagram-0002.png",
+    "metadata" : {
+      "type" : "図",
+      "text" : "",
+      "x" : 0,
+      "y" : 0,
+      "width" : 960,
+      "height" : 540
+    }
   } ],
   "assets" : [ {
-    "sha256" : "359f07615f21b7b8fb418c158cf22e91f094eb5a4d1a10ae46966c6ae4f0dcdc",
-    "sizeBytes" : 8547,
+    "sha256" : "6158174f21d0bba79c3aee56a3c53950230aa1ace070c32677f5dad23cd42569",
+    "path" : "images/diagram-0001.png",
     "contentType" : "image/png",
-    "path" : "images/diagram-0001.png"
+    "sizeBytes" : 50902
   }, {
-    "sha256" : "32608549e9483055c3f66ddb9c4cb37c461c4ec3374c4b819af64eaa3a05a50e",
-    "sizeBytes" : 9761,
+    "sha256" : "8e5d90496163718f3d762db1d9613721d5121f20cc88736af9e98f79caa4333f",
+    "path" : "images/diagram-0002.png",
     "contentType" : "image/png",
-    "path" : "images/diagram-0002.png"
-  }, {
-    "sha256" : "1df603d87d3c0deb749323ff7a04b03ba7f7c08425079c90b51319915428d18a",
-    "sizeBytes" : 156,
-    "contentType" : "image/png",
-    "path" : "images/diagram-0003.png"
-  }, {
-    "sha256" : "dee533bdc15da1508ed9dde21cb8a0b7037e31683ba70003e38b87a50f91b298",
-    "sizeBytes" : 1327,
-    "contentType" : "image/png",
-    "path" : "images/image-0001.png"
+    "sizeBytes" : 21098
   } ]
 }

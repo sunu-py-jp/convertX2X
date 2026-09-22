@@ -23,7 +23,7 @@
 <p>Excel・Word・PowerPointを、文章として扱えるMarkdownと、埋め込み画像・図形の画像に変換します。Java 21 / Apache POIを使う独立したAzure Functionsアプリです。同期HTTP・非同期HTTP・直接Queueは同じ変換コアを利用します。</p>
 <div class="cards"><a class="card" href="http.html#convert"><h3>同期HTTP</h3><p>ファイルを送信し、その応答でZIPを受け取る。</p></a><a class="card" href="jobs.html#submit"><h3>非同期HTTP</h3><p>ジョブを登録し、状態を確認して成果物を取得する。</p></a><a class="card" href="queue.html#message"><h3>直接Queue</h3><p>外部システムからBlob参照のJSONを投入する。</p></a></div>
 <h2 id="formats">対応形式と読み取る構造</h2>
-<div class="table-wrap"><table><thead><tr><th scope="col">項目</th><th scope="col">Excel</th><th scope="col">Word</th><th scope="col">PowerPoint</th></tr></thead><tbody><tr><td>拡張子</td><td><code>.xlsx / .xls</code></td><td><code>.docx</code></td><td><code>.pptx</code></td></tr><tr><td>区切り・見出し</td><td><code># [シート名] シート</code></td><td><code>[page n]</code>と明示的な見出しH1〜H6</td><td><code>[page n]</code>の後にタイトルのH1</td></tr><tr><td>読む順序</td><td>シート順、セル・図形の位置順</td><td>本文XMLの順序。保存済み・明示改ページを表示</td><td>タイトルを優先し、その後は上→下・左→右</td></tr><tr><td>表</td><td>直接セル罫線から通常表を検出し、同じ行範囲の左右の値・表を取り込む</td><td>罫線がなくてもネイティブ表を変換</td><td>罫線がなくてもネイティブ表を変換</td></tr><tr><td>除外</td><td>非表示シート・行・列、結合の続き</td><td>削除・移動元・非表示文字・コメント・ヘッダー・フッター</td><td>非表示スライド・図形、ノート・コメント・ヘッダー・フッター</td></tr></tbody></table></div>
+<div class="table-wrap"><table><thead><tr><th scope="col">項目</th><th scope="col">Excel</th><th scope="col">Word</th><th scope="col">PowerPoint</th></tr></thead><tbody><tr><td>拡張子</td><td><code>.xlsx / .xls</code></td><td><code>.docx</code></td><td><code>.pptx</code></td></tr><tr><td>区切り・見出し</td><td><code># [シート名] シート</code></td><td><code>[page n]</code>と明示的な見出しH1〜H6</td><td><code>[page n]</code>の後にタイトルのH1</td></tr><tr><td>読む順序</td><td>シート順、セル・図形の位置順</td><td>本文XMLの順序。保存済み・明示改ページを表示</td><td>タイトル、本文・表、図中の項目・接続関係、参考画像</td></tr><tr><td>表</td><td>直接セル罫線から通常表を検出し、同じ行範囲の左右の値・表を取り込む</td><td>罫線がなくてもネイティブ表を変換</td><td>罫線がなくてもネイティブ表を変換</td></tr><tr><td>除外</td><td>非表示シート・行・列、結合の続き</td><td>削除・移動元・非表示文字・コメント・ヘッダー・フッター</td><td>非表示スライド・図形、ノート・コメント・ヘッダー・フッター</td></tr></tbody></table></div>
 <div class="callout warning"><p>旧形式のWord <code>.doc</code> とPowerPoint <code>.ppt</code>、PDF、マクロ有効形式・テンプレート、暗号化ファイルは対象外です。拡張子だけでなく、実際のファイル内容も検査します。</p>
 </div>
 <h2 id="text-tables">文字・表・変更履歴</h2>
@@ -37,19 +37,38 @@ report.json
 images/image-0001.png
 images/image-0002.jpg
 images/diagram-0001.png</code></pre>
-<div class="table-wrap"><table><thead><tr><th scope="col">ファイル</th><th scope="col">内容</th></tr></thead><tbody><tr><td><code>document.md</code></td><td>UTF-8 Markdown。画像は <code>images/...</code> の相対パスで参照</td></tr><tr><td><code>report.json</code></td><td>変換情報・警告・元の位置と出力の対応・画像一覧</td></tr><tr><td><code>images/image-NNNN.*</code></td><td>埋め込み画像。非対応の画像形式は元ファイルの添付になる場合がある</td></tr><tr><td><code>images/diagram-NNNN.png</code></td><td>対応する図形を個別に描画した画像</td></tr></tbody></table></div>
+<div class="table-wrap"><table><thead><tr><th scope="col">ファイル</th><th scope="col">内容</th></tr></thead><tbody><tr><td><code>document.md</code></td><td>UTF-8 Markdown。画像は <code>images/...</code> の相対パスで参照</td></tr><tr><td><code>report.json</code></td><td>変換情報・警告・元の位置と出力の対応・画像一覧。PowerPointは図形と接続の構造も含む</td></tr><tr><td><code>images/image-NNNN.*</code></td><td>Excel・Wordの埋め込み画像、または非対応画像形式の原本添付</td></tr><tr><td><code>images/diagram-NNNN.png</code></td><td>Excel・Wordの個別図形。PowerPointではスライド全体の参考画像</td></tr></tbody></table></div>
 <p>同期のZIPには画像がなくてもMarkdownとreportが入ります。非同期では各ファイルを個別Blobとして保存し、ZIPは取得時に生成します。同一カテゴリの同じ画像データは共有しますが、配置ごとのMarkdown参照と説明は残ります。</p>
 <h2 id="report">report.json の構造</h2>
 <div class="table-wrap"><table><thead><tr><th scope="col">フィールド</th><th scope="col">意味</th></tr></thead><tbody><tr><td><code>specVersion</code></td><td><code>2</code></td></tr><tr><td><code>source</code></td><td>入力の <code>filename / sha256 / format</code></td></tr><tr><td><code>sectionKind</code></td><td><code>sheet / document / slide</code></td></tr><tr><td><code>sectionCount</code></td><td>出力に含むExcelシート数・PowerPointスライド数。Wordは文書数（通常1）</td></tr><tr><td><code>warnings / information</code></td><td>コード・対象位置・説明。除外や近似の詳細を確認する</td></tr><tr><td><code>blocks</code></td><td>元の <code>section / range</code> と出力ブロックの対応。項目は形式で異なる</td></tr><tr><td><code>assets</code></td><td>生成パス・MIME型・サイズ・SHA-256</td></tr></tbody></table></div>
-<h2 id="drawings">図形は個別の画像へ</h2>
-<p>グループの子要素も個別に画像化します。横並び・重なり・接続を理由に一枚へ合成しません。通常のテキストや表はMarkdownに残し、図形内の文字は画像に含めます。図形の文字を本文に二重出力しません。</p>
-<p>Excelは長方形・角丸・楕円・線・一部矢印・テキストボックスをJava2Dで近似描画します。Wordの図形文字は代表書式による簡易描画で、図形内リンクの別出力は未対応です。PowerPointはPOIの描画範囲に依存します。グラフ・SmartArt・数式オブジェクトの描画は対象外です。</p>
-<p>Excel・Wordの埋め込み画像は原本を取り出し、切り抜き・回転・反転を再現しません。PowerPointでは、回転・切り抜き付きPNG/JPEGを描画画像へ変換します。利用可能な元フォントを優先し、不足時は同梱Noto Sans/Serif・Regular/Boldへ置換します。完全に同じ字幅・改行位置を保証するものではありません。</p>
+<p>PowerPointの <code>type: "diagram"</code> ブロックに図形の <code>nodes</code> と接続の <code>edges</code> を格納します。参考画像があれば <code>path</code> とaltのJSONに対応する <code>metadata</code> も持ちます。添付ファイルは個別の <code>path / metadata</code> を持ちます。</p>
+<div class="table-wrap"><table><thead><tr><th scope="col">図のフィールド</th><th scope="col">意味</th></tr></thead><tbody><tr><td><code>nodes[]</code></td><td><code>id / type / text / x / y / width / height</code>。図形ID・種類・取消線除去後の文字・変形後の外接矩形</td></tr><tr><td><code>edges[]</code></td><td><code>id / startId / endId / startArrow / endArrow / direction / status / reason</code>。未解決の端点キーは省略</td></tr><tr><td><code>direction</code></td><td><code>start-to-end / end-to-start / bidirectional / undirected / unknown</code></td></tr><tr><td><code>status / reason</code></td><td><code>resolved</code> なら理由は空文字。<code>unresolved</code> なら <code>MISSING_ENDPOINT / TARGET_UNAVAILABLE / AMBIGUOUS_TARGET / UNKNOWN_ARROWHEAD</code></td></tr><tr><td><code>fromId / toId</code></td><td>解決済みで片方向の接続だけに追加する、矢印の向きを反映した始点・終点</td></tr></tbody></table></div>
+<p><code>shape-N</code> はスライド内のIDです。資料全体では <code>section</code> と組み合わせて識別してください。</p>
+<h2 id="drawings">PowerPointの図形文字と接続を本文へ</h2>
+<p>PowerPointでは通常本文・表の後に「図中の項目：」「接続関係（保存情報）：」をMarkdownの文字として出し、スライド全体の参考画像を添えます。図形内の太字・リンクも残り、画像のaltを取り出さなくても検索できます。H2以降は追加しません。接続先の通常テキストボックスも図中の項目へ移し、関係のない本文はそのまま残します。</p>
+<pre><code>図中の項目：
+
+- shape-3（長方形）：申請
+- shape-4（ひし形）：確認
+
+接続関係（保存情報）：
+
+- shape-5：shape-3「申請」 → shape-4「確認」</code></pre>
+<p>接続は保存されたコネクターの接続先IDと矢印から生成します。三角・ステルス・矢印の端点記号で向きを判定し、双方向と向きなしも区別します。丸・ひし形の端点記号は向き不明です。近さから接続を推測せず、近くの文字を分岐ラベルへ結び付けません。参照の欠落・除外済みの対象・ID重複・向き不明の端点記号は、本文に「接続関係不明」、レポートに <code>DIAGRAM_CONNECTION_UNRESOLVED</code> を残します。</p>
+<p>参考画像は図形を個別に分割せず、図を含むスライドにつき1枚です。対応する表示要素を、元の重なり順・回転・反転・親グループの変形を反映して描画します。PNG/JPEGは切り抜きなどを反映してこの画像へ含め、個別の原本抽出は行いません。それ以外の画像形式は原本添付と警告にします。保存・継承された単色背景はテーマ参照を含めて反映し、背景指定がなければ白にします。画像・グラデーションなど未対応の背景は白へ置き換え、<code>UNSUPPORTED_SLIDE_BACKGROUND</code> を記録します。外部の背景画像は取得しません。</p>
+<p>Excel・Wordは従来どおりグループの子要素まで個別に画像化し、埋め込み画像は原本を取り出します。Excelは基本図形をJava2Dで近似描画し、Wordの図形文字は代表書式による簡易描画です。Wordの図形内リンクの別出力は未対応です。</p>
+<div class="callout"><p><strong>RAGに取り込む場合：</strong><code>[page n]</code> / H1を区切りにし、図中の項目と接続関係を同じチャンクへ残す構成を推奨します。分割する場合も接続と参照先の文字を一緒に持たせ、未解決の関係を確定情報として扱わないでください。<a href="examples/powerpoint-rag-flow/input.pptx">デモPPTX</a> と <a href="examples/powerpoint-rag-flow/output/document.md">実変換Markdown</a> で確認できます。</p></div>
+<p>画像内に焼き込まれた文字にはOCRを行いません。保存済みの画像説明は文字で残せますが、説明がなければ文字情報は空です。LLMによる補完もありません。参考画像はPOIの描画範囲に限られ、グラフ・SmartArt・数式オブジェクトなどは対象外です。利用可能な元フォントを優先し、不足時は同梱Notoへ置換しますが、字幅・改行位置の完全一致は保証しません。</p>
 <h2 id="coordinates">座標・サイズ・基準の説明</h2>
-<pre><code>![長方形、時計回り0度、申請、基準=スライド左上、外接矩形 X=20pt、Y=100pt、幅=120pt、高さ=40pt](images/diagram-0001.png)</code></pre>
+<p>PowerPointの参考画像のaltは、スライド全体の範囲を表す6項目のJSONです。回転は画像へ反映し、回転角はJSONに含めません。図形ごとの情報は <code>nodes</code> を読み取ります。</p>
+<pre><code>![{"type":"図","text":"","x":0,"y":0,"width":960,"height":540}](images/diagram-0001.png)</code></pre>
+<div class="table-wrap"><table><thead><tr><th scope="col">参考画像のJSON</th><th scope="col">意味</th></tr></thead><tbody><tr><td><code>type / text</code></td><td>「図」と空文字列。個別の種類・文字は <code>nodes[].type / text</code> に保持</td></tr><tr><td><code>x / y</code></td><td>0（スライド左上）</td></tr><tr><td><code>width / height</code></td><td>入力スライドの寸法</td></tr></tbody></table></div>
+<p>PowerPointの座標はスライド左上を原点とし、右がXの正方向、下がYの正方向です。単位はpt（1/72インチ）で固定し、原点・単位のフィールドは出力しません。</p>
+<p>altを取得して <code>JSON.parse(alt)</code> で読み取れます。角括弧・文字内の引用符・バックスラッシュなどは <code>\u005B</code>・<code>\u0022</code>・<code>\u005C</code> のようなJSONのUnicodeエスケープで出力するため、Markdownのエスケープを別途解除する必要はありません。レンダリング後の画像の <code>alt</code> もパースできます。直接処理する場合は、<code>report.json</code> の <code>blocks[].metadata</code> に同じ情報があります。</p>
+<p>添付ファイルのリンクには個別の形状種類・文字・外接矩形のJSONを付けます。Excel・Wordのaltは従来どおり、図形種類・時計回りの回転角・文字・座標・サイズ・基準を含む日本語の説明文で、図形文字を通常本文へ二重に出しません。</p>
 <div class="table-wrap"><table><thead><tr><th scope="col">形式</th><th scope="col">座標の意味</th></tr></thead><tbody><tr><td>Excel</td><td>シート左上。セルの幅・高さから算出するため、Excelの表示と丸めの差が出る場合がある</td></tr><tr><td>PowerPoint</td><td>スライド左上</td></tr><tr><td>Word</td><td>本文内のローカル座標と、浮動図形の水平・垂直基準・保存オフセットを区別する。ページ絶対位置は未算出</td></tr></tbody></table></div>
 <p>右がXの正、下がYの正、単位はpt（1/72インチ）、小数3桁まで表示します。外接矩形は回転・反転・グループ変形後の範囲で、線幅やPNGの余白は含みません。回転前の寸法やPNGのピクセル数とは別です。不明な位置は仮の0座標で補わず「不明」「未算出」とします。説明は保存値から定型生成し、LLMやOCRは使いません。</p>
-<div class="callout"><p>座標は説明用です。MarkdownやPlaygroundは画像を文書の流れに並べるため、元資料の横並び・重なり・回り込みを再現しません。Excelで表と重なる図形は表の後、Wordは本文XML順に配置します。</p>
+<div class="callout"><p>座標は構造情報です。MarkdownやPlaygroundは自由配置を行わず、PowerPointの配置は参考画像で確認します。Excelで表と重なる図形は表の後、Wordは本文XML順に配置します。</p>
 </div>
 <h2 id="external">数式・外部参照は実行しない</h2>
 <p>Excelの数式は関数名にかかわらず再計算しません。保存済みの値があれば古い値やエラーもそのまま扱い、欠落を外部取得で補いません。XLSXでキャッシュがなければ式をエスケープして残し、<code>FORMULA_CACHE_MISSING</code> を記録します。式全体が <code>IMAGE(...)</code> なら画像を取得せず未対応表示にします。</p>
@@ -58,7 +77,7 @@ images/diagram-0001.png</code></pre>
 <p>ローカル既定URLは <code>http://localhost:7072/api/playground</code> です。匿名で画面を開けますが、Azureの変換APIにはホストキーが必要です。入力HTMLを実行せず、画像は成果物内だけを表示します。「待機を停止」は通信の停止であり、ジョブのキャンセルではありません。</p>
 <p><a href="../../../functions/office2md/samples/README.md">サンプルと再生成手順</a>・<a href="../../../docs/office2md.md">開発者ガイド</a>・<a href="settings.html#limits">全上限</a></p>
 
-<footer class="page-footer"><p>最終確認：2026-09-19。<a href="../../../functions/office2md/docs/usage.md">利用ガイド</a>と<a href="../../../functions/office2md/src/main/java/com/convertx2x/office2md/ConversionFunctions.java">HTTP実装</a>に基づく資料です。</p></footer>
+<footer class="page-footer"><p>最終確認：2026-09-22。<a href="../../../functions/office2md/docs/usage.md">利用ガイド</a>と<a href="../../../functions/office2md/src/main/java/com/convertx2x/office2md/ConversionFunctions.java">HTTP実装</a>に基づく資料です。</p></footer>
 </article>
 <aside class="toc" aria-label="このページの目次"><p class="toc-title">このページの内容</p><nav id="page-toc"></nav></aside>
 </div>
