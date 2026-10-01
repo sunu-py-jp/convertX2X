@@ -32,6 +32,14 @@
       ['queue', 'Queueから直接依頼', 'queue.html', 'json blob storage 外部システム'],
       ['settings', '設定・上限・エラー', 'settings.html', '環境変数 制限 認証 capabilities config playground 413 503']
     ]},
+    {id: 'pdf', title: 'Office → PDF', subtitle: 'XLSX · XLS · DOCX · PPTX · PPT', icon: 'office', folder: 'office2pdf', items: [
+      ['overview', '機能概要・変換ルール', 'index.html', 'excel word powerpoint pdf document intelligence 正規化'],
+      ['examples', '実際の変換例', 'examples.html', 'サンプル 変換結果 excel pdf report ダウンロード'],
+      ['http', '同期HTTPで変換', 'http.html', 'post convert curl ファイル pdf'],
+      ['jobs', '非同期HTTP・成果物取得', 'jobs.html', 'jobs get post result report archive status ジョブ 状態'],
+      ['queue', 'Queueから直接依頼', 'queue.html', 'json blob storage 外部システム'],
+      ['settings', '設定・上限・エラー', 'settings.html', '環境変数 制限 認証 capabilities config playground 413 503']
+    ]},
     {id: 'movie', title: 'Movie → Audio', subtitle: 'MOVIE · M4A · WAV', icon: 'audio', folder: 'movie2audio', items: [
       ['overview', '機能概要・出力形式', 'index.html', 'movie2audio 動画 音声 aac m4a mp4 ffmpeg stream copy 再エンコード'],
       ['examples', '実際の変換例', 'examples.html', 'サンプル スクリーンショット 変換結果 複雑 動画 音声 トラック m4a ダウンロード 再生'],

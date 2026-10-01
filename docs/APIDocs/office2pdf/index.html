@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>概要と変換ルール | office2pdf API</title><link rel="stylesheet" href="../assets/styles.css"><script src="../assets/app.js" defer></script></head>
+<body data-page="pdf-overview"><a class="skip-link" href="#main-content">本文へ移動</a><div id="site-header"></div><aside id="sidebar" class="sidebar" aria-label="APIナビゲーション"></aside><div id="menu-overlay" class="menu-overlay" hidden></div>
+<main id="main-content" class="main-content" tabindex="-1"><div class="page-layout"><article class="article">
+<p class="eyebrow">Office → PDF</p><h1>概要と変換ルール</h1>
+<p class="lead">Office文書の内容を、Azure AI Document Intelligenceへ渡しやすい正規化PDFにします。</p>
+<div class="callout"><strong>従量課金Functions向けの純Java実装です。</strong><br>Apache POIとPDFBoxを使い、LibreOffice・Microsoft Office・ネイティブ実行ファイルを必要としません。</div>
+<h2 id="overview">できること</h2>
+<div class="cards"><a class="card" href="http.html"><h3>同期HTTP</h3><p>Officeファイルを送り、同じ応答でPDFを受け取る。</p></a><a class="card" href="jobs.html"><h3>非同期HTTP</h3><p>ジョブを登録し、PDF・report・ZIPを取得する。</p></a><a class="card" href="queue.html"><h3>直接Queue</h3><p>入力Blobを参照するJSONを外部システムから送る。</p></a></div>
+<h2 id="formats">対応形式</h2>
+<div class="table-wrap"><table><thead><tr><th>入力</th><th>PDF化の方法</th><th>区切り</th></tr></thead><tbody>
+<tr><td><code>.xlsx / .xls</code></td><td>表示シートの値を検索可能な表へ再配置。空列を挟む左右の関連列も同じ表へ取り込む</td><td>表示シート</td></tr>
+<tr><td><code>.docx</code></td><td>本文・見出し・箇条書き・表・対応画像を本文順に再配置</td><td>1文書</td></tr>
+<tr><td><code>.pptx / .ppt</code></td><td>表示スライドをJava2Dで描画し、1スライドをPDFの1ページへ配置</td><td>表示スライド</td></tr>
+</tbody></table></div>
+<p>Excel数式は再計算せず保存済み値を使います。外部参照やリンク先は取得しません。暗号化ファイル、Wordの旧形式<code>.doc</code>、マクロ有効形式は対象外です。</p>
+<h2 id="output">出力</h2>
+<pre><code>document.pdf
+report.json</code></pre>
+<p>同期HTTPは<code>document.pdf</code>を直接返します。非同期と直接QueueはPDFとreportをBlobへ保存し、取得用ZIPも提供します。reportには入力・PDFのSHA-256、形式、ページ数、シートまたはスライド数、警告を記録します。</p>
+<h2 id="layout">再現範囲</h2>
+<p>PDFは内容抽出用の中間形式で、Officeの印刷結果と完全には一致しません。ExcelとWordは文字・表が検索可能です。PowerPointはスライド全体が画像になるため、後段のDocument Intelligence OCRで文字を読み取ります。SmartArt、グラフ、複雑な効果、フォント差により見た目が変わる場合があります。</p>
+<h2 id="limits">固定の内容個数上限はなし</h2>
+<p>シート、行、列、段落、表、スライド、図形の個数に既定の固定上限はありません。入力・出力バイト数、1画像の画素数、任意のPDFページ上限だけを設定します。既定のページ上限は<code>0</code>（無制限）です。詳細は<a href="settings.html">設定・上限</a>を参照してください。</p>
+<h2 id="playground">Playground</h2><p>ローカル既定URLは<code>http://localhost:7074/api/playground</code>です。ファイル選択、同期・非同期変換、PDFプレビューと保存ができます。</p>
+<footer class="page-footer"><p>最終確認：2026-10-02。<a href="../../../functions/office2pdf/docs/usage.md">利用ガイド</a>と実装に基づく資料です。</p></footer>
+</article><aside class="toc" aria-label="このページの目次"><p class="toc-title">このページの内容</p><nav id="page-toc"></nav></aside></div></main></body></html>

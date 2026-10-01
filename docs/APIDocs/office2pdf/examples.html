@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>実際の変換例 | office2pdf API</title><link rel="stylesheet" href="../assets/styles.css"><script src="../assets/app.js" defer></script></head>
+<body data-page="pdf-examples"><a class="skip-link" href="#main-content">本文へ移動</a><div id="site-header"></div><aside id="sidebar" class="sidebar"></aside><div id="menu-overlay" class="menu-overlay" hidden></div><main id="main-content" class="main-content" tabindex="-1"><div class="page-layout"><article class="article">
+<p class="eyebrow">Office → PDF</p><h1>実際の変換例</h1><p class="lead">実装した変換コアで生成したExcel入力・PDF・reportをそのまま確認できます。</p>
+<h2 id="excel">左右の関連列を一つの表へ</h2><p>入力Excelは、通常表の右側に空列を挟んで「担当」「補足」を置いています。変換では値のある列を詰め、同じ行の関連情報を一つの検索可能な表としてPDFへ配置します。2つ目の「概要」シートを含むため、PDFは2ページです。</p>
+<div class="cards"><a class="card" href="../../../functions/office2pdf/samples/excel-normalized/input.xlsx"><h3>input.xlsx</h3><p>2シートの入力ブックをダウンロード</p></a><a class="card" href="../../../functions/office2pdf/samples/excel-normalized/document.pdf"><h3>document.pdf</h3><p>実変換した検索可能PDFを開く</p></a><a class="card" href="../../../functions/office2pdf/samples/excel-normalized/report.json"><h3>report.json</h3><p>ハッシュ、ページ数、警告を確認</p></a></div>
+<h2 id="report">reportの結果</h2><pre><code>{
+  "sectionKind": "sheet",
+  "sectionCount": 2,
+  "output": {"path":"document.pdf","pageCount":2},
+  "warnings": []
+}</code></pre>
+<div class="callout">この例はOfficeの印刷画面の再現ではなく、Document Intelligenceが文字と表を読み取りやすい配置への正規化を確認するものです。</div>
+</article><aside class="toc"><p class="toc-title">このページの内容</p><nav id="page-toc"></nav></aside></div></main></body></html>

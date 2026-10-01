@@ -8,6 +8,7 @@
 | --- | --- | --- |
 | PowerPoint / PDF → 画像 | PPTX・PPT・PDF → PNG・JPEG・ZIP | [API資料](docs/APIDocs/ppt-pdf-to-images/index.html) |
 | Office → Markdown | Excel・Word・PowerPoint → Markdown・画像 | [API資料](docs/APIDocs/office2md/index.html) |
+| Office → PDF | Excel・Word・PowerPoint → Document Intelligence向けPDF | [API資料](docs/APIDocs/office2pdf/index.html) |
 | Movie → Audio | 動画ファイル・URL・Blob → AAC音声をコピーしたM4A | [API資料](docs/APIDocs/movie2audio/index.html) |
 
 画像・Office変換はJava 21、Movie → AudioはNode.js 22 / 24と同梱FFmpegで実装しています。各機能に簡易Playgroundがあります。Movie → Audioは、書き込み用SASで指定したBlobへの保存にも対応します。
@@ -20,7 +21,7 @@
 - [利用・開発ガイド](docs/README.md)：機能別の使い方、構成、起動・設定・検証・デプロイ
 - [開発への参加](CONTRIBUTING.md)：機能追加・変更のルール
 
-実装と配布物は `functions/ppt-pdf-to-images/`、`functions/office2md/`、`functions/movie2audio/` で個別に管理します。
+実装と配布物は `functions/ppt-pdf-to-images/`、`functions/office2md/`、`functions/office2pdf/`、`functions/movie2audio/` で個別に管理します。
 
 ## ライセンス
 

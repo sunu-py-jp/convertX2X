@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Office → PDF Playground</title>
+  <link rel="stylesheet" href="playground/assets/style.css">
+</head>
+<body>
+<header><a href="./playground" class="brand"><span>convertX2X</span> Office → PDF</a><span class="muted">Document Intelligence向け正規化PDF</span></header>
+<main>
+  <section class="intro"><p class="eyebrow">PURE JAVA · FLEX CONSUMPTION</p><h1>Office文書を読み取りやすいPDFへ</h1><p>Excel・Word・PowerPointの文字、表、画像をApache POIで読み取り、PDFBoxでPDF化します。</p></section>
+  <div class="grid">
+    <section class="card controls">
+      <h2>変換</h2>
+      <form id="form">
+        <label class="drop"><input id="file" type="file" accept=".xlsx,.xls,.docx,.pptx,.ppt" required><strong id="file-name">Officeファイルを選択</strong><span id="file-hint">XLSX / XLS / DOCX / PPTX / PPT</span></label>
+        <fieldset><legend>実行方法</legend><label><input type="radio" name="mode" value="convert" checked> 同期HTTP</label><label><input id="async" type="radio" name="mode" value="jobs"> 非同期ジョブ</label></fieldset>
+        <details><summary>AzureのFunctionキー</summary><label class="key">x-functions-key<input id="key" type="password" autocomplete="off"></label></details>
+        <button id="submit" type="submit">PDFに変換</button>
+      </form>
+      <p id="limits" class="small">設定を取得しています…</p>
+      <p id="job" class="small" hidden></p>
+    </section>
+    <section class="card result">
+      <div class="result-head"><div><h2 id="status">ファイルを選択してください</h2><p id="detail" class="small">変換結果をここで確認できます。</p></div><div class="downloads"><a id="pdf-download" class="button" hidden>PDFを保存</a><a id="report-download" class="button" hidden>report.json</a></div></div>
+      <div id="error" class="error" hidden></div>
+      <iframe id="preview" title="変換したPDF" hidden></iframe>
+      <div id="empty" class="empty">PDF</div>
+    </section>
+  </div>
+</main>
+<footer>PDFは内容抽出用の正規化出力です。Officeの印刷結果と完全には一致しません。</footer>
+<script src="playground/assets/app.js"></script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 # 開発環境と作業手順
 
-[マニュアルの入口](README.md) · [Office → Markdownの実装](office2md.md) · [PowerPoint / PDFの実装](ppt-pdf-to-images.md) · [Movie → Audioの実装](movie2audio.md)
+[マニュアルの入口](README.md) · [Office → Markdownの実装](office2md.md) · [Office → PDFの実装](office2pdf.md) · [PowerPoint / PDFの実装](ppt-pdf-to-images.md) · [Movie → Audioの実装](movie2audio.md)
 
 以下のシェルコマンドはmacOS/Linux向けです。変換機能のディレクトリを作業場所にします。リポジトリ直下に共通の `pom.xml` はありません。
 
@@ -28,6 +28,13 @@ cd functions/office2md
 python3 scripts/run_local.py
 ```
 
+Office → PDFも同じ起動方法で、既定ポートは7074です。
+
+```sh
+cd functions/office2pdf
+python3 scripts/run_local.py
+```
+
 PowerPoint / PDFの場合は、別のターミナルでリポジトリ直下から実行します。
 
 ```sh
@@ -47,6 +54,7 @@ npm start
 | --- | --- | --- |
 | PowerPoint / PDF → 画像 | <http://localhost:7071/api/playground> | 同期HTTP・非同期HTTP・直接Queue |
 | Office → Markdown | <http://localhost:7072/api/playground> | 同期HTTP・非同期HTTP・直接Queue |
+| Office → PDF | <http://localhost:7074/api/playground> | 同期HTTP・非同期HTTP・直接Queue |
 | Movie → Audio | <http://localhost:7073/api/playground> | 同期HTTPのファイル入力・許可済みHTTPS URL入力 |
 
 画像・Office変換の起動スクリプトはビルド・Javaテスト・パッケージ生成後にホストを起動します。Movie → Audioは `npm start` がPythonの起動スクリプトを呼び、依存のSDK互換修正を確認してソースから起動します。従来の `python3 scripts/run_local.py` も使え、通常はnpm依存をインストールしてから起動します。停止はそのターミナルで `Ctrl+C` を使います。Movie → AudioのURL入力は `CONVERSION_URL_ALLOWED_HOSTS` の設定時だけ有効です。
@@ -71,7 +79,7 @@ cp local.settings.example.json local.settings.json
 
 ## 3. QueueとBlobを使って動かす
 
-3機能とも `CONVERSION_STORAGE_CONNECTION_STRING`、または後述のManaged Identity用Blob/Queue設定が揃っている場合に、非同期HTTPと直接Queueを利用できます。
+4機能とも `CONVERSION_STORAGE_CONNECTION_STRING`、または後述のManaged Identity用Blob/Queue設定が揃っている場合に、非同期HTTPと直接Queueを利用できます。
 
 まず別ターミナルで、開発用Azuriteを起動します。
 
@@ -88,7 +96,7 @@ python3 scripts/run_local.py
 
 接続文字列もManaged Identity設定もなければ非同期は無効です。無効化するときは、設定ファイルと環境変数の両方に残っている制御用Storage設定を確認してください。
 
-起動スクリプトは制御用Storage接続からQueueバインドの設定を起動前に導出します。Queue接続はワーカーの設定クラスより先にFunctionsホストが読むため、この処理を通して起動してください。Movie → AudioはNode.jsの起動時にQueue関数を条件付きで登録し、Javaの2機能はDisabled設定も導出します。下表は接続文字列方式です。
+起動スクリプトは制御用Storage接続からQueueバインドの設定を起動前に導出します。Queue接続はワーカーの設定クラスより先にFunctionsホストが読むため、この処理を通して起動してください。Movie → AudioはNode.jsの起動時にQueue関数を条件付きで登録し、Javaの3機能はDisabled設定も導出します。下表は接続文字列方式です。
 
 | 設定 | 接続なし | 接続あり |
 | --- | --- | --- |
@@ -98,7 +106,7 @@ python3 scripts/run_local.py
 
 ローカルの `AzureWebJobsStorage` が空なら制御用Storageで補完します。非同期が無効でも、明示的に設定されたホスト用Storageまで無効になるわけではありません。Azure上のホスト用StorageはFunction App側で別途有効に設定します。
 
-外部システムから直接依頼する流れは「入力Blobを保存 → 参照JSONをQueueへ送信 → 状態確認 → 成果物取得」です。JSONはBase64を1回だけ適用し、ファイル本体や接続文字列を含めません。Java SDKはエンコード設定を使い、Node.jsの送信例は明示的に1回エンコードします。形式・保存先・権限・送信例は [Office → Markdown](../functions/office2md/docs/direct-queue.md) / [PowerPoint・PDF](../functions/ppt-pdf-to-images/docs/direct-queue.md) / [Movie → Audio](../functions/movie2audio/docs/direct-queue.md) の直接Queueガイドを使います。
+外部システムから直接依頼する流れは「入力Blobを保存 → 参照JSONをQueueへ送信 → 状態確認 → 成果物取得」です。JSONはBase64を1回だけ適用し、ファイル本体や接続文字列を含めません。Java SDKはエンコード設定を使い、Node.jsの送信例は明示的に1回エンコードします。形式・保存先・権限・送信例は [Office → Markdown](../functions/office2md/docs/direct-queue.md) / [Office → PDF](../functions/office2pdf/docs/direct-queue.md) / [PowerPoint・PDF](../functions/ppt-pdf-to-images/docs/direct-queue.md) / [Movie → Audio](../functions/movie2audio/docs/direct-queue.md) の直接Queueガイドを使います。
 
 ## 4. 変更に合った検証をする
 

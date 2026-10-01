@@ -1,0 +1,22 @@
+{
+  "specVersion" : 1,
+  "source" : {
+    "format" : "xlsx",
+    "sha256" : "5658ac5f13e5cb48f6226a837dffc6e5d4a1734e61141954b752f24f02396c60",
+    "filename" : "input.xlsx"
+  },
+  "output" : {
+    "sha256" : "d5c1efdd6411a7eee1da0cd8945fec456ac1e749c0d8ffcf3a68f17b5c53904f",
+    "contentType" : "application/pdf",
+    "sizeBytes" : 24048,
+    "pageCount" : 2,
+    "path" : "document.pdf"
+  },
+  "sectionKind" : "sheet",
+  "sectionCount" : 2,
+  "warnings" : [ ],
+  "information" : [ {
+    "code" : "NORMALIZED_PDF",
+    "message" : "Document Intelligence向けに内容を再配置したPDFです。Officeの印刷結果とは一致しない場合があります。"
+  } ]
+}

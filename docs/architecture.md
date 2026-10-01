@@ -7,6 +7,7 @@ convertX2X/
 ├── docs/                         開発者マニュアル
 ├── functions/
 │   ├── office2md/              独立したビルド・設定・デプロイ単位
+│   ├── office2pdf/             独立した純Java Office→PDFアプリ
 │   ├── ppt-pdf-to-images/        独立したビルド・設定・デプロイ単位
 │   └── movie2audio/             独立したビルド・設定・デプロイ単位
 └── CONTRIBUTING.md               変更時の共通ルール
@@ -33,15 +34,15 @@ flowchart LR
 
 図のレスポンス返却とBlob保存は、呼び出した経路によって分かれます。直接Queueへ送るのは入力Blobの参照を含むJSONです。文書・動画のファイル本体や認証情報はQueueに入れません。
 
-| 項目 | Office → Markdown | PowerPoint / PDF → 画像 | Movie → Audio |
-| --- | --- | --- | --- |
-| 実装 | Java 21 / Apache POI | Java 21 / Apache POI / PDFBox | Node.js 22・24 / FFmpeg |
-| ローカルの既定ポート | `7072` | `7071` | `7073` |
-| 共通変換処理 | `OfficeMarkdownService` | `ConversionService` | `src/ffmpeg.js` の `extractAudio` |
-| Queue名 | `office2md-jobs` | `conversion-jobs` | `movie2audio-jobs` |
-| 同期出力 | Markdown・画像・reportを含むZIP | 選択した1ページの画像、または全ページZIP | M4A。SAS指定先へ保存するAPIは結果JSON |
-| 非同期の保存形式 | Markdown・report・画像を個別Blobに保存 | ページ指定時の単画像、全ページZIP、または画像・manifestを個別Blobに保存 | M4Aを個別Blobに保存 |
-| 既定の配布ディレクトリ | `target/azure-functions/office2md-local` | `target/azure-functions/slide2image-local` | `dist/` |
+| 項目 | Office → Markdown | Office → PDF | PowerPoint / PDF → 画像 | Movie → Audio |
+| --- | --- | --- | --- | --- |
+| 実装 | Java 21 / Apache POI | Java 21 / Apache POI / PDFBox | Java 21 / Apache POI / PDFBox | Node.js 22・24 / FFmpeg |
+| ローカルの既定ポート | `7072` | `7074` | `7071` | `7073` |
+| 共通変換処理 | `OfficeMarkdownService` | `OfficePdfService` | `ConversionService` | `src/ffmpeg.js` の `extractAudio` |
+| Queue名 | `office2md-jobs` | `office2pdf-jobs` | `conversion-jobs` | `movie2audio-jobs` |
+| 同期出力 | Markdown・画像・reportを含むZIP | 正規化PDF | 選択した1ページの画像、または全ページZIP | M4A。SAS指定先へ保存するAPIは結果JSON |
+| 非同期の保存形式 | Markdown・report・画像を個別Blobに保存 | PDF・reportを個別Blobに保存 | ページ指定時の単画像、全ページZIP、または画像・manifestを個別Blobに保存 | M4Aを個別Blobに保存 |
+| 既定の配布ディレクトリ | `target/azure-functions/office2md-local` | `target/azure-functions/office2pdf-local` | `target/azure-functions/slide2image-local` | `dist/` |
 
 HTTPのパスが似ていても、QueueのJSONや結果の取得方法は機能ごとの契約です。対象機能の依頼形式に合わせてください。
 

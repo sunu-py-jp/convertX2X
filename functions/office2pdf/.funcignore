@@ -1,0 +1,10 @@
+.git*
+.mvn/
+src/
+scripts/
+pom.xml
+mvnw*
+README.md
+local.settings*.json
+*.log
+samples/

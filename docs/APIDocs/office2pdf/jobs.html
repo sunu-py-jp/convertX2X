@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>非同期HTTP | office2pdf API</title><link rel="stylesheet" href="../assets/styles.css"><script src="../assets/app.js" defer></script></head>
+<body data-page="pdf-jobs"><a class="skip-link" href="#main-content">本文へ移動</a><div id="site-header"></div><aside id="sidebar" class="sidebar"></aside><div id="menu-overlay" class="menu-overlay" hidden></div><main id="main-content" class="main-content" tabindex="-1"><div class="page-layout"><article class="article">
+<p class="eyebrow">Office → PDF</p><h1>非同期HTTP・成果物取得</h1><p class="lead">大きい文書はQueueで処理し、完了後にPDFを取得します。</p>
+<div class="callout">非同期は<code>CONVERSION_STORAGE_CONNECTION_STRING</code>またはManaged IdentityのBlob/Queue設定がある場合だけ有効です。</div>
+<h2 id="submit">ジョブ登録</h2><div class="endpoint"><span class="method post">POST</span><code>/api/jobs?filename=input.docx</code></div>
+<pre><code class="language-shell">curl --fail-with-body \
+  -H 'Content-Type: application/octet-stream' \
+  --data-binary @input.docx \
+  'http://localhost:7074/api/jobs?filename=input.docx'</code></pre>
+<p><code>202 Accepted</code>で<code>job</code>と相対<code>statusUrl</code>を返し、<code>Location</code>にも状態URLを設定します。</p>
+<h2 id="status">状態確認</h2><div class="endpoint"><span class="method get">GET</span><code>/api/jobs/{id}</code></div>
+<p>状態は<code>queued / running / succeeded / failed</code>です。成功時は<code>resultUrl / reportUrl / archiveUrl</code>を返します。失敗時は<code>errorCode / errorMessage</code>を確認します。</p>
+<h2 id="download">成果物</h2><div class="table-wrap"><table><thead><tr><th>パス</th><th>内容</th></tr></thead><tbody><tr><td><code>/api/jobs/{id}/result</code></td><td><code>document.pdf</code></td></tr><tr><td><code>/api/jobs/{id}/report</code></td><td><code>report.json</code></td></tr><tr><td><code>/api/jobs/{id}/archive</code></td><td>PDFとreportを含むZIP</td></tr></tbody></table></div>
+<p>未完了は<code>409 JOB_NOT_READY</code>、存在しないIDは<code>404 JOB_NOT_FOUND</code>です。保持期間を有効にし、成果物が削除済みなら<code>410 JOB_RESULT_EXPIRED</code>を返します。</p>
+<h2 id="behavior">再試行と公開</h2><p>Queueメッセージは再配送されてもジョブIDで直列化します。PDFとreportをすべて保存してから成功状態を公開し、途中の試行は成果物URLに採用しません。</p>
+</article><aside class="toc"><p class="toc-title">このページの内容</p><nav id="page-toc"></nav></aside></div></main></body></html>

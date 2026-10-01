@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="convertX2XのAPIリファレンス。PowerPoint・PDFの画像変換、OfficeからMarkdownへの変換、動画からAAC音声の抽出を利用する方法。">
+  <meta name="description" content="convertX2XのAPIリファレンス。画像変換、OfficeからMarkdown・PDFへの変換、動画からAAC音声の抽出を利用する方法。">
   <title>はじめに · convertX2X API Docs</title>
   <link rel="stylesheet" href="assets/styles.css">
   <script src="assets/app.js" defer></script>
@@ -19,8 +19,8 @@
         <noscript>本文はJavaScriptなしでも読めます。機能別の資料へは下のリンクから移動できます。左メニュー・検索・コピーにはJavaScriptを有効にしてください。</noscript>
         <p class="eyebrow">Developer reference</p>
         <h1>ファイル変換を、APIから。</h1>
-        <p class="lead">PowerPoint・PDFを画像へ。Office文書をMarkdownへ。動画をAAC音声へ。<br>用途に合うAPIを選び、ファイル変換を実行できます。</p>
-        <div class="hero-meta"><span class="pill accent">3つの変換機能</span><span class="pill">同期HTTP / 非同期HTTP / 直接Queue</span><span class="pill">Java 21 / Node.js 22・24</span></div>
+        <p class="lead">PowerPoint・PDFを画像へ。Office文書をMarkdownまたはPDFへ。動画をAAC音声へ。<br>用途に合うAPIを選び、ファイル変換を実行できます。</p>
+        <div class="hero-meta"><span class="pill accent">4つの変換機能</span><span class="pill">同期HTTP / 非同期HTTP / 直接Queue</span><span class="pill">Java 21 / Node.js 22・24</span></div>
 
         <h2 id="features">変換機能を選ぶ</h2>
         <p>各機能は独立したFunction Appです。利用する機能のベースURLへリクエストを送ります。</p>
@@ -51,6 +51,15 @@
             <div class="tags"><span>動画</span><span>HTTPS URL</span><span>AAC / M4A</span><span>HTTP / Queue</span></div>
             <a class="card-link" href="movie2audio/index.html">音声抽出のAPIを見る</a>
             <a class="card-link examples-link" href="movie2audio/examples.html">実際の変換結果・スクリーンショット</a>
+          </div>
+          <div class="card">
+            <span class="card-icon blue" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14 3H5v18h14V8Z"/><path d="M14 3v5h5M8 12h8M8 16h6"/></svg></span>
+            <h3>Office → PDF</h3>
+            <p class="card-label">office2pdf</p>
+            <p>Office文書の内容を、Document Intelligenceへ渡しやすい正規化PDFに変換します。</p>
+            <div class="tags"><span>XLSX / XLS</span><span>DOCX</span><span>PPTX / PPT</span><span>PDF</span></div>
+            <a class="card-link" href="office2pdf/index.html">PDF変換のAPIを見る</a>
+            <a class="card-link examples-link" href="office2pdf/examples.html">実際の変換結果</a>
           </div>
         </div>
 
@@ -86,6 +95,7 @@ python3 scripts/run_local.py</code></pre></li>
         <div class="table-wrap"><table><thead><tr><th>機能</th><th>ローカルのベースURL</th><th>Queue名</th></tr></thead><tbody>
           <tr><td>PowerPoint / PDF → 画像</td><td><code>http://localhost:7071</code></td><td><code>conversion-jobs</code></td></tr>
           <tr><td>Office → Markdown</td><td><code>http://localhost:7072</code></td><td><code>office2md-jobs</code></td></tr>
+          <tr><td>Office → PDF</td><td><code>http://localhost:7074</code></td><td><code>office2pdf-jobs</code></td></tr>
           <tr><td>Movie → Audio</td><td><code>http://localhost:7073</code></td><td><code>movie2audio-jobs</code></td></tr>
         </tbody></table></div>
         <p>Azureでは配置先の <code>https://&lt;function-app&gt;.azurewebsites.net</code> などに置き換え、変換・ジョブAPIへ <code>x-functions-key</code> ヘッダーを付けます。複数のエンドポイントで使う場合はFunction AppのHostキーを利用します。</p>
@@ -101,22 +111,22 @@ curl --fail-with-body \
 
         <h2 id="contracts">機能ごとの違い</h2>
         <p>URLのパスが同じでも、受付オプションと結果の形式は機能ごとに異なります。</p>
-        <div class="table-wrap"><table><thead><tr><th>項目</th><th>画像変換</th><th>Office → Markdown</th><th>Movie → Audio</th></tr></thead><tbody>
-          <tr><td>同期レスポンス</td><td>全ページZIP、または指定ページの画像</td><td>Markdown・report・画像のZIP</td><td>AAC音声の <code>audio.m4a</code></td></tr>
-          <tr><td>変換パラメーター</td><td><code>filename</code> / <code>format</code> / <code>page</code> / <code>width</code></td><td><code>filename</code>。ページ・範囲指定なし</td><td>なし。URL入力APIは <code>url</code> のみ</td></tr>
-          <tr><td>Queueの成果物</td><td>画像・ZIP、または画像とmanifestを個別保存</td><td>Markdown・report・画像を個別保存</td><td>M4Aを個別Blobへ保存</td></tr>
-          <tr><td>既定の入力上限</td><td>20MiB / 文書全体50ページ</td><td>20MiB / 50シート・スライド。Wordは1文書</td><td>100MiB / 処理期限180秒</td></tr>
+        <div class="table-wrap"><table><thead><tr><th>項目</th><th>画像変換</th><th>Office → Markdown</th><th>Office → PDF</th><th>Movie → Audio</th></tr></thead><tbody>
+          <tr><td>同期レスポンス</td><td>全ページZIP、または指定ページの画像</td><td>Markdown・report・画像のZIP</td><td>正規化PDF</td><td>AAC音声の <code>audio.m4a</code></td></tr>
+          <tr><td>変換パラメーター</td><td><code>filename</code> / <code>format</code> / <code>page</code> / <code>width</code></td><td><code>filename</code>。ページ・範囲指定なし</td><td><code>filename</code></td><td>なし。URL入力APIは <code>url</code> のみ</td></tr>
+          <tr><td>Queueの成果物</td><td>画像・ZIP、または画像とmanifestを個別保存</td><td>Markdown・report・画像を個別保存</td><td>PDF・report・manifest</td><td>M4Aを個別Blobへ保存</td></tr>
+          <tr><td>既定の入力上限</td><td>20MiB / 文書全体50ページ</td><td>20MiB / 50シート・スライド。Wordは1文書</td><td>20MiB / ページ数無制限</td><td>100MiB / 処理期限180秒</td></tr>
         </tbody></table></div>
-        <div class="callout"><strong>この資料の対象</strong><br>現在の実装で利用できる3機能を掲載しています。HTML → PowerPointは保留中、PDF → Markdownは未実装のため、利用可能なAPIには含めていません。</div>
+        <div class="callout"><strong>この資料の対象</strong><br>現在の実装で利用できる4機能を掲載しています。HTML → PowerPointは保留中、PDF → Markdownは未実装のため、利用可能なAPIには含めていません。</div>
 
         <h2 id="next">目的別のリファレンス</h2>
-        <div class="table-wrap"><table><thead><tr><th>やりたいこと</th><th>画像変換</th><th>Office → Markdown</th><th>Movie → Audio</th></tr></thead><tbody>
-          <tr><td>実際の変換結果を見る</td><td><a href="ppt-pdf-to-images/examples.html">PowerPoint・PDFの実例</a></td><td><a href="office2md/examples.html">Excel・Word・PowerPointの実例</a></td><td><a href="movie2audio/examples.html">音声抽出の実例</a></td></tr>
-          <tr><td>ファイルを送信する</td><td><a href="ppt-pdf-to-images/http.html">同期HTTP</a></td><td><a href="office2md/http.html">同期HTTP</a></td><td><a href="movie2audio/http.html">同期HTTP</a></td></tr>
-          <tr><td>URLから取得する</td><td>—</td><td>—</td><td><a href="movie2audio/url.html">HTTPS URL入力</a></td></tr>
-          <tr><td>ジョブの状態と結果を取得する</td><td><a href="ppt-pdf-to-images/jobs.html">非同期HTTP</a></td><td><a href="office2md/jobs.html">非同期HTTP</a></td><td><a href="movie2audio/jobs.html">非同期HTTP</a></td></tr>
-          <tr><td>外部システムからQueueに送る</td><td><a href="ppt-pdf-to-images/queue.html">直接Queue</a></td><td><a href="office2md/queue.html">直接Queue</a></td><td><a href="movie2audio/queue.html">直接Queue</a></td></tr>
-          <tr><td>制限値やエラーを調べる</td><td><a href="ppt-pdf-to-images/settings.html">設定とエラー</a></td><td><a href="office2md/settings.html">設定とエラー</a></td><td><a href="movie2audio/settings.html">設定とエラー</a></td></tr>
+        <div class="table-wrap"><table><thead><tr><th>やりたいこと</th><th>画像変換</th><th>Office → Markdown</th><th>Office → PDF</th><th>Movie → Audio</th></tr></thead><tbody>
+          <tr><td>実際の変換結果を見る</td><td><a href="ppt-pdf-to-images/examples.html">PowerPoint・PDFの実例</a></td><td><a href="office2md/examples.html">Excel・Word・PowerPointの実例</a></td><td><a href="office2pdf/examples.html">Excel→PDFの実例</a></td><td><a href="movie2audio/examples.html">音声抽出の実例</a></td></tr>
+          <tr><td>ファイルを送信する</td><td><a href="ppt-pdf-to-images/http.html">同期HTTP</a></td><td><a href="office2md/http.html">同期HTTP</a></td><td><a href="office2pdf/http.html">同期HTTP</a></td><td><a href="movie2audio/http.html">同期HTTP</a></td></tr>
+          <tr><td>URLから取得する</td><td>—</td><td>—</td><td>—</td><td><a href="movie2audio/url.html">HTTPS URL入力</a></td></tr>
+          <tr><td>ジョブの状態と結果を取得する</td><td><a href="ppt-pdf-to-images/jobs.html">非同期HTTP</a></td><td><a href="office2md/jobs.html">非同期HTTP</a></td><td><a href="office2pdf/jobs.html">非同期HTTP</a></td><td><a href="movie2audio/jobs.html">非同期HTTP</a></td></tr>
+          <tr><td>外部システムからQueueに送る</td><td><a href="ppt-pdf-to-images/queue.html">直接Queue</a></td><td><a href="office2md/queue.html">直接Queue</a></td><td><a href="office2pdf/queue.html">直接Queue</a></td><td><a href="movie2audio/queue.html">直接Queue</a></td></tr>
+          <tr><td>制限値やエラーを調べる</td><td><a href="ppt-pdf-to-images/settings.html">設定とエラー</a></td><td><a href="office2md/settings.html">設定とエラー</a></td><td><a href="office2pdf/settings.html">設定とエラー</a></td><td><a href="movie2audio/settings.html">設定とエラー</a></td></tr>
         </tbody></table></div>
         <footer class="page-footer"><span>最終確認 2026-09-16 · 実装と照合したAPI仕様</span><a href="../README.md">開発者マニュアル ↗</a></footer>
       </article>
