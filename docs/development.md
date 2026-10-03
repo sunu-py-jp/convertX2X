@@ -1,6 +1,6 @@
 # 開発環境と作業手順
 
-[マニュアルの入口](README.md) · [Office → Markdownの実装](office2md.md) · [Office → PDFの実装](office2pdf.md) · [PowerPoint / PDFの実装](ppt-pdf-to-images.md) · [Movie → Audioの実装](movie2audio.md)
+[マニュアルの入口](README.md) · [Office → Markdownの実装](office2md.md) · [Office → PDFの実装](office2pdf.md) · [Markdown → PDFの実装](md2pdf.md) · [PowerPoint / PDFの実装](ppt-pdf-to-images.md) · [Movie → Audioの実装](movie2audio.md)
 
 以下のシェルコマンドはmacOS/Linux向けです。変換機能のディレクトリを作業場所にします。リポジトリ直下に共通の `pom.xml` はありません。
 
@@ -8,8 +8,8 @@
 
 | ツール | 必要な作業 |
 | --- | --- |
-| JDK 21 | 画像・Office変換のJavaコードのビルド・テスト・実行。`JAVA_HOME` も同じJDKに合わせる |
-| 同梱Maven Wrapper（`./mvnw`） | 画像・Office変換でMavenを実行。Mavenの別途インストールは不要 |
+| JDK 21 | 画像・Office・Markdown変換のJavaコードのビルド・テスト・実行。`JAVA_HOME` も同じJDKに合わせる |
+| 同梱Maven Wrapper（`./mvnw`） | 画像・Office・Markdown変換でMavenを実行。Mavenの別途インストールは不要 |
 | Node.js 22または24・npm | Movie → Audioの実行・テスト・パッケージ作成。`.nvmrc` は24 |
 | Python 3.10以上 | 起動・設定・E2Eスクリプト |
 | Azure Functions Core Tools v4（`func`） | ローカルFunctionsホスト、Azureへの配置 |
@@ -35,6 +35,13 @@ cd functions/office2pdf
 python3 scripts/run_local.py
 ```
 
+Markdown → PDFも同じ起動方法で、既定ポートは7075です。
+
+```sh
+cd functions/md2pdf
+python3 scripts/run_local.py
+```
+
 PowerPoint / PDFの場合は、別のターミナルでリポジトリ直下から実行します。
 
 ```sh
@@ -55,17 +62,18 @@ npm start
 | PowerPoint / PDF → 画像 | <http://localhost:7071/api/playground> | 同期HTTP・非同期HTTP・直接Queue |
 | Office → Markdown | <http://localhost:7072/api/playground> | 同期HTTP・非同期HTTP・直接Queue |
 | Office → PDF | <http://localhost:7074/api/playground> | 同期HTTP・非同期HTTP・直接Queue |
+| Markdown → PDF | <http://localhost:7075/api/playground> | 同期HTTP・非同期HTTP・直接Queue |
 | Movie → Audio | <http://localhost:7073/api/playground> | 同期HTTPのファイル入力・許可済みHTTPS URL入力 |
 
-画像・Office変換の起動スクリプトはビルド・Javaテスト・パッケージ生成後にホストを起動します。Movie → Audioは `npm start` がPythonの起動スクリプトを呼び、依存のSDK互換修正を確認してソースから起動します。従来の `python3 scripts/run_local.py` も使え、通常はnpm依存をインストールしてから起動します。停止はそのターミナルで `Ctrl+C` を使います。Movie → AudioのURL入力は `CONVERSION_URL_ALLOWED_HOSTS` の設定時だけ有効です。
+画像・Office・Markdown変換の起動スクリプトはビルド・Javaテスト・パッケージ生成後にホストを起動します。Movie → Audioは `npm start` がPythonの起動スクリプトを呼び、依存のSDK互換修正を確認してソースから起動します。従来の `python3 scripts/run_local.py` も使え、通常はnpm依存をインストールしてから起動します。停止はそのターミナルで `Ctrl+C` を使います。Movie → AudioのURL入力は `CONVERSION_URL_ALLOWED_HOSTS` の設定時だけ有効です。
 
-画像・Office変換でビルド済みの配布物を起動するときは、対象機能のディレクトリで次を使います。
+画像・Office・Markdown変換でビルド済みの配布物を起動するときは、対象機能のディレクトリで次を使います。
 
 ```sh
 python3 scripts/run_local.py --skip-build
 ```
 
-画像・Office変換の `--skip-build` はソースやPlaygroundの変更を配布物へ反映しません。変更後は通常の起動コマンドで再ビルドするか、`./mvnw package` 後にホストを再起動します。Movie → AudioのPythonスクリプトでは同じオプションを依存インストールの省略として受け付け、実行コードはソースを使います。変更後はホストを再起動してください。ポートが使用中ならPythonスクリプトへ `--port 7082` のように指定します。
+画像・Office・Markdown変換の `--skip-build` はソースやPlaygroundの変更を配布物へ反映しません。変更後は通常の起動コマンドで再ビルドするか、`./mvnw package` 後にホストを再起動します。Movie → AudioのPythonスクリプトでは同じオプションを依存インストールの省略として受け付け、実行コードはソースを使います。変更後はホストを再起動してください。ポートが使用中ならPythonスクリプトへ `--port 7082` のように指定します。
 
 ### 設定の読み込み
 
@@ -79,7 +87,7 @@ cp local.settings.example.json local.settings.json
 
 ## 3. QueueとBlobを使って動かす
 
-4機能とも `CONVERSION_STORAGE_CONNECTION_STRING`、または後述のManaged Identity用Blob/Queue設定が揃っている場合に、非同期HTTPと直接Queueを利用できます。
+各機能とも `CONVERSION_STORAGE_CONNECTION_STRING`、または後述のManaged Identity用Blob/Queue設定が揃っている場合に、非同期HTTPと直接Queueを利用できます。
 
 まず別ターミナルで、開発用Azuriteを起動します。
 
@@ -96,7 +104,7 @@ python3 scripts/run_local.py
 
 接続文字列もManaged Identity設定もなければ非同期は無効です。無効化するときは、設定ファイルと環境変数の両方に残っている制御用Storage設定を確認してください。
 
-起動スクリプトは制御用Storage接続からQueueバインドの設定を起動前に導出します。Queue接続はワーカーの設定クラスより先にFunctionsホストが読むため、この処理を通して起動してください。Movie → AudioはNode.jsの起動時にQueue関数を条件付きで登録し、Javaの3機能はDisabled設定も導出します。下表は接続文字列方式です。
+起動スクリプトは制御用Storage接続からQueueバインドの設定を起動前に導出します。Queue接続はワーカーの設定クラスより先にFunctionsホストが読むため、この処理を通して起動してください。Movie → AudioはNode.jsの起動時にQueue関数を条件付きで登録し、Javaの各機能はDisabled設定も導出します。下表は接続文字列方式です。
 
 | 設定 | 接続なし | 接続あり |
 | --- | --- | --- |
@@ -106,11 +114,11 @@ python3 scripts/run_local.py
 
 ローカルの `AzureWebJobsStorage` が空なら制御用Storageで補完します。非同期が無効でも、明示的に設定されたホスト用Storageまで無効になるわけではありません。Azure上のホスト用StorageはFunction App側で別途有効に設定します。
 
-外部システムから直接依頼する流れは「入力Blobを保存 → 参照JSONをQueueへ送信 → 状態確認 → 成果物取得」です。JSONはBase64を1回だけ適用し、ファイル本体や接続文字列を含めません。Java SDKはエンコード設定を使い、Node.jsの送信例は明示的に1回エンコードします。形式・保存先・権限・送信例は [Office → Markdown](../functions/office2md/docs/direct-queue.md) / [Office → PDF](../functions/office2pdf/docs/direct-queue.md) / [PowerPoint・PDF](../functions/ppt-pdf-to-images/docs/direct-queue.md) / [Movie → Audio](../functions/movie2audio/docs/direct-queue.md) の直接Queueガイドを使います。
+外部システムから直接依頼する流れは「入力Blobを保存 → 参照JSONをQueueへ送信 → 状態確認 → 成果物取得」です。JSONはBase64を1回だけ適用し、ファイル本体や接続文字列を含めません。Java SDKはエンコード設定を使い、Node.jsの送信例は明示的に1回エンコードします。形式・保存先・権限・送信例は [Office → Markdown](../functions/office2md/docs/direct-queue.md) / [Office → PDF](../functions/office2pdf/docs/direct-queue.md) / [Markdown → PDF](../functions/md2pdf/docs/direct-queue.md) / [PowerPoint・PDF](../functions/ppt-pdf-to-images/docs/direct-queue.md) / [Movie → Audio](../functions/movie2audio/docs/direct-queue.md) の直接Queueガイドを使います。
 
 ## 4. 変更に合った検証をする
 
-画像・Office変換では、対象機能のディレクトリでJavaと設定スクリプトを確認します。Movie → Audioは後述のnpmコマンドを使います。
+画像・Office・Markdown変換では、対象機能のディレクトリでJavaと設定スクリプトを確認します。Movie → Audioは後述のnpmコマンドを使います。
 
 ```sh
 ./mvnw test
@@ -190,7 +198,7 @@ HTTP受付、Queueからの実抽出、M4A取得、重複・失敗・poisonを�
 
 ### ブラウザー
 
-Node.jsから `playwright` を読み込め、Chromiumを起動できる環境を用意します。画像・Office変換のブラウザーテスト用にPlaywrightの `package.json` やロックファイルは同梱していないため、開発環境側でPlaywrightを用意し、利用したバージョンを検証結果に残します。既存のChromeを使う場合は `PLAYWRIGHT_CHANNEL=chrome` を指定できます。モジュールの置き場所が別なら `NODE_PATH` を設定します。
+Node.jsから `playwright` を読み込め、Chromiumを起動できる環境を用意します。画像・Office・Markdown変換のブラウザーテスト用にPlaywrightの `package.json` やロックファイルは同梱していないため、開発環境側でPlaywrightを用意し、利用したバージョンを検証結果に残します。既存のChromeを使う場合は `PLAYWRIGHT_CHANNEL=chrome` を指定できます。モジュールの置き場所が別なら `NODE_PATH` を設定します。
 
 Office → Markdownでは `functions/office2md` で実行します。
 
@@ -217,7 +225,7 @@ python3 scripts/test_playground_e2e.py
 
 ## 5. Azureへ配置する
 
-配置先は機能ごとの既存Function Appです。Azure CLIにログインし、対象のサブスクリプション・リソースグループ・アプリ名を確認してから進めます。画像・Office変換はLinux・Java 21・Functions v4を前提に、有効なホスト用Storageと `JAVA_OPTS=-Djava.awt.headless=true` を設定します。既存のJavaオプションがある場合は保持して追加します。Movie → AudioはLinux x64・Node.js 24・Functions v4の独立したアプリへ配置し、`FUNCTIONS_WORKER_RUNTIME=node` を設定します。Java機能と同じFunction Appには混在させません。
+配置先は機能ごとの既存Function Appです。Azure CLIにログインし、対象のサブスクリプション・リソースグループ・アプリ名を確認してから進めます。画像・Office・Markdown変換はLinux・Java 21・Functions v4を前提に、有効なホスト用Storageと `JAVA_OPTS=-Djava.awt.headless=true` を設定します。既存のJavaオプションがある場合は保持して追加します。Movie → AudioはLinux x64・Node.js 24・Functions v4の独立したアプリへ配置し、`FUNCTIONS_WORKER_RUNTIME=node` を設定します。Java機能と同じFunction Appには混在させません。
 
 1. 対象機能のテストを実行し、Java機能は `./mvnw package`、Movie → Audioは `npm run package` で配布物を作る。
 2. 配置先のランタイム・上限・ホスト用Storageを揃え、非同期を使う場合はStorage接続を設定する。Queueトリガー用の派生設定も設定する。

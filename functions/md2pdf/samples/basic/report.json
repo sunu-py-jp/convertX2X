@@ -1,0 +1,22 @@
+{
+  "specVersion" : 1,
+  "source" : {
+    "filename" : "input.md",
+    "sha256" : "b7c9eaab6ba33794c2f9e4f76127432c62522f8bab299acdc1c151377a67d1bd",
+    "format" : "md"
+  },
+  "output" : {
+    "path" : "document.pdf",
+    "pageCount" : 2,
+    "sizeBytes" : 37470,
+    "contentType" : "application/pdf",
+    "sha256" : "15c2ca0df247fc8f63b64f1f8de6125b543217cdcc7c84838606158753a65332"
+  },
+  "sectionKind" : "document",
+  "sectionCount" : 1,
+  "warnings" : [ ],
+  "information" : [ {
+    "code" : "NORMALIZED_PDF",
+    "message" : "Markdownの内容を検索可能なPDFへ配置しました。HTML/CSSによるブラウザー表示とは異なる場合があります。"
+  } ]
+}

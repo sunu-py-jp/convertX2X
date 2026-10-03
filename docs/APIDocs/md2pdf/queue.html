@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>直接Queue | md2pdf API</title><link rel="stylesheet" href="../assets/styles.css"><script src="../assets/app.js" defer></script></head>
+<body data-page="mdpdf-queue"><a class="skip-link" href="#main-content">本文へ移動</a><div id="site-header"></div><aside id="sidebar" class="sidebar"></aside><div id="menu-overlay" class="menu-overlay" hidden></div><main id="main-content" class="main-content" tabindex="-1"><div class="page-layout"><article class="article">
+<p class="eyebrow">Markdown → PDF</p><h1>Queueから直接依頼</h1><p class="lead">入力Blobの参照を<code>md2pdf-jobs</code>へ送り、指定Blobへ成果物を保存します。</p>
+<h2 id="message">version 1</h2><pre><code>{
+  "version": 1,
+  "jobId": "5b179260-9994-4df6-9d34-cf9638c55431",
+  "input": {"storage":"default","container":"incoming","blobName":"markdown/input.zip"},
+  "output": {"storage":"default","container":"outgoing","prefix":"converted"},
+  "filename": "input.zip"
+}</code></pre>
+<p>メッセージはUTF-8 JSONで最大48KiBです。<code>jobId</code>は正規UUID、コンテナー名とBlobパスはAzure Storageの安全な形式にします。資格情報やファイル本体は入れません。</p>
+<h2 id="output">出力場所</h2><pre><code>converted/{jobId}/results/{attemptId}/document.pdf
+converted/{jobId}/results/{attemptId}/report.json
+converted/{jobId}/results/{attemptId}/manifest.json</code></pre>
+<p>manifestには入力ETag、成果物パス・MIME型・サイズ・ETag・SHA-256を記録します。</p>
+<h2 id="version2">version 2</h2><p><code>input.expectedETag</code>で入力版を固定し、最大16件の文字列<code>metadata</code>と、登録済み結果Queueの<code>notification.queue</code>を追加できます。通知は最低1回配送です。</p>
+<h2 id="storage">別Storage</h2><p><code>storage</code>には<code>default</code>またはアプリ設定で登録した別名を使います。入力は<code>CONVERSION_INPUT_STORAGE_&lt;ALIAS&gt;</code>、出力は<code>CONVERSION_OUTPUT_STORAGE_&lt;ALIAS&gt;</code>で役割別に登録します。接続文字列またはManaged Identityの<code>__blobServiceUri</code>を使用できます。</p>
+<h2 id="failure">失敗と毒キュー</h2><p>形式・UTF-8・ZIP・上限など確定的な失敗はジョブを<code>failed</code>にします。Storageなど一時障害はメッセージを再試行し、最大回数後は<code>md2pdf-jobs-poison</code>で<code>PROCESSING_FAILED</code>へ確定します。</p>
+<footer class="page-footer"><p>最終確認：2026-10-03。<a href="../../../functions/md2pdf/docs/usage.md">利用ガイド</a></p></footer>
+</article><aside class="toc"><p class="toc-title">このページの内容</p><nav id="page-toc"></nav></aside></div></main></body></html>

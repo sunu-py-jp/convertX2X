@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>概要と変換ルール | md2pdf API</title><link rel="stylesheet" href="../assets/styles.css"><script src="../assets/app.js" defer></script></head>
+<body data-page="mdpdf-overview"><a class="skip-link" href="#main-content">本文へ移動</a><div id="site-header"></div><aside id="sidebar" class="sidebar" aria-label="APIナビゲーション"></aside><div id="menu-overlay" class="menu-overlay" hidden></div>
+<main id="main-content" class="main-content" tabindex="-1"><div class="page-layout"><article class="article">
+<p class="eyebrow">Markdown → PDF</p><h1>概要と変換ルール</h1>
+<p class="lead">Markdownを検索可能な日本語PDFへ変換します。Java 21・CommonMark・PDFBoxで従量課金Functions上で動きます。</p>
+<h2 id="overview">できること</h2>
+<div class="cards"><a class="card" href="http.html"><h3>同期HTTP</h3><p>MarkdownまたはZIPを送り、PDFを受け取る。</p></a><a class="card" href="jobs.html"><h3>非同期HTTP</h3><p>ジョブを登録し、PDF・report・ZIPを取得する。</p></a><a class="card" href="queue.html"><h3>直接Queue</h3><p>入力Blobを参照するJSONを外部システムから送る。</p></a></div>
+<h2 id="formats">入力形式</h2><div class="table-wrap"><table><thead><tr><th>入力</th><th>内容</th></tr></thead><tbody>
+<tr><td><code>.md / .markdown</code></td><td>UTF-8のMarkdown。画像はBase64データURIで埋め込み可能</td></tr>
+<tr><td><code>.zip</code></td><td>Markdownと相対パスの画像をまとめたZIP</td></tr></tbody></table></div>
+<p>ZIPルートの<code>document.md</code>を優先し、なければZIP内で唯一のMarkdownを使います。相対画像パスはMarkdownの位置を基準に解決します。Office → Markdownの<code>document.md</code>と<code>images/</code>を含むZIPも入力できます。</p>
+<h2 id="syntax">対応する構文</h2><p>見出し、段落、太字・斜体、番号付き・番号なしリスト、GFM表、引用、コードブロック、インラインコード、リンク、水平線、画像に対応します。用紙に合わせて折り返し・改ページし、ページ番号を付けます。<code>&lt;!-- pagebreak --&gt;</code>で明示改ページできます。</p>
+<h2 id="images">画像</h2><p>PNG・JPEG・GIF（先頭フレーム）・BMPを、ZIP内の相対パスまたはBase64データURIから取得します。外部URLへの通信やローカルPCの絶対パス読み込みは行いません。欠損・未対応・外部画像は代替ラベルにし、reportへ警告を記録します。</p>
+<pre><code>input.zip
+├── document.md
+└── images/diagram.png
+
+Markdown: ![処理の流れ](images/diagram.png)</code></pre>
+<h2 id="layout">再現範囲</h2><p>PDFは本文・表・画像を読みやすく再配置した正規化出力です。HTML/CSSの見た目は再現せず、HTMLは文字として表示します。Mermaidは図へ変換せずコードとして表示します。どちらもreportへ警告を記録します（改ページ命令は除く）。</p>
+<h2 id="output">出力</h2><pre><code>document.pdf
+report.json</code></pre><p>同期HTTPはPDFを直接返します。非同期と直接QueueはPDFとreportを保存します。reportには入力・PDFのSHA-256、形式、ページ数、警告が入ります。<code>sectionKind</code>は<code>document</code>、<code>sectionCount</code>は1です。</p>
+<h2 id="limits">上限</h2><p>段落・表・画像の個数に固定上限はありません。入力・出力バイト数、画像画素数、任意のPDFページ上限を設定します。ZIPは展開後合計にも入力バイト上限が適用されます。既定のページ上限は<code>0</code>（無制限）です。詳細は<a href="settings.html">設定・上限</a>を参照してください。</p>
+<h2 id="playground">Playground</h2><p><code>http://localhost:7075/api/playground</code>でMarkdownの貼り付け、ファイル・ZIP選択、同期・非同期変換、PDFプレビューと保存ができます。</p>
+<h2 id="license">ライセンス</h2><p>アプリはMIT、CommonMarkはBSD 2-Clause、PDFBoxはApache-2.0、日本語フォントはOFL-1.1です。商用利用できます。</p>
+<footer class="page-footer"><p>最終確認：2026-10-03。<a href="../../../functions/md2pdf/docs/usage.md">起動・配置を含む利用ガイド</a></p></footer>
+</article><aside class="toc" aria-label="このページの目次"><p class="toc-title">このページの内容</p><nav id="page-toc"></nav></aside></div></main></body></html>

@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>実際の変換例 | md2pdf API</title><link rel="stylesheet" href="../assets/styles.css"><script src="../assets/app.js" defer></script></head>
+<body data-page="mdpdf-examples"><a class="skip-link" href="#main-content">本文へ移動</a><div id="site-header"></div><aside id="sidebar" class="sidebar"></aside><div id="menu-overlay" class="menu-overlay" hidden></div><main id="main-content" class="main-content" tabindex="-1"><div class="page-layout"><article class="article">
+<p class="eyebrow">Markdown → PDF</p><h1>変換例</h1><p class="lead">日本語の見出し、表、リスト、コード、改ページを含むサンプルです。</p>
+<h2 id="sample">入力と出力</h2><div class="cards"><a class="card" href="../../../functions/md2pdf/samples/basic/input.md"><h3>input.md</h3><p>入力Markdown</p></a><a class="card" href="../../../functions/md2pdf/samples/basic/document.pdf"><h3>document.pdf</h3><p>検索可能な日本語PDF</p></a><a class="card" href="../../../functions/md2pdf/samples/basic/report.json"><h3>report.json</h3><p>ハッシュ、ページ数、警告</p></a></div>
+<h2 id="request">変換する</h2><pre><code class="language-shell">curl --fail-with-body \
+  -H 'Content-Type: application/octet-stream' \
+  --data-binary @input.md \
+  'http://localhost:7075/api/convert?filename=input.md' \
+  --output document.pdf</code></pre>
+<h2 id="zip">相対パスの画像を含める</h2><pre><code>input.zip
+├── document.md
+└── images/diagram.png</code></pre><p>Markdownに<code>![処理の流れ](images/diagram.png)</code>と書き、ZIP全体を<code>filename=input.zip</code>で送ります。Office → Markdownの出力ZIPも、そのまま入力できます。ZIPルートに<code>document.md</code>がない場合は、Markdownを1ファイルだけにしてください。</p>
+<h2 id="pagebreak">ページを分ける</h2><pre><code># 1ページ目
+本文
+
+&lt;!-- pagebreak --&gt;
+
+# 2ページ目
+本文</code></pre>
+<p>外部URLの画像は取得しません。Mermaid・HTMLの扱いを含め、<a href="index.html#layout">再現範囲</a>を参照してください。</p>
+<footer class="page-footer"><p>最終確認：2026-10-03。<a href="../../../functions/md2pdf/docs/usage.md">利用ガイド</a></p></footer>
+</article><aside class="toc"><p class="toc-title">このページの内容</p><nav id="page-toc"></nav></aside></div></main></body></html>

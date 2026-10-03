@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>同期HTTP | md2pdf API</title><link rel="stylesheet" href="../assets/styles.css"><script src="../assets/app.js" defer></script></head>
+<body data-page="mdpdf-http"><a class="skip-link" href="#main-content">本文へ移動</a><div id="site-header"></div><aside id="sidebar" class="sidebar"></aside><div id="menu-overlay" class="menu-overlay" hidden></div><main id="main-content" class="main-content" tabindex="-1"><div class="page-layout"><article class="article">
+<p class="eyebrow">Markdown → PDF</p><h1>同期HTTPで変換</h1><p class="lead">ファイルのバイト列をPOSTし、PDFを直接受け取ります。</p>
+<h2 id="convert">POST /api/convert</h2><div class="endpoint"><span class="method post">POST</span><code>/api/convert?filename=input.md</code></div>
+<p><code>filename</code>は<code>.md / .markdown / .zip</code>の拡張子を含めます。Markdown本文はUTF-8で送ります。本文はmultipartではなく<code>application/octet-stream</code>の生データです。</p>
+<pre><code class="language-shell">curl --fail-with-body \
+  -H 'Content-Type: application/octet-stream' \
+  --data-binary @input.md \
+  'http://localhost:7075/api/convert?filename=input.md' \
+  --output document.pdf</code></pre>
+<h2 id="response">成功レスポンス</h2>
+<div class="table-wrap"><table><thead><tr><th>項目</th><th>値</th></tr></thead><tbody><tr><td>Status</td><td><code>200 OK</code></td></tr><tr><td>Content-Type</td><td><code>application/pdf</code></td></tr><tr><td>Content-Disposition</td><td>入力名を基にした<code>.pdf</code></td></tr><tr><td><code>X-Page-Count</code></td><td>生成PDFのページ数</td></tr><tr><td><code>X-Section-Count</code></td><td>入力Markdown数（1）</td></tr><tr><td><code>X-Warning-Count</code></td><td>近似・除外の警告数</td></tr></tbody></table></div>
+<h2 id="authentication">Azureでの認証</h2><p>Azure上では<code>x-functions-key</code>ヘッダーを付けます。ローカルCore Toolsでは通常キーは不要です。</p>
+<pre><code class="language-shell">curl --fail-with-body \
+  -H "x-functions-key: $FUNCTION_KEY" \
+  -H 'Content-Type: application/octet-stream' \
+  --data-binary @input.zip \
+  'https://&lt;app&gt;.azurewebsites.net/api/convert?filename=input.zip' \
+  --output document.pdf</code></pre>
+<h2 id="errors">主なエラー</h2><div class="table-wrap"><table><thead><tr><th>HTTP</th><th>code</th><th>意味</th></tr></thead><tbody><tr><td>400</td><td><code>EMPTY_INPUT / MISSING_FILENAME</code></td><td>入力またはファイル名がない</td></tr><tr><td>413</td><td><code>INPUT_TOO_LARGE / INPUT_BYTES_LIMIT / PAGE_LIMIT / OUTPUT_BYTES_LIMIT</code></td><td>設定上限を超えた</td></tr><tr><td>415</td><td><code>UNSUPPORTED_FORMAT</code></td><td>対象外の拡張子</td></tr><tr><td>422</td><td><code>INVALID_ENCODING / INVALID_ARCHIVE / INVALID_DOCUMENT</code></td><td>UTF-8・ZIP・Markdown入力が不正</td></tr></tbody></table></div>
+<footer class="page-footer"><p>最終確認：2026-10-03。<a href="../../../functions/md2pdf/docs/usage.md">利用ガイド</a></p></footer>
+</article><aside class="toc"><p class="toc-title">このページの内容</p><nav id="page-toc"></nav></aside></div></main></body></html>
