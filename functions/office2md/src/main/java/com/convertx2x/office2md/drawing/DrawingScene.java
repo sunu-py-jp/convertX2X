@@ -2,6 +2,7 @@ package com.convertx2x.office2md.drawing;
 
 import com.convertx2x.office2md.conversion.ConversionException;
 import com.convertx2x.office2md.conversion.ConversionWorkspace;
+import com.convertx2x.office2md.images.EmbeddedImagePreprocessor;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics2D;
@@ -45,6 +46,8 @@ final class DrawingScene {
         int alignment = 1;
         double textScale = 1;
         byte[] picture;
+        EmbeddedImagePreprocessor.Prepared visiblePicture;
+        boolean croppedPicture;
         String extension = "bin", contentType = "application/octet-stream", alt = "画像";
         String typeName = "図形（種類不明）", altRotation = "時計回り0度";
         String placeholder = "未対応の図形";

@@ -126,7 +126,9 @@ class ExcelDrawingAltTextTest {
             picture.getCTPicture().getSpPr().getXfrm().setFlipH(true);
             var block = extractor.extract(sheet, workspace).getFirst();
             assertTrue(block.markdown().contains("元の画像 \\[説明\\]"));
-            BufferedImage rendered = ImageIO.read(workspace.files().get("images/diagram-0001.png").toFile());
+            assertTrue(block.markdown().contains("images/image-0001.png"));
+            assertFalse(workspace.files().containsKey("images/diagram-0001.png"));
+            BufferedImage rendered = ImageIO.read(workspace.files().get("images/image-0001.png").toFile());
             try {
                 assertTrue(rendered.getHeight() > rendered.getWidth() * 2);
                 assertEquals(Color.BLUE.getRGB(), rendered.getRGB(rendered.getWidth() / 2, rendered.getHeight() / 4));

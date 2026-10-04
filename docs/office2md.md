@@ -2,7 +2,7 @@
 
 [マニュアルの入口](README.md) · [共通の作業手順](development.md)
 
-`functions/office2md` の変換処理を修正・拡張するための実装案内です。Java 21 と Apache POI を使う Azure Functions アプリです。PDF出力にはリポジトリ内の `md2pdf` 変換ソースとフォントをビルド時に取り込みます。
+`functions/office2md` の変換処理を修正・拡張するための実装案内です。Java 21 と Apache POI を使う Azure Functions アプリです。埋め込み画像のOCRは、設定されたDocument Intelligenceへ委譲します。
 
 利用・配置手順は [利用ガイド](../functions/office2md/docs/usage.md)、API一覧は [HTTP API](../functions/office2md/docs/usage.md#http-api)、環境変数は [上限](../functions/office2md/docs/usage.md#上限) と [直接Queue投入](../functions/office2md/docs/direct-queue.md) を参照してください。[初期設計メモ](designs/office2md.md) は判断理由と確認観点を記録した参考資料です。
 
@@ -22,7 +22,7 @@ Javaのルートパッケージは `com.convertx2x.office2md` です。`conversi
 | 図形の座標変換、参考PNGのJava2D描画 | [DrawingScene](../functions/office2md/src/main/java/com/convertx2x/office2md/drawing/DrawingScene.java) |
 | Excel・Wordの保存済み接続の解決と本文、画像のJSON | [DiagramGraph](../functions/office2md/src/main/java/com/convertx2x/office2md/drawing/DiagramGraph.java)、[DiagramMetadata](../functions/office2md/src/main/java/com/convertx2x/office2md/drawing/DiagramMetadata.java) |
 | 図形文字の書式抽出・除外と、行の計測・配置 | [DrawingText](../functions/office2md/src/main/java/com/convertx2x/office2md/drawing/DrawingText.java)、[DrawingTextLayout](../functions/office2md/src/main/java/com/convertx2x/office2md/drawing/DrawingTextLayout.java) |
-| 一時ファイル、上限、重複画像、report、ZIP・PDF | [ConversionWorkspace](../functions/office2md/src/main/java/com/convertx2x/office2md/conversion/ConversionWorkspace.java)、[ConversionResult](../functions/office2md/src/main/java/com/convertx2x/office2md/conversion/ConversionResult.java)、[OutputFormat](../functions/office2md/src/main/java/com/convertx2x/office2md/conversion/OutputFormat.java) |
+| 一時ファイル、上限、重複画像、report、ZIP・OCR | [ConversionWorkspace](../functions/office2md/src/main/java/com/convertx2x/office2md/conversion/ConversionWorkspace.java)、[ConversionResult](../functions/office2md/src/main/java/com/convertx2x/office2md/conversion/ConversionResult.java)、[ImageMode](../functions/office2md/src/main/java/com/convertx2x/office2md/conversion/ImageMode.java) |
 | HTTP/Queueの入口、設定、サービスの共有 | [ConversionFunctions](../functions/office2md/src/main/java/com/convertx2x/office2md/ConversionFunctions.java)、[AppConfig](../functions/office2md/src/main/java/com/convertx2x/office2md/AppConfig.java)、[RuntimeServices](../functions/office2md/src/main/java/com/convertx2x/office2md/RuntimeServices.java) |
 | ジョブ状態、重複配送、Blobへの入出力 | [AzureJobService](../functions/office2md/src/main/java/com/convertx2x/office2md/jobs/AzureJobService.java)、[AzureJobStore](../functions/office2md/src/main/java/com/convertx2x/office2md/jobs/AzureJobStore.java)、[JobStore](../functions/office2md/src/main/java/com/convertx2x/office2md/jobs/JobStore.java) |
 | 静的UIの配信と安全なプレビュー | [PlaygroundFunctions](../functions/office2md/src/main/java/com/convertx2x/office2md/PlaygroundFunctions.java)、[playground/app.js](../functions/office2md/src/main/resources/playground/app.js) |
@@ -31,8 +31,13 @@ Javaのルートパッケージは `com.convertx2x.office2md` です。`conversi
 
 `OfficeMarkdownService` が入力サイズ・拡張子・形式シグネチャを検査し、Excelは `ExcelMarkdownService`、Wordは `WordMarkdownConverter`、PowerPointは `PowerPointMarkdownConverter` へ渡します。形式別コンバーターはOOXMLの本文パーツ型なども検査し、拡張子を変えた別形式やマクロ有効形式を受け付けません。入力は `.xlsx` / `.xls` / `.docx` / `.pptx` が対象で、`.doc` / `.ppt` / PDFは対象外です。
 
-出力形式は `OutputFormat` で選びます。既定のMarkdown結果は従来のZIPとして返し、PDF指定では生成したMarkdownと画像を `md2pdf` のレンダラーへ渡して `document.pdf` を追加します。PDFは入力形式ではありません。同期HTTPはPDF本体を返し、非同期では `/result` がPDF、`/archive` がMarkdown・report・画像・PDFのZIPになります。
-PDF配置時の警告は `PDF_` 接頭辞でOfficeの `report.json` の `warnings` に統合し、`pdfOutput` にページ数・サイズ・SHA-256・PDF警告件数を残します。
+出力はMarkdown・画像・reportです。Office2MDのPDF出力は廃止し、PDF用ライブラリ・フォントの取り込みも削除しました。同期HTTPはZIP、非同期の `/result` はMarkdown、`/archive` は成果物一式のZIPです。
+
+`ImageMode.IGNORE`（既定）では元の埋め込み画像のファイルとMarkdown参照を保持し、OCRしません。`OCR` では `OcrClient` を介して元画像の可視領域だけを読み取り、画像参照の直後に通常テキストの `画像内の文字（OCR）:` を置き、読み取った文字をその下へ追加します。環境設定だけでは自動実行せず、依頼側のモード指定も必要です。図形・接続の参考PNGはOCR対象外です。本文・表・図形から直接取り出せる文字と関係は従来の抽出を使います。
+
+`ConversionWorkspace.embeddedImage` が画像asset保存・OCR・Markdown・画像ブロックのreportをまとめます。同一文書内の同じ可視画像バイト列はSHA-256でOCR結果を共有し、配置ごとの参照・テキストは残します。抽出時に保持する画像バッファも共有し、保持画像の合計は `maxOutputBytes`、各配置へ出したOCR・画像参照の合計は `maxMarkdownBytes` で先に制限します。OCR失敗・未対応は画像参照と警告を残し、文字がなければ参照だけです。モード未設定時の外部OCR通信はありません。`report.imageMode` と `blocks[].ocr.status`（notRequested / succeeded / noText / skipped / failed）で区別できます。`assets[].sourceKind` は embeddedImage または renderedDiagram です。
+
+`ocr/DocumentIntelligenceOcrClient` は固定の prebuilt-read / API 2024-11-30 を使います。設定されたHTTPSホストへのバイナリ送信と結果ポーリングのみを許可し、リダイレクト・異なるホストへのOperation-Location・任意モデルへの移動を拒否します。資格情報・画像・HTTP応答本文を例外やログへ含めません。通信はテスト時に差し替え、実サービスの精度・疎通・料金は配置先で別途確認します。
 
 | 形式 | 構造・読む順番 | 表・除外対象 |
 | --- | --- | --- |
@@ -48,7 +53,7 @@ PDF配置時の警告は `PDF_` 接頭辞でOfficeの `report.json` の `warning
 2. `WorkbookFactory.create(file, null, true)` で読み取り専用のWorkbookを開く。シート数と、書式だけのセルも含む実体セル数を検査する。POIのWorkbookモデルはメモリーに展開される。
 3. 表示シートをブック順に処理する。`BorderTables` は元の罫線から通常表を検出し、`TableExpansion` は同じ行範囲にある左右の値・表を取り込む。`CellMarkdown` は表示対象セルの文字列を生成する。非表示行・列と、結合アンカー以外のセルを除外する。
 4. `DrawingExtractor` が表示対象の埋め込み画像・図形・保存された接続を読む。明示グループと、確認できた接続でつながる図を単位に、図形文字・接続のMarkdown、構造JSON、参考画像を生成し、配置用の `DrawingBlock` へ渡す。
-5. 本文・表・図形を行、列、同位置での優先順に並べる。表に重なる図形は、最後に重なる表の直後へ置く。内容があるシートだけ `# [シート名] シート` を付け、H2以降や意味上の読む順番は推測しない。
+5. 本文・表・図形を行、列、同位置での優先順に並べる。表に重なる図形は、最後に重なる表の直後へ置く。内容があるシートだけ `# [シート名] シート` を付け、H2以降の見出しや意味上の読む順番は推測しない。図形・接続・OCRのラベルは通常テキストで出す。
 6. `document.md` と `report.json` を確定して入力一時ファイルを削除する。戻り値の `ConversionResult` が成果物の寿命を引き継ぐ。
 
 `ConversionResult` は `AutoCloseable` です。`files()` のファイルを読み取る・コピーする・Blobへ送る処理を終えてから閉じます。閉じた後の一時パスを保持しないでください。異常終了時はサービス側で一時ディレクトリを清掃します。
@@ -63,7 +68,7 @@ PDF配置時の警告は `PDF_` 接頭辞でOfficeの `report.json` の `warning
 
 ### PowerPointの処理
 
-各表示スライドの先頭に、元のスライド番号を使った `[page n]` を付けます。非表示スライドを除外すると番号は飛びます。`PresentationText` が文字を抽出し、明示タイトルをH1、タイトルなしなら `# スライドN` にします。H2以降は追加しません。通常本文・表を上→下・左→右の順で出し、続けて「図中の項目：」「接続関係（保存情報）：」とスライド全体の参考画像を出します。図形文字は太字・リンクを保った通常のMarkdownであり、画像やaltを解釈しなくても取得できます。接続先になった通常テキストボックスも図中の項目へ移し、本文と重複させません。関係のない本文はそのまま残します。
+各表示スライドの先頭に、元のスライド番号を使った `[page n]` を付けます。非表示スライドを除外すると番号は飛びます。`PresentationText` が文字を抽出し、明示タイトルをH1、タイトルなしなら `# スライドN` にします。H2以降の見出しは追加しません。通常本文・表と、グループにも接続にも属さない元画像は上→下・左→右の順で出します。単独画像のOCR文字は画像参照の直後に `画像内の文字（OCR）:` とともに入れます。図形のグループや接続は一体で扱い、続けて `図中の項目:`、`接続関係:` と参考画像の参照を出します。図形文字は太字・リンクを保った通常のMarkdownであり、画像やaltを解釈しなくても取得できます。接続先になった通常テキストボックスも図中の項目へ移し、本文と重複させません。関係のない本文はそのまま残します。
 
 `PresentationConnections` は、表示対象の図形IDとコネクターに保存された `stCxn` / `endCxn` だけを使います。開始点の `headEnd`、終端の `tailEnd` にある `triangle` / `stealth` / `arrow` から向きを判定します。丸（●、`oval`）・ひし形（◆、`diamond`）は方向判定では矢印なしとして扱い、JSONの `startArrow / endArrow` には元の端点種類を残します。開始点が `oval`、終端が `triangle` なら `start-to-end`、両端が丸・ひし形なら `undirected` です。未知の端点記号の `arrowheadDirectionAlongLine` は `unknown` です。近さ・横並び・重なりから接続や読む順序を推測せず、近くの文字を分岐ラベルへ結び付けません。参照の欠落・除外済みの対象・重複ID・未知の端点記号は本文で「接続関係不明」と表示し、`DIAGRAM_CONNECTION_UNRESOLVED` を記録します。双方向・無方向・循環・自己接続は保存された関係のまま扱い、実行順へ並べ替えません。
 
@@ -80,23 +85,25 @@ PowerPointの図形・コネクターは、変形後の外接矩形の中心を�
 | `positionOnSlide / arrowheadPointsToward` | 9区画の位置と8方向の矢印先端方向。判定できない値は `null`。後者は対象外の線には付けない |
 | `fromId / toId` | `resolved` かつ片方向の接続だけに追加する、向きを反映した始点・終点。未解決の端点キーは省略 |
 
-グループを内部で子要素へ展開して座標を求めますが、個別PNGにはしません。`PresentationRenderer` が表示対象の対応要素を元の重なり順と親からの座標変換で描き、図を含むスライドにつき全体の参考PNGを1枚出します。図形・PNG/JPEGの回転・反転・グループ変形を反映し、PNG/JPEGは参考画像に含めます。原本を個別抽出する挙動ではありません。その他の画像形式は警告と原本添付にし、加工を適用しません。保存・継承された単色背景はテーマ参照を含めて反映し、背景指定がなければ白にします。画像・グラデーションなど未対応の背景は白へ置き換えて `UNSUPPORTED_SLIDE_BACKGROUND` を記録し、外部の背景画像は取得しません。外部画像参照と取消線Runは描画前に作業中のモデルから除外します。入力バイト列は変更しません。
+グループを内部で子要素へ展開して座標を求めますが、個別PNGにはしません。`PresentationRenderer` が表示対象の対応要素を元の重なり順と親からの座標変換で描き、接続または明示グループでまとまる図ごとに参考PNGを出します。独立した図形群は同じスライド内でまとめるため、1スライドから複数の参考PNGになる場合があります。各画像のキャンバスは元のスライド寸法です。図形・PNG/JPEGの回転・反転・グループ変形を反映し、元の埋め込み画像は独立したassetと画像参照を出力します。図形と混在する図では対応するPNG/JPEGを参考画像にも含めますが、切り抜き・非矩形マスク等がある画像は合成せず個別の画像参照で扱います。対応できない画像形式・加工は原本添付と警告を残し、隠れた文字をOCRへ送らないようスキップします。保存・継承された単色背景はテーマ参照を含めて反映し、背景指定がなければ白にします。画像・グラデーションなど未対応の背景は白へ置き換えて `UNSUPPORTED_SLIDE_BACKGROUND` を記録し、外部の背景画像は取得しません。外部画像参照と取消線Runは描画前に作業中のモデルから除外します。入力バイト列は変更しません。
 
 参考画像のaltは次の6項目のJSONで、`blocks[].metadata` にも格納します。`path` は画像ファイルへの参照です。
 
 ```md
-![{"type":"図","text":"","x":0,"y":0,"width":960,"height":540}](images/diagram-0001.png)
+![{"type":"接続図","text":"","x":0,"y":0,"width":960,"height":540}](images/diagram-0001.png)
 ```
 
-参考画像の `type` は「図」、`text` は空文字、寸法は入力スライドの寸法です。各図形の情報は `nodes` から取得します。添付ファイルのリンクには個別の形状種類・文字・外接矩形と `positionOnSlide` のJSONを使います。座標はスライド左上を原点とし、右がXの正方向、下がYの正方向です。単位はpt（1/72インチ）で固定し、原点・単位・回転角のフィールドは出力しません。図形の外接矩形は変形後の範囲を小数3桁まで丸め、描画余白・ストロークを含みません。
+PowerPointの参考画像の `type` は「接続図」または「図形」、`text` は空文字、寸法は入力スライドの寸法です。各図形の情報は `nodes` から取得します。添付ファイルのリンクには個別の形状種類・文字・外接矩形と `positionOnSlide` のJSONを使います。座標はスライド左上を原点とし、右がXの正方向、下がYの正方向です。単位はpt（1/72インチ）で固定し、原点・単位・回転角のフィールドは出力しません。図形の外接矩形は変形後の範囲を小数3桁まで丸め、描画余白・ストロークを含みません。
 
 altにはコンパクトなJSONを埋め込み、Markdownの構文になる文字はJSONのUnicodeエスケープで保護します。例えば文字列内の `[`・引用符・バックスラッシュは `\u005B`・`\u0022`・`\u005C` です。JSON化した後に通常の `Markdown.escape` や1行化処理を重ねないでください。Markdownソースのaltにも、レンダリング後の画像の `alt` にも、そのまま `JSON.parse` を適用できます。
 
-RAGへの取り込みでは `[page n]` / H1でスライドを識別し、図中の項目と接続関係を同じチャンクへ残す構成を推奨します。分割する場合も、参照するノードの文字を接続と一緒に持たせ、`connectionResolutionStatus: unresolved` を確定した関係として扱わないでください。位置や矢印先端方向は見た目の補助情報であり、未接続の線の相手先を確定しません。画像に焼き込まれた文字にはOCRを行わず、LLMで意味を補完しません。参考PNGもPOIの対応範囲に限られ、元資料の完全な再現ではありません。[業務フローのデモPPTX](APIDocs/office2md/examples/powerpoint-rag-flow/input.pptx) と [実変換Markdown](APIDocs/office2md/examples/powerpoint-rag-flow/output/document.md) で確認できます。
+RAGへの取り込みでは `[page n]` / H1でスライドを識別し、図中の項目と接続関係を同じチャンクへ残す構成を推奨します。分割する場合も、参照するノードの文字を接続と一緒に持たせ、`connectionResolutionStatus: unresolved` を確定した関係として扱わないでください。位置や矢印先端方向は見た目の補助情報であり、未接続の線の相手先を確定しません。画像内の文字は指定時にOCRで補いますが、LLMで意味を補完しません。参考PNGもPOIの対応範囲に限られ、元資料の完全な再現ではありません。[業務フローのデモPPTX](APIDocs/office2md/examples/powerpoint-rag-flow/input.pptx) と [実変換Markdown](APIDocs/office2md/examples/powerpoint-rag-flow/output/document.md) で確認できます。
 
 ## Excelの表・本文・数式で維持するルール
 
 `BorderTables` はセルの上下左右の罫線を境界集合へ変換します。隣接セルの片側にだけ線がある場合も利用し、結合セルを一つの区画として扱います。複数の閉じた区画が連結し、外接範囲を過不足なく埋め、外枠が閉じている候補を通常表の起点にします。最上段に無罫線セルが連続していても、同段の罫線付き区画と、外周が閉じ横にも分割された下段格子から範囲を確定できる場合は、欠けた範囲を同じ表の位置として認識します。表の左端だけでなく、通常列の右に続くマトリックスの角も対象です。隣接する二つの表が区切りなく接続していれば一表として扱います。欠けたセルが空なら `TABLE_OPEN_TOP_CELL`、文字列なら `TABLE_OPEN_TOP_NOTE` を記録し、後者の文字は表の値に入れず表直前の注記へ出します。右端の無罫線欠けも、上段に罫線付き・非空の横結合見出しがあり、下段の閉じた分割格子で範囲を確定できる場合は対象です。その根拠がない右端だけの欠けや、数式・数値が置かれた欠けは推測せず、罫線のない値だけから表を新設しません。図形の線、画面のグリッド線、テーブルスタイル、条件付き書式を罫線として評価しません。
+
+上段の欠けと上下への罫線の延長を調べる際は、別の独立した閉じた領域の外周に属する線を区別します。例えば情報欄 `B1:D2` の直後に上段見出し `F3:H3`、下段格子 `B4:H6` がある場合、情報欄の下辺を主表の左上の罫線と誤認せず、空行なしで別々の表として検出します。独立した閉じた領域に属さない線や、欠けた外枠を無条件に無視することはありません。
 
 `TableExpansion` は、通常表と開始行・終了行が同じ横並びの表をまとめ、同じ行範囲にある左右の表示値を列として取り込みます。通常表の内部列は空でも保持し、表同士や値までの空列は省きます。行範囲の異なる表を境界にして所有範囲を分けるため、一つの値を複数表へ重複出力しません。通常表が一つもない値だけの範囲から表を作ることはありません。
 
@@ -141,11 +148,13 @@ Wordは一つの `wp:inline` / `wp:anchor`、または独立した図形グル�
 
 Wordのコネクター自身が持つ文字は「接続線 … の文字」として本文へ出し、その接続の `edges[]` にも `type / text / x / y / width / height` を加えます。近くの独立したテキストボックスは接続のラベルへ結び付けません。
 
-Excel・Wordは共有の `DiagramGraph` で、図形文字を「図中の項目：」、保存された接続を「接続関係（保存情報）：」として通常のMarkdownへ出し、`diagram` ブロックの `nodes / edges` に構造を残します。形式別の処理が表示対象だけのノードと保存済み接続先を渡し、共有処理は近い文字を分岐条件に結び付けたり、配置から意味を補完したりしません。IDはExcelではシート、Wordでは描画ブロック内で有効なので、`section / range` と組み合わせてください。参照先・向きを確認できない接続は「接続関係不明」と `DIAGRAM_CONNECTION_UNRESOLVED` を残します。接続の `arrowheadDirectionAlongLine / connectionResolutionStatus / connectionResolutionReason / connectionResolutionExplanation` と端点記号の方向判定はPowerPointと同じルールを使います。`positionOnSlide / arrowheadPointsToward` はスライド座標を持つPowerPointだけのフィールドです。
+Excel・Wordは共有の `DiagramGraph` で、図形文字を `図中の項目:`、接続を `接続関係:` の通常テキストのラベルの下へMarkdownで出し、`diagram` ブロックの `nodes / edges` に構造を残します。形式別の処理が表示対象だけのノードと保存済み接続先を渡し、共有処理は近い文字を分岐条件に結び付けたり、配置から意味を補完したりしません。IDはExcelではシート、Wordでは描画ブロック内で有効なので、`section / range` と組み合わせてください。参照先・向きを確認できない接続は「接続関係不明」と `DIAGRAM_CONNECTION_UNRESOLVED` を残します。接続の `arrowheadDirectionAlongLine / connectionResolutionStatus / connectionResolutionReason / connectionResolutionExplanation` と端点記号の方向判定はPowerPointと同じルールを使います。`positionOnSlide / arrowheadPointsToward` はスライド座標を持つPowerPointだけのフィールドです。
+
+参考画像の前には「参考画像（図形）：」「参考画像（接続図）：」などの説明見出しを付けません。接続がない図の「図形間の接続情報はありません。配置から順序や関係を推測していません。」という説明文も出しません。図形文字・接続関係・不明な接続・JSONの構造情報は保持します。
 
 参考画像と添付リンクのaltは、`DiagramMetadata` が生成する `type / text / x / y / width / height` の6項目のJSONです。PowerPointと同じ規則でMarkdownの構文になる文字を保護し、同じ内容を `blocks[].metadata` に格納します。原点・単位・回転角のフィールドは出力しません。座標はpt、Excelではシート左上、Wordでは描画オブジェクト内のローカル座標です。Wordの保存された本文配置指定は図の `placement` 文字列として別に残し、ページ上の絶対位置を推測しません。変形後の外接矩形は描画余白やストロークを含まず、位置不明は `null` にしてPNG描画用の仮座標を流用しません。
 
-PNG/JPEGは図形と同じ参考画像に描き、回転・反転・親グループの変形を反映します。Excelの画像の切り抜きや複雑な効果は反映せず、`IMAGE_EFFECTS_IGNORED` を記録します。その他の画像形式は原本添付と警告にして、回転などの加工を適用しません。図中の画像の文字情報は保存された説明だけで、OCRやLLMは使いません。シート全体やWordのページ組版は再現しません。
+元の埋め込み画像は個別のassetとMarkdown参照を出力します。混合図では配置確認用の参考画像にも含むことがあります。対応する画像の切り抜き・回転・反転を適用し、可視領域を安全に準備できない画像は原本添付と警告を残してOCRしません。保存済みの説明とOCRテキストは分けて出し、参考図形PNGはOCRしません。シート全体やWordのページ組版は再現しません。
 
 Wordの `WordDrawings` はDrawingML/VMLを読み、全段落の除去済み文字を本文とJSONへ残します。図形内文字の本文出力はプレーンテキストで、太字装飾やハイパーリンク先は保持しません。リンクの表示文字は残ります。通常の本文・表の太字・リンクの扱いは変わりません。図形PNGの文字は先頭の代表書式を使う簡易描画です。混在書式・独自余白・文字だけの回転は近似として警告します。共有の `NativeDrawingRenderer` を通してExcelと同じ基本図形描画を使います。未対応のグラフ・SmartArt・OLEなどを外部取得や別アプリ実行で補完しません。PowerPointもグラフ・SmartArt・数式オブジェクトの忠実な描画は対象外です。
 
@@ -171,10 +180,10 @@ Excelとは異なる組版なので、フォント置換後の字幅・改行位
 
 `report.json` は `specVersion: 1` です。接続情報は `arrowheadDirectionAlongLine / connectionResolutionStatus / connectionResolutionReason / connectionResolutionExplanation` を使います。Queue依頼本文の `version` は独立した仕様です。`source.format` は入力拡張子、`sectionKind` は `sheet` / `slide` / `document`、`sectionCount` は出力したセクション数です。診断やブロックの `section` は形式別の位置名です。`blocks` は元の位置・範囲との対応を持ち、ExcelではMarkdown行番号も記録し、表には元の行列番号・ヘッダー判定・結合範囲・出力列ごとの `sourceColumnSpans` を付けます。無罫線の角にある文字列を表の前に示す注記は `type: text` と `noteKind: unbordered-top-note`、明細の結合範囲を示す注記は `type: text` と `noteKind: body-merge` を持ちます。名前付き範囲を採用した表には `definedNames`、分割した表には元範囲の `sourceTableRange` を付けます。PowerPointの `diagram` ブロックとExcel・Wordの `drawing` ブロックは `nodes / edges`、参考画像があれば `path / metadata` を持ちます。添付ファイルにも `path / metadata` を付けます。`assets` はファイルのパス・MIME・サイズ・SHA-256です。フィールドは形式とブロック種別ごとに読み取ってください。レポート形式を変える場合はUIとQueueの成果物取得も確認します。
 
-- 同期HTTPは既定で `OfficeMarkdownService.convert` の結果を `ConversionResult.zipBytes()` でZIP化し、`output=pdf` のときは `pdfBytes()` を返す。最終レスポンスは上限付きのメモリーバッファで、HTTPストリーミングではない。
+- 同期HTTPは `OfficeMarkdownService.convert` の結果を `ConversionResult.zipBytes()` でZIP化する。最終レスポンスは上限付きのメモリーバッファで、HTTPストリーミングではない。
 - HTTPからの非同期受付は入力と状態を保存してからQueueへ送る。直接Queueも同じ `AzureJobService.process` と変換コアへ入る。
 - QueueはBlobリースで同じジョブの配送を直列化し、正規化した依頼が一致するか確認する。完了済みジョブを別の内容で上書きしない。
-- `AzureJobStore` は試行ごとに成果物を個別Blobへ保存する。PDFジョブでは `document.pdf` も保存し、`/result` はPDFを選ぶ。すべて保存できた試行だけを成功状態へ公開し、保存途中のBlobを結果一覧へ混ぜない。ZIPは取得要求時に作る。
+- `AzureJobStore` は試行ごとに成果物を個別Blobへ保存する。`/result` はMarkdownを返す。すべて保存できた試行だけを成功状態へ公開し、保存途中のBlobを結果一覧へ混ぜない。ZIPは取得要求時に作る。
 - 入力はダウンロード中、完成成果物は保存時のETagに対して検査する。再試行をまたいで同じ入力Blobを差し替えてよいという意味ではない。
 
 Queue JSONは [ConversionJobRequest](../functions/office2md/src/main/java/com/convertx2x/office2md/jobs/ConversionJobRequest.java) が検証し、Storageは [BlobStorageProfiles](../functions/office2md/src/main/java/com/convertx2x/office2md/jobs/BlobStorageProfiles.java) の入力用・出力用登録名で解決します。依頼側から任意URLや資格情報を受け取りません。登録名の分離とStorage側の実権限は別です。HTTPのホストキーもStorageの資格情報とは異なります。プロトコル・保存先・再送手順は [直接Queue投入](../functions/office2md/docs/direct-queue.md) に集約しています。
@@ -200,7 +209,7 @@ Queue JSONは [ConversionJobRequest](../functions/office2md/src/main/java/com/co
 | 成果物・上限・一時ファイル | `ConversionWorkspace`、`ConversionResult`、`ConversionLimits`、`AppConfig` | コア・描画テストの上限、ZIP内容、清掃ケース |
 | HTTP契約・設定・非同期の有効化 | `ConversionFunctions`、設定と起動スクリプト | [ConversionFunctionsTest](../functions/office2md/src/test/java/com/convertx2x/office2md/ConversionFunctionsTest.java)、[test_settings_scripts.py](../functions/office2md/scripts/test_settings_scripts.py) |
 | Queue契約・再試行・Storage | `ConversionJobRequest`、`AzureJobService`、`AzureJobStore` | [jobs配下のテスト](../functions/office2md/src/test/java/com/convertx2x/office2md/jobs/)、[非同期E2E](../functions/office2md/scripts/test_async_e2e.py) |
-| ZIP・PDFプレビュー、画像取得、認証 | `playground/app.js`、`PlaygroundFunctions` | [ブラウザ検証](../functions/office2md/scripts/test_playground_browser.cjs) |
+| Markdownプレビュー・OCR設定、画像取得、認証 | `playground/app.js`、`PlaygroundFunctions` | [ブラウザ検証](../functions/office2md/scripts/test_playground_browser.cjs) |
 
 図形の試験では、取消線を削除した参照入力との画像一致、色・位置・寸法などを使います。異なるOSのフォントやJava2Dで生成したPNGとの無条件なバイト一致を前提にせず、Linuxでも日本語・フォント置換を確認してください。
 

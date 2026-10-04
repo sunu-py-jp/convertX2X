@@ -2,6 +2,7 @@ package com.convertx2x.office2md.drawing;
 
 import com.convertx2x.office2md.conversion.ConversionException;
 import com.convertx2x.office2md.conversion.ConversionWorkspace;
+import com.convertx2x.office2md.images.EmbeddedImagePreprocessor;
 import com.convertx2x.office2md.conversion.Markdown;
 import java.awt.Color;
 import java.awt.geom.AffineTransform;
@@ -139,8 +140,11 @@ public final class DrawingExtractor {
                 }
                 metadata.put("edges", edgeMetadata);
                 checkMarkdownLimit(markdown);
+                boolean hasNonPictureLayer = component.stream().anyMatch(item -> item.kind != Kind.PICTURE
+                        && item.kind != Kind.UNSUPPORTED);
                 List<DrawingScene.Item> rendered = component.stream()
-                        .filter(item -> item.kind != Kind.UNSUPPORTED && (item.kind != Kind.PICTURE || inline(item))).toList();
+                        .filter(item -> item.kind != Kind.UNSUPPORTED && (item.kind != Kind.PICTURE
+                                || hasNonPictureLayer && inline(item) && !item.croppedPicture)).toList();
                 if (!rendered.isEmpty()) {
                     Map<String, Object> imageMetadata = DiagramMetadata.of("図", "", placementBounds(rendered));
                     String alt = limitedAlt(imageMetadata);
@@ -151,20 +155,20 @@ public final class DrawingExtractor {
                     workspace.info("DRAWING_SIMPLIFIED", sheet.getSheetName(), location,
                             "保存されたグループ・接続単位で図を簡易描画しました。セル内容は画像に含みません。");
                 }
-                List<Map<String, Object>> attachments = new ArrayList<>();
                 for (var item : component) {
-                    if (item.kind == Kind.PICTURE && !inline(item)) {
+                    if (item.kind == Kind.PICTURE && item.visiblePicture != null) {
                         Map<String, Object> imageMetadata = DiagramMetadata.of("画像", item.alt,
                                 item.positionKnown ? item.placementBounds() : null);
-                        String alt = limitedAlt(imageMetadata);
-                        String path = workspace.addAsset("image", item.picture, item.extension, item.contentType);
-                        markdown = append(markdown, "[" + alt + "](" + path + ")");
-                        attachments.add(Map.of("id", item.graphId, "path", path, "metadata", imageMetadata));
+                        imageMetadata.put("id", item.graphId);
+                        var prepared = item.visiblePicture;
+                        markdown = append(markdown, workspace.embeddedImage(prepared.bytes(), prepared.extension(),
+                                prepared.contentType(), imageMetadata, sheet.getSheetName(),
+                                item.positionKnown ? range(item.placementBounds()) : null,
+                                prepared.ocrEligible()));
                     } else if (item.kind == Kind.UNSUPPORTED) {
                         markdown = append(markdown, "[" + item.placeholder + "]");
                     }
                 }
-                if (!attachments.isEmpty()) metadata.put("attachments", attachments);
                 blocks.add(block(bounds, markdown, metadata));
             }
             // BIFF chart records can exist independently of an Escher shape tree.
@@ -281,7 +285,7 @@ public final class DrawingExtractor {
             try {
                 var data = picture.getPictureData();
                 if (data == null) throw new IllegalArgumentException("Missing embedded picture");
-                item.picture = data.getData();
+                item.picture = workspace.retainImageBytes(data.getData());
                 if (item.picture.length > workspace.limits().maxImageBytes())
                     throw ConversionWorkspace.limit("IMAGE_BYTES_LIMIT", "画像1件のサイズが上限を超えました。");
                 String[] format = sniff(item.picture);
@@ -292,18 +296,38 @@ public final class DrawingExtractor {
                 if (!description.isBlank()) item.alt = description;
                 if (inline(item)) DrawingScene.verifyPicture(item.picture, workspace);
                 else warning("IMAGE_FORMAT_ATTACHMENT", item, "この画像形式は元ファイルの添付として保持します。");
+                EmbeddedImagePreprocessor.Crop crop = EmbeddedImagePreprocessor.Crop.none();
                 if (picture instanceof XSSFPicture) {
                     Node blipFill = child(xml, "blipFill");
                     Node blip = child(blipFill, "blip");
-                    if (child(blipFill, "srcRect") != null || child(child(xml, "spPr"), "effectLst") != null || hasElementChildren(blip))
-                        warning("IMAGE_EFFECTS_IGNORED", item, "切り抜き・画像効果は反映しません。プレビューには回転・反転を反映します。");
+                    crop = EmbeddedImagePreprocessor.Crop.drawingMl(child(blipFill, "srcRect"));
+                    if (child(child(xml, "spPr"), "effectLst") != null || hasElementChildren(blip))
+                        warning("IMAGE_EFFECTS_IGNORED", item, "画像効果は画像ファイルに反映しません。");
                 } else if (picture instanceof HSSFPicture hssf) {
-                    if (escher(hssf, EscherPropertyTypes.BLIP__CROPFROMTOP, 0) != 0
-                            || escher(hssf, EscherPropertyTypes.BLIP__CROPFROMBOTTOM, 0) != 0
-                            || escher(hssf, EscherPropertyTypes.BLIP__CROPFROMLEFT, 0) != 0
-                            || escher(hssf, EscherPropertyTypes.BLIP__CROPFROMRIGHT, 0) != 0)
-                        warning("IMAGE_EFFECTS_IGNORED", item, "切り抜き前の領域を含みます。プレビューには回転・反転を反映します。");
+                    crop = EmbeddedImagePreprocessor.Crop.biff(
+                            escher(hssf, EscherPropertyTypes.BLIP__CROPFROMLEFT, 0),
+                            escher(hssf, EscherPropertyTypes.BLIP__CROPFROMTOP, 0),
+                            escher(hssf, EscherPropertyTypes.BLIP__CROPFROMRIGHT, 0),
+                            escher(hssf, EscherPropertyTypes.BLIP__CROPFROMBOTTOM, 0));
                 }
+                boolean rectangular = picture instanceof HSSFPicture hssf
+                        ? hssf.getShapeType() == HSSFShapeTypes.PictureFrame
+                            && !hasEscherProperty(hssf, EscherPropertyTypes.GEOMETRY__VERTICES)
+                            && !hasEscherProperty(hssf, EscherPropertyTypes.GEOMETRY__SEGMENTINFO)
+                            && !hasEscherProperty(hssf, EscherPropertyTypes.BLIP__TRANSPARENTCOLOR)
+                        : EmbeddedImagePreprocessor.rectangularVisibility(xml);
+                item.croppedPicture = crop.present() || !rectangular;
+                item.visiblePicture = rectangular
+                        ? EmbeddedImagePreprocessor.prepare(item.picture, item.extension, item.contentType,
+                                crop, item.positionKnown ? item.transform : null,
+                                item.width, item.height, workspace.limits())
+                        : new EmbeddedImagePreprocessor.Prepared(item.picture, item.extension, item.contentType,
+                                false, false, "画像の非矩形マスク・透明化を安全に再現できません。");
+                item.visiblePicture = item.visiblePicture.withBytes(
+                        workspace.retainImageBytes(item.visiblePicture.bytes()));
+                if (item.visiblePicture.skipReason() != null)
+                    warning("IMAGE_VISIBLE_AREA_UNAVAILABLE", item,
+                            item.visiblePicture.skipReason() + "元画像を保存しました。");
             } catch (IOException | RuntimeException ex) {
                 if (ex instanceof ConversionException conversion) throw conversion;
                 item.kind = Kind.UNSUPPORTED;
@@ -612,6 +636,12 @@ public final class DrawingExtractor {
         if (options == null) return fallback;
         EscherSimpleProperty property = options.lookup(type);
         return property == null ? fallback : property.getPropertyValue();
+    }
+
+    private static boolean hasEscherProperty(HSSFShape shape, EscherPropertyTypes type) {
+        EscherOptRecord options = shape.getOptRecord();
+        if (options == null) options = hssfContainer(shape).getChildById(EscherOptRecord.RECORD_ID);
+        return options != null && options.lookup(type) != null;
     }
     private static EscherContainerRecord hssfContainer(HSSFShape shape) {
         // HSSFShape's container is protected and its flip accessors do not handle groups.

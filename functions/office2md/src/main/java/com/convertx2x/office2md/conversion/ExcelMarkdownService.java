@@ -2,6 +2,7 @@ package com.convertx2x.office2md.conversion;
 
 import com.convertx2x.office2md.drawing.DrawingBlock;
 import com.convertx2x.office2md.drawing.DrawingExtractor;
+import com.convertx2x.office2md.ocr.OcrClient;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
@@ -37,12 +38,16 @@ public class ExcelMarkdownService {
     }
 
     public ConversionResult convert(byte[] input, String filename) {
+        return convert(input, filename, ImageMode.IGNORE, OcrClient.disabled());
+    }
+
+    public ConversionResult convert(byte[] input, String filename, ImageMode imageMode, OcrClient ocrClient) {
         validate(input, filename);
         try { CONVERSION_SLOT.acquire(); }
         catch (InterruptedException e) { Thread.currentThread().interrupt(); throw new ConversionException(503, "CONVERSION_INTERRUPTED", "変換が中断されました。", e); }
         ConversionWorkspace workspace = null;
         try {
-            workspace = new ConversionWorkspace(limits);
+            workspace = new ConversionWorkspace(limits, imageMode, ocrClient);
             Path source = workspace.directory().resolve("source.workbook");
             try { Files.write(source, input); }
             catch (IOException e) { throw ConversionWorkspace.io(e); }

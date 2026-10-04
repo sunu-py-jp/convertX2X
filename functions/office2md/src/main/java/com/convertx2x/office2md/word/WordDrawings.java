@@ -8,6 +8,7 @@ import com.convertx2x.office2md.drawing.ConnectorGeometry;
 import com.convertx2x.office2md.drawing.DiagramMetadata;
 import com.convertx2x.office2md.drawing.DiagramGraph;
 import com.convertx2x.office2md.drawing.NativeDrawingRenderer;
+import com.convertx2x.office2md.images.EmbeddedImagePreprocessor;
 import java.awt.Color;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Point2D;
@@ -54,6 +55,8 @@ final class WordDrawings {
         String unsupportedMessage;
         int horizontal = 1, vertical = 1;
         byte[] picture;
+        EmbeddedImagePreprocessor.Prepared visiblePicture;
+        boolean croppedPicture;
         boolean inlineImage() { return extension.equals("png") || extension.equals("jpg"); }
         NativeDrawingRenderer.Shape shape() {
             return new NativeDrawingRenderer.Shape(connector ? "line" : preset, width, height, transform, fill, line, lineWidth,
@@ -106,8 +109,8 @@ final class WordDrawings {
             List<DiagramGraph.Vertex> vertices = new ArrayList<>();
             List<DiagramGraph.Connection> connections = new ArrayList<>();
             List<NativeDrawingRenderer.Shape> shapes = new ArrayList<>();
-            List<String> attachments = new ArrayList<>();
-            List<Map<String, Object>> attachmentMetadata = new ArrayList<>();
+            List<String> imageReferences = new ArrayList<>();
+            boolean hasNonPictureLayer = items.stream().anyMatch(item -> item.picture == null && item.renderable);
             List<String> connectorText = new ArrayList<>();
             Map<String, Map<String, Object>> connectorMetadata = new LinkedHashMap<>();
             Rectangle2D union = null;
@@ -147,10 +150,19 @@ final class WordDrawings {
                     connectorMetadata.put(id, metadata);
                     if (!text.isBlank()) connectorText.add("接続線 " + Markdown.escape(id) + " の文字：" + Markdown.escape(text).replace("\n", "<br>"));
                 } else vertices.add(new DiagramGraph.Vertex(id, item.sourceId, type, text, Markdown.escape(text), metadata));
-                if (item.picture != null && !item.inlineImage()) {
-                    String path = workspace.addAsset("image", item.picture, item.extension, item.contentType);
-                    attachments.add("[" + DiagramMetadata.imageAlt(metadata) + "](" + path + ")");
-                    attachmentMetadata.add(Map.of("id", id, "path", path, "metadata", metadata));
+                if (item.picture != null) {
+                    EmbeddedImagePreprocessor.Prepared prepared = item.visiblePicture;
+                    if (prepared != null) {
+                        metadata.put("id", id);
+                        imageReferences.add(workspace.embeddedImage(prepared.bytes(), prepared.extension(),
+                                prepared.contentType(), metadata, section, diagramRange + "/" + id,
+                                prepared.ocrEligible()));
+                    }
+                    // A pure picture is already represented by its own asset. In mixed scenes a
+                    // preview can retain its position, unless an unsupported crop would reveal
+                    // picture content that Word had hidden.
+                    if (hasNonPictureLayer && item.renderable && item.inlineImage() && !item.croppedPicture)
+                        shapes.add(item.shape());
                 } else if (item.renderable) shapes.add(item.shape());
             }
             var edges = DiagramGraph.resolve(vertices, connections);
@@ -164,7 +176,6 @@ final class WordDrawings {
             block.put("type", "diagram"); block.put("section", section); block.put("range", diagramRange);
             block.put("placement", items.get(0).reference);
             block.put("nodes", vertices.stream().map(DiagramGraph.Vertex::metadata).toList());
-            if (!attachmentMetadata.isEmpty()) block.put("attachments", attachmentMetadata);
             block.put("edges", edges.stream().map(edge -> {
                 Map<String, Object> metadata = new LinkedHashMap<>(edge.metadata());
                 metadata.putAll(connectorMetadata.get(edge.id()));
@@ -181,7 +192,7 @@ final class WordDrawings {
                 workspace.info("DRAWING_SIMPLIFIED", section, diagramRange,
                         "Wordの図形・保存された接続を文字として保持し、同じ描画領域を確認用画像にまとめました。ページ全体の配置は再現しません。");
             }
-            output.addAll(attachments);
+            output.addAll(imageReferences);
             workspace.block(block);
             return String.join("\n\n", output);
         }
@@ -356,6 +367,7 @@ final class WordDrawings {
                 long limit = Math.min(workspace.limits().maxImageBytes(), Integer.MAX_VALUE - 1L);
                 try (var input = imagePart.getInputStream()) { item.picture = input.readNBytes((int) limit + 1); }
                 if (item.picture.length > limit) throw ConversionWorkspace.limit("IMAGE_BYTES_LIMIT", "画像1件のサイズが上限を超えました。");
+                item.picture = workspace.retainImageBytes(item.picture);
                 String[] format = imageFormat(item.picture, imagePart.getContentType());
                 item.extension = format[0]; item.contentType = format[1];
                 Node properties = find(node, "cNvPr");
@@ -370,8 +382,21 @@ final class WordDrawings {
                 if (!alt.isBlank()) item.alt = alt;
                 if (item.inlineImage()) NativeDrawingRenderer.verifyPicture(item.picture, workspace);
                 else workspace.warning("IMAGE_FORMAT_ATTACHMENT", section, range, "この画像形式は元ファイルの添付として保持します。");
-                if (find(node, "srcRect") != null)
-                    workspace.warning("IMAGE_EFFECTS_IGNORED", section, range, "画像の切り抜きは未対応です。回転・反転・グループ変換はPNG/JPEGの確認用画像に反映します。");
+                Node cropNode = find(node, "srcRect");
+                EmbeddedImagePreprocessor.Crop crop = EmbeddedImagePreprocessor.Crop.drawingMl(cropNode);
+                boolean rectangular = EmbeddedImagePreprocessor.rectangularVisibility(node);
+                item.croppedPicture = crop.present() || !rectangular;
+                item.visiblePicture = rectangular
+                        ? EmbeddedImagePreprocessor.prepare(item.picture, item.extension, item.contentType,
+                                crop, item.geometryKnown ? item.transform : null,
+                                item.width, item.height, workspace.limits())
+                        : new EmbeddedImagePreprocessor.Prepared(item.picture, item.extension, item.contentType,
+                                false, false, "画像の非矩形マスク・透明化・VML可視領域を安全に再現できません。");
+                item.visiblePicture = item.visiblePicture.withBytes(
+                        workspace.retainImageBytes(item.visiblePicture.bytes()));
+                if (item.visiblePicture.skipReason() != null)
+                    workspace.warning("IMAGE_VISIBLE_AREA_UNAVAILABLE", section, range,
+                            item.visiblePicture.skipReason() + "元画像を保存しました。");
                 return true;
             } catch (Exception error) {
                 if (error instanceof ConversionException conversion) throw conversion;

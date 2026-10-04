@@ -8,8 +8,6 @@ import java.util.Map;
 import org.apache.poi.xslf.usermodel.XMLSlideShow;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
-import org.apache.pdfbox.Loader;
-import org.apache.pdfbox.text.PDFTextStripper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -18,60 +16,58 @@ import static org.junit.jupiter.api.Assertions.*;
 class OfficeMarkdownServiceTest {
     private final OfficeMarkdownService service = new OfficeMarkdownService(ConversionLimits.defaults());
 
-    @ParameterizedTest @ValueSource(strings={"xlsx", "docx", "pptx"})
-    void optionalPdfRendersTheGeneratedMarkdownAndKeepsSourceArtifacts(String extension) throws Exception {
-        try (ConversionResult result = service.convert(fixture(extension), "資料." + extension, OutputFormat.PDF)) {
-            assertTrue(result.files().keySet().containsAll(java.util.Set.of("document.md", "document.pdf", "report.json")));
-            byte[] pdf = result.pdfBytes();
-            assertEquals("%PDF-", new String(pdf, 0, 5, java.nio.charset.StandardCharsets.US_ASCII));
-            try (var document = Loader.loadPDF(pdf)) {
-                assertTrue(new PDFTextStripper().getText(document).contains("保存した日本語"));
-            }
-            var report = new ObjectMapper().readTree(result.files().get("report.json").toFile());
-            assertEquals("document.pdf", report.path("pdfOutput").path("path").asText());
-            assertTrue(report.path("pdfOutput").path("pageCount").asInt() > 0);
-            assertEquals(pdf.length, report.path("pdfOutput").path("sizeBytes").asInt());
-            assertEquals(result.warningCount(), report.path("warnings").size());
-            assertTrue(result.zipBytes().length > pdf.length);
-        }
-    }
-
-    @Test void pdfRendererWarningsAreIncludedInTheOfficeReport() throws Exception {
-        try (var workspace = new ConversionWorkspace(ConversionLimits.defaults())) {
-            workspace.write("document.md", "# テスト".getBytes(java.nio.charset.StandardCharsets.UTF_8));
-            workspace.finishReport("sample.xlsx", "source-hash");
-            workspace.addPdf("%PDF-test".getBytes(java.nio.charset.StandardCharsets.US_ASCII), 2,
-                    new ObjectMapper().readTree("{\"warnings\":[{\"code\":\"IMAGE_UNSUPPORTED\",\"message\":\"画像を表示できません。\"},{\"code\":\"PDF_LAYOUT\",\"message\":\"配置を確認してください。\"}]}"));
-            assertEquals(2, workspace.warningCount());
-            var report = new ObjectMapper().readTree(workspace.files().get("report.json").toFile());
-            assertEquals("PDF_IMAGE_UNSUPPORTED", report.path("warnings").get(0).path("code").asText());
-            assertEquals("PDF_LAYOUT", report.path("warnings").get(1).path("code").asText());
-            assertEquals(2, report.path("pdfOutput").path("pageCount").asInt());
-            assertEquals(2, report.path("pdfOutput").path("warningCount").asInt());
-        }
-    }
-
-    @Test void pdfUsesOfficeDrawingLineBreaksWithoutPrintingHtmlMarkup() throws Exception {
+    @Test void offsetExcelMatrixKeepsEveryColumnInTheMarkdownTable() throws Exception {
         byte[] input;
-        try (var slides = new XMLSlideShow(); var out = new ByteArrayOutputStream()) {
-            var table = slides.createSlide().createTable(2, 2);
-            table.setAnchor(new java.awt.Rectangle(20, 20, 400, 140));
-            table.getCell(0, 0).setText("受付\n承認");
-            table.getCell(0, 1).setText("状態");
-            table.getCell(1, 0).setText("東京");
-            table.getCell(1, 1).setText("完了");
-            slides.write(out);
+        try (var book = new XSSFWorkbook(); var out = new ByteArrayOutputStream()) {
+            var sheet = book.createSheet("横長の処理一覧");
+            var grid = book.createCellStyle();
+            grid.setBorderTop(org.apache.poi.ss.usermodel.BorderStyle.THIN);
+            grid.setBorderBottom(org.apache.poi.ss.usermodel.BorderStyle.THIN);
+            grid.setBorderLeft(org.apache.poi.ss.usermodel.BorderStyle.THIN);
+            grid.setBorderRight(org.apache.poi.ss.usermodel.BorderStyle.THIN);
+            var header = book.createCellStyle();
+            header.cloneStyleFrom(grid);
+            header.setFillPattern(org.apache.poi.ss.usermodel.FillPatternType.SOLID_FOREGROUND);
+            header.setFillForegroundColor(org.apache.poi.ss.usermodel.IndexedColors.GREY_25_PERCENT.getIndex());
+            for (int r = 0; r < 2; r++) {
+                var row = sheet.createRow(r);
+                var label = row.createCell(1);
+                label.setCellValue(r == 0 ? "テーブルID" : "テーブル名称");
+                label.setCellStyle(grid);
+                var value = row.createCell(2);
+                value.setCellValue(r == 0 ? "DEMO" : "処理一覧");
+                value.setCellStyle(grid);
+                sheet.addMergedRegion(new org.apache.poi.ss.util.CellRangeAddress(r, r, 2, 3));
+            }
+            var caption = sheet.createRow(2).createCell(5);
+            caption.setCellValue("処理区分");
+            caption.setCellStyle(header);
+            sheet.addMergedRegion(new org.apache.poi.ss.util.CellRangeAddress(2, 2, 5, 20));
+            for (int r = 3; r < 7; r++) {
+                var row = sheet.createRow(r);
+                for (int c = 1; c <= 20; c++) {
+                    var cell = row.createCell(c);
+                    cell.setCellValue(r == 3 ? "列%02d".formatted(c) : "R%dC%02d".formatted(r - 3, c));
+                    cell.setCellStyle(r == 3 ? header : grid);
+                }
+            }
+            book.write(out);
             input = out.toByteArray();
         }
-        try (ConversionResult result = service.convert(input, "flow.pptx", OutputFormat.PDF)) {
+        try (var result = service.convert(input, "offset-wide.xlsx")) {
+            var report = new ObjectMapper().readTree(result.files().get("report.json").toFile());
+            var tables = java.util.stream.StreamSupport.stream(report.path("blocks").spliterator(), false)
+                    .filter(block -> block.path("type").asText().equals("table")).toList();
+            assertEquals(java.util.List.of("B1:D2", "B3:U7"),
+                    tables.stream().map(block -> block.path("range").asText()).toList());
+            assertEquals(java.util.List.of(3, 4), java.util.stream.StreamSupport
+                    .stream(tables.get(1).path("headerSourceRows").spliterator(), false)
+                    .map(com.fasterxml.jackson.databind.JsonNode::asInt).toList());
             String markdown = Files.readString(result.files().get("document.md"));
-            assertTrue(markdown.contains("<br>"), markdown);
-            try (var document = Loader.loadPDF(result.pdfBytes())) {
-                String pdfText = new PDFTextStripper().getText(document);
-                assertTrue(pdfText.contains("受付"));
-                assertTrue(pdfText.contains("承認"));
-                assertFalse(pdfText.contains("<br>"));
-            }
+            assertTrue(markdown.contains("テーブルID"));
+            for (int c = 1; c <= 20; c++) assertTrue(markdown.contains("R1C%02d".formatted(c)), markdown);
+            assertTrue(markdown.contains("R3C20"));
+            assertFalse(result.files().containsKey("document.pdf"));
         }
     }
 

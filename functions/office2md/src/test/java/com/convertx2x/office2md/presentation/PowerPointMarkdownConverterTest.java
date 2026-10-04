@@ -15,6 +15,7 @@ import org.openxmlformats.schemas.presentationml.x2006.main.CTShape;
 import javax.imageio.ImageIO;
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.geom.Path2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
@@ -110,6 +111,7 @@ class PowerPointMarkdownConverterTest {
                 String md = md(result);
                 List<String> images = md.lines().filter(line -> line.startsWith("![")).toList();
                 assertEquals(1, images.size(), "The connected shapes provide one optional visual reference");
+                assertFalse(md.contains("参考画像（接続図）："));
                 JsonNode firstMetadata = imageMetadata(images.get(0));
                 assertEquals("接続図", firstMetadata.path("type").asText());
                 assertEquals("", firstMetadata.path("text").asText());
@@ -129,6 +131,25 @@ class PowerPointMarkdownConverterTest {
                     assertSlideCanvas(image);
                     assertEquals(Color.BLACK.getRGB(), image.getRGB(px(290), px(130)), "A zero-height horizontal connector must survive in the preview");
                 } finally { image.flush(); }
+            }
+        }
+    }
+
+    @Test void customFreeformWithNoPoiShapeTypeKeepsTextAndPreview() throws Exception {
+        try (XMLSlideShow deck = deck()) {
+            XSLFSlide slide = deck.createSlide();
+            XSLFFreeformShape freeform = slide.createFreeform();
+            Path2D path = new Path2D.Double();
+            path.moveTo(0, 0); path.lineTo(120, 0); path.lineTo(120, 70);
+            path.lineTo(0, 70); path.closePath();
+            freeform.setPath(path);
+            freeform.setAnchor(new Rectangle2D.Double(40, 80, 120, 70));
+            freeform.setText("自由配置の注記");
+            assertNull(freeform.getShapeType(), "Custom geometry has no POI preset shape type");
+            try (ConversionResult result = convert(bytes(deck))) {
+                assertEquals("フリーフォーム", nodeByText(result, "自由配置の注記").path("type").asText());
+                assertTrue(md(result).contains("自由配置の注記"));
+                assertEquals(1, imageLines(md(result)).size());
             }
         }
     }
@@ -168,6 +189,9 @@ class PowerPointMarkdownConverterTest {
                 String md = md(result);
                 List<String> images = md.lines().filter(line -> line.startsWith("![")).toList();
                 assertEquals(1, images.size());
+                assertTrue(md.contains("図中の項目:\n\n"));
+                assertFalse(md.contains("図形間の接続情報はありません。"));
+                assertFalse(md.contains("参考画像（図形）："));
                 JsonNode firstNode = diagram(result).path("nodes").get(0);
                 assertEquals("長方形", firstNode.path("type").asText());
                 assertBounds(firstNode, 320, 120, 40, 80);
@@ -206,12 +230,11 @@ class PowerPointMarkdownConverterTest {
                 assertBounds(node, 340, 80, 40, 120);
                 assertImageMetadata(result, images);
                 String path = report(result).path("assets").get(0).path("path").asText();
-                assertTrue(path.startsWith("images/diagram-"), "A parent's transform must prevent unmodified image extraction");
+                assertTrue(path.startsWith("images/image-"), "Keep the original picture as an independent visible image");
                 BufferedImage image = ImageIO.read(result.files().get(path).toFile());
                 try {
-                    assertSlideCanvas(image);
-                    assertEquals(Color.BLUE.getRGB(), image.getRGB(px(360), px(140)));
-                    assertNotEquals(Color.BLUE.getRGB(), image.getRGB(px(250), px(140)));
+                    assertTrue(image.getHeight() > image.getWidth(), "The group rotation must rotate the extracted image");
+                    assertEquals(Color.BLUE.getRGB(), image.getRGB(image.getWidth() / 2, image.getHeight() / 2));
                 } finally { image.flush(); }
                 assertFalse(Arrays.equals(original, Files.readAllBytes(result.files().get(path))));
             }
@@ -395,15 +418,41 @@ class PowerPointMarkdownConverterTest {
                 assertEquals(1, json.path("assets").size());
                 BufferedImage preview = ImageIO.read(result.files().get(json.path("assets").get(0).path("path").asText()).toFile());
                 try {
-                    assertSlideCanvas(preview);
-                    assertEquals(Color.BLUE.getRGB(), preview.getRGB(px(50), px(50)));
-                    assertNotEquals(Color.BLUE.getRGB(), preview.getRGB(px(230), px(50)), "Skipped external pictures must not appear in the preview");
+                    assertEquals(16, preview.getWidth());
+                    assertEquals(12, preview.getHeight());
+                    assertEquals(Color.BLUE.getRGB(), preview.getRGB(8, 6));
+                    assertArrayEquals(png, Files.readAllBytes(result.files().get(json.path("assets").get(0).path("path").asText())),
+                            "Only the embedded bytes are extracted; the external image has no asset");
                 } finally { preview.flush(); }
                 assertTrue(md.contains("保存済みロゴ")); assertTrue(md.contains("外部参照画像"));
                 assertFalse(md.contains(url)); assertTrue(json.toString().contains("EXTERNAL_IMAGE_SKIPPED"));
             }
             assertEquals(0, requests.get());
         } finally { server.stop(0); }
+    }
+
+    @Test void standalonePictureAndItsOcrStayBetweenSurroundingSlideText() throws Exception {
+        try (XMLSlideShow deck = deck()) {
+            XSLFSlide slide = deck.createSlide();
+            text(slide, "画像の前の本文", 20, 20, 300, 20);
+            var picture = slide.createPicture(deck.addPicture(png(), PictureData.PictureType.PNG));
+            picture.setAnchor(new Rectangle2D.Double(20, 80, 120, 80));
+            text(slide, "画像の後の本文", 20, 240, 300, 20);
+            var ocr = new com.convertx2x.office2md.ocr.OcrClient() {
+                public boolean configured() { return true; }
+                public com.convertx2x.office2md.ocr.OcrResult recognize(byte[] bytes, String contentType) {
+                    return new com.convertx2x.office2md.ocr.OcrResult("画像に焼き込まれた文字");
+                }
+            };
+            try (var result = new PowerPointMarkdownConverter(ConversionLimits.defaults()).convert(bytes(deck),
+                    "ordered.pptx", com.convertx2x.office2md.conversion.ImageMode.OCR, ocr)) {
+                String markdown = md(result);
+                int before = markdown.indexOf("画像の前の本文"), image = markdown.indexOf("images/image-0001.png");
+                int recognized = markdown.indexOf("画像に焼き込まれた文字"), after = markdown.indexOf("画像の後の本文");
+                assertTrue(before >= 0 && before < image && image < recognized && recognized < after, markdown);
+                assertEquals(1, imageLines(markdown).size());
+            }
+        }
     }
 
     @Test void renderingAndTextLimitsAreEnforcedBeforeLargeOutput() throws Exception {
@@ -448,9 +497,9 @@ class PowerPointMarkdownConverterTest {
                 assertTrue(markdown.contains("Text box 1001"));
                 assertTrue(markdown.contains("Slide 51"));
                 assertTrue(markdown.contains(largeText));
-                assertEquals(1, markdown.lines().filter(line -> line.startsWith("![")).count());
+                assertEquals(201, markdown.lines().filter(line -> line.startsWith("![")).count());
                 assertEquals(201, diagram(result).path("nodes").size(), "Every graphical placement stays in the graph even when picture bytes repeat");
-                assertEquals(1, report(result).path("assets").size(), "The 201 picture placements share one slide preview");
+                assertEquals(1, report(result).path("assets").size(), "The 201 picture references share one embedded-image asset");
             }
         }
     }
@@ -463,15 +512,15 @@ class PowerPointMarkdownConverterTest {
             ((CTPicture) picture.getXmlObject()).getBlipFill().addNewSrcRect().setL(25000);
             try (ConversionResult result = convert(bytes(deck))) {
                 JsonNode asset = report(result).path("assets").get(0);
-                assertTrue(asset.path("path").asText().startsWith("images/diagram-"));
+                assertTrue(asset.path("path").asText().startsWith("images/image-"));
                 assertImageMetadata(result, imageLines(md(result)));
                 BufferedImage output = ImageIO.read(result.files().get(asset.path("path").asText()).toFile());
                 try {
-                    assertSlideCanvas(output);
+                    assertTrue(output.getHeight() > output.getWidth());
+                    assertTrue(output.getWidth() <= 12 && output.getHeight() <= 12, "Cropping must not upscale the original pixels");
                     JsonNode node = diagram(result).path("nodes").get(0);
                     assertBounds(node, 100, 60, 120, 160);
-                    assertEquals(Color.BLUE.getRGB(), output.getRGB(px(160), px(65)));
-                    assertNotEquals(Color.BLUE.getRGB(), output.getRGB(px(85), px(140)), "Rotated pixels must leave the unrotated footprint");
+                    assertEquals(Color.BLUE.getRGB(), output.getRGB(output.getWidth() / 2, output.getHeight() / 2));
                 } finally { output.flush(); }
             }
         }
@@ -491,10 +540,10 @@ class PowerPointMarkdownConverterTest {
                 assertFalse(Arrays.equals(original, Files.readAllBytes(result.files().get(path))));
                 BufferedImage output = ImageIO.read(result.files().get(path).toFile());
                 try {
-                    assertSlideCanvas(output);
-                    assertEquals(Color.RED.getRGB(), output.getRGB(px(160), px(80)),
+                    assertTrue(output.getHeight() > output.getWidth());
+                    assertEquals(Color.RED.getRGB(), output.getRGB(output.getWidth() / 2, output.getHeight() / 4),
                             "The red left half must become the top half after clockwise rotation");
-                    assertEquals(Color.BLUE.getRGB(), output.getRGB(px(160), px(160)),
+                    assertEquals(Color.BLUE.getRGB(), output.getRGB(output.getWidth() / 2, output.getHeight() * 3 / 4),
                             "The blue right half must become the bottom half, not a reflected image");
                 } finally { output.flush(); }
             }
@@ -515,7 +564,7 @@ class PowerPointMarkdownConverterTest {
             ((CTPicture) picture.getXmlObject()).getNvPicPr().getCNvPr().setDescr(pictureDescription);
             try (ConversionResult result = convert(bytes(deck))) {
                 List<String> images = imageLines(md(result));
-                assertEquals(1, images.size());
+                assertEquals(2, images.size(), "The embedded image reference is separate from the mixed diagram preview");
                 assertImageMetadata(result, images);
                 for (JsonNode metadata : diagram(result).path("nodes")) {
                     String expectedText = metadata.path("type").asText().equals("画像") ? pictureDescription : description;
@@ -585,7 +634,8 @@ class PowerPointMarkdownConverterTest {
                         assertFalse(edge.has("fromId")); assertFalse(edge.has("toId"));
                     }
                     String body = withoutImages(md(result));
-                    assertTrue(body.contains("図中の項目：")); assertTrue(body.contains("接続関係"));
+                    assertTrue(body.contains("図中の項目:\n\n"));
+                    assertTrue(body.contains("接続関係:\n\n"));
                     assertTrue(body.contains("**申請**"), "Inline bold must remain available to a normal Markdown reader");
                     assertTrue(body.contains("確認"));
                     assertTrue(body.contains("shape-" + start.getShapeId()));
@@ -986,7 +1036,9 @@ class PowerPointMarkdownConverterTest {
         for (String image : images) {
             JsonNode metadata = imageMetadata(image);
             Set<String> fields = new HashSet<>(); metadata.fieldNames().forEachRemaining(fields::add);
-            assertEquals(Set.of("type", "text", "x", "y", "width", "height"), fields);
+            Set<String> expectedFields = new HashSet<>(Set.of("type", "text", "x", "y", "width", "height"));
+            if (image.contains("](images/image-")) expectedFields.add("positionOnSlide");
+            assertEquals(expectedFields, fields);
             for (String coordinate : List.of("x", "y", "width", "height")) {
                 JsonNode number = metadata.path(coordinate);
                 assertTrue(number.isNumber(), coordinate + " must remain a JSON number");

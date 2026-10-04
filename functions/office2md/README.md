@@ -1,14 +1,14 @@
 # office2md
 
-[convertX2X](../../README.md) のOffice文書をMarkdownまたはPDFへ変換するAzure Functionsアプリです。Excel（XLSX・XLS）、Word（DOCX）、PowerPoint（PPTX）から、`document.md`・`report.json`・`images/` の画像を取り出し、指定時に `document.pdf` も生成します。Java 21とApache POIを使用します。
+[convertX2X](../../README.md) のOffice文書をMarkdownへ変換するAzure Functionsアプリです。Excel（XLSX・XLS）、Word（DOCX）、PowerPoint（PPTX）から、`document.md`・`report.json`・`images/` の画像を取り出し、指定時に埋め込み画像のOCRテキストを補います。Java 21とApache POIを使用します。
 
-同期HTTP・非同期HTTP・外部システムからの直接Queue依頼が、共通の変換処理を使います。ブラウザでMarkdownやPDFを確認できるPlaygroundも含みます。PDF出力のビルドには隣接する `functions/md2pdf` の変換ソースとフォントを使います。
+同期HTTP・非同期HTTP・外部システムからの直接Queue依頼が、共通の変換処理を使います。ブラウザでMarkdownと画像を確認できるPlaygroundも含みます。
 
 | 利用方法 | 依頼と結果 |
 | --- | --- |
-| 同期HTTP | ファイルを送信し、既定でMarkdown・画像・変換情報を含むZIP、`output=pdf` でPDF本体を受け取る |
-| 非同期HTTP | ファイルを送信し、完了後に既定でMarkdown、`output=pdf` でPDFを取得する |
-| 直接Queue | 入力Blobと出力先を指定したJSONを送信する。version 2の `outputFormat: "pdf"` に対応 |
+| 同期HTTP | ファイルを送信し、Markdown・画像・変換情報を含むZIPを受け取る |
+| 非同期HTTP | ファイルを送信し、完了後にMarkdownを取得する |
+| 直接Queue | 入力Blobと出力先を指定したJSONを送信する。version 2の `imageMode: "ocr"` に対応 |
 
 非同期機能は `CONVERSION_STORAGE_CONNECTION_STRING` 設定時に有効になります。表・太字・リンクを保持し、各形式の図中の文字と確認できた接続関係も本文に出します。図形・接続のJSONと、図またはスライドをまとめた確認用画像も添えます。取消線の文字は除去し、数式の再計算や文書内の外部参照へのアクセスは行いません。
 
@@ -26,3 +26,5 @@
 ## ライセンス
 
 コードは [MIT License](LICENSE) です。依存ライブラリ・同梱フォントには各提供元のライセンスが適用されます。[出典とライセンスの詳細](docs/usage.md#ライセンス)を参照してください。
+
+画像参照は常に保持します。既定の `imageMode=ignore` はOCRをせず、`ocr` は設定済みのDocument Intelligenceへ元の埋め込み画像を送り、その位置へ文字を追加します。接続設定・失敗時の扱いは[利用ガイド](docs/usage.md#画像ocr)を参照してください。Office2MDのPDF出力は廃止しました。

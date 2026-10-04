@@ -3,6 +3,8 @@ package com.convertx2x.office2md.presentation;
 import com.convertx2x.office2md.conversion.*;
 import com.convertx2x.office2md.drawing.ConnectorGeometry;
 import com.convertx2x.office2md.drawing.DrawingAltText;
+import com.convertx2x.office2md.images.EmbeddedImagePreprocessor;
+import com.convertx2x.office2md.ocr.OcrClient;
 import org.apache.poi.EncryptedDocumentException;
 import org.apache.poi.openxml4j.opc.OPCPackage;
 import org.apache.poi.poifs.filesystem.FileMagic;
@@ -28,6 +30,10 @@ public final class PowerPointMarkdownConverter {
     public PowerPointMarkdownConverter(ConversionLimits limits) { this.limits = Objects.requireNonNull(limits); }
 
     public ConversionResult convert(byte[] input, String filename) {
+        return convert(input, filename, ImageMode.IGNORE, OcrClient.disabled());
+    }
+
+    public ConversionResult convert(byte[] input, String filename, ImageMode imageMode, OcrClient ocrClient) {
         if (input == null || input.length == 0) throw new ConversionException(400, "EMPTY_INPUT", "入力ファイルが空です。");
         if (input.length > limits.maxInputBytes()) throw ConversionWorkspace.limit("INPUT_BYTES_LIMIT", "入力ファイルのサイズが上限を超えました。");
         if (FileMagic.valueOf(input) == FileMagic.OLE2) {
@@ -39,7 +45,7 @@ public final class PowerPointMarkdownConverter {
             }
             throw new ConversionException(415, "UNSUPPORTED_DOCUMENT", "PowerPointのPPTX形式を指定してください。");
         }
-        ConversionWorkspace workspace = new ConversionWorkspace(limits);
+        ConversionWorkspace workspace = new ConversionWorkspace(limits, imageMode, ocrClient);
         try (OPCPackage archive = OPCPackage.open(new ByteArrayInputStream(input))) {
             if (archive.getPartsByContentType(CONTENT_TYPE).isEmpty())
                 throw new ConversionException(415, "UNSUPPORTED_DOCUMENT", "PowerPointのPPTX形式を指定してください。");
@@ -114,11 +120,16 @@ public final class PowerPointMarkdownConverter {
                 workspace.block(Map.of("type", "heading", "section", section, "range", "slide-" + ordinal, "level", 1));
                 if (title != null) entries.remove(title);
                 entries.sort(readingOrder());
-                for (Entry entry : entries)
-                    if (!drawing(entry) && !(entry.normalText && endpoints.contains(range(entry.shape)))) emit(entry);
+                Rectangle2D slideBounds = new Rectangle2D.Double(0, 0,
+                        presentation.getPageSize().getWidth(), presentation.getPageSize().getHeight());
+                for (Entry entry : entries) {
+                    // Standalone pictures stay among surrounding text. Connected/grouped pictures
+                    // remain with their diagram so its native text and relationships stay together.
+                    if (entry.picture != null && entry.groupKey == null && !endpoints.contains(range(entry.shape)))
+                        emitEmbeddedImage(entry, slideBounds);
+                    else if (!drawing(entry) && !(entry.normalText && endpoints.contains(range(entry.shape)))) emit(entry);
+                }
                 if (!nodes.isEmpty() || !edges.isEmpty()) {
-                    Rectangle2D slideBounds = new Rectangle2D.Double(0, 0,
-                            presentation.getPageSize().getWidth(), presentation.getPageSize().getHeight());
                     int componentOrdinal = 0;
                     for (DiagramComponent component : components(visible, nodes, edges))
                         emitDiagram(slide, component.entries(), component.nodes(), component.edges(), ordinal,
@@ -180,13 +191,36 @@ public final class PowerPointMarkdownConverter {
                     XSLFPictureData data = picture.getPictureData();
                     if (data.getPackagePart().getSize() > limits.maxImageBytes())
                         throw ConversionWorkspace.limit("IMAGE_BYTES_LIMIT", "画像1件のサイズが上限を超えました。");
-                    byte[] pictureBytes = data.getData();
+                    byte[] pictureBytes = workspace.retainImageBytes(data.getData());
                     if (pictureBytes.length > limits.maxImageBytes()) throw ConversionWorkspace.limit("IMAGE_BYTES_LIMIT", "画像1件のサイズが上限を超えました。");
                     entry.picture = data;
                     entry.pictureType = data.getType();
                     entry.attachment = entry.pictureType != PictureType.PNG && entry.pictureType != PictureType.JPEG;
-                    if (entry.attachment) workspace.warning("UNSUPPORTED_IMAGE_FORMAT", section, range(shape), "PNG・JPEG以外の画像は元のバイナリを添付し、描画しません。");
+                    if (entry.attachment) workspace.warning("UNSUPPORTED_IMAGE_FORMAT", section, range(shape), "PNG・JPEG以外の画像は参考図に描画せず、個別の画像または原本添付として残します。");
                     else checkPicturePixels(pictureBytes);
+                    String extension = entry.pictureType.extension.replace(".", "").toLowerCase(Locale.ROOT);
+                    if (!extension.matches("[a-z0-9]{1,8}")) extension = "bin";
+                    java.awt.Insets clipping = picture.getClipping();
+                    EmbeddedImagePreprocessor.Crop crop = clipping == null ? EmbeddedImagePreprocessor.Crop.none()
+                            : new EmbeddedImagePreprocessor.Crop(clipping.left / 100000d, clipping.top / 100000d,
+                                    clipping.right / 100000d, clipping.bottom / 100000d, true);
+                    boolean rectangular = EmbeddedImagePreprocessor.rectangularVisibility(
+                            picture.getXmlObject().getDomNode());
+                    entry.croppedPicture = crop.present() || !rectangular;
+                    AffineTransform local = new AffineTransform(transform);
+                    local.translate(anchor.getX(), anchor.getY());
+                    String contentType = Objects.requireNonNullElse(entry.pictureType.contentType,
+                            "application/octet-stream");
+                    entry.visiblePicture = rectangular
+                            ? EmbeddedImagePreprocessor.prepare(pictureBytes, extension, contentType,
+                                    crop, local, anchor.getWidth(), anchor.getHeight(), limits)
+                            : new EmbeddedImagePreprocessor.Prepared(pictureBytes, extension, contentType,
+                                    false, false, "画像の非矩形マスク・透明化を安全に再現できません。");
+                    entry.visiblePicture = entry.visiblePicture.withBytes(
+                            workspace.retainImageBytes(entry.visiblePicture.bytes()));
+                    if (entry.visiblePicture.skipReason() != null)
+                        workspace.warning("IMAGE_VISIBLE_AREA_UNAVAILABLE", section, range(shape),
+                                entry.visiblePicture.skipReason() + "元画像を保存しました。");
                     Element properties = ownProperties(shape);
                     if (properties != null) {
                         String description = properties.getAttribute("descr");
@@ -269,24 +303,14 @@ public final class PowerPointMarkdownConverter {
                 metadata.put("positionOnSlide", position);
                 metadata.put("id", id); nodeMetadata.add(metadata);
                 if (!plain.isBlank() || endpoints.contains(id)) {
-                    if (!itemsStarted) { append("図中の項目：\n\n"); itemsStarted = true; }
+                    if (!itemsStarted) { append("図中の項目:\n\n"); itemsStarted = true; }
                     String content = node.picture != null || node.table != null ? Markdown.escape(plain) : node.text.markdown();
                     if (content.isBlank()) content = "文字なし";
                     append("- " + id + "（" + Markdown.escape(typeName(node)) + "、"
                             + PresentationSpatialMetadata.japanesePosition(position) + "）："
                             + content.replace("  \n", "<br>").replace("\n", "<br>") + "\n");
                 }
-                if (node.attachment) {
-                    String extension = node.pictureType.extension.replace(".", "").toLowerCase(Locale.ROOT);
-                    if (!extension.matches("[a-z0-9]{1,8}")) extension = "bin";
-                    String path = workspace.addAsset("image", node.picture.getData(), extension,
-                            Objects.requireNonNullElse(node.pictureType.contentType, "application/octet-stream"));
-                    Map<String, Object> attachmentMetadata = PresentationImageMetadata.of(typeName(node), plain, node.bounds);
-                    attachmentMetadata.put("positionOnSlide", position);
-                    append("\n[" + PresentationImageMetadata.imageAlt(attachmentMetadata)
-                            + "](" + path + ")\n\n");
-                    workspace.block(Map.of("type", "attachment", "section", section, "range", id, "path", path, "metadata", attachmentMetadata));
-                }
+                emitEmbeddedImage(node, slideBounds);
                 if (node.shapeLink != null && !node.text.markdown().contains(node.shapeLink))
                     append("\n" + Markdown.link(Markdown.escape(plain.isBlank() ? "リンク" : DrawingAltText.singleLine(plain)), node.shapeLink) + "\n\n");
             }
@@ -295,7 +319,7 @@ public final class PowerPointMarkdownConverter {
                     .filter(entry -> entry.unsupported == null && entry.shape instanceof XSLFConnectorShape).toList();
             List<Map<String, Object>> edgeMetadata = new ArrayList<>();
             if (!edges.isEmpty()) {
-                append("接続関係：\n\n");
+                append("接続関係:\n\n");
                 for (int i = 0; i < edges.size(); i++) {
                     var edge = edges.get(i);
                     Entry connectorEntry = i < connectors.size() ? connectors.get(i) : null;
@@ -329,9 +353,12 @@ public final class PowerPointMarkdownConverter {
                             + "。\n");
                 }
                 append("\n");
-            } else if (nodes.size() > 1) append("図形間の接続情報はありません。配置から順序や関係を推測していません。\n\n");
+            }
+            boolean hasNonPictureLayer = visible.stream().anyMatch(entry -> entry.unsupported == null
+                    && entry.picture == null);
             List<PresentationRenderer.Layer> layers = visible.stream()
-                    .filter(entry -> entry.unsupported == null && !entry.attachment)
+                    .filter(entry -> entry.unsupported == null && !entry.attachment
+                            && (entry.picture == null || hasNonPictureLayer && !entry.croppedPicture))
                     .sorted(Comparator.comparingInt(entry -> entry.order))
                     .map(entry -> new PresentationRenderer.Layer(entry.shape, entry.parentTransform)).toList();
             Map<String, Object> block = new LinkedHashMap<>();
@@ -344,11 +371,20 @@ public final class PowerPointMarkdownConverter {
                         "参考画像の背景は単色のみ対応しています。画像・グラデーションなどの背景は取得せず白色に置き換えました。");
                 String path = workspace.addAsset("diagram", PresentationRenderer.png(layers, slideBounds, background.color(), limits), "png", "image/png");
                 Map<String, Object> metadata = PresentationImageMetadata.of(edges.isEmpty() ? "図形" : "接続図", "", slideBounds);
-                append("参考画像（" + (edges.isEmpty() ? "図形" : "接続図") + "）：\n\n!["
-                        + PresentationImageMetadata.imageAlt(metadata) + "](" + path + ")\n\n");
+                append("![" + PresentationImageMetadata.imageAlt(metadata) + "](" + path + ")\n\n");
                 block.put("path", path); block.put("metadata", metadata);
             }
             workspace.block(block);
+        }
+
+        private void emitEmbeddedImage(Entry entry, Rectangle2D slideBounds) {
+            if (entry.picture == null || entry.visiblePicture == null || entry.embeddedImageEmitted) return;
+            Map<String, Object> metadata = PresentationImageMetadata.of(typeName(entry), nodeText(entry), entry.bounds);
+            metadata.put("positionOnSlide", PresentationSpatialMetadata.positionOnSlide(entry.bounds, slideBounds));
+            append("\n" + workspace.embeddedImage(entry.visiblePicture.bytes(), entry.visiblePicture.extension(),
+                    entry.visiblePicture.contentType(), metadata, section, range(entry.shape),
+                    entry.visiblePicture.ocrEligible()) + "\n\n");
+            entry.embeddedImageEmitted = true;
         }
 
         private List<PresentationConnections.Edge> inferMissingConnections(
@@ -502,8 +538,11 @@ public final class PowerPointMarkdownConverter {
         final List<Entry> children = new ArrayList<>();
         PresentationText.Content text = PresentationText.Content.EMPTY;
         boolean normalText, attachment;
+        boolean croppedPicture;
         String table, unsupported, shapeLink, pictureDescription = "";
         XSLFPictureData picture; PictureType pictureType;
+        EmbeddedImagePreprocessor.Prepared visiblePicture;
+        boolean embeddedImageEmitted;
         Entry(XSLFShape shape, Rectangle2D bounds, int order, AffineTransform parentTransform, String groupKey) {
             this.shape = shape; this.bounds = bounds; this.order = order;
             this.parentTransform = parentTransform;
@@ -559,8 +598,24 @@ public final class PowerPointMarkdownConverter {
         if (entry.table != null) return "表";
         if (entry.shape instanceof XSLFConnectorShape) return "接続線";
         if (entry.shape instanceof XSLFTextBox) return "テキストボックス";
-        if (entry.shape instanceof XSLFSimpleShape simple) return DrawingAltText.typeName(simple.getShapeType().getOoxmlName());
+        if (entry.shape instanceof XSLFFreeformShape) return DrawingAltText.typeName("freeform");
+        if (entry.shape instanceof XSLFSimpleShape simple) {
+            var type = simple.getShapeType();
+            return DrawingAltText.typeName(type == null ? storedGeometry(simple) : type.getOoxmlName());
+        }
         return "図形";
+    }
+    private static String storedGeometry(XSLFSimpleShape shape) {
+        Node xml = shape.getXmlObject().getDomNode();
+        for (Node properties = xml.getFirstChild(); properties != null; properties = properties.getNextSibling()) {
+            if (!"spPr".equals(properties.getLocalName())) continue;
+            for (Node geometry = properties.getFirstChild(); geometry != null; geometry = geometry.getNextSibling()) {
+                if ("custGeom".equals(geometry.getLocalName())) return "custom";
+                if ("prstGeom".equals(geometry.getLocalName()) && geometry instanceof Element preset)
+                    return preset.getAttribute("prst");
+            }
+        }
+        return "";
     }
     private static Rectangle2D anchor(XSLFShape shape) {
         if (shape instanceof XSLFSimpleShape simple) return simple.getAnchor();

@@ -122,6 +122,8 @@ class DiagramGraphTest {
                 new DiagramGraph.Connection("connector-1", "1", "2", "none", "arrow")));
         try (var workspace = new ConversionWorkspace(ConversionLimits.defaults())) {
             String markdown = DiagramGraph.markdown(List.of(a, empty), edges, workspace, "シート", "A1:H8");
+            assertTrue(markdown.contains("図中の項目:\n\n"));
+            assertTrue(markdown.contains("接続関係:\n\n"));
             assertTrue(markdown.contains("**申請**<br>[内容](https://example.com)"));
             assertTrue(markdown.contains("shape-1「申請 内容」 → shape-2（文字なし）"));
             assertTrue(markdown.contains("shape-2（長方形）：文字なし"));

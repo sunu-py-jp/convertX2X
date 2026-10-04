@@ -1,11 +1,12 @@
 # Third-party notices
 
-The application code is MIT licensed. The bundled Markdown-to-PDF conversion sources
-come from the sibling `md2pdf` function, which is also MIT licensed. CommonMark Java
-and its GFM tables extension use the BSD 2-Clause License. Apache PDFBox and its
-dependencies use the Apache License 2.0. Dependency JARs retain upstream license
-and notice files where supplied.
+The application code is MIT licensed. Apache POI and its Apache dependencies use
+the Apache License 2.0. Azure SDK libraries use the MIT License. Dependency JARs
+retain upstream license and notice files where supplied.
 
-The BIZ UDPGothic regular and bold fonts used by the PDF renderer are unchanged
-upstream files under the SIL Open Font License 1.1. The font license and provenance
-are bundled at `fonts/bizud/OFL.txt` and `fonts/bizud/README.md` inside the app JAR.
+The bundled Noto Sans CJK JP and Noto Serif CJK JP fonts use the SIL Open Font
+License 1.1. Their license, provenance and checksums are bundled under
+`fonts/noto/` inside the app JAR.
+
+Document Intelligence is an optional external Azure service; its service charges
+and terms are separate from this code.

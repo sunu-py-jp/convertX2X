@@ -3,8 +3,10 @@ package com.convertx2x.md2pdf.conversion;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.function.Function;
 import org.commonmark.ext.gfm.tables.TableBlock;
 import org.commonmark.ext.gfm.tables.TableCell;
@@ -20,11 +22,15 @@ final class MarkdownPdfConverter {
     void convert(String markdown, NormalizedPdfWriter pdf, ConversionWorkspace workspace,
                  Function<String, BufferedImage> images) throws IOException {
         workspace.sectionIncluded();
-        new Renderer(pdf, workspace, images).blocks(PARSER.parse(markdown), 0, false);
+        Node document = PARSER.parse(markdown);
+        Renderer renderer = new Renderer(pdf, workspace, images);
+        renderer.prepareLayout(document);
+        renderer.blocks(document, 0, false);
     }
 
     private record ImagePart(String destination, String alt) { }
     private record BreakPart() { }
+    private record TableData(List<List<String>> rows, List<ImagePart> images) { }
     private record Style(boolean strong, boolean emphasis, boolean code, String link) {
         static Style plain() { return new Style(false, false, false, null); }
         NormalizedPdfWriter.TextSpan span(String text) {
@@ -36,6 +42,7 @@ final class MarkdownPdfConverter {
         private final NormalizedPdfWriter pdf;
         private final ConversionWorkspace workspace;
         private final Function<String, BufferedImage> images;
+        private final Map<TableBlock, TableData> tables = new IdentityHashMap<>();
         private boolean warnedHtml;
         private boolean warnedMermaid;
 
@@ -43,6 +50,18 @@ final class MarkdownPdfConverter {
             this.pdf = pdf;
             this.workspace = workspace;
             this.images = images;
+        }
+
+        void prepareLayout(Node parent) throws IOException {
+            for (Node child = parent.getFirstChild(); child != null; child = child.getNext()) {
+                if (child instanceof TableBlock table) {
+                    List<List<String>> rows = new ArrayList<>();
+                    List<ImagePart> deferredImages = new ArrayList<>();
+                    collectRows(table, rows, deferredImages);
+                    tables.put(table, new TableData(rows, deferredImages));
+                    pdf.prepareTable(rows);
+                } else prepareLayout(child);
+            }
         }
 
         void blocks(Node parent, int depth, boolean quote) throws IOException {
@@ -142,10 +161,9 @@ final class MarkdownPdfConverter {
         }
 
         private void table(TableBlock table) throws IOException {
-            List<List<String>> rows = new ArrayList<>();
-            List<ImagePart> deferredImages = new ArrayList<>();
-            collectRows(table, rows, deferredImages);
-            pdf.table(null, rows);
+            TableData data = tables.get(table);
+            List<ImagePart> deferredImages = data.images();
+            pdf.table(null, data.rows());
             if (!deferredImages.isEmpty()) {
                 workspace.warning("TABLE_IMAGES_AFTER", null, "表の画像はセル内に代替テキストを残し、表の後に表示しました。");
                 for (ImagePart image : deferredImages) {

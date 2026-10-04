@@ -17,22 +17,22 @@
 <article class="article">
 <p class="eyebrow">Office → Markdown</p>
 <h1>非同期HTTP</h1>
-<p class="lead">ファイルを登録してジョブIDを受け取ります。既定の結果はMarkdownで、<code>output=pdf</code> のジョブはPDFを取得します。PDFジョブのarchive ZIPにはMarkdown・report・画像・PDFが入ります。</p>
+<p class="lead">ファイルを登録してジョブIDを受け取ります。完成後はMarkdown・report・画像を個別に取得でき、archive ZIPには一式が入ります。画像OCRは任意です。</p>
 <h2 id="flow">処理の流れ</h2>
-<ol class="steps"><li><a href="#submit">ファイルをPOSTして登録</a>し、ジョブIDとstatusUrlを保存する。</li><li><a href="#status">statusUrlをポーリング</a>し、succeededまたはfailedを待つ。</li><li>成功時だけ返されるURLで、<a href="#result">MarkdownまたはPDF</a>・<a href="#report">report</a>・<a href="#asset">画像</a>・<a href="#archive">ZIP</a>を取得する。</li></ol>
+<ol class="steps"><li><a href="#submit">ファイルをPOSTして登録</a>し、ジョブIDとstatusUrlを保存する。</li><li><a href="#status">statusUrlをポーリング</a>し、succeededまたはfailedを待つ。</li><li>成功時だけ返されるURLで、<a href="#result">Markdown</a>・<a href="#report">report</a>・<a href="#asset">画像</a>・<a href="#archive">ZIP</a>を取得する。</li></ol>
 <div class="callout"><p>すべてのジョブAPIにはStorage設定とFunction認証が必要です。Storage接続が未設定なら <code>503 ASYNC_DISABLED</code>、<code>Retry-After: 3</code> を返します。キーは各リクエストの <code>x-functions-key</code> ヘッダーへ渡します。</p>
 </div>
 <h2 id="submit">POST /api/jobs</h2>
 <div class="endpoint"><span class="method post">POST</span><code>/api/jobs?filename=sample.docx</code></div>
 <p>ボディ・ファイル名・Content-Typeは<a href="http.html#request">同期APIと同じ</a>です。入力と状態を保存してからQueueへ依頼し、変換完了を待たず202を返します。ジョブIDはサーバーがUUIDで生成します。受付時点では本文の変換が成功することまでは確認していません。</p>
-<p><code>output=pdf</code> をクエリに追加すると、完了後の <code>/result</code> がPDFになります。省略時のMarkdown結果は従来どおりです。</p>
+<p><code>imageMode=ocr</code> をクエリに追加すると、元の埋め込み画像の可視領域をOCRし、その画像参照の直後へ通常テキストの「画像内の文字（OCR）:」と読み取った文字を補います。既定の <code>ignore</code> は画像参照を残してOCRしません。設定なしのocr指定は <code>503 OCR_NOT_CONFIGURED</code> です。</p>
 <p>入力ファイルがあるディレクトリで、実行するシェルの環境変数 <code>FUNCTIONS_HOST_KEY</code> にホストキーを設定し、URLを配置先に変更して実行します。</p>
 <pre><code>curl --fail-with-body \
   -H &quot;x-functions-key: $FUNCTIONS_HOST_KEY&quot; \
   -H &#x27;Content-Type: application/octet-stream&#x27; \
   --data-binary @sample.docx \
   &#x27;https://YOUR_FUNCTION_APP.azurewebsites.net/api/jobs?filename=sample.docx&#x27;</code></pre>
-<p>PDFジョブを登録する場合はURLを <code>/api/jobs?filename=sample.docx&amp;output=pdf</code> にします。202応答とポーリングの流れは同じです。</p>
+<p>OCR付きジョブのURLは <code>/api/jobs?filename=sample.docx&amp;imageMode=ocr</code> です。202応答とポーリングの流れは同じです。接続先やAPIキーはリクエストに含めず、サーバー側で設定します。</p>
 <pre><code>HTTP/1.1 202 Accepted
 Content-Type: application/json; charset=utf-8
 Location: /api/jobs/fc2e587d-9369-4a90-8b03-815589d5d4a3
@@ -80,10 +80,10 @@ Cache-Control: no-store
 <p>HTTP状態APIはStorageのコンテナー名、Blobパス、接続情報を公開しません。存在しないジョブは <code>404 JOB_NOT_FOUND</code>、UUID形式が不正なら <code>400 INVALID_JOB_ID</code> です。直接Queueの依頼はワーカーが初めて状態を作るまで404になり得ます。</p>
 <h2 id="result">GET /api/jobs/{id}/result</h2>
 <div class="endpoint"><span class="method get">GET</span><code>/api/jobs/{id}/result</code></div>
-<p>既定のジョブは完成した <code>document.md</code> を <code>Content-Type: text/markdown; charset=utf-8</code> で返します。<code>output=pdf</code> のジョブは <code>Content-Type: application/pdf</code> の <code>document.pdf</code> を返します。どちらもZIPではありません。</p>
+<p>完成した <code>document.md</code> を <code>Content-Type: text/markdown; charset=utf-8</code> で返します。ZIPではありません。Office2MDのPDF出力は廃止し、旧 <code>output=pdf</code> は受け付けません。</p>
 <h2 id="report">GET /api/jobs/{id}/report</h2>
 <div class="endpoint"><span class="method get">GET</span><code>/api/jobs/{id}/report</code></div>
-<p>完成した <code>report.json</code> を <code>application/json; charset=utf-8</code> で返します。PDFジョブには <code>pdfOutput</code> のページ数・サイズ・SHA-256と、<code>PDF_</code> で始まる描画警告も含まれます。<a href="index.html#report">reportのフィールド</a>を参照してください。画像を取得する場合はassets配列のpathを使います。</p>
+<p>完成した <code>report.json</code> を <code>application/json; charset=utf-8</code> で返します。<code>imageMode</code>、画像ブロックの <code>ocr.status</code>、画像アセットの <code>sourceKind</code> と警告を確認できます。OCRだけが失敗した画像は参照を保持し、Office変換を継続します。<a href="index.html#report">reportのフィールド</a>を参照してください。画像を取得する場合はassets配列のpathを使います。</p>
 <h2 id="asset">GET /api/jobs/{id}/images/{assetName}</h2>
 <div class="endpoint"><span class="method get">GET</span><code>/api/jobs/{id}/images/{assetName}</code></div>
 <p>完成結果の画像・添付ファイルを1件取得します。例えば <code>assets[].path = images/diagram-0001.png</code> なら、<code>assetsBaseUrl</code> に <code>diagram-0001.png</code> を連結します。成功結果の一覧に含まれないファイルは取得できません。</p>
@@ -91,7 +91,7 @@ Cache-Control: no-store
 <p>assetNameは先頭が英数字、続きは英数字・ピリオド・アンダースコア・ハイフンで合計200文字以内です。<code>..</code> を含む名前や結果にない名前は <code>404 ARTIFACT_NOT_FOUND</code> です。サブディレクトリを指定するルートはありません。</p>
 <h2 id="archive">GET /api/jobs/{id}/archive</h2>
 <div class="endpoint"><span class="method get">GET</span><code>/api/jobs/{id}/archive</code></div>
-<p>完成したMarkdown・report・全画像を読み出して、その場で <code>document.zip</code> を作ります。PDFジョブでは <code>document.pdf</code> もZIPに含めます。応答は <code>application/zip</code> です。ZIPをBlobへ常時保存する仕組みではありません。</p>
+<p>完成したMarkdown・report・全画像を読み出して、その場で <code>document.zip</code> を作ります。応答は <code>application/zip</code> です。ZIPをBlobへ常時保存する仕組みではありません。</p>
 <h2 id="download-errors">取得の共通条件とエラー</h2>
 <p>成果物エンドポイントはすべて成功済みのジョブが対象です。queued・running・failedは <code>409 JOB_NOT_READY</code>、ジョブ不在は404です。成果物は <code>Content-Disposition: attachment</code>、<code>Cache-Control: no-store</code>、<code>X-Content-Type-Options: nosniff</code> 付きで返します。</p>
 <p><code>X-Section-Count / X-Warning-Count</code> は同期変換だけのレスポンスヘッダーです。非同期では状態JSONの <code>job.sectionCount / job.warningCount</code>、またはreportを参照します。</p>
@@ -100,7 +100,7 @@ Cache-Control: no-store
 <p>POST /jobsにはクライアント指定IDや冪等キーがありません。同じファイルを再POSTすると別ジョブになるため、応答を受け取ったらIDを保存してください。ジョブのキャンセル・削除APIはありません。Playgroundの待機停止もサーバー処理を取り消しません。入力・状態・成果物・失敗試行の清掃は運用側で行います。</p>
 <p>ワーカーの一時的な失敗はQueueの再試行に従います。アプリ側の継続できない変換エラーはfailedとなり、以後の同一依頼配送で再変換しません。<a href="queue.html#retries">直接Queueの再送契約</a>も参照してください。</p>
 
-<footer class="page-footer"><p>最終確認：2026-10-04。<a href="../../../functions/office2md/docs/usage.md">利用ガイド</a>と<a href="../../../functions/office2md/src/main/java/com/convertx2x/office2md/ConversionFunctions.java">HTTP実装</a>に基づく資料です。</p></footer>
+<footer class="page-footer"><p>最終確認：2026-10-05。<a href="../../../functions/office2md/docs/usage.md">利用ガイド</a>と<a href="../../../functions/office2md/src/main/java/com/convertx2x/office2md/ConversionFunctions.java">HTTP実装</a>に基づく資料です。</p></footer>
 </article>
 <aside class="toc" aria-label="このページの目次"><p class="toc-title">このページの内容</p><nav id="page-toc"></nav></aside>
 </div>

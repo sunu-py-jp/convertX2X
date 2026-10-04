@@ -31,29 +31,12 @@ function png() {
   const header = Buffer.alloc(13); header.writeUInt32BE(1); header.writeUInt32BE(1, 4); header[8] = 8; header[9] = 2;
   return Buffer.concat([Buffer.from('89504e470d0a1a0a', 'hex'), chunk('IHDR', header), chunk('IDAT', zlib.deflateSync(Buffer.from([0, 40, 120, 70]))), chunk('IEND', Buffer.alloc(0))]);
 }
-function pdf() {
-  const stream = 'BT /F1 18 Tf 72 720 Td (PDF preview) Tj ET';
-  const objects = [
-    '<< /Type /Catalog /Pages 2 0 R >>',
-    '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
-    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>',
-    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
-    `<< /Length ${Buffer.byteLength(stream)} >>\nstream\n${stream}\nendstream`
-  ];
-  let source = '%PDF-1.4\n', offsets = [0];
-  for (const [index, object] of objects.entries()) { offsets.push(Buffer.byteLength(source)); source += `${index + 1} 0 obj\n${object}\nendobj\n`; }
-  const xref = Buffer.byteLength(source);
-  source += `xref\n0 ${offsets.length}\n0000000000 65535 f \n`;
-  for (const offset of offsets.slice(1)) source += `${String(offset).padStart(10, '0')} 00000 n \n`;
-  source += `trailer\n<< /Size ${offsets.length} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`;
-  return Buffer.from(source);
-}
 async function main() {
   const work = arg('--out') || await fs.mkdtemp(path.join(os.tmpdir(), 'office2md-browser-'));
   await fs.mkdir(work, { recursive: true });
-  let base = arg('--base'), server, mode = 'normal', polled = 0, jobOutput = 'zip';
+  let base = arg('--base'), server, mode = 'normal', polled = 0, jobImageMode = 'ignore';
   const external = [], pageErrors = [], requests = [], report = [];
-  const limits = { asyncEnabled: true, supportedFormats: ['xlsx', 'xls', 'docx', 'pptx'], supportedOutputs: ['markdown', 'pdf'], maxInputBytes: 20971520, maxSections: 0, maxReadItems: 0, maxTableCells: 0, maxMarkdownBytes: 20971520, maxImages: 0, maxImageBytes: 20971520, maxOutputBytes: 104857600, maxShapes: 0, maxGroupDepth: 16, maxImagePixels: 20000000 };
+  const limits = { asyncEnabled: true, supportedFormats: ['xlsx', 'xls', 'docx', 'pptx'], supportedOutputs: ['markdown'], ocrEnabled: true, supportedImageModes: ['ignore', 'ocr'], maxInputBytes: 20971520, maxSections: 0, maxReadItems: 0, maxTableCells: 0, maxMarkdownBytes: 20971520, maxImages: 0, maxImageBytes: 20971520, maxOutputBytes: 104857600, maxShapes: 0, maxGroupDepth: 16, maxImagePixels: 20000000 };
   const id = '3b6e6d68-41bc-4c78-b186-a8d6bb75d449', jobPath = `/api/jobs/${id}`;
   // Hand-authored JSON escapes exercise the preview parser independently of the Java serializer.
   const jsonImageLabel = String.raw`{"type":"長方形","text":"引用\u0022日本語\u0022 \u005B表示\u005D (URL)\nC:\u005Ctemp\u005Ca.png \u0026 \u003Cscript\u003E \u002A強調\u002A \u005F下線\u005F \u0060code\u0060","x":20.125,"y":100,"width":120,"height":40}`;
@@ -63,7 +46,8 @@ async function main() {
   const manifest = Buffer.from(JSON.stringify({ specVersion: 1, sectionCount: 1, assets: [{ path: 'images/image-0001.png', contentType: 'image/png', sizeBytes: image.length, sha256: sha(image) }], blocks: [{ type: 'diagram', path: 'images/image-0001.png', metadata: jsonImageMetadata }], warnings: [{ code: 'BORDER_AMBIGUOUS', section: '営業資料', range: 'A8:B9', message: '不完全な罫線を本文として残しました。' }] }));
   const files = new Map([['document.md', md], ['report.json', manifest], ['images/image-0001.png', image]]);
   const archive = zip(files);
-  const pdfBytes = pdf(), pdfArchive = zip(new Map([...files, ['document.pdf', pdfBytes]]));
+  const ocrMd = Buffer.concat([md, Buffer.from('\nOCRで読み取ったサンプル文字\n')]);
+  const ocrArchive = zip(new Map([...files, ['document.md', ocrMd]]));
   const manyAssets = Array.from({ length: 1201 }, (_, index) => ({ path: `images/image-${String(index + 1).padStart(4, '0')}.png`, contentType: 'image/png', sizeBytes: image.length, sha256: sha(image) }));
   const manyManifest = Buffer.from(JSON.stringify({ ...JSON.parse(manifest), assets: manyAssets }));
   const manyArchive = zip(new Map([['document.md', md], ['report.json', manyManifest], ...manyAssets.map(asset => [asset.path, image])]));
@@ -72,21 +56,21 @@ async function main() {
       const url = new URL(req.url, 'http://localhost'); requests.push({ pathname: url.pathname, search: url.search, key: req.headers['x-functions-key'], type: req.headers['content-type'] });
       const send = (status, type, body, headers = {}) => { res.writeHead(status, { 'Content-Type': type, 'Cache-Control': 'no-store', ...headers }); res.end(body); };
       const json = (status, data, headers) => send(status, 'application/json', JSON.stringify(data), headers);
-      if (url.pathname === '/api/capabilities') return mode === 'config-fail' ? json(503, {}) : json(200, { ...limits, ...(mode === 'limited' ? { maxSections: 50, maxImages: 200, maxShapes: 1000 } : {}), asyncEnabled: mode !== 'disabled' });
+      if (url.pathname === '/api/capabilities') return mode === 'config-fail' ? json(503, {}) : json(200, { ...limits, ...(mode === 'limited' ? { maxSections: 50, maxImages: 200, maxShapes: 1000 } : {}), asyncEnabled: mode !== 'disabled', ocrEnabled: mode !== 'ocr-disabled', supportedImageModes: mode === 'ocr-disabled' ? ['ignore'] : ['ignore', 'ocr'] });
       if (url.pathname === '/api/convert' && req.method === 'POST') {
         req.resume(); if (mode === 'slow') return setTimeout(() => send(200, 'application/zip', archive), 1000);
         if (mode === 'api-error') return json(422, { error: { code: 'INVALID_WORKBOOK', message: '変換できないExcelです。' } });
-        if (url.searchParams.get('output') === 'pdf') return send(200, 'application/pdf', pdfBytes);
+        if (url.searchParams.get('imageMode') === 'ocr') return send(200, 'application/zip', ocrArchive);
         return send(200, 'application/zip', mode === 'bad-path' ? zip(files, '../outside') : mode === 'duplicate' ? zip([...files, ['document.md', md]]) : mode === 'many-assets' ? manyArchive : archive);
       }
-      if (url.pathname === '/api/jobs' && req.method === 'POST') { req.resume(); polled = 0; jobOutput = url.searchParams.get('output') === 'pdf' ? 'pdf' : 'zip'; return json(202, { job: { id, status: 'queued' }, statusUrl: mode === 'unsafe-url' ? `https://external.invalid${jobPath}` : jobPath }, { 'Retry-After': '0.5' }); }
+      if (url.pathname === '/api/jobs' && req.method === 'POST') { req.resume(); polled = 0; jobImageMode = url.searchParams.get('imageMode') || 'ignore'; return json(202, { job: { id, status: 'queued' }, statusUrl: mode === 'unsafe-url' ? `https://external.invalid${jobPath}` : jobPath }, { 'Retry-After': '0.5' }); }
       if (url.pathname === jobPath) { polled++; return json(200, { job: { id, status: polled === 1 ? 'running' : 'succeeded' }, statusUrl: jobPath, resultUrl: `${jobPath}/result`, reportUrl: `${jobPath}/report`, archiveUrl: `${jobPath}/archive`, assetsBaseUrl: `${jobPath}/images/` }, { 'Retry-After': '0.5' }); }
-      if (url.pathname === `${jobPath}/result`) return jobOutput === 'pdf' ? send(200, 'application/pdf', pdfBytes) : send(200, 'text/markdown', md);
+      if (url.pathname === `${jobPath}/result`) return send(200, 'text/markdown', jobImageMode === 'ocr' ? ocrMd : md);
       if (url.pathname === `${jobPath}/report`) return send(200, 'application/json', mode === 'many-assets' ? manyManifest : manifest);
       if (url.pathname.startsWith(`${jobPath}/images/image-`) && url.pathname.endsWith('.png')) return send(200, 'image/png', image);
-      if (url.pathname === `${jobPath}/archive`) return send(200, 'application/zip', jobOutput === 'pdf' ? pdfArchive : mode === 'many-assets' ? manyArchive : archive);
+      if (url.pathname === `${jobPath}/archive`) return send(200, 'application/zip', jobImageMode === 'ocr' ? ocrArchive : mode === 'many-assets' ? manyArchive : archive);
       const asset = url.pathname === '/api/playground' ? 'index.html' : url.pathname.startsWith('/api/playground/assets/') ? url.pathname.split('/').pop() : '';
-      if (['index.html', 'style.css', 'app.js'].includes(asset)) return send(200, asset.endsWith('.js') ? 'text/javascript' : asset.endsWith('.css') ? 'text/css' : 'text/html', await fs.readFile(path.join(root, 'src/main/resources/playground', asset)), { 'Content-Security-Policy': "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' blob:; frame-src blob:; base-uri 'none'; form-action 'none'", 'X-Content-Type-Options': 'nosniff' });
+      if (['index.html', 'style.css', 'app.js'].includes(asset)) return send(200, asset.endsWith('.js') ? 'text/javascript' : asset.endsWith('.css') ? 'text/css' : 'text/html', await fs.readFile(path.join(root, 'src/main/resources/playground', asset)), { 'Content-Security-Policy': "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' blob:; base-uri 'none'; form-action 'none'", 'X-Content-Type-Options': 'nosniff' });
       send(404, 'text/plain', 'Not found');
     });
     await new Promise(resolve => server.listen(0, '127.0.0.1', resolve)); base = `http://127.0.0.1:${server.address().port}`;
@@ -100,23 +84,13 @@ async function main() {
     page.on('pageerror', error => pageErrors.push(error.message));
     page.on('request', request => { if (/^https?:\/\//.test(request.url()) && !request.url().startsWith(base)) external.push(request.url()); });
     async function ready() { await page.goto(`${base}/api/playground`); await page.waitForFunction(() => document.querySelector('#config-status').dataset.state !== 'loading'); }
-    async function run(extension = 'xlsx', async = false, output = 'zip') {
+    async function run(extension = 'xlsx', async = false, imageMode = 'ignore') {
       await page.locator('#file-input').setInputFiles(mock ? { name: `sample.${extension}`, mimeType: 'application/octet-stream', buffer: Buffer.from('fixture') } : path.join(arg('--fixtures') || '/tmp/office2md-fixtures', `sample.${extension}`));
       await page.locator(async ? '#mode-async' : '#mode-sync').check();
-      await page.locator(output === 'pdf' ? '#output-pdf' : '#output-zip').check();
+      await page.locator(imageMode === 'ocr' ? '#image-ocr' : '#image-ignore').check();
       await page.locator('#submit-button').click();
       await page.locator('#result-content').waitFor({ state: 'visible', timeout: 120000 });
       assert.equal(await page.locator('#error-message').isVisible(), false);
-      if (output === 'pdf') {
-        assert.equal(await page.locator('#pdf-result').isVisible(), true);
-        assert.equal(await page.locator('#markdown-result').isVisible(), false);
-        assert((await page.locator('#pdf-preview').getAttribute('src')).startsWith('blob:'));
-        assert((await page.locator('#download-pdf').getAttribute('href')).startsWith('blob:'));
-        assert.equal(await page.locator('#download-pdf-archive').isVisible(), async);
-        report.push(`${mock ? 'mock' : 'live'} ${extension} ${async ? 'async' : 'sync'} PDF preview`);
-        return;
-      }
-      assert.equal(await page.locator('#pdf-result').isVisible(), false);
       assert((await page.locator('#preview h1').count()) > 0);
       if (mock) assert.equal(await page.locator('#preview h2').count(), 1);
       else if (extension === 'docx') assert((await page.locator('#preview h2').count()) > 0);
@@ -135,7 +109,8 @@ async function main() {
       await page.waitForFunction(() => [...document.querySelectorAll('#preview img')].every(image => image.complete && image.naturalWidth > 0));
       const markdownSource = await page.locator('#markdown-source').textContent();
       assert(markdownSource.startsWith('# ') || extension === 'pptx' && /^\[page \d+\]\n\n# /.test(markdownSource));
-      report.push(`${mock ? 'mock' : 'live'} ${extension} ${async ? 'async' : 'sync'} preview`);
+      if (mock) assert.equal(markdownSource.includes('OCRで読み取ったサンプル文字'), imageMode === 'ocr');
+      report.push(`${mock ? 'mock' : 'live'} ${extension} ${async ? 'async' : 'sync'} ${imageMode} preview`);
     }
     await ready(); await page.screenshot({ path: path.join(work, 'playground-desktop.png'), fullPage: true });
     await run('xlsx');
@@ -162,7 +137,7 @@ async function main() {
             assert.equal(Object.hasOwn(metadata, 'origin'), false); assert.equal(Object.hasOwn(metadata, 'unit'), false);
             assert(blocks.some(block => block.path === imagePath && JSON.stringify(block.metadata) === JSON.stringify(metadata)), `Missing report metadata for ${imagePath}`);
           }
-          assert(markdownSource.includes('図中の項目：'));
+          assert(markdownSource.includes('図中の項目:\n\n'));
         }
         const evt = page.waitForEvent('download'); await page.locator('#download-archive').click();
         await (await evt).saveAs(path.join(work, `${extension}-result.zip`));
@@ -175,22 +150,25 @@ async function main() {
       await run('docx', true); await run('pptx', true);
     }
     if (mock) {
-      await run('xlsx', false, 'pdf');
-      await page.screenshot({ path: path.join(work, 'playground-pdf.png'), fullPage: true });
-      const pdfEvent = page.waitForEvent('download'); await page.locator('#download-pdf').click();
-      await (await pdfEvent).saveAs(path.join(work, 'sync-result.pdf'));
-      assert.equal((await fs.readFile(path.join(work, 'sync-result.pdf'))).subarray(0, 5).toString(), '%PDF-');
-      assert(requests.some(request => request.pathname === '/api/convert' && request.search.includes('output=pdf')));
-      await run('xlsx', true, 'pdf');
-      const asyncPdfEvent = page.waitForEvent('download'); await page.locator('#download-pdf').click();
-      await (await asyncPdfEvent).saveAs(path.join(work, 'async-result.pdf'));
-      assert.equal((await fs.readFile(path.join(work, 'async-result.pdf'))).subarray(0, 5).toString(), '%PDF-');
-      const pdfArchiveEvent = page.waitForEvent('download'); await page.locator('#download-pdf-archive').click();
-      await (await pdfArchiveEvent).saveAs(path.join(work, 'pdf-result.zip'));
-      assert((await fs.readFile(path.join(work, 'pdf-result.zip'))).includes(Buffer.from('document.pdf')));
-      assert(requests.some(request => request.pathname === '/api/jobs' && request.search.includes('output=pdf')));
+      assert.equal(await page.locator('#output-pdf,#pdf-preview,#download-pdf').count(), 0);
+      for (const async of [false, true]) {
+        await run('xlsx', async, 'ocr');
+        assert.equal(await page.locator('#preview img').count(), 2);
+        assert((await page.locator('#markdown-source').textContent()).includes('](images/image-0001.png)'));
+        assert((await page.locator('#image-mode-hint').textContent()).includes('元画像と画像参照を保持'));
+        assert(requests.some(request => request.pathname === (async ? '/api/jobs' : '/api/convert') && request.search.includes('imageMode=ocr')));
+        const archiveEvent = page.waitForEvent('download'); await page.locator('#download-archive').click();
+        await (await archiveEvent).saveAs(path.join(work, `ocr-${async ? 'async' : 'sync'}-result.zip`));
+      }
+      await page.screenshot({ path: path.join(work, 'playground-ocr.png'), fullPage: true });
       await run('xlsx');
-      assert(requests.filter(request => request.pathname === '/api/convert').at(-1).search.includes('output=pdf') === false);
+      assert(requests.filter(request => request.pathname === '/api/convert').at(-1).search.includes('imageMode=ignore'));
+      mode = 'ocr-disabled'; await ready();
+      assert.equal(await page.locator('#image-ocr').isDisabled(), true);
+      assert.equal(await page.locator('#image-ignore').isChecked(), true);
+      assert((await page.locator('#image-mode-hint').textContent()).includes('元画像とMarkdownの画像参照を保持'));
+      await run('xlsx');
+      mode = 'normal'; await ready();
       assert.equal((await page.locator('#file-hint').textContent()).includes('0 シート'), false);
       mode = 'many-assets';
       for (const async of [false, true]) {

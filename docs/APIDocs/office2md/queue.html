@@ -64,7 +64,7 @@ queue.sendMessage(requestJson);</code></pre>
     ├── document.md
     ├── report.json
     └── images/...</code></pre>
-<p>prefixが空なら、その区間を省きます。attemptIdは試行ごとのUUIDです。PDFジョブでは同じ場所に <code>document.pdf</code> も保存します。保存先を推測してBlob一覧から集めず、成功状態のresult.artifactsを正として取得します。全ファイルを保存できた試行だけを公開し、ZIPは保存しません。</p>
+<p>prefixが空なら、その区間を省きます。attemptIdは試行ごとのUUIDです。保存先を推測してBlob一覧から集めず、成功状態のresult.artifactsを正として取得します。全ファイルを保存できた試行だけを公開し、ZIPは保存しません。</p>
 <pre><code>job:     id, status, filename, createdAt, updatedAt,
          sectionCount, warningCount, errorCode, errorMessage
 request: 正規化した投入リクエスト
@@ -74,11 +74,11 @@ result:  storage, container, sectionCount, warningCount,
 <h2 id="retrieve">HTTPからも結果を取得できる</h2>
 <p>直接Queueで作られたジョブも、<a href="jobs.html#status">GET /api/jobs/{id}</a>と成果物APIを使えます。返される <code>resultUrl / reportUrl / archiveUrl / assetsBaseUrl</code> への各HTTPリクエストに、<code>x-functions-key</code> ヘッダーでFunction Appのホストキーを渡します。HTTP状態APIには内部のBlob保存先を公開しません。Storageの資格情報とFunctionsの認証キーは別物です。</p>
 <h2 id="retries">再送・競合・失敗</h2>
-<div class="table-wrap"><table><thead><tr><th scope="col">状況</th><th scope="col">扱い</th></tr></thead><tbody><tr><td>同じID・正規化後に同じ依頼</td><td>同一ジョブとして処理。成功済み・失敗済みの終端状態を維持</td></tr><tr><td>同じIDで入力や保存先を変更</td><td><code>JOB_ID_CONFLICT</code>。元のジョブを上書きしない</td></tr><tr><td>変換不能・上限超過等</td><td>ジョブをfailedにして理由を記録</td></tr><tr><td>一時的な処理・Storageエラー</td><td>Queueで再試行。上限後は <code>office2md-jobs-poison</code> へ</td></tr><tr><td>構文が壊れたJSON等</td><td>ジョブを特定できず状態を作れない場合がある</td></tr></tbody></table></div>
+<div class="table-wrap"><table><thead><tr><th scope="col">状況</th><th scope="col">扱い</th></tr></thead><tbody><tr><td>同じID・正規化後に同じ依頼</td><td>同一ジョブとして処理。成功済み・失敗済みの終端状態を維持</td></tr><tr><td>同じIDで入力・保存先・画像モードを変更</td><td><code>JOB_ID_CONFLICT</code>。元のジョブを上書きしない</td></tr><tr><td>変換不能・上限超過等</td><td>ジョブをfailedにして理由を記録</td></tr><tr><td>一時的な処理・Storageエラー</td><td>Queueで再試行。上限後は <code>office2md-jobs-poison</code> へ</td></tr><tr><td>構文が壊れたJSON等</td><td>ジョブを特定できず状態を作れない場合がある</td></tr></tbody></table></div>
 <p>新しい変換ではjobIdと入力Blobパスを両方変えてください。投入後の入力を上書きすると、再試行が別の内容を読む可能性があります。入力のETag検査は1回のダウンロード中の変更を防ぐもので、再試行全体での不変性を代替しません。</p>
 <p>入力アップロード後にQueue送信が失敗した場合は、元の入力を保持したまま同じJSONを再送します。完成成果物も変更しないでください。リースで同じジョブの配送を直列化しますが、全ジョブのFIFO順序やアプリ全体の同時実行1は保証しません。失敗試行を含むBlobの保持・清掃は運用側で決めます。</p>
 
-<h2 id="version-2">Version 2：PDF・入力版・付加情報・結果通知</h2>
+<h2 id="version-2">Version 2：画像OCR・入力版・付加情報・結果通知</h2>
 <p>既存のversion 1は引き続き使えます。以下の拡張はversion 2でのみ受け付けます。接続先の資格情報やURLをQueueメッセージに含めません。</p>
 <pre><code class="language-json">{
   &quot;version&quot;: 2,
@@ -94,7 +94,7 @@ result:  storage, container, sectionCount, warningCount,
     &quot;container&quot;: &quot;converted-results&quot;,
     &quot;prefix&quot;: &quot;exports&quot;
   },
-  &quot;outputFormat&quot;: &quot;pdf&quot;,
+  &quot;imageMode&quot;: &quot;ocr&quot;,
   &quot;metadata&quot;: {
     &quot;documentId&quot;: &quot;document-123&quot;,
     &quot;revision&quot;: &quot;7&quot;
@@ -103,13 +103,14 @@ result:  storage, container, sectionCount, warningCount,
     &quot;queue&quot;: &quot;completed&quot;
   }
 }</code></pre>
-<p><code>outputFormat: &quot;pdf&quot;</code> は任意です。省略時は従来のMarkdown結果で、指定したジョブの <a href="jobs.html#result">/result</a> はPDFになります。PDFジョブのarchive ZIPにはMarkdown・report・画像・<code>document.pdf</code> が入ります。version 1にはこのフィールドを指定できません。</p>
+<p><code>imageMode</code> は任意で <code>ignore</code>（既定）または <code>ocr</code> です。どちらも画像ファイルとMarkdown参照を残し、ocrだけ画像内の文字を補います。version 1はOCRしません。OCRは<a href="settings.html#ocr">サーバーの接続設定</a>が必要で、未設定のocr指定は <code>OCR_NOT_CONFIGURED</code> です。画像単位の失敗・スキップは参照と警告を残して変換を継続します。</p>
+<p>Office2MDのPDF出力は廃止しました。旧 <code>outputFormat: &quot;pdf&quot;</code> は受け付けません。<a href="jobs.html#result">/result</a> はMarkdown、archive ZIPはMarkdown・report・画像一式です。</p>
 <p><code>input.expectedETag</code>で原本の版を固定し、不一致は<code>INPUT_VERSION_MISMATCH</code>です。<code>metadata</code>は最大16項目の文字列マップ（キー64文字・値512文字・合計8KiB以下）、<code>notification.queue</code>は登録済み結果Queueのエイリアスです。metadataは認可情報ではありません。</p>
-<p>Officeの成果物にはMarkdown・report・画像一式、PDFジョブではPDFと、それらの参照・サイズ・SHA-256を持つManifestがあります。通知には大量の画像一覧を埋め込まず、確定した成果物の参照を返します。</p>
+<p>Officeの成果物にはMarkdown・report・画像一式と、それらの参照・サイズ・SHA-256を持つManifestがあります。通知には大量の画像一覧を埋め込まず、確定した成果物の参照を返します。</p>
 <p>通知は<code>eventId</code>・<code>jobId</code>・終端の<code>status</code>・入力版・metadata・結果参照・固定エラーを含みます。受信側でeventIdによる重複排除と最新revisionの照合を行ってください。通知失敗は送信待ちから再送し、変換はやり直しません。</p>
 <p>結果と状態の保持期間は既定では無期限です。保持設定を有効にすると、アプリが所有するファイルだけを清掃します。清掃済みの結果取得は<code>410 JOB_RESULT_EXPIRED</code>です。状態を削除した後は同じjobIdの重複判定も終了します。</p>
-<p>設定・権限・Private Endpoint・保持運用は<a href="../../development.md#8-managed-identity閉域storage結果通知">共通の配置・運用手順</a>、詳細な契約は<a href="../../../functions/office2md/docs/direct-queue.md#version-2pdf入力版付加情報結果通知">直接Queueガイド</a>を参照してください。未登録の入力・出力・通知先は使用できません。</p>
-<footer class="page-footer"><p>最終確認：2026-10-04。<a href="../../../functions/office2md/docs/usage.md">利用ガイド</a>と<a href="../../../functions/office2md/src/main/java/com/convertx2x/office2md/ConversionFunctions.java">HTTP実装</a>に基づく資料です。</p></footer>
+<p>設定・権限・Private Endpoint・保持運用は<a href="../../development.md#8-managed-identity閉域storage結果通知">共通の配置・運用手順</a>、詳細な契約は<a href="../../../functions/office2md/docs/direct-queue.md#version-2画像ocr入力版付加情報結果通知">直接Queueガイド</a>を参照してください。未登録の入力・出力・通知先は使用できません。</p>
+<footer class="page-footer"><p>最終確認：2026-10-05。<a href="../../../functions/office2md/docs/usage.md">利用ガイド</a>と<a href="../../../functions/office2md/src/main/java/com/convertx2x/office2md/ConversionFunctions.java">HTTP実装</a>に基づく資料です。</p></footer>
 </article>
 <aside class="toc" aria-label="このページの目次"><p class="toc-title">このページの内容</p><nav id="page-toc"></nav></aside>
 </div>

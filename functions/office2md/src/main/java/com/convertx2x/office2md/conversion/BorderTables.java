@@ -82,14 +82,17 @@ final class BorderTables {
         }
         Map<Integer, List<CellRangeAddress>> groups = new LinkedHashMap<>();
         for (int i = 0; i < units.size(); i++) groups.computeIfAbsent(root(parent, i), ignored -> new ArrayList<>()).add(units.get(i));
+        ClosedGrid grid = new ClosedGrid(units, occupied, parent);
         List<CellRangeAddress> result = new ArrayList<>();
         boolean rejected = false;
-        for (List<CellRangeAddress> group : groups.values()) {
+        for (var component : groups.entrySet()) {
+            int componentId = component.getKey();
+            List<CellRangeAddress> group = component.getValue();
             if (group.size() < 2) continue;
             CellRangeAddress bounds = bounds(group);
             long cells = group.stream().mapToLong(BorderTables::area).sum();
-            if (area(bounds) == cells && closed(bounds) && !protrudingVertically(bounds)) result.add(bounds);
-            else if (openTopRowGap(bounds, occupied) && !protrudingVertically(bounds)) {
+            if (area(bounds) == cells && closed(bounds) && !protrudingVertically(bounds, grid, componentId)) result.add(bounds);
+            else if (openTopRowGap(bounds, grid, componentId) && !protrudingVertically(bounds, grid, componentId)) {
                 // A matrix may leave its top corner unbordered, even when it starts
                 // after ordinary columns in the same table. The closed, horizontally
                 // divided lower grid fixes its position without guessing from text.
@@ -112,7 +115,7 @@ final class BorderTables {
             else {
                 // A closed outer rectangle may contain a regular full-height grid beside a
                 // visually merged span. Never recover a seed from a generally open outer border.
-                if (closed(bounds) && !protrudingVertically(bounds)) result.addAll(fullHeightSeeds(group, bounds));
+                if (closed(bounds) && !protrudingVertically(bounds, grid, componentId)) result.addAll(fullHeightSeeds(group, bounds));
                 rejected = true;
             }
         }
@@ -155,7 +158,8 @@ final class BorderTables {
         if (count >= 2 && closed(seed)) seeds.add(seed);
     }
     /** Accept unbordered text or blank top-row runs only when a closed, divided lower grid anchors them. */
-    private boolean openTopRowGap(CellRangeAddress bounds, Map<Long, Integer> occupied) {
+    private boolean openTopRowGap(CellRangeAddress bounds, ClosedGrid grid, int componentId) {
+        Map<Long, Integer> occupied = grid.occupied();
         int top = bounds.getFirstRow(), bottom = bounds.getLastRow();
         int left = bounds.getFirstColumn(), right = bounds.getLastColumn();
         if (top == bottom || left == right || !closed(new CellRangeAddress(top + 1, bottom, left, right))) return false;
@@ -185,7 +189,10 @@ final class BorderTables {
             }
             missing = openRun = true;
             Cell cell = first == null ? null : first.getCell(column);
-            if (horizontal.contains(key(top, column)) || merges.at(top, column) != null
+            // The bottom of a separate closed cell directly above is not this
+            // borderless corner's top edge. Its own cell style must still be blank.
+            if ((horizontal.contains(key(top, column)) && !grid.foreignBottomEdge(top, column, componentId))
+                    || merges.at(top, column) != null
                     || !unborderedTextOrBlank(cell)) return false;
         }
         // A trailing gap is ambiguous unless the top row contains an explicit,
@@ -233,12 +240,34 @@ final class BorderTables {
         return true;
     }
     /** Horizontal attachments belong to expansion; do not extend a seed above or below its rows. */
-    private boolean protrudingVertically(CellRangeAddress range) {
+    private boolean protrudingVertically(CellRangeAddress range, ClosedGrid grid, int componentId) {
         for (int c = range.getFirstColumn(); c <= range.getLastColumn() + 1; c++) {
-            if (range.getFirstRow() > 0 && vertical.contains(key(range.getFirstRow() - 1, c))) return true;
-            if (vertical.contains(key(range.getLastRow() + 1, c))) return true;
+            if (range.getFirstRow() > 0 && unexplainedVertical(range.getFirstRow() - 1, c, grid, componentId)) return true;
+            if (unexplainedVertical(range.getLastRow() + 1, c, grid, componentId)) return true;
         }
         return false;
+    }
+    private boolean unexplainedVertical(int row, int column, ClosedGrid grid, int componentId) {
+        return vertical.contains(key(row, column)) && !grid.foreignVerticalEdge(row, column, componentId);
+    }
+    /** Only another connected group of closed cells can account for a neighboring edge. */
+    private record ClosedGrid(List<CellRangeAddress> units, Map<Long, Integer> occupied, int[] parents) {
+        private CellRangeAddress foreignUnit(int row, int column, int componentId) {
+            Integer unit = occupied.get(key(row, column));
+            return unit == null || root(parents, unit) == componentId ? null : units.get(unit);
+        }
+        boolean foreignBottomEdge(int row, int column, int componentId) {
+            CellRangeAddress above = foreignUnit(row - 1, column, componentId);
+            return above != null && above.getLastRow() == row - 1;
+        }
+        boolean foreignVerticalEdge(int row, int column, int componentId) {
+            CellRangeAddress right = foreignUnit(row, column, componentId);
+            // A merged anchor may also store a right border inside its own span.
+            // Those covered edges belong to that foreign closed unit as well.
+            if (right != null) return true;
+            CellRangeAddress left = foreignUnit(row, column - 1, componentId);
+            return left != null;
+        }
     }
     private String borderRange() {
         int r1 = Integer.MAX_VALUE, r2 = 0, c1 = Integer.MAX_VALUE, c2 = 0;

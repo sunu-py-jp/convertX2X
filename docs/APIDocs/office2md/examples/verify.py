@@ -141,30 +141,6 @@ def main():
             assert "差し戻し<br>再提出後に再判定" in markdown
             assert "[^footnote-2]" in markdown
             assert "追加の確認図形" in markdown
-            pdf_directory = directory / "pdf"
-            pdf_run = json.loads((pdf_directory / "run.json").read_text(encoding="utf-8"))
-            assert pdf_run["mode"] == "actual local Functions HTTP"
-            assert pdf_run["request"]["path"] == "/api/convert?filename=word-complex.docx&output=pdf"
-            assert pdf_run["response"]["status"] == 200
-            assert pdf_run["response"]["contentType"] == "application/pdf"
-            assert pdf_run["response"]["sectionCount"] == run["sectionCount"]
-            assert pdf_run["response"]["warningCount"] == run["warningCount"]
-            assert pdf_run["source"]["sha256"] == run["input"]["sha256"]
-            assert pdf_run["source"]["sizeBytes"] == run["input"]["sizeBytes"]
-            assert re.fullmatch(r"[0-9a-f]{64}", pdf_run["hostArtifact"]["sha256"])
-            for key in ("pdf", "firstPage"):
-                record = pdf_run[key]
-                data = (pdf_directory / record["path"]).read_bytes()
-                assert len(data) == record["sizeBytes"]
-                assert hashlib.sha256(data).hexdigest() == record["sha256"]
-            assert (pdf_directory / "document.pdf").read_bytes().startswith(b"%PDF-")
-            png = (pdf_directory / "page-01.png").read_bytes()
-            assert png.startswith(b"\x89PNG\r\n\x1a\n")
-            assert struct.unpack(">II", png[16:24]) == (
-                pdf_run["firstPage"]["width"], pdf_run["firstPage"]["height"])
-            assert pdf_run["pdf"]["pages"] >= 1
-            assert "examples/word-complex/pdf/document.pdf" in examples_page
-            assert "examples/word-complex/pdf/page-01.png" in examples_page
         if name == "powerpoint-complex":
             assert (directory / "input.pptx").read_bytes() == (
                 HERE.parents[3] / "functions/office2md/samples/office-sample.pptx").read_bytes()

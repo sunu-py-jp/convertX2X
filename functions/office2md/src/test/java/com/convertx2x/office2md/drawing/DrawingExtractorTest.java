@@ -38,7 +38,9 @@ class DrawingExtractorTest {
             assertEquals(1, workspace.files().size());
             assertTrue(countColor(image(workspace), Color.MAGENTA) > 100);
             assertTrue(blocks.getFirst().markdown().contains("\\[画像\\] &lt;script&gt;"));
-            assertTrue(blocks.getLast().markdown().contains("images/diagram-0001.png"));
+            assertTrue(blocks.getFirst().markdown().contains("images/image-0001.png"));
+            assertTrue(blocks.getLast().markdown().contains("images/image-0001.png"));
+            assertFalse(blocks.getFirst().markdown().contains("images/diagram-"));
             assertTrue(blocks.getFirst().markdown().contains("\"y\":45"));
             assertTrue(blocks.getLast().markdown().contains("\"y\":180"));
         }
@@ -124,10 +126,10 @@ class DrawingExtractorTest {
             List<DrawingBlock> blocks = extractor.extract(sheet, workspace);
             assertEquals(2, blocks.size()); assertEquals(2, workspace.files().size());
             assertTrue(blocks.getFirst().markdown().contains("images/diagram-0001.png"));
-            assertTrue(blocks.getLast().markdown().contains("images/diagram-0002.png"));
+            assertTrue(blocks.getLast().markdown().contains("images/image-0001.png"));
             assertEquals(1, blocks.getFirst().firstRow()); assertEquals(3, blocks.getLast().firstRow());
             BufferedImage first = image(workspace, "images/diagram-0001.png");
-            BufferedImage second = image(workspace, "images/diagram-0002.png");
+            BufferedImage second = image(workspace, "images/image-0001.png");
             try {
                 assertEquals(0, countColor(first, Color.RED));
                 assertTrue(countColor(first, new Color(0, 128, 0)) > 100);
@@ -247,9 +249,10 @@ class DrawingExtractorTest {
             sheet.createDrawingPatriarch().createPicture(anchor(1, 1, 3, 4), picture);
             var blocks = extractor.extract(sheet, workspace);
             assertEquals(1, blocks.size());
-            assertFalse(blocks.getFirst().markdown().startsWith("!"));
-            assertTrue(blocks.getFirst().markdown().contains(".bmp"));
-            assertArrayEquals(original, Files.readAllBytes(workspace.files().values().iterator().next()));
+            assertTrue(blocks.getFirst().markdown().contains("images/image-0001.png"));
+            BufferedImage converted = image(workspace, "images/image-0001.png");
+            try { assertEquals(20, converted.getWidth()); assertEquals(15, converted.getHeight()); }
+            finally { converted.flush(); }
             assertTrue(workspace.warningCount() > 0);
         }
     }

@@ -38,11 +38,10 @@ public class ConversionFunctions {
             ExecutionContext context) {
         return handle(request, context, () -> {
             Upload upload = upload(request);
-            OutputFormat outputFormat = outputFormat(request);
-            try (ConversionResult result = converter.convert(upload.bytes(), upload.filename(), outputFormat)) {
-                JobDownload download = outputFormat == OutputFormat.PDF
-                        ? new JobDownload(result.pdfBytes(), "application/pdf", "document.pdf")
-                        : new JobDownload(result.zipBytes(), "application/zip", "document.zip");
+            ImageMode imageMode = imageMode(request);
+            converter.validateImageMode(imageMode);
+            try (ConversionResult result = converter.convert(upload.bytes(), upload.filename(), imageMode)) {
+                JobDownload download = new JobDownload(result.zipBytes(), "application/zip", "document.zip");
                 return binary(request, download)
                         .header("X-Section-Count", Integer.toString(result.sectionCount()))
                         .header("X-Warning-Count", Integer.toString(result.warningCount())).build();
@@ -58,7 +57,9 @@ public class ConversionFunctions {
         return handle(request, context, () -> {
             requireAsync();
             Upload upload = upload(request);
-            JobStatus job = jobs.get().submit(upload.bytes(), upload.filename(), outputFormat(request));
+            ImageMode imageMode = imageMode(request);
+            converter.validateImageMode(imageMode);
+            JobStatus job = jobs.get().submit(upload.bytes(), upload.filename(), imageMode);
             String statusUrl = jobPath(request, job.id(), false);
             return json(request, HttpStatus.ACCEPTED, statusBody(request, job))
                     .header("Location", statusUrl).header("Retry-After", "3").build();
@@ -201,8 +202,11 @@ public class ConversionFunctions {
         }
     }
 
-    private static OutputFormat outputFormat(HttpRequestMessage<?> request) {
-        return OutputFormat.parse(request.getQueryParameters().get("output"));
+    private static ImageMode imageMode(HttpRequestMessage<?> request) {
+        String output = request.getQueryParameters().get("output");
+        if (output != null && !output.equals("markdown"))
+            throw new ConversionException(400, "INVALID_OUTPUT_FORMAT", "Office2MD supports Markdown output only.");
+        return ImageMode.parse(request.getQueryParameters().get("imageMode"));
     }
 
     private static String header(HttpRequestMessage<?> request, String name) {

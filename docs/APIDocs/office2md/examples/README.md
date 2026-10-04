@@ -1,11 +1,13 @@
 # Officeの実変換例
 
-[HTMLの実例ページ](../examples.html)で、実際の出力とスクリーンショットを確認できます。
+[HTMLの実例ページ](../examples.html)で、実際の出力とスクリーンショットを確認できます。掲載データは各 `run.json` に記録された実装・日時の実行結果です。現行の画像モード追加後とは画像数・分類が異なる場合があります。現行出力では「図中の項目:」「接続関係:」「画像内の文字（OCR）:」を半角コロン付きの通常テキストにし、参考画像の説明見出しと接続情報がないことを説明する文章を出しません。保存済みMarkdown・HTML内の出力抜粋・スクリーンショットは、実行時の記録として変更していません。
+
+現在は `imageMode=ignore`（既定）で元画像と参照を残し、`ocr` で元画像の可視領域の文字を追加します。[現行仕様](../index.html#image-ocr)を参照してください。このサンプル集は実AzureでOCR精度を検証した記録ではありません。
 
 | ケース | 入力 | 実際の結果 |
 | --- | --- | --- |
 | `excel-complex` | 13シート、罫線表と名前付き範囲、保存済み数式、図形・画像、接続IDなしの線端接触、未対応要素 | 8シート、6表、33アセット、6接続（3確定・3不明）、20警告 |
-| `word-complex` | 罫線なし結合表と3列の判定表、複数段落セル、変更履歴、2脚注、回転図形・楕円・画像 | 1文書、3アセット、2警告。別途3ページの実PDFと1ページ目画像 |
+| `word-complex` | 罫線なし結合表と3列の判定表、複数段落セル、変更履歴、2脚注、回転図形・楕円・画像 | 1文書、3アセット、2警告 |
 | `word-rag-flow` | 購入申請・修正再申請のDrawingMLグループ、接続先なしの矢印、前後の段落 | 1文書、1プレビュー、5接続（4確定・1不明）、5警告 |
 | `powerpoint-complex` | 6表示＋1非表示スライド、2種類の結合表、レビュー経路の図形・接続線、画像 | 6スライド、3プレビュー、3警告 |
 | `powerpoint-rag-flow` | 3スライド、購入申請の分岐・差戻し、グループ内外の接続、双方向・始点矢印、接続先不明の線 | 3スライド、3プレビュー、14接続（13確定・1不明）、1警告 |
@@ -67,11 +69,9 @@ java -Djava.awt.headless=true \
 python3 docs/APIDocs/office2md/examples/prepare_inputs.py
 ```
 
-WordのPDF例は同じ `word-complex/input.docx` を `output=pdf` 付きの実HTTP APIへ送った応答です。[PDF](word-complex/pdf/document.pdf)と[1ページ目画像](word-complex/pdf/page-01.png)、[実行記録](word-complex/pdf/run.json)を保存しています。ローカルホスト起動後に次のコマンドで再取得できます。
-1ページ目の画像作成とページ数の検査には `pdftoppm` と `pdfinfo` を使います。
+Office2MDのPDF出力とPDF収集スクリプトは廃止しました。過去のPDF成果物は履歴資料として保存していますが、現在のAPIの再現対象には含めません。
 
 ```sh
-python3 docs/APIDocs/office2md/examples/capture_pdf.py --base http://localhost:7072
 python3 docs/APIDocs/office2md/examples/render_word_powerpoint.py
 python3 docs/APIDocs/office2md/examples/verify.py
 ```

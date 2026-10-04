@@ -75,9 +75,6 @@ def word_section() -> str:
     if "## **判定条件と複数段落の表**" not in markdown or "[^footnote-2]" not in markdown:
         raise ValueError("Expanded Word output was not captured")
     table = excerpt(markdown, "## **判定条件と複数段落の表**", "## **番号と脚注**")
-    pdf = json.loads((HERE / name / "pdf/run.json").read_text(encoding="utf-8"))
-    if pdf["source"]["sha256"] != run["input"]["sha256"]:
-        raise ValueError("The PDF was captured from a different Word input")
     parts = [
         '<section class="sample-case" aria-labelledby="word">',
         '<h2 id="word">Word：2種類の結合表・脚注・図形を実変換</h2>',
@@ -91,14 +88,6 @@ def word_section() -> str:
         '<p><a href="examples/word-complex/output/document.md" download>Markdown全文をダウンロード</a></p></div>',
         '</div>',
         '<p>2つのWord表はMarkdown表として出力され、結合セルは開始セルに値を残します。追加したセル内の2段落は <code>&lt;br&gt;</code> でつながります。図形の文字は通常の本文にあり、参考画像3点で形を確認できます。簡易描画に関する2件の警告は下のJSONと実際のレポートに記録しています。</p>',
-        '<h3>同じ入力から作ったPDF</h3>',
-        '<p>同じDOCXを <code>POST /api/convert?filename=word-complex.docx&amp;output=pdf</code> に送った実際のHTTP 200応答です。PDFは変換後の内容を3ページに組んだもので、下の画像はその1ページ目を描画したものです。</p>',
-        '<div class="sample-links">',
-        '<a href="examples/word-complex/pdf/document.pdf" download>実変換PDF（3ページ）</a>',
-        '<a href="examples/word-complex/pdf/page-01.png">PDF 1ページ目の画像</a>',
-        '<a href="examples/word-complex/pdf/run.json">PDFの実行記録・SHA-256</a>',
-        '</div>',
-        '<figure class="example-figure"><a href="examples/word-complex/pdf/page-01.png"><img src="examples/word-complex/pdf/page-01.png" alt="実際のPDF応答の1ページ目。2つの表、脚注参照、図形テキストが表示されている" loading="lazy"></a><figcaption>実際のPDF応答の1ページ目をPNGに描画しました。画像をクリックすると原寸で表示します。</figcaption></figure>',
         details("実際のMarkdown全文", markdown, "language-markdown"),
         details("実際のreport.json：警告", json.dumps(report["warnings"], ensure_ascii=False, indent=2), "language-json"),
         '<p><a href="examples/word-complex/screenshots/overview.png">Playground全体</a> · <a href="examples/word-complex/screenshots/markdown-source.png">Markdownタブ</a> · <a href="examples/word-complex/screenshots/warnings.png">警告の画面</a></p>',

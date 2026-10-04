@@ -25,10 +25,10 @@
       ['settings', '設定・上限・エラー', 'settings.html', '環境変数 制限 認証 capabilities config playground 413 503']
     ]},
     {id: 'office', title: 'Office → Markdown', subtitle: 'XLSX · XLS · DOCX · PPTX', icon: 'office', folder: 'office2md', items: [
-      ['overview', '機能概要・変換ルール', 'index.html', 'excel word powerpoint md 表 図形 取消線 座標'],
+      ['overview', '機能概要・変換ルール', 'index.html', 'excel word powerpoint md 表 図形 取消線 座標 ocr document intelligence 画像内の文字'],
       ['examples', '実際の変換例', 'examples.html', 'サンプル スクリーンショット 変換結果 複雑 excel word powerpoint markdown ダウンロード'],
       ['merge-cases', 'Excel結合・見出しの実例', 'merge-cases.html', 'excel セル結合 横結合 縦結合 複数行ヘッダー 色 罫線 markdown 比較'],
-      ['http', '同期HTTPで変換', 'http.html', 'post convert curl ファイル zip markdown'],
+      ['http', '同期HTTPで変換', 'http.html', 'post convert curl ファイル zip markdown imageMode ocr ignore'],
       ['jobs', '非同期HTTP・成果物取得', 'jobs.html', 'jobs get post result report archive images status ジョブ 状態'],
       ['queue', 'Queueから直接依頼', 'queue.html', 'json blob storage 外部システム'],
       ['settings', '設定・上限・エラー', 'settings.html', '環境変数 制限 認証 capabilities config playground 413 503']

@@ -30,27 +30,50 @@ class AzureJobServiceTest {
         assertEquals("succeeded", service.find(request.jobId()).orElseThrow().status());
     }
 
-    @Test void pdfOutputFlowsThroughHttpSubmissionAndDirectQueueRequests() {
+    @Test void imageModeFlowsThroughHttpSubmissionAndDirectQueueRequestsAndConflictsAreRejected() {
         MemoryStore store = new MemoryStore();
-        List<OutputFormat> formats = new ArrayList<>();
-        AzureJobService service = new AzureJobService(store, (bytes, name, format) -> {
-            formats.add(format);
-            ConversionResult converted = result();
-            if (format == OutputFormat.PDF) converted.addPdf("%PDF-test".getBytes(StandardCharsets.US_ASCII));
-            return converted;
-        }, (bytes, name) -> { }, Clock.systemUTC());
-        JobStatus submitted = service.submit(new byte[]{1, 2}, "source.xlsx", OutputFormat.PDF);
+        List<ImageMode> modes = new ArrayList<>();
+        AzureJobService service = new AzureJobService(store, (bytes, name, mode) -> {
+            modes.add(mode);
+            return result();
+        }, (bytes, name) -> { }, mode -> { }, Clock.systemUTC());
+        JobStatus submitted = service.submit(new byte[]{1, 2}, "source.xlsx", ImageMode.OCR);
         assertEquals(2, ConversionJobRequest.parse(store.enqueued).version());
-        assertEquals("pdf", ConversionJobRequest.parse(store.enqueued).outputFormat());
+        assertEquals("ocr", ConversionJobRequest.parse(store.enqueued).imageMode());
         service.process(store.enqueued);
-        assertEquals("document.pdf", service.downloadResult(submitted.id()).filename());
-        assertEquals("%PDF-test", new String(service.downloadResult(submitted.id()).bytes(), StandardCharsets.US_ASCII));
+        assertEquals("document.md", service.downloadResult(submitted.id()).filename());
         var base = ConversionJobRequestTest.request();
         var direct = new ConversionJobRequest(2, base.jobId(), base.input(), base.output(), base.filename(),
-                Map.of(), null, "pdf");
+                Map.of(), null, null, "ocr");
         service.process(direct.toJson());
-        assertEquals("document.pdf", service.downloadResult(direct.jobId()).filename());
-        assertEquals(List.of(OutputFormat.PDF, OutputFormat.PDF), formats);
+        service.process(direct.toJson());
+        assertEquals(List.of(ImageMode.OCR, ImageMode.OCR), modes);
+        assertEquals(Set.of("document.md", "report.json", "images/image-0001.png"), store.downloads.keySet());
+        var conflict = new ConversionJobRequest(2, base.jobId(), base.input(), base.output(), base.filename(),
+                Map.of(), null, null, "ignore");
+        assertEquals("JOB_ID_CONFLICT", assertThrows(ConversionException.class, () -> service.process(conflict.toJson())).code());
+        JobStatus ignored = service.submit(new byte[]{1, 2}, "source.xlsx", ImageMode.IGNORE);
+        assertEquals(1, ConversionJobRequest.parse(store.enqueued).version());
+        assertFalse(store.enqueued.contains("imageMode"));
+        service.process(store.enqueued);
+        assertEquals("succeeded", service.find(ignored.id()).orElseThrow().status());
+        assertEquals(List.of(ImageMode.OCR, ImageMode.OCR, ImageMode.IGNORE), modes);
+    }
+
+    @Test void unconfiguredOcrIsRejectedBeforeSubmissionOrWorkerInputDownload() {
+        MemoryStore store = new MemoryStore();
+        AzureJobService service = service(store, (bytes, name) -> { throw new AssertionError("Must not convert"); });
+        assertEquals("OCR_NOT_CONFIGURED", assertThrows(ConversionException.class,
+                () -> service.submit(new byte[]{1}, "source.xlsx", ImageMode.OCR)).code());
+        assertTrue(store.records.isEmpty());
+        assertNull(store.enqueued);
+        var base = ConversionJobRequestTest.request();
+        var direct = new ConversionJobRequest(2, base.jobId(), base.input(), base.output(), base.filename(),
+                Map.of(), null, null, "ocr");
+        ConversionException error = assertThrows(ConversionException.class, () -> service.process(direct.toJson()));
+        assertEquals("OCR_NOT_CONFIGURED", error.code());
+        assertEquals(503, error.statusCode());
+        assertEquals(0, store.inputReads);
     }
 
     @Test void retriesTransientUploadWithoutPublishingPartialResultAndClosesWorkspace() {
@@ -118,12 +141,12 @@ class AzureJobServiceTest {
         assertEquals(0, store.records.get(request.jobId()).artifactTrackingVersion());
     }
 
-    @Test void queuedStateFromBeforeOutputOptionStillMatchesItsOriginalMessage() {
+    @Test void queuedStateFromBeforeImageModeStillMatchesItsOriginalMessage() {
         MemoryStore store = new MemoryStore();
         var normalized = ConversionJobRequestTest.request();
         var legacy = new ConversionJobRequest(normalized.version(), normalized.jobId(), normalized.input(),
                 normalized.output(), normalized.filename());
-        assertNull(legacy.outputFormat());
+        assertNull(legacy.imageMode());
         store.ensure(new JobRecord(new JobStatus(legacy.jobId(), "queued", legacy.filename(), "created", "updated",
                 null, null, null, null), null, legacy));
         service(store, (bytes, name) -> result()).process(legacy.toJson());

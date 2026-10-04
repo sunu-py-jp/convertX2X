@@ -320,6 +320,29 @@ class MarkdownPdfServiceTest {
         }
     }
 
+    @Test void wideTableMakesTheWholeDocumentLandscapeWithoutIsolatingTheHeading() throws Exception {
+        String header = java.util.stream.IntStream.rangeClosed(1, 20)
+                .mapToObj(column -> "更新処理%02d".formatted(column)).collect(java.util.stream.Collectors.joining(" | "));
+        String separator = java.util.Collections.nCopies(20, "---").stream().collect(java.util.stream.Collectors.joining(" | "));
+        String body = java.util.stream.IntStream.rangeClosed(1, 20)
+                .mapToObj(column -> "FIELD%02d".formatted(column)).collect(java.util.stream.Collectors.joining(" | "));
+        String markdown = "# Matrix document\n\n| ID | Name |\n| --- | --- |\n| 100 | Sample |\n\n| "
+                + header + " |\n| " + separator + " |\n| " + body + " |\n\nAfter table\n\n<!-- pagebreak -->\n\nSecond page";
+        try (ConversionResult result = service.convert(utf8(markdown), "wide.md");
+             PDDocument pdf = Loader.loadPDF(result.pdfBytes())) {
+            assertEquals(2, pdf.getNumberOfPages(), "The only page break should be the explicit one");
+            for (var page : pdf.getPages()) assertTrue(page.getMediaBox().getWidth() > page.getMediaBox().getHeight());
+            PDFTextStripper stripper = new PDFTextStripper();
+            stripper.setStartPage(1); stripper.setEndPage(1);
+            String text = stripper.getText(pdf);
+            assertTrue(text.contains("Matrix document"));
+            assertTrue(text.contains("Sample"));
+            assertTrue(text.contains("FIELD01"));
+            assertTrue(text.contains("FIELD20"));
+            assertTrue(text.contains("After table"));
+        }
+    }
+
     @Test void inputAndOutputByteLimitsAreEnforced() {
         MarkdownPdfService smallInput = new MarkdownPdfService(new ConversionLimits(8, 1_000_000, 0, 20_000_000));
         assertEquals("INPUT_BYTES_LIMIT", assertThrows(ConversionException.class,

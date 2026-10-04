@@ -41,7 +41,7 @@ class WordDrawingsTest {
         try (var document = new XWPFDocument(); var workspace = workspace()) {
             String text = "保持\n[説明] <script> \\\"";
             String markdown = render(workspace, document, shape("1", "roundRect", 30, "RAW_SECRET"), n -> text);
-            assertTrue(markdown.contains("図中の項目"));
+            assertTrue(markdown.contains("図中の項目:\n\n"));
             assertTrue(markdown.contains("保持<br>\\[説明\\] &lt;script&gt;"));
             assertFalse(markdown.contains("RAW_SECRET"));
             JsonNode alt = alt(markdown);
@@ -159,7 +159,7 @@ class WordDrawingsTest {
         }
     }
 
-    @Test void embeddedPictureUsesSavedAltAndBakesRotationIntoPreviewPixels() throws Exception {
+    @Test void embeddedPictureUsesSavedAltAndBakesRotationIntoItsOwnSourceResolutionAsset() throws Exception {
         byte[] original = coloredPicture();
         try (var document = new XWPFDocument(); var workspace = workspace()) {
             String id = document.addPictureData(original, Document.PICTURE_TYPE_PNG);
@@ -168,13 +168,24 @@ class WordDrawingsTest {
             assertTrue(markdown.contains("元の画像"));
             assertEquals("画像", alt(markdown).path("type").asText());
             assertEquals(100, alt(markdown).path("width").asInt());
-            var image = ImageIO.read(workspace.files().get("images/diagram-0001.png").toFile());
-            assertTrue(image.getHeight() > image.getWidth());
+            assertEquals(1, markdown.split("!\\[", -1).length - 1);
+            assertTrue(markdown.contains("](images/image-0001.png)"));
+            assertFalse(workspace.files().containsKey("images/diagram-0001.png"));
+            var image = ImageIO.read(workspace.files().get("images/image-0001.png").toFile());
+            assertEquals(10, image.getWidth());
+            assertEquals(20, image.getHeight());
             Color upper = new Color(image.getRGB(image.getWidth()/2, image.getHeight()/4), true);
             Color lower = new Color(image.getRGB(image.getWidth()/2, image.getHeight()*3/4), true);
             assertTrue(upper.getRed() > 200 && upper.getBlue() < 50);
             assertTrue(lower.getBlue() > 200 && lower.getRed() < 50);
             image.flush();
+            var report = report(workspace);
+            assertEquals(alt(markdown), block(report, "embeddedImage").path("metadata"));
+            assertEquals("embeddedImage", report.path("assets").get(0).path("sourceKind").asText());
+            var diagram = block(report, "diagram");
+            assertFalse(diagram.has("path"));
+            assertEquals(1, diagram.path("nodes").size());
+            assertEquals("元の画像 [説明]", diagram.path("nodes").get(0).path("text").asText());
         }
     }
 
@@ -188,8 +199,36 @@ class WordDrawingsTest {
             note.addRelationship(image.getPartName(), TargetMode.INTERNAL, IMAGE_REL, "notePicture");
             String markdown = new WordDrawings(workspace).render(xml(group(picture("notePicture") + shape("2", "rect", 0, ""), 0, 0, 0)),
                     note, "脚注", "note1", n -> "");
-            assertEquals(1, markdown.split("!\\[", -1).length - 1);
-            assertEquals(2, report(workspace).path("blocks").get(0).path("nodes").size());
+            assertEquals(2, markdown.split("!\\[", -1).length - 1);
+            assertTrue(markdown.contains("](images/image-0001.png)"));
+            assertTrue(markdown.contains("](images/diagram-0001.png)"));
+            assertArrayEquals(coloredPicture(), Files.readAllBytes(workspace.files().get("images/image-0001.png")));
+            assertPng(workspace, "images/diagram-0001.png");
+            var report = report(workspace);
+            assertEquals(2, block(report, "diagram").path("nodes").size());
+            assertEquals("脚注", block(report, "embeddedImage").path("section").asText());
+            assertEquals("images/image-0001.png", block(report, "embeddedImage").path("path").asText());
+        }
+    }
+
+    @Test void purePictureGroupKeepsIndividualReferencesAndNativeNodesWithoutDuplicatePreview() throws Exception {
+        byte[] original = coloredPicture();
+        try (var document = new XWPFDocument(); var workspace = workspace()) {
+            String id = document.addPictureData(original, Document.PICTURE_TYPE_PNG);
+            String second = picture(id).replace("id='1'", "id='2'")
+                    .replace("x='0' y='0'", "x='2540000' y='0'");
+            String markdown = render(workspace, document, group(picture(id) + second, 0, 0, 0), n -> "");
+            assertEquals(2, markdown.split("!\\[", -1).length - 1);
+            assertEquals(2, markdown.split("images/image-0001.png", -1).length - 1);
+            assertEquals(1, workspace.files().size());
+            assertArrayEquals(original, Files.readAllBytes(workspace.files().get("images/image-0001.png")));
+            var report = report(workspace);
+            assertEquals(3, report.path("blocks").size());
+            var diagram = block(report, "diagram");
+            assertFalse(diagram.has("path"));
+            assertEquals(2, diagram.path("nodes").size());
+            assertEquals(0, diagram.path("nodes").get(0).path("x").asInt());
+            assertEquals(200, diagram.path("nodes").get(1).path("x").asInt());
         }
     }
 
@@ -205,10 +244,13 @@ class WordDrawingsTest {
             assertArrayEquals(original, Files.readAllBytes(workspace.files().get("images/image-0001.emf")));
             var report = report(workspace);
             assertTrue(report.toString().contains("IMAGE_FORMAT_ATTACHMENT"));
-            var attachment = report.path("blocks").get(0).path("attachments").get(0);
-            assertEquals("shape-1", attachment.path("id").asText());
+            var attachment = block(report, "embeddedImage");
+            assertEquals("shape-1", attachment.path("metadata").path("id").asText());
             assertEquals("images/image-0001.emf", attachment.path("path").asText());
             assertEquals("元の画像 [説明]", attachment.path("metadata").path("text").asText());
+            assertEquals("notRequested", attachment.path("ocr").path("status").asText());
+            assertFalse(block(report, "diagram").has("path"));
+            assertEquals("shape-1", block(report, "diagram").path("nodes").get(0).path("id").asText());
             int altStart = markdown.lastIndexOf("[{") + 1;
             int altEnd = markdown.indexOf("](images/", altStart);
             assertEquals(JSON.readTree(markdown.substring(altStart, altEnd)), attachment.path("metadata"));
@@ -311,8 +353,8 @@ class WordDrawingsTest {
              var actual = new WordMarkdownConverter(ConversionLimits.defaults()).convert(dirtyDoc, "dirty.docx")) {
             String md = Files.readString(actual.files().get("document.md"));
             String json = Files.readString(actual.files().get("report.json"));
-            assertTrue(md.indexOf("図の前") < md.indexOf("図中の項目"));
-            assertTrue(md.indexOf("図中の項目") < md.indexOf("図の後"));
+            assertTrue(md.indexOf("図の前") < md.indexOf("図中の項目:"));
+            assertTrue(md.indexOf("図中の項目:") < md.indexOf("図の後"));
             assertTrue(md.contains("保持"));
             assertFalse((md + json).contains("SECRET"));
             assertArrayEquals(Files.readAllBytes(expected.files().get("images/diagram-0001.png")),
@@ -377,7 +419,8 @@ class WordDrawingsTest {
                     + shape("2", "diamond", 0, "判断").replace("x='0' y='0'", "x='12700000' y='12700000'")
                     + picture("vector").replace("x='0' y='0'", "x='25400000' y='25400000'");
             String markdown = render(workspace, document, group(content, 0, 0, 0), WordDrawingsTest::allText);
-            var block = report(workspace).path("blocks").get(0);
+            var report = report(workspace);
+            var block = block(report, "diagram");
             assertEquals(0, block.path("metadata").path("x").asInt());
             assertEquals(0, block.path("metadata").path("y").asInt());
             assertEquals(200, block.path("metadata").path("width").asInt());
@@ -385,7 +428,10 @@ class WordDrawingsTest {
             assertEquals(block.path("metadata"), alt(markdown));
             assertEquals(1000, block.path("nodes").get(1).path("x").asInt());
             assertEquals(2000, block.path("nodes").get(2).path("x").asInt());
-            assertEquals(2000, block.path("attachments").get(0).path("metadata").path("x").asInt());
+            var attachment = block(report, "embeddedImage");
+            assertEquals("images/image-0001.emf", attachment.path("path").asText());
+            assertEquals(2000, attachment.path("metadata").path("x").asInt());
+            assertEquals(2000, attachment.path("metadata").path("y").asInt());
         }
     }
 
@@ -419,7 +465,8 @@ class WordDrawingsTest {
     }
     private static String picture(String id) {
         return "<pic:pic><pic:nvPicPr><pic:cNvPr id='1' name='picture' descr='元の画像 [説明]'/></pic:nvPicPr><pic:blipFill><a:blip r:embed='" + id
-                + "'/></pic:blipFill><pic:spPr><a:xfrm><a:off x='0' y='0'/><a:ext cx='2540000' cy='1270000'/></a:xfrm></pic:spPr></pic:pic>";
+                + "'/></pic:blipFill><pic:spPr><a:xfrm><a:off x='0' y='0'/><a:ext cx='2540000' cy='1270000'/></a:xfrm>"
+                + "<a:prstGeom prst='rect'><a:avLst/></a:prstGeom></pic:spPr></pic:pic>";
     }
     private static String render(ConversionWorkspace w, XWPFDocument d, String content, java.util.function.Function<Node,String> text) throws Exception {
         return new WordDrawings(w).render(xml(content), d.getPackagePart(), "本文", "paragraph:1", text);
@@ -427,6 +474,12 @@ class WordDrawingsTest {
     private static JsonNode report(ConversionWorkspace workspace) throws Exception {
         workspace.finishReport("test.docx", "test");
         return JSON.readTree(Files.readString(workspace.files().get("report.json")));
+    }
+    private static JsonNode block(JsonNode report, String type) {
+        for (JsonNode block : report.path("blocks")) {
+            if (type.equals(block.path("type").asText())) return block;
+        }
+        throw new AssertionError("Missing report block: " + type);
     }
     private static JsonNode alt(String markdown) throws Exception {
         int start = markdown.indexOf("![") + 2, end = markdown.indexOf("](images/", start);

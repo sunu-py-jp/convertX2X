@@ -19,6 +19,7 @@
 <h1>実際の変換例</h1>
 <p class="lead">複数シートのExcel、変更履歴を含むWord、グループ図形を含むPowerPointを、実際のAPIとPlaygroundで変換しました。入力・変換結果・警告をまとめて確認できます。</p>
 <p>すべてこのリポジトリで作成したオリジナル資料です。掲載画像は実行後のPlaygroundを撮影したもので、変換結果の文章や図を補正していません。出力ZIPには <code>document.md</code>・<code>report.json</code>・<code>images/</code> が入っています。</p>
+<div class="callout"><p><strong>掲載済みの実行記録：</strong>以下は各run.jsonに記載された日時・実装で取得した結果です。最新の画像OCR機能を実Azureで検証した記録ではありません。現在は元画像を参考図形PNGと分けて保存し、<code>imageMode=ocr</code> で文字を補えます。画像数・分類はこの記録と異なる場合があります。現行出力では「図中の項目:」「接続関係:」「画像内の文字（OCR）:」を半角コロン付きの通常テキストとし、参考画像の説明見出しと接続情報がないことを説明する文章は出しません。掲載済みのMarkdown・抜粋・スクリーンショットは実行時の状態を保持しています。<a href="index.html#image-ocr">現行の画像モードと出力仕様</a>を参照してください。Office2MDのPDF出力は廃止しました。</p></div>
 <div class="cards example-index"><a class="card" href="#excel"><h3>Excel：13シートの包括例</h3><p>文章、6個の表、数式キャッシュ、図形・画像、非表示・未対応要素を一度に確認。</p></a><a class="card" href="#word"><h3>Word：2種類の表と脚注</h3><p>変更履歴、3列表、2件の脚注、2つの図形、画像を実変換。</p></a><a class="card" href="#powerpoint"><h3>PowerPoint：6スライドの表と図</h3><p>2種類の表、レビュー経路、接続線、埋め込み画像を抽出。</p></a></div>
 <p>Excelの見出し行とセル結合の扱いを詳しく比較する場合は、<a href="merge-cases.html">Excel結合・見出しの実例</a>をご覧ください。入力ブックの各ケースと実変換したMarkdown・reportを並べています。RAG向け業務フローのデモ：<a href="#word-rag">Word</a> · <a href="#powerpoint-rag">PowerPoint</a>。入力・実変換Markdown・JSON・スクリーンショットを掲載しています。</p>
 <div class="callout"><p>このページは<strong>同期HTTP</strong>の実行例です。非同期HTTP・直接Queueも同じ変換コアを使いますが、ここでQueue経由の動作やAzure上の性能を測定したものではありません。PowerPointは図中の文字・保存された接続関係・スライド上の大まかな位置を本文にし、位置と未接続の矢印が向く方向をJSONにも残します。見た目はスライド全体の参考画像で確認できます。Word・Excelも図形の文字と保存済み接続を本文に残します。Wordは描画グループ・キャンバス、Excelは明示グループまたは解決した接続を確認用画像にまとめます。</p></div>
@@ -33,7 +34,7 @@
 <figure class="example-figure"><a href="examples/excel-complex/screenshots/group-detail.png"><img src="examples/excel-complex/screenshots/group-detail.png" alt="グループの図形文字を本文にし、角丸図形・楕円・画像を一つの確認用画像にまとめた結果" loading="lazy"></a><figcaption>グループシートの先頭1000px。文字と接続関係は本文にし、同じグループの図形・線・画像を確認用にまとめます。<a href="examples/excel-complex/screenshots/section-06.png">入れ子・重なりを含むシート全体</a>。 画像をクリックすると原寸で表示します。</figcaption></figure>
 <figure class="example-figure"><a href="examples/excel-complex/screenshots/section-07.png"><img src="examples/excel-complex/screenshots/section-07.png" alt="Excelのグラフや未対応図形の代替表示、縦書きの近似、加工画像の実変換結果" loading="lazy"></a><figcaption>未対応要素も含む出力。グラフは描画されず、星形の代替文、縦書きの横書き近似、切り抜き前の原本画像が見えます。 画像をクリックすると原寸で表示します。</figcaption></figure>
 </div>
-<p>数式は再計算しません。<code>1+2</code> に意図的に保存したキャッシュ <code>999</code> は、出力も <code>999</code> です。<code>IMAGE</code> 関数の画像は取得せず未対応表示になります。33アセットには確認用PNGとBMP添付を含みます。PNG/JPEGの回転・反転は確認用画像に反映し、同じ描画結果の画像ファイルは共有します。画像の切り抜きは未対応です。</p>
+<p>数式は再計算しません。<code>1+2</code> に意図的に保存したキャッシュ <code>999</code> は、出力も <code>999</code> です。<code>IMAGE</code> 関数の画像は取得せず未対応表示になります。33アセットには確認用PNGとBMP添付を含みます。PNG/JPEGの回転・反転は確認用画像に反映し、同じ描画結果の画像ファイルは共有します。この記録時点では画像の切り抜きは未対応でした。現在は安全に処理できる可視領域を反映し、対応できない加工は警告してOCRをスキップします。</p>
 <details class="sample-details"><summary>実際のMarkdown抜粋：表と名前付き範囲</summary><pre><code>**InventoryGrid**
 
 | **項目** | **数量** |  | **備考** |
@@ -501,14 +502,6 @@ IMAGE関数は取得しない　\[セル内画像: 未対応\]
 <p><a href="examples/word-complex/output/document.md" download>Markdown全文をダウンロード</a></p></div>
 </div>
 <p>2つのWord表はMarkdown表として出力され、結合セルは開始セルに値を残します。追加したセル内の2段落は <code>&lt;br&gt;</code> でつながります。図形の文字は通常の本文にあり、参考画像3点で形を確認できます。簡易描画に関する2件の警告は下のJSONと実際のレポートに記録しています。</p>
-<h3>同じ入力から作ったPDF</h3>
-<p>同じDOCXを <code>POST /api/convert?filename=word-complex.docx&amp;output=pdf</code> に送った実際のHTTP 200応答です。PDFは変換後の内容を3ページに組んだもので、下の画像はその1ページ目を描画したものです。</p>
-<div class="sample-links">
-<a href="examples/word-complex/pdf/document.pdf" download>実変換PDF（3ページ）</a>
-<a href="examples/word-complex/pdf/page-01.png">PDF 1ページ目の画像</a>
-<a href="examples/word-complex/pdf/run.json">PDFの実行記録・SHA-256</a>
-</div>
-<figure class="example-figure"><a href="examples/word-complex/pdf/page-01.png"><img src="examples/word-complex/pdf/page-01.png" alt="実際のPDF応答の1ページ目。2つの表、脚注参照、図形テキストが表示されている" loading="lazy"></a><figcaption>実際のPDF応答の1ページ目をPNGに描画しました。画像をクリックすると原寸で表示します。</figcaption></figure>
 <details class="sample-details"><summary>実際のMarkdown全文</summary><pre><code class="language-markdown">[page 1]
 
 # **Word → Markdown の表示確認**
@@ -1019,7 +1012,7 @@ RAGで検索したいこと：少額購入の承認経路／高額購入の追�
 <p><a href="examples/powerpoint-rag-flow/output/images/diagram-0001.png">参考画像PNG</a> · <a href="examples/powerpoint-rag-flow/screenshots/overview.png">Playground全体</a> · <a href="examples/powerpoint-rag-flow/screenshots/markdown-source.png">Markdownタブの画面</a></p>
 </section>
 <h2 id="reproduce">再現方法と記録の読み方</h2>
-<p>Excel・Word包括・Wordフロー・PowerPoint包括例は2026年10月4日、PowerPointフロー例は2026年9月23日に、macOS arm64 / Java 21 / Azure Functions Core Tools のローカルホストで実行しました。<code>POST /api/convert?filename=input.xlsx</code> 等へファイル全体を送信し、HTTP 200のZIPを保存しています。これらのZIP変換は既定オプションです。WordのPDF例は同じ入力を <code>output=pdf</code> 付きで送信しました。認証キーや外部Storageの設定は実行記録に含めていません。</p>
+<p>Excel・Word包括・Wordフロー・PowerPoint包括例は2026年10月4日、PowerPointフロー例は2026年9月23日に、macOS arm64 / Java 21 / Azure Functions Core Tools のローカルホストで実行しました。<code>POST /api/convert?filename=input.xlsx</code> 等へファイル全体を送信し、HTTP 200のZIPを保存しています。これらのZIP変換は既定オプションです。認証キーや外部Storageの設定は実行記録に含めていません。</p>
 <pre><code>curl --fail-with-body \
   -H 'Content-Type: application/octet-stream' \
   --data-binary @docs/APIDocs/office2md/examples/excel-complex/input.xlsx \
@@ -1027,7 +1020,7 @@ RAGで検索したいこと：少額購入の承認経路／高額購入の追�
   -o result.zip</code></pre>
 <p>各 <code>run.json</code> に入力・出力ZIP・展開ファイル・スクリーンショットのSHA-256、HTTP結果、実行環境を保存しています。記録された時間はローカルの送信からZIP展開・プレビュー生成までで、Azureの起動時間・ネットワーク・同時処理性能の目安にはなりません。</p>
 <p>セクション別のスクリーンショットは、実際のプレビューのスクロール領域と画像の高さ上限を広げ、ほかのセクションを一時的に非表示にして撮影しました。Excelの表・グループの詳細画像は、それぞれ先頭790px・1000pxの切り出しです。本文・画像・成果物は変更していません。通常の画面も各ケースの「Playground全体」で確認できます。</p>
-<p><a href="examples/README.md">再現・検証手順</a> · <a href="examples/capture.cjs">ZIP変換と撮影のスクリプト</a> · <a href="examples/capture_pdf.py">PDF変換と1ページ目画像の記録</a> · <a href="examples/render_word_powerpoint.py">Word・PowerPoint例のページ更新</a> · <a href="examples/prepare_inputs.py">入力コピーの作成手順</a> · <a href="index.html#drawings">図形の変換ルール</a> · <a href="http.html#convert">HTTP API仕様</a></p>
+<p><a href="examples/README.md">再現・検証手順</a> · <a href="examples/capture.cjs">ZIP変換と撮影のスクリプト</a> · <a href="examples/render_word_powerpoint.py">Word・PowerPoint例のページ更新</a> · <a href="examples/prepare_inputs.py">入力コピーの作成手順</a> · <a href="index.html#drawings">図形の変換ルール</a> · <a href="http.html#convert">HTTP API仕様</a></p>
 <footer class="page-footer"><p>実測確認：Excel・Word・PowerPoint 2026-10-04（一部PowerPointフローは2026-09-23）。成功した例でも、未対応・近似の情報はreport.jsonに残ります。</p></footer>
 </article>
 <aside class="toc" aria-label="このページの目次"><p class="toc-title">このページの内容</p><nav id="page-toc"></nav></aside>

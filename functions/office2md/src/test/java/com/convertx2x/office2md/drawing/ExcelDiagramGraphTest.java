@@ -57,7 +57,7 @@ class ExcelDiagramGraphTest {
                 assertTrue(markdown.contains("（向きなし）")); assertFalse(markdown.contains("接続関係不明"));
                 assertFalse(report.path("warnings").toString().contains("DIAGRAM_CONNECTION_UNRESOLVED"));
                 assertEquals(1, markdown.lines().filter(line -> line.startsWith("![")).count());
-                assertTrue(markdown.indexOf("フローの前の説明") < markdown.indexOf("図中の項目"));
+                assertTrue(markdown.indexOf("フローの前の説明") < markdown.indexOf("図中の項目:"));
                 assertTrue(markdown.indexOf("images/diagram-") < markdown.indexOf("フローの後の説明"));
             }
         }

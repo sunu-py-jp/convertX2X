@@ -54,19 +54,30 @@ class ConversionJobRequestTest {
         assertThrows(ConversionException.class, () -> new ConversionJobRequest(2, old.jobId(), old.input(), old.output(), old.filename(), bytes, null).normalized());
     }
 
-    @Test void pdfOutputIsAnExplicitVersionTwoOption() {
+    @Test void ocrIsAnExplicitVersionTwoOptionAndLegacyRequestsKeepImagesWithoutOcr() {
         var old = request();
-        var pdf = new ConversionJobRequest(2, old.jobId(), old.input(), old.output(), old.filename(),
-                Map.of(), null, "pdf").normalized();
-        assertEquals("pdf", pdf.outputFormat());
-        assertTrue(pdf.toJson().contains("\"outputFormat\":\"pdf\""));
-        assertEquals(pdf, ConversionJobRequest.parse(pdf.toJson()));
+        var ocr = new ConversionJobRequest(2, old.jobId(), old.input(), old.output(), old.filename(),
+                Map.of(), null, null, "ocr").normalized();
+        assertEquals("ocr", ocr.imageMode());
+        assertTrue(ocr.toJson().contains("\"imageMode\":\"ocr\""));
+        assertEquals(ocr, ConversionJobRequest.parse(ocr.toJson()));
         assertFalse(old.toJson().contains("outputFormat"));
-        assertEquals("markdown", ConversionJobRequest.parse(old.toJson()).outputFormat());
-        assertEquals("INVALID_OUTPUT_FORMAT", assertThrows(ConversionException.class,
-                () -> ConversionJobRequest.parse(pdf.toJson().replace("\"pdf\"", "\"docx\""))).code());
+        assertFalse(old.toJson().contains("imageMode"));
+        assertEquals("ignore", ConversionJobRequest.parse(old.toJson()).imageMode());
+        var explicitMarkdown = new ConversionJobRequest(2, old.jobId(), old.input(), old.output(), old.filename(),
+                Map.of(), null, "markdown", "ignore");
+        assertEquals("ignore", ConversionJobRequest.parse(explicitMarkdown.toJson()).imageMode());
+        assertEquals("INVALID_IMAGE_MODE", assertThrows(ConversionException.class,
+                () -> ConversionJobRequest.parse(ocr.toJson().replace("\"ocr\"", "\"discard\""))).code());
+        assertThrows(ConversionException.class, () -> ConversionJobRequest.parse(ocr.toJson().replace("\"version\":2", "\"version\":1")));
         assertThrows(ConversionException.class, () -> new ConversionJobRequest(1, old.jobId(), old.input(),
-                old.output(), old.filename(), Map.of(), null, "pdf").normalized());
+                old.output(), old.filename(), Map.of(), null, null, "ocr").normalized());
+        for (String format : new String[]{"pdf", "docx"}) {
+            assertEquals("INVALID_OUTPUT_FORMAT", assertThrows(ConversionException.class,
+                    () -> ConversionJobRequest.parse(ocr.toJson().replace("\"version\":2",
+                            "\"version\":2,\"outputFormat\":\"" + format + "\""))).code());
+        }
+        assertThrows(ConversionException.class, () -> ConversionJobRequest.parse(ocr.toJson().replace("\"ocr\"", "true")));
     }
 
     @Test void managedIdentityProfilesAndRetentionAreValidatedWithoutExposingSecrets() {

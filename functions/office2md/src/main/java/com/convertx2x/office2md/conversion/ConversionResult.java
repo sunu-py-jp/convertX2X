@@ -2,7 +2,6 @@ package com.convertx2x.office2md.conversion;
 
 import java.io.*;
 import java.nio.file.*;
-import com.fasterxml.jackson.databind.JsonNode;
 import java.util.Map;
 import java.util.zip.*;
 
@@ -14,16 +13,6 @@ public final class ConversionResult implements AutoCloseable {
     public Map<String, Path> files() { return workspace.files(); }
     public int warningCount() { return workspace.warningCount(); }
     public int sectionCount() { return workspace.sectionCount(); }
-    public void addPdf(byte[] pdf) { workspace.write("document.pdf", pdf); }
-    public void addPdf(byte[] pdf, int pageCount, JsonNode rendererReport) {
-        workspace.addPdf(pdf, pageCount, rendererReport);
-    }
-    public byte[] pdfBytes() {
-        Path pdf = files().get("document.pdf");
-        if (pdf == null) throw new IllegalStateException("The conversion did not produce a PDF.");
-        try { return Files.readAllBytes(pdf); }
-        catch (IOException e) { throw ConversionWorkspace.io(e); }
-    }
     public byte[] zipBytes() {
         try (ByteArrayOutputStream bytes = new ByteArrayOutputStream()) {
             writeZip(bytes);

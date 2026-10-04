@@ -21,8 +21,6 @@
         <azure.functions.maven.plugin.version>1.42.0</azure.functions.maven.plugin.version>
         <azure.functions.java.library.version>3.3.0</azure.functions.java.library.version>
         <poi.version>5.5.1</poi.version>
-        <commonmark.version>0.27.1</commonmark.version>
-        <pdfbox.version>3.0.8</pdfbox.version>
         <jackson.version>2.22.2</jackson.version>
     </properties>
     <dependencyManagement>
@@ -60,21 +58,6 @@
             <version>${poi.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.commonmark</groupId>
-            <artifactId>commonmark</artifactId>
-            <version>${commonmark.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.commonmark</groupId>
-            <artifactId>commonmark-ext-gfm-tables</artifactId>
-            <version>${commonmark.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.pdfbox</groupId>
-            <artifactId>pdfbox</artifactId>
-            <version>${pdfbox.version}</version>
-        </dependency>
-        <dependency>
             <groupId>com.azure</groupId>
             <artifactId>azure-storage-blob</artifactId>
             <version>12.35.1</version>
@@ -100,33 +83,12 @@
                 <directory>src/main/resources</directory>
             </resource>
             <resource>
-                <directory>${project.basedir}/../md2pdf/src/main/resources</directory>
-                <includes><include>fonts/bizud/**</include></includes>
-            </resource>
-            <resource>
                 <directory>${project.basedir}</directory>
                 <targetPath>META-INF</targetPath>
                 <includes><include>LICENSE</include><include>NOTICE.md</include></includes>
             </resource>
         </resources>
         <plugins>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>build-helper-maven-plugin</artifactId>
-                <version>3.6.1</version>
-                <executions>
-                    <execution>
-                        <id>include-md2pdf-conversion</id>
-                        <phase>generate-sources</phase>
-                        <goals><goal>add-source</goal></goals>
-                        <configuration>
-                            <sources>
-                                <source>${project.basedir}/../md2pdf/src/main/java/com/convertx2x/md2pdf/conversion</source>
-                            </sources>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>

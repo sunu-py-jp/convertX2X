@@ -6,6 +6,8 @@ import com.convertx2x.office2md.conversion.ConversionLimits;
 import com.convertx2x.office2md.conversion.ConversionResult;
 import com.convertx2x.office2md.conversion.ConversionWorkspace;
 import com.convertx2x.office2md.conversion.Markdown;
+import com.convertx2x.office2md.conversion.ImageMode;
+import com.convertx2x.office2md.ocr.OcrClient;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -39,6 +41,10 @@ public final class WordMarkdownConverter {
     public WordMarkdownConverter(ConversionLimits limits) { this.limits = Objects.requireNonNull(limits); }
 
     public ConversionResult convert(byte[] input, String filename) {
+        return convert(input, filename, ImageMode.IGNORE, OcrClient.disabled());
+    }
+
+    public ConversionResult convert(byte[] input, String filename, ImageMode imageMode, OcrClient ocrClient) {
         if (input == null || input.length == 0) throw new ConversionException(400, "EMPTY_INPUT", "入力ファイルが空です。");
         if (input.length > limits.maxInputBytes()) throw ConversionWorkspace.limit("INPUT_BYTES_LIMIT", "入力ファイルのサイズが上限を超えています。");
         if (filename == null || !filename.toLowerCase(Locale.ROOT).endsWith(".docx"))
@@ -55,7 +61,7 @@ public final class WordMarkdownConverter {
         }
         if (magic != FileMagic.OOXML)
             throw new ConversionException(415, "UNSUPPORTED_FORMAT", "Word の .docx ファイルを指定してください。");
-        ConversionWorkspace workspace = new ConversionWorkspace(limits);
+        ConversionWorkspace workspace = new ConversionWorkspace(limits, imageMode, ocrClient);
         try {
             Path source = workspace.directory().resolve("input.docx");
             Files.write(source, input);

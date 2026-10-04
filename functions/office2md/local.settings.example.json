@@ -14,6 +14,9 @@
     "CONVERSION_CREATE_RESOURCES": "true",
     "CONVERSION_RESULT_RETENTION_DAYS": "0",
     "CONVERSION_STATE_RETENTION_DAYS": "0",
-    "AzureWebJobs.MaintainConversions.Disabled": "true"
+    "AzureWebJobs.MaintainConversions.Disabled": "true",
+    "DOCUMENT_INTELLIGENCE_ENDPOINT": "",
+    "DOCUMENT_INTELLIGENCE_KEY": "",
+    "DOCUMENT_INTELLIGENCE_TIMEOUT_SECONDS": "60"
   }
 }

@@ -99,14 +99,14 @@ public final class DiagramGraph {
         Writer result = new Writer(workspace.limits().maxMarkdownBytes());
         boolean started = false;
         for (Vertex vertex : vertices) if (!vertex.text().isBlank() || referenced.contains(vertex.id())) {
-            if (!started) { result.append("図中の項目：\n\n"); started = true; }
+            if (!started) { result.append("図中の項目:\n\n"); started = true; }
             String text = vertex.markdown().isBlank() ? "文字なし" : vertex.markdown();
             result.append("- " + identifier(vertex.id()) + "（" + Markdown.escape(vertex.type()) + "）："
                     + text.replace("  \n", "<br>").replace("\n", "<br>") + "\n");
         }
         if (started) result.append("\n");
         if (!edges.isEmpty()) {
-            result.append("接続関係：\n\n");
+            result.append("接続関係:\n\n");
             for (Edge edge : edges) {
                 String relation;
                 if (!edge.status().equals("resolved")) {
@@ -126,8 +126,6 @@ public final class DiagramGraph {
                 result.append("- " + identifier(edge.id()) + "：" + relation + "\n");
             }
             result.append("\n");
-        } else if (vertices.size() > 1) {
-            result.append("図形間の接続情報はありません。配置から順序や関係を推測していません。\n\n");
         }
         return result.text.toString();
     }

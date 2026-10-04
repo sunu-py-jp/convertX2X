@@ -1,6 +1,6 @@
 # office2md
 
-Excel（`.xlsx` / `.xls`）、Word（`.docx`）、PowerPoint（`.pptx`）からMarkdown・画像・変換情報を取り出し、PDFも生成するJava 21のAzure Functionsアプリです。ブラウザ用の簡単なPlayground、同期HTTP、非同期Queueが同じ変換処理を使います。`functions/office2md` でビルド・起動します。PDF出力のビルドには隣接する `functions/md2pdf` の変換ソースとフォントも必要です。
+Excel（`.xlsx` / `.xls`）、Word（`.docx`）、PowerPoint（`.pptx`）からMarkdown・画像・変換情報を取り出すJava 21のAzure Functionsアプリです。ブラウザ用の簡単なPlayground、同期HTTP、非同期Queueが同じ変換処理を使います。`functions/office2md` でビルド・起動します。任意で元の埋め込み画像をDocument Intelligenceへ送りOCRできます。
 
 開発・保守向けの構成と変更箇所は [Officeの開発者ガイド](../../../docs/office2md.md)、環境構築・検証・デプロイは [共通の作業手順](../../../docs/development.md) を参照してください。このガイドはAPI・設定・変換ルールの利用手順です。
 
@@ -24,7 +24,7 @@ python scripts/run_local.py
 
 起動スクリプトはWindowsでは `mvnw.cmd`、macOS/Linuxでは `mvnw` を選びます。Windowsの `func.cmd` と `func.exe` の両方に対応します。起動に失敗した場合は、処理名と `WinError` / `errno` または終了コードを表示します。接続設定や例外の本文は表示しません。
 
-<http://localhost:7072/api/playground> を開き、Officeファイルと出力形式を選んで変換します。既定のMarkdown ZIPではプレビュー・ソース・警告を確認でき、PDFを選ぶとブラウザ内で確認・保存できます。非同期PDFジョブではMarkdown・画像・report・PDFを含むZIPも保存できます。画面用のNode.js、npm、CDNは不要です。既存のビルドを使う場合は `--skip-build`、ポート変更は `--port 7082` を指定します。
+<http://localhost:7072/api/playground> を開き、Officeファイルと画像モードを選んで変換します。Markdownのプレビュー・ソース・警告を確認し、画像も含むZIPを保存できます。OCRモードはDocument Intelligenceの接続設定時だけ選べます。画面用のNode.js、npm、CDNは不要です。既存のビルドを使う場合は `--skip-build`、ポート変更は `--port 7082` を指定します。
 
 Storage接続を設定しなければ同期だけが有効です。非同期を使う場合は、実行環境の `CONVERSION_STORAGE_CONNECTION_STRING` または `local.settings.json` の同名設定に接続文字列を設定して起動します。Azuriteなら、先にBlob・Queueサービスを起動し、値を `UseDevelopmentStorage=true` にします。接続文字列やキーをリポジトリに保存しないでください。
 
@@ -34,7 +34,8 @@ Storage接続を設定しなければ同期だけが有効です。非同期を�
 
 ## 出力と形式ごとのルール
 
-同期HTTPの既定出力は `document.zip` です。画像がなくても `document.md` と `report.json` が入ります。`output=pdf` を指定した同期HTTPは `application/pdf` の `document.pdf` を直接返します。
+同期HTTPの出力は `document.zip` です。画像がなくても `document.md` と `report.json` が入ります。Office2MDのPDF出力は廃止しました。
+
 
 ```text
 document.md
@@ -45,7 +46,6 @@ images/diagram-0001.png   # Excel・Wordの個別図形、PPTXのスライド参
 
 Markdownからは `![画像](images/image-0001.png)` のような相対パスで参照します。ZIPを展開した後も、`document.md` と `images/` を同じ場所に置いて利用できます。
 
-PDF指定時の非同期 `report.json` には `pdfOutput` としてページ数・サイズ・SHA-256・PDF配置時の警告件数を追加します。PDFレンダラーの警告は `PDF_` で始まるコードとして通常の `warnings` に含まれ、HTTPの `X-Warning-Count` とジョブ状態の `warningCount` にも反映されます。同期PDF応答はPDF本体のみなので、詳細なreportが必要な場合は非同期ジョブの `/report` または `/archive` を利用してください。
 
 次のルールを形式ごとに適用します。ファイル別のルールJSONや範囲指定はありません。
 
@@ -74,25 +74,25 @@ Excelでは全表示行が同じ位置・幅で明示的に横結合された列
 
 ### 図を検索できる文字で残す
 
-図中の文字は「図中の項目：」、接続は「接続関係（保存情報）：」として出力します。本文・表の扱いはそのままに、画像をまとめる単位と配置を入力形式に合わせます。
+図中の文字と接続は、それぞれ通常テキストのラベル `図中の項目:`、`接続関係:` の下に出力します。ラベルの末尾には半角コロンを付け、Markdownの見出しにはしません。本文・表の扱いはそのままに、画像をまとめる単位と配置を入力形式に合わせます。参考画像には説明見出しを付けず、JSONのaltを持つ画像参照を出します。接続がない図では接続の節と「図形間の接続情報はありません」という説明文を出しません。図形情報・確定した接続・不明な接続は保持します。
 
 | 形式 | 参考画像の単位 | 本文への配置 |
 | --- | --- | --- |
 | Excel | 明示グループ、保存済み接続、または保存IDがない場合の一意な線端・図形境界の接触でつながる図。独立した図形は単独 | 図のアンカーに沿ってセル本文・表の間へ。表に重なる図は表の直後 |
 | Word | 一つの本文内・浮動描画オブジェクトに属するグループ・描画キャンバス。独立したオブジェクトは合成しない | 元の描画が属する本文位置 |
-| PowerPoint | 図を含むスライド全体 | 本文・表の後 |
+| PowerPoint | 接続または明示グループでまとまる図。独立した図形群は同じスライド内でまとめる | 本文・表の後 |
 
 近さ・重なり・横並び・線の交差だけでは図をまとめません。接続IDがない場合は、線端が軸に沿った図形の境界に一意に接触する場合だけ補完します。Excelのセルや罫線、Wordのページ全体は画像へ取り込まず、従来どおり本文・表として出力します。
 
-各スライドは `[page n]` とH1の後に、通常の本文・表、「図中の項目：」「接続関係（保存情報）：」、スライド全体の参考画像の順で出力します。H2以降は追加しません。図形内の文字は太字・リンクを保ったMarkdown本文に残り、画像のaltを抽出しなくても検索できます。接続先になった通常テキストボックスも図中の項目へまとめ、本文と二重に出力しません。関係のない本文・表は通常どおり残します。本文と表、および図中の項目はそれぞれ上→下・左→右の位置順です。
+各スライドは `[page n]` とH1の後に、通常の本文・表、通常テキストの「図中の項目:」「接続関係:」、参考画像の順で出力します。H2以降の見出しは追加しません。図形内の文字は太字・リンクを保ったMarkdown本文に残り、画像のaltを抽出しなくても検索できます。接続先になった通常テキストボックスも図中の項目へまとめ、本文と二重に出力しません。関係のない本文・表は通常どおり残します。本文と表、および図中の項目はそれぞれ上→下・左→右の位置順です。
 
 ```md
-図中の項目：
+図中の項目:
 
 - shape-3（長方形）：申請
 - shape-4（ひし形）：確認
 
-接続関係（保存情報）：
+接続関係:
 
 - shape-5：shape-3「申請」 → shape-4「確認」
 ```
@@ -118,21 +118,21 @@ Wordの未対応の基本形状も、読み取れる文字・IDはノードと�
 
 Wordはコネクター自身が持つ文字を本文へ出し、該当する `edges[]` にも `type / text / x / y / width / height` を追加します。近くの独立した文字を接続のラベルへ割り当てる処理は行いません。
 
-画像の `nodes[].text` には、読み取れる保存済みの説明を使います。画像内に焼き込まれた文字にはOCRを行わず、説明がなければ空文字です。図形の文字・説明の改行はJSON内で保持します。回転・反転・グループ変形・重なり順を反映し、PNG/JPEGも図形と同じ参考画像に含めます。その他の画像形式は原本添付と警告にします。
+画像の `nodes[].text` には、読み取れる保存済みの説明を使います。保存済みの説明がなければ空文字です。任意の画像OCR結果はこの説明とは分け、画像参照の直後に通常テキストの `画像内の文字（OCR）:` を置き、その下へ本文として出します。図形の文字・説明の改行はJSON内で保持します。回転・反転・グループ変形・重なり順を反映し、元画像は個別の画像パスを残します。図形と混在する図では配置確認の参考画像にも含むことがあります。対応できない画像形式・加工は原本添付と警告にします。
 
-PowerPointは対応する表示要素をスライド全体の1枚へ描画します。保存・継承された単色背景はテーマ参照を含めて反映し、背景指定がなければ白にします。画像・グラデーションなど未対応の背景は白へ置き換え、`UNSUPPORTED_SLIDE_BACKGROUND` を記録します。外部の背景画像は取得しません。
+PowerPointは図のまとまりごとに、対応する表示要素をスライド寸法のキャンバスへ描画します。1スライドから複数の参考画像が出る場合があります。元画像は独立したassetと参照を保持し、図形と混在する図では対応するPNG/JPEGを参考画像にも含めます。切り抜き・非矩形マスク等がある画像は参考画像へ合成せず、個別の画像参照で扱います。保存・継承された単色背景はテーマ参照を含めて反映し、背景指定がなければ白にします。画像・グラデーションなど未対応の背景は白へ置き換え、`UNSUPPORTED_SLIDE_BACKGROUND` を記録します。外部の背景画像は取得しません。
 
-各形式の参考画像のaltは次の6項目のJSONです。同じ情報を `blocks[].metadata` にも出力します。まとめた図の `type` は「図」、`text` は空文字で、図形ごとの種類・文字は `nodes` にあります。Wordの単独図形・画像はaltにもその種類・文字を残します。下記はスライド全体を表すPowerPointの例です。Excel・Wordは、描画できた要素を囲む範囲になります。PowerPointの個別添付リンクのaltには `positionOnSlide` も付けます。回転角はJSONに含めません。
+各形式の参考画像のaltは次の6項目のJSONです。同じ情報を `blocks[].metadata` にも出力します。PowerPointの `type` は「接続図」または「図形」、Excel・Wordのまとめた図は「図」で、`text` は空文字です。図形ごとの種類・文字は `nodes` にあります。Wordの単独図形・画像はaltにもその種類・文字を残します。下記はスライド寸法のキャンバスへ接続図を描いたPowerPointの例です。Excel・Wordは、描画できた要素を囲む範囲になります。PowerPointの個別添付リンクのaltには `positionOnSlide` も付けます。回転角はJSONに含めません。
 
 ```md
-![{"type":"図","text":"","x":0,"y":0,"width":960,"height":540}](images/diagram-0001.png)
+![{"type":"接続図","text":"","x":0,"y":0,"width":960,"height":540}](images/diagram-0001.png)
 ```
 
 右をXの正方向、下をYの正方向とし、単位はpt（1/72インチ）で固定します。原点・単位のフィールドは出力しません。原点は下記の形式別ルールで解釈してください。個別図形の寸法・文字は `nodes` にあり、参考画像のaltにはまとめ直しません。添付ファイルのリンクには個別の種類・文字・外接矩形のJSONを付けます。
 
 Markdownから取得する場合はaltをそのまま `JSON.parse(alt)` に渡せます。文字中の角括弧・引用符・バックスラッシュなどは `\u005B`・`\u0022`・`\u005C` のようなJSONのUnicodeエスケープを使うため、Markdownのエスケープを別途解除する必要はありません。Excel・WordもこのJSON形式に統一しており、従来の日本語の説明文を解析する必要はありません。
 
-RAGへの取り込みではシート・見出し・`[page n]` を区切りにし、図中の項目と接続関係を同じチャンクへ残すと関係を保てます。長いため分割する場合も、接続だけを切り離さず参照先の文字を含め、未解決の関係を確定情報として扱わないでください。LLMによる説明やOCRは使いません。[業務フローのデモPPTX](../../../docs/APIDocs/office2md/examples/powerpoint-rag-flow/input.pptx) と [実変換Markdown](../../../docs/APIDocs/office2md/examples/powerpoint-rag-flow/output/document.md) で確認できます。
+RAGへの取り込みではシート・見出し・`[page n]` を区切りにし、図中の項目と接続関係を同じチャンクへ残すと関係を保てます。長いため分割する場合も、接続だけを切り離さず参照先の文字を含め、未解決の関係を確定情報として扱わないでください。図形の意味をLLMで補完しません。任意のOCRは元の埋め込み画像の文字だけを対象とします。[業務フローのデモPPTX](../../../docs/APIDocs/office2md/examples/powerpoint-rag-flow/input.pptx) と [実変換Markdown](../../../docs/APIDocs/office2md/examples/powerpoint-rag-flow/output/document.md) で確認できます。
 
 ### 図形の座標と順序
 
@@ -162,7 +162,7 @@ Excelは図の位置を使い、本文との上下順を保ち、表と重なる
 
 [図形内文字の比較用Excel](../samples/shape-text.xlsx) と [指定内容の一覧](../samples/shape-text.md) で、文字色・3×3の上下左右配置・段落別配置・余白・折り返し・行間・縮小などを確認できます。
 
-Word・PowerPointの図形も対応する基本形状を描画します。Word図形の文字は本文とJSONにも残しますが、図形内の太字装飾・リンク先は保持せず、リンクの表示文字だけを残します。通常の本文・表の太字・リンクは保持します。図形PNGは代表書式を用いる簡易描画で、段落ごとの混在書式・独自余白・文字だけの回転は近似として警告します。WordのPNG/JPEGも回転・反転・グループ内配置を参考画像へ反映します。PowerPointはこれらに加えて保存された切り抜きを反映します。それ以外の画像形式は原本添付のままで、回転などの加工は適用しません。グラフ、SmartArt、数式オブジェクトは未対応として警告し、外部データを取得して補完しません。参考画像にも対応要素だけを描画します。PowerPointの複雑な描画効果はPOIによる再現範囲に限られ、個々の見た目の差をすべて警告で検出するものではありません。旧形式の `.doc`・`.ppt`、PDF、マクロ有効形式・テンプレート、暗号化ファイルは対象外です。
+Word・PowerPointの図形も対応する基本形状を描画します。Word図形の文字は本文とJSONにも残しますが、図形内の太字装飾・リンク先は保持せず、リンクの表示文字だけを残します。通常の本文・表の太字・リンクは保持します。図形PNGは代表書式を用いる簡易描画で、段落ごとの混在書式・独自余白・文字だけの回転は近似として警告します。元画像は個別の参照として残し、対応する切り抜き・回転・反転を反映します。可視領域を安全に処理できない形式・加工は原本添付と警告を残し、OCR対象から除きます。グラフ、SmartArt、数式オブジェクトは未対応として警告し、外部データを取得して補完しません。参考画像にも対応要素だけを描画します。PowerPointの複雑な描画効果はPOIによる再現範囲に限られ、個々の見た目の差をすべて警告で検出するものではありません。旧形式の `.doc`・`.ppt`、PDF、マクロ有効形式・テンプレート、暗号化ファイルは対象外です。
 
 `sectionCount` は出力に含むExcelシート数・PowerPointスライド数、Wordでは出力文書数（通常1）です。`sectionKind` はそれぞれ `sheet` / `slide` / `document`、`source.format` は入力拡張子です。警告・ブロックの位置は `section` と `range` で記録します。
 
@@ -183,19 +183,57 @@ Playgroundも数式を実行せず、画像は変換結果に含まれるファ�
 
 元ファイルをOfficeやGoogleの各アプリで開いた際の再計算・外部アクセスは、そのアプリ側の動作です。この変換処理は元ファイルの数式を削除・無効化するものではありません。WordのフィールドやPowerPointの外部リンクも更新せず、保存済みの表示だけを扱います。
 
+## 画像OCR
+
+| `imageMode` | 動作 |
+| --- | --- |
+| `ignore`（既定） | 元の貼り付け画像を `images/` に保存し、Markdownの画像パスを残す。OCR通信をしない |
+| `ocr` | 画像パスを残したまま、元画像の可視領域をDocument Intelligenceへ送り、画像参照の直後へ通常テキストの「画像内の文字（OCR）:」と読み取った文字を挿入する |
+
+設定があってもモードを指定しなければOCRしません。図形を描画した参考PNGは対象外です。ネイティブの本文・表・図形文字と接続情報は今までどおり抽出します。これは画像内の文字を補う機能で、OCRした図の意味や線の接続、画像内の表の構造は推測しません。
+
+| 環境変数 | 値 |
+| --- | --- |
+| `DOCUMENT_INTELLIGENCE_ENDPOINT` | 配置したDocument IntelligenceリソースのHTTPSエンドポイント（例 `https://YOUR_RESOURCE.cognitiveservices.azure.com/`） |
+| `DOCUMENT_INTELLIGENCE_KEY` | リソースのAPIキー。Functionsアプリ設定やKey Vault参照で管理し、依頼本文へ入れない |
+| `DOCUMENT_INTELLIGENCE_TIMEOUT_SECONDS` | 画像1件の送信・待機の上限。既定60秒、1〜180秒 |
+
+ENDPOINTとKEYの両方を設定するとOCRを選択できます。未設定で `ocr` を指定すると `503 OCR_NOT_CONFIGURED` です。接続設定の有無は匿名のcapabilitiesに `ocrEnabled` と `supportedImageModes` で公開しますが、エンドポイントとキーは公開しません。設定済みは疎通確認済みを意味しません。
+
+同一文書の同じ可視画像はOCR結果を共有します。切り抜き・回転等が違って画像バイト列が変われば別画像として扱います。円形・独自形状のマスク、透明化等の効果、古いWordのVML画像など、可視領域を安全に処理できない形式・加工はOCRをスキップして画像参照と警告を残します。OCR成功で文字がなければ画像参照だけ、失敗・タイムアウト時は画像参照と警告を残してOffice変換を継続します。利用側は `report.json` の `blocks[].ocr.status`（`notRequested`, `succeeded`, `noText`, `skipped`, `failed`）と警告で補完漏れを判定してください。
+
+Azureの `prebuilt-read`（API `2024-11-30`）を使用します。画像をこの外部サービスへ送るため、別途利用料金・通信時間が発生します。処理画像が多い場合は非同期を使い、Functions全体の実行時間と `CONVERSION_MAX_IMAGES` 等の上限も設定してください。閉域利用時はDocument Intelligence側のPrivate Endpoint・DNS・Functions側の経路を配置環境で設定します。文書内のURL、リンク画像、外部数式へアクセスする挙動は追加しません。
+
+出力例（画像位置の抜粋）：
+
+```markdown
+前の本文
+
+![画像のメタデータ](images/image-0001.png)
+
+画像内の文字（OCR）:
+
+申請番号：A-123
+承認済み
+
+後の本文
+```
+
+`report.json` の `imageMode` に依頼モード、画像assetの `sourceKind` に `embeddedImage` または `renderedDiagram` を記録します。PowerPointの単独画像は周囲の本文と上からの順序で出し、グループや接続に属する画像は図と一緒に出します。Excelの表に重なる画像は表の直後です。同期・非同期HTTPとQueueで同じ動作です。旧 `output=pdf` / `outputFormat: "pdf"` は拒否します。
+
 ## HTTP API
 
 既定のルート接頭辞は `/api` です。Playgroundと `/api/capabilities` は匿名で取得できます。それ以外はFunction認証で、Azure上では `x-functions-key` ヘッダーにFunction Appのホストキーを渡します。複数のFunctionにまたがる非同期処理には、アプリ全体で利用できるホストキーを使います。
 
 | メソッド・パス | 内容 |
 | --- | --- |
-| `POST /api/convert?filename=sample.xlsx` | Officeファイルの生バイト列を受け、既定でZIPを返す。`&output=pdf` でPDF本体を返す |
-| `POST /api/jobs?filename=sample.xlsx` | 非同期を登録。`&output=pdf` でPDFジョブ。202と `job` / `statusUrl`、`Retry-After` を返す |
+| `POST /api/convert?filename=sample.xlsx` | Officeファイルの生バイト列を受け、ZIPを返す。`&imageMode=ocr` で元画像のOCR文字を補完 |
+| `POST /api/jobs?filename=sample.xlsx` | 非同期を登録。`&imageMode=ocr` で元画像をOCR。202と `job` / `statusUrl`、`Retry-After` を返す |
 | `GET /api/jobs/{id}` | `queued` → `running` → `succeeded` / `failed` を確認 |
-| `GET /api/jobs/{id}/result` | 既定ジョブは `document.md`、PDFジョブは `document.pdf` |
+| `GET /api/jobs/{id}/result` | `document.md` |
 | `GET /api/jobs/{id}/report` | 完成した `report.json` |
 | `GET /api/jobs/{id}/images/{assetName}` | 完成した結果に含まれる画像・添付ファイル1件 |
-| `GET /api/jobs/{id}/archive` | 完成した成果物から、その場でZIPを生成。PDFジョブではPDFも含む |
+| `GET /api/jobs/{id}/archive` | 完成した成果物から、その場でZIPを生成 |
 | `GET /api/capabilities` | `asyncEnabled`、対応拡張子・出力形式、設定された11種類の上限 |
 
 ```sh
@@ -206,13 +244,13 @@ curl --fail-with-body \
   -o document.zip
 ```
 
-PDFを直接受け取る場合は `?filename=sample.xlsx&output=pdf` として `document.pdf` に保存します。非同期では同じ `output=pdf` を `/api/jobs` に付け、成功後の `/result` から `application/pdf` を取得します。どちらも省略時は既定のMarkdown出力です。
+OCRする場合は `?filename=sample.xlsx&imageMode=ocr` としてZIPに保存します。非同期では同じ `imageMode=ocr` を `/api/jobs` に付けます。省略時はOCRしません。元の貼り付け画像はどちらもファイルと参照を残します。
 
 `filename` には入力と一致する拡張子を指定します。省略時の名前は従来の `workbook.xlsx` のため、Word・PowerPointでは必ず指定してください。`multipart/form-data` やJSONではなく、`application/octet-stream` でファイル本体を送ります。出力形式以外にページや幅、変換ルールなどのオプションはありません。同期レスポンスには `X-Section-Count` と `X-Warning-Count` が付きます。失敗時は成功した成果物の代わりにHTTPエラーと `error.code` / `error.message` を返します。
 
-非同期の成功状態には `resultUrl`、`reportUrl`、`archiveUrl`、`assetsBaseUrl` が加わります。`assetsBaseUrl` は `/api/jobs/{id}/images/` を指します。返されたURLを使い、各取得リクエストにも認証ヘッダーを付けます。Blobの保存場所や資格情報はHTTP状態APIに含めません。保存するのはMarkdown・変換情報・画像、PDFジョブではPDFも含む各ファイルで、ZIPを常時保存しません。非同期が無効ならジョブAPIは503を返します。
+非同期の成功状態には `resultUrl`、`reportUrl`、`archiveUrl`、`assetsBaseUrl` が加わります。`assetsBaseUrl` は `/api/jobs/{id}/images/` を指します。返されたURLを使い、各取得リクエストにも認証ヘッダーを付けます。Blobの保存場所や資格情報はHTTP状態APIに含めません。保存するのはMarkdown・変換情報・画像の各ファイルで、ZIPを常時保存しません。非同期が無効ならジョブAPIは503を返します。
 
-PlaygroundはキーをURLやブラウザストレージに保存せず、結果URLの同一オリジンとジョブのパスを検証します。Markdownプレビューは生成される基本構文に限定し、入力HTMLを実行せず、外部画像を取得しません。PDFはブラウザのPDF表示機能でプレビューし、表示できない環境でも保存できます。Markdown表示は先頭20万文字、ブロック・表セルの合計1万件、警告一覧は300件までです。取得・展開は合計100 MiB、Markdownと変換情報各20 MiB、添付1件20 MiBを上限とし、サーバーの設定が小さければそちらを適用します。添付数に画面独自の固定上限はなく、サーバーで画像配置数と図形数の両方を制限した場合だけ、その合計を上限とします。ZIPの展開には `DecompressionStream` の `deflate-raw` に対応したブラウザが必要です。「待機を停止」は画面の通信を止める操作で、サーバージョブを取り消しません。
+PlaygroundはキーをURLやブラウザストレージに保存せず、結果URLの同一オリジンとジョブのパスを検証します。Markdownプレビューは生成される基本構文に限定し、入力HTMLを実行せず、外部画像を取得しません。Markdown表示は先頭20万文字、ブロック・表セルの合計1万件、警告一覧は300件までです。取得・展開は合計100 MiB、Markdownと変換情報各20 MiB、添付1件20 MiBを上限とし、サーバーの設定が小さければそちらを適用します。添付数に画面独自の固定上限はなく、サーバーで画像配置数と図形数の両方を制限した場合だけ、その合計を上限とします。ZIPの展開には `DecompressionStream` の `deflate-raw` に対応したブラウザが必要です。「待機を停止」は画面の通信を止める操作で、サーバージョブを取り消しません。
 
 ## 非同期の設定と直接Queue投入
 
@@ -310,11 +348,11 @@ node scripts/test_playground_browser.cjs --out /tmp/office2md-browser
 node scripts/test_playground_browser.cjs --base http://localhost:7072 --fixtures target/fixtures --out /tmp/office2md-live
 ```
 
-既定では隔離したテストAPIで、同期・非同期のMarkdown ZIPとPDF、PDFプレビュー・保存、ZIP内パス、認証、HTML・外部画像の抑止、エラー、画面幅を確認します。`./mvnw test` は日本語の `target/fixtures/sample.xlsx` と `sample.xls` も生成します。Word・PowerPoint用の `sample.docx` / `sample.pptx` は [生成手順](../samples/README.md#wordpowerpointを試す) で用意します。起動済みのローカルホストに `--base` とこのディレクトリを指定すると、実APIで変換し、スクリーンショット・ZIP・JSON形式の検証レポートを指定先に保存します。Storageが有効なら非同期も確認します。これはローカル検証で、Azure上の動作確認を代替しません。
+既定では隔離したテストAPIで、同期・非同期のMarkdown ZIP、画像モード選択と画像参照の保持、ZIP内パス、認証、HTML・外部画像の抑止、エラー、画面幅を確認します。`./mvnw test` は日本語の `target/fixtures/sample.xlsx` と `sample.xls` も生成します。Word・PowerPoint用の `sample.docx` / `sample.pptx` は [生成手順](../samples/README.md#wordpowerpointを試す) で用意します。起動済みのローカルホストに `--base` とこのディレクトリを指定すると、実APIで変換し、スクリーンショット・ZIP・JSON形式の検証レポートを指定先に保存します。Storageが有効なら非同期も確認します。これはローカル検証で、Azure上の動作確認を代替しません。
 
 ## ライセンス
 
-このプロジェクトのコードは [MIT License](../LICENSE) です。Apache POIなどの依存ライブラリには各ライブラリのライセンスが適用されます。同梱のNoto Sans CJK JP / Noto Serif CJK JP（Regular・Bold）はSIL Open Font License 1.1です。[フォントの出典・ライセンス](../src/main/resources/fonts/noto/README.md) と原文・SHA-256をJARにも含めています。PDF出力で使うBIZ UDフォントなどは [NOTICE](../NOTICE.md) を参照してください。Playgroundは独自のHTML/CSS/JavaScriptで、外部のMarkdown・ZIPライブラリやWebフォントを含みません。
+このプロジェクトのコードは [MIT License](../LICENSE) です。Apache POIなどの依存ライブラリには各ライブラリのライセンスが適用されます。同梱のNoto Sans CJK JP / Noto Serif CJK JP（Regular・Bold）はSIL Open Font License 1.1です。[フォントの出典・ライセンス](../src/main/resources/fonts/noto/README.md) と原文・SHA-256をJARにも含めています。依存関係の補足は [NOTICE](../NOTICE.md) を参照してください。Playgroundは独自のHTML/CSS/JavaScriptで、外部のMarkdown・ZIPライブラリやWebフォントを含みません。
 
 ## Managed Identity・結果通知・保持期間
 

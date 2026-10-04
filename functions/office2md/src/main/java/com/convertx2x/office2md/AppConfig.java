@@ -3,10 +3,15 @@ package com.convertx2x.office2md;
 import com.convertx2x.office2md.conversion.ConversionLimits;
 import com.convertx2x.office2md.jobs.BlobStorageProfiles;
 import com.convertx2x.office2md.jobs.IntegrationSettings;
+import com.convertx2x.office2md.ocr.OcrSettings;
 import java.util.Map;
 
 /** App settings are environment variables in Azure Functions. */
-public record AppConfig(String storageConnectionString, ConversionLimits limits, BlobStorageProfiles blobStorageProfiles, IntegrationSettings integration) {
+public record AppConfig(String storageConnectionString, ConversionLimits limits, BlobStorageProfiles blobStorageProfiles,
+                        IntegrationSettings integration, OcrSettings ocr) {
+    public AppConfig(String storageConnectionString, ConversionLimits limits, BlobStorageProfiles profiles, IntegrationSettings integration) {
+        this(storageConnectionString, limits, profiles, integration, OcrSettings.disabled());
+    }
     public AppConfig(String storageConnectionString, ConversionLimits limits, BlobStorageProfiles profiles) {
         this(storageConnectionString, limits, profiles, IntegrationSettings.from(Map.of(STORAGE_SETTING, storageConnectionString == null ? "" : storageConnectionString)));
     }
@@ -33,7 +38,7 @@ public record AppConfig(String storageConnectionString, ConversionLimits limits,
                         Math.toIntExact(nonNegative(settings, "CONVERSION_MAX_SHAPES", defaults.maxShapes())),
                         Math.toIntExact(positive(settings, "CONVERSION_MAX_GROUP_DEPTH", defaults.maxGroupDepth())),
                         positive(settings, "CONVERSION_MAX_IMAGE_PIXELS", defaults.maxImagePixels())),
-                BlobStorageProfiles.from(settings, connection), IntegrationSettings.from(settings));
+                BlobStorageProfiles.from(settings, connection), IntegrationSettings.from(settings), OcrSettings.from(settings));
     }
 
     public boolean asyncEnabled() {

@@ -4,12 +4,13 @@ import com.convertx2x.office2md.conversion.ConversionException;
 import com.convertx2x.office2md.conversion.ConversionResult;
 import com.convertx2x.office2md.conversion.OfficeMarkdownService;
 import com.convertx2x.office2md.conversion.ConversionLimits;
-import com.convertx2x.office2md.conversion.OutputFormat;
+import com.convertx2x.office2md.conversion.ImageMode;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 public final class AzureJobService implements JobService {
     public static final String QUEUE_NAME = "office2md-jobs";
@@ -21,8 +22,8 @@ public final class AzureJobService implements JobService {
     }
 
     @FunctionalInterface
-    interface FormatConverter {
-        ConversionResult convert(byte[] input, String filename, OutputFormat outputFormat);
+    interface ModeConverter {
+        ConversionResult convert(byte[] input, String filename, ImageMode imageMode);
     }
 
     @FunctionalInterface
@@ -31,49 +32,54 @@ public final class AzureJobService implements JobService {
     }
 
     private final JobStore store;
-    private final FormatConverter converter;
+    private final ModeConverter converter;
     private final Validator validator;
+    private final Consumer<ImageMode> imageModeValidator;
     private final Clock clock;
 
     public AzureJobService(String connectionString, OfficeMarkdownService converter, ConversionLimits limits,
                            BlobStorageProfiles profiles) {
         this(new AzureJobStore(connectionString, limits, profiles),
-                (FormatConverter) converter::convert, converter::validate, Clock.systemUTC());
+                converter::convert, converter::validate, converter::validateImageMode, Clock.systemUTC());
     }
 
     public AzureJobService(IntegrationSettings settings, OfficeMarkdownService converter, ConversionLimits limits,
                            BlobStorageProfiles profiles) {
         this(new AzureJobStore(settings, limits, profiles),
-                (FormatConverter) converter::convert, converter::validate, Clock.systemUTC());
+                converter::convert, converter::validate, converter::validateImageMode, Clock.systemUTC());
     }
 
     AzureJobService(JobStore store, Converter converter, Validator validator, Clock clock) {
-        this(store, (input, filename, ignored) -> converter.convert(input, filename), validator, clock);
+        this(store, (input, filename, ignored) -> converter.convert(input, filename), validator, mode -> {
+            if (mode != ImageMode.IGNORE) throw new ConversionException(503, "OCR_NOT_CONFIGURED", "Image OCR is not configured.");
+        }, clock);
     }
 
-    AzureJobService(JobStore store, FormatConverter converter, Validator validator, Clock clock) {
+    AzureJobService(JobStore store, ModeConverter converter, Validator validator, Consumer<ImageMode> imageModeValidator, Clock clock) {
         this.store = store;
         this.converter = converter;
         this.validator = validator;
+        this.imageModeValidator = imageModeValidator;
         this.clock = clock;
     }
 
     @Override
     public JobStatus submit(byte[] input, String filename) {
-        return submit(input, filename, OutputFormat.MARKDOWN);
+        return submit(input, filename, ImageMode.IGNORE);
     }
 
     @Override
-    public JobStatus submit(byte[] input, String filename, OutputFormat outputFormat) {
-        Objects.requireNonNull(outputFormat);
+    public JobStatus submit(byte[] input, String filename, ImageMode imageMode) {
+        Objects.requireNonNull(imageMode);
+        imageModeValidator.accept(imageMode);
         String safeName = safeFilename(filename);
         validator.validate(input, safeName);
         String id = UUID.randomUUID().toString();
         ConversionJobRequest request = new ConversionJobRequest(
-                outputFormat == OutputFormat.PDF ? 2 : 1, id,
+                imageMode == ImageMode.OCR ? 2 : 1, id,
                 new ConversionJobRequest.BlobSource(CONTAINER_NAME, id + "/input"),
                 new ConversionJobRequest.BlobOutput(CONTAINER_NAME, ""), safeName,
-                java.util.Map.of(), null, outputFormat.wireValue()).normalized();
+                java.util.Map.of(), null, null, imageMode.wireValue()).normalized();
         JobRecord record = queued(request);
         JobRecord submitting = new JobRecord(record.job(), null, request, null, null, null, true);
         store.ensure(submitting);
@@ -106,9 +112,7 @@ public final class AzureJobService implements JobService {
     @Override
     public JobDownload downloadResult(String id) {
         JobRecord record = completed(id);
-        String artifact = record.request() != null && OutputFormat.parse(record.request().outputFormat()) == OutputFormat.PDF
-                ? "document.pdf" : "document.md";
-        return store.readResult(record.result(), artifact);
+        return store.readResult(record.result(), "document.md");
     }
 
     @Override
@@ -144,11 +148,13 @@ public final class AzureJobService implements JobService {
             lock.update(new JobRecord(running, null, request).withTrackingVersion(record.artifactTrackingVersion()));
             String inputETag = null;
             try {
+                ImageMode imageMode = ImageMode.parse(request.imageMode());
+                imageModeValidator.accept(imageMode);
                 store.validateLocations(request);
                 JobStore.InputData input = store.readInputVersioned(request.input());
                 inputETag = input.eTag();
                 try (ConversionResult result = converter.convert(input.bytes(), running.filename(),
-                        OutputFormat.parse(request.outputFormat()))) {
+                        imageMode)) {
                     JobRecord.ResultLocation location = store.writeResult(request, result, inputETag);
                     // Publish only after every artifact from one attempt has reached Storage.
                     lock.update(new JobRecord(transition(running, "succeeded", location.sectionCount(),
@@ -232,7 +238,7 @@ public final class AzureJobService implements JobService {
     }
 
     private static boolean sameRequest(ConversionJobRequest stored, ConversionJobRequest incoming) {
-        // Records written before outputFormat existed deserialize it as null.
+        // Records written before imageMode existed deserialize it as null (ignore).
         return stored != null && Objects.equals(stored.normalized(), incoming);
     }
 

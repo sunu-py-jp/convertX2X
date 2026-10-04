@@ -3,6 +3,10 @@ package com.convertx2x.office2md;
 import com.microsoft.azure.functions.*;
 import com.convertx2x.office2md.conversion.*;
 import com.convertx2x.office2md.jobs.*;
+import com.convertx2x.office2md.ocr.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.junit.jupiter.api.Test;
 import java.io.ByteArrayInputStream;
@@ -19,19 +23,62 @@ import static org.junit.jupiter.api.Assertions.*;
 class ConversionFunctionsTest {
     private final OfficeMarkdownService converter = new OfficeMarkdownService(ConversionLimits.defaults());
 
-    @Test void synchronousPdfOptionReturnsPdfAndRejectsUnknownOutput() throws Exception {
+    @Test void pdfAndUnknownOutputAreRejectedAndLegacyMarkdownStillWorks() throws Exception {
         ConversionFunctions functions = new ConversionFunctions(AppConfig.from(Map.of()), converter,
                 () -> { throw new AssertionError("Storage must not initialize"); });
-        HttpResponseMessage response = functions.convert(request("/api/convert", workbook(),
-                Map.of("filename", "日本語.xlsx", "output", "pdf"), Map.of()), context());
-        assertEquals(200, response.getStatusCode());
-        assertEquals("application/pdf", response.getHeader("Content-Type"));
-        assertTrue(response.getHeader("Content-Disposition").contains("document.pdf"));
-        assertEquals("%PDF-", new String((byte[]) response.getBody(), 0, 5, StandardCharsets.US_ASCII));
-        HttpResponseMessage invalid = functions.convert(request("/api/convert", workbook(),
-                Map.of("filename", "日本語.xlsx", "output", "docx"), Map.of()), context());
-        assertEquals(400, invalid.getStatusCode());
-        assertTrue(invalid.getBody().toString().contains("INVALID_OUTPUT_FORMAT"));
+        for (String output : List.of("pdf", "docx", "")) {
+            HttpResponseMessage invalid = functions.convert(request("/api/convert", workbook(),
+                    Map.of("filename", "日本語.xlsx", "output", output), Map.of()), context());
+            assertEquals(400, invalid.getStatusCode());
+            assertTrue(invalid.getBody().toString().contains("INVALID_OUTPUT_FORMAT"));
+        }
+        HttpResponseMessage markdown = functions.convert(request("/api/convert", workbook(),
+                Map.of("filename", "日本語.xlsx", "output", "markdown"), Map.of()), context());
+        assertEquals(200, markdown.getStatusCode());
+        assertEquals("application/zip", markdown.getHeader("Content-Type"));
+        assertFalse(unzip((byte[]) markdown.getBody()).containsKey("document.pdf"));
+    }
+
+    @Test void imageOcrRequiresConfigurationAndUnknownModeNeverInitializesStorage() throws Exception {
+        ConversionFunctions functions = new ConversionFunctions(AppConfig.from(Map.of(AppConfig.STORAGE_SETTING, "test")), converter,
+                () -> { throw new AssertionError("Invalid request must not initialize Storage"); });
+        byte[] bytes = workbook();
+        for (boolean async : List.of(false, true)) {
+            HttpRequestMessage<Optional<byte[]>> request = request(async ? "/api/jobs" : "/api/convert", bytes,
+                    Map.of("filename", "sample.xlsx", "imageMode", "ocr"), Map.of());
+            HttpResponseMessage unavailable = async ? functions.submit(request, context()) : functions.convert(request, context());
+            assertEquals(503, unavailable.getStatusCode());
+            assertTrue(unavailable.getBody().toString().contains("OCR_NOT_CONFIGURED"));
+            HttpRequestMessage<Optional<byte[]>> invalidRequest = request(async ? "/api/jobs" : "/api/convert", bytes,
+                    Map.of("filename", "sample.xlsx", "imageMode", "discard"), Map.of());
+            HttpResponseMessage invalid = async ? functions.submit(invalidRequest, context()) : functions.convert(invalidRequest, context());
+            assertEquals(400, invalid.getStatusCode());
+            assertTrue(invalid.getBody().toString().contains("INVALID_IMAGE_MODE"));
+        }
+        HttpResponseMessage pdf = functions.submit(request("/api/jobs", bytes,
+                Map.of("filename", "sample.xlsx", "output", "pdf"), Map.of()), context());
+        assertEquals(400, pdf.getStatusCode());
+        assertTrue(pdf.getBody().toString().contains("INVALID_OUTPUT_FORMAT"));
+    }
+
+    @Test void synchronousImageModesKeepOriginalAssetsAndOnlyOcrAddsRecognizedText() throws Exception {
+        AtomicInteger reads = new AtomicInteger();
+        OfficeMarkdownService configured = configuredConverter(reads);
+        var functions = new ConversionFunctions(AppConfig.from(Map.of()), configured,
+                () -> { throw new AssertionError("Storage must not initialize"); });
+        byte[] input = workbookWithImage();
+        for (String mode : List.of("ignore", "ocr")) {
+            HttpResponseMessage response = functions.convert(request("/api/convert", input,
+                    Map.of("filename", "sample.xlsx", "imageMode", mode), Map.of()), context());
+            assertEquals(200, response.getStatusCode(), response.getBody().toString());
+            Map<String, byte[]> files = unzip((byte[]) response.getBody());
+            String md = new String(files.get("document.md"), StandardCharsets.UTF_8);
+            assertTrue(md.contains("](images/"), md);
+            assertTrue(files.keySet().stream().anyMatch(name -> name.startsWith("images/")));
+            assertEquals(mode.equals("ocr"), md.contains("画像から読み取った文字"), md);
+            assertFalse(files.containsKey("document.pdf"));
+        }
+        assertEquals(1, reads.get());
     }
 
     @Test void synchronousHttpReturnsZipContainingMarkdownAndReportWithoutStorage() throws Exception {
@@ -67,22 +114,30 @@ class ConversionFunctionsTest {
         assertArrayEquals(jobs.files.get("document.md"), unzip((byte[])archive.getBody()).get("document.md"));
     }
 
-    @Test void asynchronousPdfOptionDownloadsPdfWhileArchiveRetainsMarkdown() throws Exception {
-        MemoryJobs jobs = new MemoryJobs(converter);
+    @Test void asynchronousOcrModeReachesWorkerAndKeepsImagePathsAndAssets() throws Exception {
+        AtomicInteger reads = new AtomicInteger();
+        OfficeMarkdownService configured = configuredConverter(reads);
+        MemoryJobs jobs = new MemoryJobs(configured);
         ConversionFunctions functions = new ConversionFunctions(
-                AppConfig.from(Map.of(AppConfig.STORAGE_SETTING, "test")), converter, () -> jobs);
-        HttpResponseMessage accepted = functions.submit(request("/api/jobs", workbook(),
-                Map.of("filename", "sample.xlsx", "output", "pdf"), Map.of()), context());
+                AppConfig.from(Map.of(AppConfig.STORAGE_SETTING, "test")), configured, () -> jobs);
+        HttpResponseMessage accepted = functions.submit(request("/api/jobs", workbookWithImage(),
+                Map.of("filename", "sample.xlsx", "imageMode", "ocr"), Map.of()), context());
         assertEquals(202, accepted.getStatusCode());
+        assertEquals(ImageMode.OCR, jobs.imageMode);
         functions.process("message", context());
-        HttpResponseMessage pdf = functions.download(request("/api/jobs/" + jobs.id + "/result", "",
+        HttpResponseMessage markdown = functions.download(request("/api/jobs/" + jobs.id + "/result", "",
                 Map.of(), Map.of()), jobs.id, context());
-        assertEquals("application/pdf", pdf.getHeader("Content-Type"));
-        assertEquals("%PDF-", new String((byte[]) pdf.getBody(), 0, 5, StandardCharsets.US_ASCII));
+        String md = new String((byte[]) markdown.getBody(), StandardCharsets.UTF_8);
+        assertTrue(md.contains("画像から読み取った文字"), md);
+        assertTrue(md.contains("](images/"), md);
+        assertEquals(1, reads.get());
         HttpResponseMessage archive = functions.archive(request("/api/jobs/" + jobs.id + "/archive", "",
                 Map.of(), Map.of()), jobs.id, context());
-        assertEquals(Set.of("document.md", "document.pdf", "report.json"),
-                unzip((byte[]) archive.getBody()).keySet());
+        Map<String, byte[]> files = unzip((byte[]) archive.getBody());
+        assertTrue(files.containsKey("document.md"));
+        assertTrue(files.containsKey("report.json"));
+        assertTrue(files.keySet().stream().anyMatch(path -> path.startsWith("images/")));
+        assertFalse(files.containsKey("document.pdf"));
     }
 
     @Test void disabledAndInvalidRequestsNeverInitializeStorage() {
@@ -100,13 +155,19 @@ class ConversionFunctionsTest {
     }
 
     @Test void capabilitiesAndErrorsNeverExposeStorageCredentials() {
-        AppConfig config = AppConfig.from(Map.of(AppConfig.STORAGE_SETTING, "AccountKey=secret"));
+        AppConfig config = AppConfig.from(Map.of(AppConfig.STORAGE_SETTING, "AccountKey=secret",
+                "DOCUMENT_INTELLIGENCE_ENDPOINT", "https://ocr-private-name.cognitiveservices.azure.com",
+                "DOCUMENT_INTELLIGENCE_KEY", "ocr-secret-value"));
         assertFalse(config.toString().contains("secret"));
         HttpResponseMessage capabilities = new PlaygroundFunctions(config).capabilities(request("/api/capabilities", "", Map.of(), Map.of()));
         for (String count : java.util.List.of("maxSections", "maxReadItems", "maxTableCells", "maxImages", "maxShapes"))
             assertTrue(capabilities.getBody().toString().contains("\"" + count + "\":0"));
         assertTrue(capabilities.getBody().toString().contains("\"maxImagePixels\":20000000"));
+        assertTrue(capabilities.getBody().toString().contains("\"ocrEnabled\":true"));
+        assertTrue(capabilities.getBody().toString().contains("\"supportedOutputs\":[\"markdown\"]"));
+        assertTrue(capabilities.getBody().toString().contains("\"supportedImageModes\":[\"ignore\",\"ocr\"]"));
         assertFalse(capabilities.getBody().toString().contains("secret"));
+        assertFalse(capabilities.getBody().toString().contains("ocr-private-name"));
         var functions = new ConversionFunctions(config, converter, () -> { throw new IllegalStateException("AccountKey=secret"); });
         HttpResponseMessage error = functions.status(request("/api/jobs/id", "", Map.of(), Map.of()), "id", context());
         assertEquals(500, error.getStatusCode());
@@ -115,6 +176,48 @@ class ConversionFunctionsTest {
         assertNull(queue.getCause());
         assertFalse(queue.getMessage().contains("secret"));
         assertThrows(IllegalArgumentException.class, () -> AppConfig.from(Map.of("CONVERSION_MAX_READ_CELLS", "-1")));
+    }
+
+    @Test void capabilitiesDisableOcrUntilBothSettingsExistAndOldConstructorsRemainDisabled() {
+        for (Map<String, String> settings : List.of(Map.<String, String>of(),
+                Map.of("DOCUMENT_INTELLIGENCE_ENDPOINT", "https://example.cognitiveservices.azure.com"),
+                Map.of("DOCUMENT_INTELLIGENCE_KEY", "secret"))) {
+            AppConfig config = AppConfig.from(settings);
+            assertFalse(config.ocr().configured());
+            HttpResponseMessage capabilities = new PlaygroundFunctions(config).capabilities(
+                    request("/api/capabilities", "", Map.of(), Map.of()));
+            assertTrue(capabilities.getBody().toString().contains("\"ocrEnabled\":false"));
+            assertTrue(capabilities.getBody().toString().contains("\"supportedImageModes\":[\"ignore\"]"));
+            assertFalse(capabilities.getBody().toString().contains("secret"));
+        }
+        AppConfig config = AppConfig.from(Map.of());
+        assertFalse(new AppConfig("", config.limits(), config.blobStorageProfiles()).ocr().configured());
+        assertFalse(new AppConfig("", config.limits(), config.blobStorageProfiles(), config.integration()).ocr().configured());
+    }
+
+    private static OfficeMarkdownService configuredConverter(AtomicInteger reads) {
+        return new OfficeMarkdownService(ConversionLimits.defaults(), new OcrClient() {
+            public boolean configured() { return true; }
+            public OcrResult recognize(byte[] bytes, String type) {
+                reads.incrementAndGet();
+                return new OcrResult("画像から読み取った文字");
+            }
+        });
+    }
+
+    private static byte[] workbookWithImage() throws Exception {
+        try (XSSFWorkbook book = new XSSFWorkbook(); ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+             ByteArrayOutputStream png = new ByteArrayOutputStream()) {
+            ImageIO.write(new BufferedImage(12, 8, BufferedImage.TYPE_INT_RGB), "png", png);
+            var sheet = book.createSheet("画像");
+            sheet.createRow(0).createCell(0).setCellValue("画像付き資料");
+            int picture = book.addPicture(png.toByteArray(), org.apache.poi.ss.usermodel.Workbook.PICTURE_TYPE_PNG);
+            var anchor = book.getCreationHelper().createClientAnchor();
+            anchor.setRow1(2); anchor.setRow2(5); anchor.setCol1(0); anchor.setCol2(3);
+            sheet.createDrawingPatriarch().createPicture(anchor, picture);
+            book.write(bytes);
+            return bytes.toByteArray();
+        }
     }
 
     private static byte[] workbook() throws Exception {
@@ -195,23 +298,23 @@ class ConversionFunctionsTest {
         final String id = UUID.randomUUID().toString();
         final Map<String, byte[]> files = new HashMap<>();
         JobStatus job; byte[] input, archive;
-        OutputFormat format = OutputFormat.MARKDOWN;
+        ImageMode imageMode = ImageMode.IGNORE;
         MemoryJobs(OfficeMarkdownService converter) { this.converter = converter; }
         public JobStatus submit(byte[] bytes, String filename) {
             input = bytes;
             return job = new JobStatus(id, "queued", filename, "now", "now", null, null, null, null);
         }
-        public JobStatus submit(byte[] bytes, String filename, OutputFormat outputFormat) {
-            format = outputFormat;
+        public JobStatus submit(byte[] bytes, String filename, ImageMode mode) {
+            imageMode = mode;
             return submit(bytes, filename);
         }
         public Optional<JobStatus> find(String id) { return Optional.ofNullable(job); }
         public JobDownload download(String id, String artifact) { return new JobDownload(files.get(artifact),
-                artifact.equals("document.pdf") ? "application/pdf" : "text/plain", artifact); }
-        public JobDownload downloadResult(String id) { return download(id, format == OutputFormat.PDF ? "document.pdf" : "document.md"); }
+                artifact.equals("document.md") ? "text/markdown" : "application/octet-stream", artifact); }
+        public JobDownload downloadResult(String id) { return download(id, "document.md"); }
         public JobDownload archive(String id) { return new JobDownload(archive, "application/zip", "document.zip"); }
         public void process(String message) {
-            try (ConversionResult result = converter.convert(input, job.filename(), format)) {
+            try (ConversionResult result = converter.convert(input, job.filename(), imageMode)) {
                 for (var file : result.files().entrySet()) files.put(file.getKey(), Files.readAllBytes(file.getValue()));
                 archive = result.zipBytes();
                 job = new JobStatus(id, "succeeded", job.filename(), "now", "now", result.sectionCount(), result.warningCount(), null, null);

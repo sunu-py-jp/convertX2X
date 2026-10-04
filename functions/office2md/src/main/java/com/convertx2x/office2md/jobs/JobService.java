@@ -1,12 +1,12 @@
 package com.convertx2x.office2md.jobs;
 
 import java.util.Optional;
-import com.convertx2x.office2md.conversion.OutputFormat;
+import com.convertx2x.office2md.conversion.ImageMode;
 
 public interface JobService {
     JobStatus submit(byte[] input, String filename);
-    default JobStatus submit(byte[] input, String filename, OutputFormat outputFormat) {
-        if (outputFormat != OutputFormat.MARKDOWN) throw new UnsupportedOperationException("PDF output is unavailable.");
+    default JobStatus submit(byte[] input, String filename, ImageMode imageMode) {
+        if (imageMode != ImageMode.IGNORE) throw new UnsupportedOperationException("Image OCR is unavailable.");
         return submit(input, filename);
     }
     Optional<JobStatus> find(String id);

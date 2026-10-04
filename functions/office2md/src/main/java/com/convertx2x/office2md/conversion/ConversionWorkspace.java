@@ -1,7 +1,9 @@
 package com.convertx2x.office2md.conversion;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.JsonNode;
+import com.convertx2x.office2md.drawing.DiagramMetadata;
+import com.convertx2x.office2md.ocr.OcrClient;
+import com.convertx2x.office2md.ocr.OcrException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -12,6 +14,10 @@ import java.util.*;
 public final class ConversionWorkspace implements AutoCloseable {
     private static final ObjectMapper JSON = new ObjectMapper();
     private final ConversionLimits limits;
+    private final ImageMode imageMode;
+    private final OcrClient ocrClient;
+    private final Map<String, ImageOcr> imageOcr = new HashMap<>();
+    private final Map<String, byte[]> retainedImageBytes = new HashMap<>();
     private final Path directory;
     private final Map<String, Path> files = new LinkedHashMap<>();
     private final List<Map<String, Object>> warnings = new ArrayList<>();
@@ -21,13 +27,22 @@ public final class ConversionWorkspace implements AutoCloseable {
     private final Map<String, String> assetHashes = new HashMap<>();
     private final Map<String, Integer> sequences = new HashMap<>();
     private long outputBytes;
+    private long cachedOcrBytes;
+    private long embeddedImageMarkdownBytes;
+    private long retainedImageByteCount;
     private long images, shapes;
     private int sectionCount;
-    private String reportFilename, reportSourceHash;
-    private Map<String, Object> pdfOutput;
 
     public ConversionWorkspace(ConversionLimits limits) {
+        this(limits, ImageMode.IGNORE, OcrClient.disabled());
+    }
+
+    public ConversionWorkspace(ConversionLimits limits, ImageMode imageMode, OcrClient ocrClient) {
         this.limits = Objects.requireNonNull(limits);
+        this.imageMode = Objects.requireNonNull(imageMode);
+        this.ocrClient = Objects.requireNonNull(ocrClient);
+        if (imageMode == ImageMode.OCR && !ocrClient.configured())
+            throw new ConversionException(503, "OCR_NOT_CONFIGURED", "Document Intelligence の接続設定がないためOCRを実行できません。");
         try { directory = Files.createTempDirectory("office2md-"); }
         catch (IOException e) { throw io(e); }
     }
@@ -75,6 +90,19 @@ public final class ConversionWorkspace implements AutoCloseable {
         if (depth > limits.maxGroupDepth()) throw limit("GROUP_DEPTH_LIMIT", "図形のグループ階層が上限を超えました。");
     }
 
+    /** Drawing readers retain pictures until layout is complete. Share identical buffers and bound them early. */
+    public byte[] retainImageBytes(byte[] bytes) {
+        if (bytes.length > limits.maxImageBytes()) throw limit("IMAGE_BYTES_LIMIT", "画像1件のサイズが上限を超えました。");
+        String hash = sha256(bytes);
+        byte[] previous = retainedImageBytes.get(hash);
+        if (previous != null && Arrays.equals(previous, bytes)) return previous;
+        if (bytes.length > limits.maxOutputBytes() - retainedImageByteCount)
+            throw limit("OUTPUT_BYTES_LIMIT", "画像処理の合計サイズが上限を超えました。");
+        retainedImageByteCount += bytes.length;
+        retainedImageBytes.put(hash, bytes);
+        return bytes;
+    }
+
     public String addAsset(String category, byte[] bytes, String extension, String contentType) {
         if (!Set.of("image", "diagram").contains(category) || !extension.matches("[a-z0-9]{1,8}"))
             throw new IllegalArgumentException("Invalid generated asset name");
@@ -89,12 +117,71 @@ public final class ConversionWorkspace implements AutoCloseable {
         String path = "images/" + category + "-" + String.format(Locale.ROOT, "%04d", number) + "." + extension;
         write(path, bytes);
         assetHashes.put(category + ":" + hash, path);
-        assets.add(Map.of("path", path, "contentType", contentType, "sizeBytes", bytes.length, "sha256", hash));
+        assets.add(Map.of("path", path, "contentType", contentType, "sizeBytes", bytes.length, "sha256", hash,
+                "sourceKind", category.equals("image") ? "embeddedImage" : "renderedDiagram"));
         return path;
     }
 
+    /** Only original, visibly prepared Office pictures enter this path; generated diagrams never do. */
+    public String embeddedImage(byte[] bytes, String extension, String contentType, Map<String, Object> metadata,
+                                String section, String range, boolean ocrEligible) {
+        String path = addAsset("image", bytes, extension, contentType);
+        Map<String, Object> block = new LinkedHashMap<>();
+        block.put("type", "embeddedImage");
+        if (section != null) block.put("section", section);
+        if (range != null) block.put("range", range);
+        block.put("path", path);
+        block.put("metadata", new LinkedHashMap<>(metadata));
+        ImageOcr ocr = new ImageOcr("notRequested", "", null);
+        if (imageMode == ImageMode.OCR) {
+            if (!ocrEligible) ocr = new ImageOcr("skipped", "", "OCR_IMAGE_UNSUPPORTED");
+            else ocr = imageOcr.computeIfAbsent(sha256(bytes), key -> recognizeImage(bytes, contentType));
+        }
+        Map<String, Object> ocrMetadata = new LinkedHashMap<>();
+        ocrMetadata.put("status", ocr.status());
+        if (imageMode == ImageMode.OCR) ocrMetadata.put("model", "prebuilt-read");
+        if (ocr.code() != null) {
+            ocrMetadata.put("code", ocr.code());
+            warning(ocr.code(), section, range, switch (ocr.status()) {
+                case "skipped" -> "可視領域を安全にOCRできない画像形式・加工のため、画像の参照だけを残しました。";
+                default -> "画像のOCRに失敗したため、画像の参照だけを残しました。";
+            });
+        }
+        block.put("ocr", ocrMetadata);
+        block(block);
+        // Unsupported attachments remain downloadable without advertising an unsupported inline format.
+        boolean inline = Set.of("png", "jpg", "jpeg", "gif", "webp").contains(extension);
+        String markdown = (inline ? "!" : "") + "[" + DiagramMetadata.imageAlt(metadata) + "](" + path + ")";
+        if (!ocr.text().isBlank()) markdown += "\n\n画像内の文字（OCR）:\n\n"
+                + Markdown.escape(ocr.text()).replace("\n", "  \n");
+        // Drawing extractors collect blocks before assembling the document. Bound every placement,
+        // including repeated references to cached OCR, before those intermediate strings accumulate.
+        int markdownBytes = markdown.getBytes(java.nio.charset.StandardCharsets.UTF_8).length;
+        if (markdownBytes > limits.maxMarkdownBytes() - embeddedImageMarkdownBytes)
+            throw limit("MARKDOWN_BYTES_LIMIT", "画像参照とOCRテキストの合計サイズが上限を超えました。");
+        embeddedImageMarkdownBytes += markdownBytes;
+        return markdown;
+    }
+
+    private ImageOcr recognizeImage(byte[] bytes, String contentType) {
+        try {
+            String text = Objects.requireNonNullElse(ocrClient.recognize(bytes, contentType).text(), "").strip();
+            int textBytes = text.getBytes(java.nio.charset.StandardCharsets.UTF_8).length;
+            if (textBytes > limits.maxMarkdownBytes() - cachedOcrBytes)
+                throw limit("MARKDOWN_BYTES_LIMIT", "OCRテキストのサイズが上限を超えました。");
+            cachedOcrBytes += textBytes;
+            return new ImageOcr(text.isEmpty() ? "noText" : "succeeded", text, null);
+        } catch (OcrException failure) {
+            if (Thread.currentThread().isInterrupted())
+                throw new ConversionException(503, "CONVERSION_INTERRUPTED", "変換が中断されました。");
+            return new ImageOcr("failed", "", failure.code());
+        }
+    }
+
+    private record ImageOcr(String status, String text, String code) { }
+
     public void write(String relativePath, byte[] bytes) {
-        if (!relativePath.matches("(?:document\\.md|document\\.pdf|report\\.json|images/[a-z]+-[0-9]+\\.[a-z0-9]+)"))
+        if (!relativePath.matches("(?:document\\.md|report\\.json|images/[a-z]+-[0-9]+\\.[a-z0-9]+)"))
             throw new IllegalArgumentException("Invalid output path");
         if (files.containsKey(relativePath)) throw new IllegalArgumentException("Duplicate output path");
         if (relativePath.equals("document.md") && bytes.length > limits.maxMarkdownBytes())
@@ -110,24 +197,7 @@ public final class ConversionWorkspace implements AutoCloseable {
         } catch (IOException e) { throw io(e); }
     }
 
-    public void addPdf(byte[] pdf, int pageCount, JsonNode rendererReport) {
-        if (rendererReport == null || !rendererReport.path("warnings").isArray() || reportFilename == null)
-            throw new IllegalArgumentException("The PDF rendering report is unavailable.");
-        write("document.pdf", pdf);
-        int pdfWarnings = rendererReport.path("warnings").size();
-        for (JsonNode item : rendererReport.path("warnings")) {
-            String code = item.path("code").asText("RENDER_WARNING");
-            String message = item.path("message").asText("PDFへの配置を確認してください。");
-            warning(code.startsWith("PDF_") ? code : "PDF_" + code, null, null, message);
-        }
-        pdfOutput = Map.of("path", "document.pdf", "contentType", "application/pdf", "pageCount", pageCount,
-                "sizeBytes", pdf.length, "sha256", sha256(pdf), "warningCount", pdfWarnings);
-        finishReport(reportFilename, reportSourceHash);
-    }
-
     public void finishReport(String filename, String sourceHash) {
-        reportFilename = filename;
-        reportSourceHash = sourceHash;
         Map<String, Object> report = new LinkedHashMap<>();
         report.put("specVersion", 1);
         String format = filename.toLowerCase(Locale.ROOT).replaceFirst("^.*\\.", "");
@@ -138,7 +208,7 @@ public final class ConversionWorkspace implements AutoCloseable {
         report.put("information", information);
         report.put("blocks", blocks);
         report.put("assets", assets);
-        if (pdfOutput != null) report.put("pdfOutput", pdfOutput);
+        report.put("imageMode", imageMode.wireValue());
         try { writeReport(JSON.writerWithDefaultPrettyPrinter().writeValueAsBytes(report)); }
         catch (IOException e) { throw io(e); }
     }
@@ -169,5 +239,6 @@ public final class ConversionWorkspace implements AutoCloseable {
         try (var paths = Files.walk(directory)) {
             for (Path path : paths.sorted(Comparator.reverseOrder()).toList()) Files.deleteIfExists(path);
         } catch (IOException e) { throw io(e); }
+        finally { retainedImageBytes.clear(); imageOcr.clear(); }
     }
 }
