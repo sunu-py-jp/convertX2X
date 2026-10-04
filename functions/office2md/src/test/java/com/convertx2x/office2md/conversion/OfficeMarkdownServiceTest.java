@@ -8,6 +8,8 @@ import java.util.Map;
 import org.apache.poi.xslf.usermodel.XMLSlideShow;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.text.PDFTextStripper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -15,6 +17,63 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class OfficeMarkdownServiceTest {
     private final OfficeMarkdownService service = new OfficeMarkdownService(ConversionLimits.defaults());
+
+    @ParameterizedTest @ValueSource(strings={"xlsx", "docx", "pptx"})
+    void optionalPdfRendersTheGeneratedMarkdownAndKeepsSourceArtifacts(String extension) throws Exception {
+        try (ConversionResult result = service.convert(fixture(extension), "資料." + extension, OutputFormat.PDF)) {
+            assertTrue(result.files().keySet().containsAll(java.util.Set.of("document.md", "document.pdf", "report.json")));
+            byte[] pdf = result.pdfBytes();
+            assertEquals("%PDF-", new String(pdf, 0, 5, java.nio.charset.StandardCharsets.US_ASCII));
+            try (var document = Loader.loadPDF(pdf)) {
+                assertTrue(new PDFTextStripper().getText(document).contains("保存した日本語"));
+            }
+            var report = new ObjectMapper().readTree(result.files().get("report.json").toFile());
+            assertEquals("document.pdf", report.path("pdfOutput").path("path").asText());
+            assertTrue(report.path("pdfOutput").path("pageCount").asInt() > 0);
+            assertEquals(pdf.length, report.path("pdfOutput").path("sizeBytes").asInt());
+            assertEquals(result.warningCount(), report.path("warnings").size());
+            assertTrue(result.zipBytes().length > pdf.length);
+        }
+    }
+
+    @Test void pdfRendererWarningsAreIncludedInTheOfficeReport() throws Exception {
+        try (var workspace = new ConversionWorkspace(ConversionLimits.defaults())) {
+            workspace.write("document.md", "# テスト".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            workspace.finishReport("sample.xlsx", "source-hash");
+            workspace.addPdf("%PDF-test".getBytes(java.nio.charset.StandardCharsets.US_ASCII), 2,
+                    new ObjectMapper().readTree("{\"warnings\":[{\"code\":\"IMAGE_UNSUPPORTED\",\"message\":\"画像を表示できません。\"},{\"code\":\"PDF_LAYOUT\",\"message\":\"配置を確認してください。\"}]}"));
+            assertEquals(2, workspace.warningCount());
+            var report = new ObjectMapper().readTree(workspace.files().get("report.json").toFile());
+            assertEquals("PDF_IMAGE_UNSUPPORTED", report.path("warnings").get(0).path("code").asText());
+            assertEquals("PDF_LAYOUT", report.path("warnings").get(1).path("code").asText());
+            assertEquals(2, report.path("pdfOutput").path("pageCount").asInt());
+            assertEquals(2, report.path("pdfOutput").path("warningCount").asInt());
+        }
+    }
+
+    @Test void pdfUsesOfficeDrawingLineBreaksWithoutPrintingHtmlMarkup() throws Exception {
+        byte[] input;
+        try (var slides = new XMLSlideShow(); var out = new ByteArrayOutputStream()) {
+            var table = slides.createSlide().createTable(2, 2);
+            table.setAnchor(new java.awt.Rectangle(20, 20, 400, 140));
+            table.getCell(0, 0).setText("受付\n承認");
+            table.getCell(0, 1).setText("状態");
+            table.getCell(1, 0).setText("東京");
+            table.getCell(1, 1).setText("完了");
+            slides.write(out);
+            input = out.toByteArray();
+        }
+        try (ConversionResult result = service.convert(input, "flow.pptx", OutputFormat.PDF)) {
+            String markdown = Files.readString(result.files().get("document.md"));
+            assertTrue(markdown.contains("<br>"), markdown);
+            try (var document = Loader.loadPDF(result.pdfBytes())) {
+                String pdfText = new PDFTextStripper().getText(document);
+                assertTrue(pdfText.contains("受付"));
+                assertTrue(pdfText.contains("承認"));
+                assertFalse(pdfText.contains("<br>"));
+            }
+        }
+    }
 
     @ParameterizedTest @ValueSource(strings={"xlsx", "docx", "pptx"})
     void routesAllOfficeFormatsAndPublishesGenericMetadata(String extension) throws Exception {

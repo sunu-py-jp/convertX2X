@@ -1,6 +1,7 @@
 package com.convertx2x.office2md.conversion;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -22,6 +23,8 @@ public final class ConversionWorkspace implements AutoCloseable {
     private long outputBytes;
     private long images, shapes;
     private int sectionCount;
+    private String reportFilename, reportSourceHash;
+    private Map<String, Object> pdfOutput;
 
     public ConversionWorkspace(ConversionLimits limits) {
         this.limits = Objects.requireNonNull(limits);
@@ -91,7 +94,7 @@ public final class ConversionWorkspace implements AutoCloseable {
     }
 
     public void write(String relativePath, byte[] bytes) {
-        if (!relativePath.matches("(?:document\\.md|report\\.json|images/[a-z]+-[0-9]+\\.[a-z0-9]+)"))
+        if (!relativePath.matches("(?:document\\.md|document\\.pdf|report\\.json|images/[a-z]+-[0-9]+\\.[a-z0-9]+)"))
             throw new IllegalArgumentException("Invalid output path");
         if (files.containsKey(relativePath)) throw new IllegalArgumentException("Duplicate output path");
         if (relativePath.equals("document.md") && bytes.length > limits.maxMarkdownBytes())
@@ -107,7 +110,24 @@ public final class ConversionWorkspace implements AutoCloseable {
         } catch (IOException e) { throw io(e); }
     }
 
+    public void addPdf(byte[] pdf, int pageCount, JsonNode rendererReport) {
+        if (rendererReport == null || !rendererReport.path("warnings").isArray() || reportFilename == null)
+            throw new IllegalArgumentException("The PDF rendering report is unavailable.");
+        write("document.pdf", pdf);
+        int pdfWarnings = rendererReport.path("warnings").size();
+        for (JsonNode item : rendererReport.path("warnings")) {
+            String code = item.path("code").asText("RENDER_WARNING");
+            String message = item.path("message").asText("PDFへの配置を確認してください。");
+            warning(code.startsWith("PDF_") ? code : "PDF_" + code, null, null, message);
+        }
+        pdfOutput = Map.of("path", "document.pdf", "contentType", "application/pdf", "pageCount", pageCount,
+                "sizeBytes", pdf.length, "sha256", sha256(pdf), "warningCount", pdfWarnings);
+        finishReport(reportFilename, reportSourceHash);
+    }
+
     public void finishReport(String filename, String sourceHash) {
+        reportFilename = filename;
+        reportSourceHash = sourceHash;
         Map<String, Object> report = new LinkedHashMap<>();
         report.put("specVersion", 1);
         String format = filename.toLowerCase(Locale.ROOT).replaceFirst("^.*\\.", "");
@@ -118,8 +138,22 @@ public final class ConversionWorkspace implements AutoCloseable {
         report.put("information", information);
         report.put("blocks", blocks);
         report.put("assets", assets);
-        try { write("report.json", JSON.writerWithDefaultPrettyPrinter().writeValueAsBytes(report)); }
+        if (pdfOutput != null) report.put("pdfOutput", pdfOutput);
+        try { writeReport(JSON.writerWithDefaultPrettyPrinter().writeValueAsBytes(report)); }
         catch (IOException e) { throw io(e); }
+    }
+
+    private void writeReport(byte[] bytes) throws IOException {
+        Path existing = files.get("report.json");
+        if (existing == null) {
+            write("report.json", bytes);
+            return;
+        }
+        long oldSize = Files.size(existing);
+        if (bytes.length > limits.maxOutputBytes() - (outputBytes - oldSize))
+            throw limit("OUTPUT_BYTES_LIMIT", "出力の合計サイズが上限を超えました。");
+        Files.write(existing, bytes);
+        outputBytes += bytes.length - oldSize;
     }
     public static String sha256(byte[] bytes) {
         try { return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes)); }

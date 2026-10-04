@@ -46,20 +46,34 @@ public final class WordSample {
                     <w:tr><w:trPr><w:tblHeader/></w:trPr><w:tc><w:p><w:r><w:t>項目</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>結果</w:t></w:r></w:p></w:tc></w:tr>
                     <w:tr><w:tc><w:p><w:r><w:t>表の構造</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>罫線がなくても Markdown 表になります。</w:t></w:r></w:p></w:tc></w:tr>
                     <w:tr><w:tc><w:tcPr><w:gridSpan w:val="2"/></w:tcPr><w:p><w:r><w:t>結合セルは左上に文字を保持します。</w:t></w:r></w:p></w:tc></w:tr></w:tbl>
+                    <w:p><w:pPr><w:pStyle w:val="Heading2"/></w:pPr><w:r><w:t>判定条件と複数段落の表</w:t></w:r></w:p>
+                    <w:p><w:r><w:t>二つ目の表では、3列の判定、セル内改行、結合した補足行を同時に確認します。</w:t></w:r></w:p>
+                    <w:tbl><w:tblPr><w:tblBorders><w:top w:val="single"/><w:bottom w:val="single"/><w:insideH w:val="single"/><w:insideV w:val="single"/></w:tblBorders></w:tblPr>
+                    <w:tblGrid><w:gridCol w:w="2600"/><w:gridCol w:w="2600"/><w:gridCol w:w="3300"/></w:tblGrid>
+                    <w:tr><w:trPr><w:tblHeader/></w:trPr><w:tc><w:p><w:r><w:t>条件</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>担当</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>判断</w:t></w:r></w:p></w:tc></w:tr>
+                    <w:tr><w:tc><w:p><w:r><w:t>通常申請</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>受付</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>当日確認</w:t></w:r></w:p></w:tc></w:tr>
+                    <w:tr><w:tc><w:p><w:r><w:t>添付不足</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>申請者</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>差し戻し</w:t></w:r></w:p><w:p><w:r><w:t>再提出後に再判定</w:t></w:r></w:p></w:tc></w:tr>
+                    <w:tr><w:tc><w:tcPr><w:gridSpan w:val="2"/></w:tcPr><w:p><w:r><w:t>共通の補足：期限は営業日で数えます。</w:t></w:r></w:p></w:tc><w:tc><w:p><w:r><w:t>要確認</w:t></w:r></w:p></w:tc></w:tr></w:tbl>
                     <w:p><w:pPr><w:pStyle w:val="Heading2"/></w:pPr><w:r><w:t>番号と脚注</w:t></w:r></w:p>
                     <w:p><w:pPr><w:numPr><w:ilvl w:val="0"/><w:numId w:val="1"/></w:numPr></w:pPr><w:r><w:t>番号は元の開始値 3 を保持します。</w:t></w:r></w:p>
                     <w:p><w:pPr><w:numPr><w:ilvl w:val="0"/><w:numId w:val="1"/></w:numPr></w:pPr><w:r><w:t>参照付きの脚注です。</w:t><w:footnoteReference w:id="1"/></w:r></w:p>
+                    <w:p><w:r><w:t>判定表の例外条件にも補足を付けます。</w:t><w:footnoteReference w:id="2"/></w:r></w:p>
                     <w:p><w:pPr><w:pStyle w:val="Heading2"/></w:pPr><w:r><w:t>時計回りに回転した日本語の図形</w:t></w:r></w:p>
                     <w:p><w:r><w:pict><v:roundrect style="width:280pt;height:100pt;rotation:15" arcsize="0.15" fillcolor="#e4f4f1" strokecolor="#087f8c">
                     <v:textbox><w:txbxContent><w:p><w:r><w:rPr><w:b/><w:sz w:val="32"/></w:rPr><w:t>日本語の図形</w:t></w:r></w:p>
                     <w:p><w:r><w:t>時計回り 15 度</w:t></w:r><w:r><w:rPr><w:strike/></w:rPr><w:t>WORD_SHAPE_SECRET_REMOVED</w:t></w:r></w:p></w:txbxContent></v:textbox>
                     </v:roundrect></w:pict></w:r></w:p>
+                    <w:p><w:r><w:pict><v:oval style="width:190pt;height:95pt" fillcolor="#fff0d6" strokecolor="#b1792e">
+                    <v:textbox><w:txbxContent><w:p><w:r><w:rPr><w:b/></w:rPr><w:t>追加の確認図形</w:t></w:r></w:p>
+                    <w:p><w:r><w:t>表の例外を人が確認</w:t></w:r></w:p></w:txbxContent></v:textbox>
+                    </v:oval></w:pict></w:r></w:p>
                     <w:p><w:pPr><w:pStyle w:val="Heading2"/></w:pPr><w:r><w:t>埋め込み PNG 画像</w:t></w:r></w:p>
                     """;
             document.getDocument().setBody(DocumentDocument.Factory.parse("<w:document xmlns:w=\"" + W + "\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\" xmlns:v=\"urn:schemas-microsoft-com:vml\"><w:body>" + body + "</w:body></w:document>").getDocument().getBody());
             document.getPackagePart().addExternalRelationship("https://poi.apache.org/", "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink", "rOfficial");
             document.createFootnotes();
             document.addFootnote(FootnotesDocument.Factory.parse("<w:footnotes xmlns:w=\"" + W + "\"><w:footnote w:id=\"1\"><w:p><w:r><w:footnoteRef/><w:t>脚注は本文の参照順に末尾へまとめます。</w:t></w:r></w:p></w:footnote></w:footnotes>").getFootnotes().getFootnoteArray(0));
+            document.addFootnote(FootnotesDocument.Factory.parse("<w:footnotes xmlns:w=\"" + W + "\"><w:footnote w:id=\"2\"><w:p><w:r><w:footnoteRef/><w:t>例外条件は再提出された内容を確認してから処理します。</w:t></w:r></w:p></w:footnote></w:footnotes>").getFootnotes().getFootnoteArray(0));
             BufferedImage image = new BufferedImage(540, 180, BufferedImage.TYPE_INT_RGB);
             var graphics = image.createGraphics();
             try {

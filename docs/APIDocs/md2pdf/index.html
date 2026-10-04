@@ -18,11 +18,11 @@
 └── images/diagram.png
 
 Markdown: ![処理の流れ](images/diagram.png)</code></pre>
-<h2 id="layout">再現範囲</h2><p>PDFは本文・表・画像を読みやすく再配置した正規化出力です。HTML/CSSの見た目は再現せず、HTMLは文字として表示します。Mermaidは図へ変換せずコードとして表示します。どちらもreportへ警告を記録します（改ページ命令は除く）。</p>
+<h2 id="layout">再現範囲</h2><p>PDFは本文・表・画像を読みやすく再配置した正規化出力です。HTML/CSSの見た目は再現せず、HTMLは文字として表示します。単純な <code>&lt;br&gt;</code> は改行、<code>&lt;!-- pagebreak --&gt;</code> は改ページとして扱います。Mermaidは図へ変換せずコードとして表示します。その他のHTMLとMermaidはreportへ警告を記録します。</p>
 <h2 id="output">出力</h2><pre><code>document.pdf
 report.json</code></pre><p>同期HTTPはPDFを直接返します。非同期と直接QueueはPDFとreportを保存します。reportには入力・PDFのSHA-256、形式、ページ数、警告が入ります。<code>sectionKind</code>は<code>document</code>、<code>sectionCount</code>は1です。</p>
 <h2 id="limits">上限</h2><p>段落・表・画像の個数に固定上限はありません。入力・出力バイト数、画像画素数、任意のPDFページ上限を設定します。ZIPは展開後合計にも入力バイト上限が適用されます。既定のページ上限は<code>0</code>（無制限）です。詳細は<a href="settings.html">設定・上限</a>を参照してください。</p>
 <h2 id="playground">Playground</h2><p><code>http://localhost:7075/api/playground</code>でMarkdownの貼り付け、ファイル・ZIP選択、同期・非同期変換、PDFプレビューと保存ができます。</p>
 <h2 id="license">ライセンス</h2><p>アプリはMIT、CommonMarkはBSD 2-Clause、PDFBoxはApache-2.0、日本語フォントはOFL-1.1です。商用利用できます。</p>
-<footer class="page-footer"><p>最終確認：2026-10-03。<a href="../../../functions/md2pdf/docs/usage.md">起動・配置を含む利用ガイド</a></p></footer>
+<footer class="page-footer"><p>最終確認：2026-10-04。<a href="../../../functions/md2pdf/docs/usage.md">起動・配置を含む利用ガイド</a></p></footer>
 </article><aside class="toc" aria-label="このページの目次"><p class="toc-title">このページの内容</p><nav id="page-toc"></nav></aside></div></main></body></html>

@@ -2,7 +2,7 @@
 
 自作の編集可能なDOCXを、実際のローカルFunctions HTTP APIとPlaygroundで変換した記録です。
 
-- `input.docx`：DrawingMLのグループ、4個の表示図形、5本の接続線、前後の段落と表。
+- `input.docx`：DrawingMLのグループ、4個の表示図形、5本の接続線、前後の段落。
 - `result.zip`：HTTPから返った変換結果。
 - `output/document.md`：図形文字・4件の確定した接続・1件の接続不明・確認用画像。
 - `output/report.json`：ノード、接続、描画内の座標、段落位置、警告、アセット情報。

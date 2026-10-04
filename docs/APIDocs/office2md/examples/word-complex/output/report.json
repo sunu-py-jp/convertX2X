@@ -1,8 +1,8 @@
 {
   "specVersion" : 1,
   "source" : {
+    "sha256" : "099a83f3c715b5fa3adcd5789e69ca262af7ab541c316dc1b79ebb4544610d5d",
     "format" : "docx",
-    "sha256" : "e0f36ead555898d2d937169e782eab54cf0359fd00816dbede9139fb7e24fb0f",
     "filename" : "input.docx"
   },
   "sectionKind" : "document",
@@ -10,7 +10,12 @@
   "warnings" : [ {
     "code" : "DRAWING_TEXT_APPROXIMATED",
     "section" : "document",
-    "range" : "paragraph:11",
+    "range" : "paragraph:14",
+    "message" : "Word図形内の文字は取消線・非表示を除去して簡易描画します。段落ごとの書式・余白・文字回転は近似です。"
+  }, {
+    "code" : "DRAWING_TEXT_APPROXIMATED",
+    "section" : "document",
+    "range" : "paragraph:15",
     "message" : "Word図形内の文字は取消線・非表示を除去して簡易描画します。段落ごとの書式・余白・文字回転は近似です。"
   } ],
   "information" : [ {
@@ -21,85 +26,114 @@
   }, {
     "code" : "DRAWING_SIMPLIFIED",
     "section" : "document",
-    "range" : "paragraph:11/drawing:1",
+    "range" : "paragraph:14/drawing:1",
     "message" : "Wordの図形・保存された接続を文字として保持し、同じ描画領域を確認用画像にまとめました。ページ全体の配置は再現しません。"
   }, {
     "code" : "DRAWING_SIMPLIFIED",
     "section" : "document",
-    "range" : "paragraph:13/drawing:2",
+    "range" : "paragraph:15/drawing:2",
+    "message" : "Wordの図形・保存された接続を文字として保持し、同じ描画領域を確認用画像にまとめました。ページ全体の配置は再現しません。"
+  }, {
+    "code" : "DRAWING_SIMPLIFIED",
+    "section" : "document",
+    "range" : "paragraph:17/drawing:3",
     "message" : "Wordの図形・保存された接続を文字として保持し、同じ描画領域を確認用画像にまとめました。ページ全体の配置は再現しません。"
   } ],
   "blocks" : [ {
-    "range" : "paragraph:1",
+    "section" : "document",
     "markdownStartLine" : 3,
-    "section" : "document",
-    "markdownEndLine" : 3,
-    "type" : "paragraph"
+    "range" : "paragraph:1",
+    "type" : "paragraph",
+    "markdownEndLine" : 3
   }, {
-    "range" : "paragraph:2",
+    "section" : "document",
     "markdownStartLine" : 5,
-    "section" : "document",
-    "markdownEndLine" : 5,
-    "type" : "paragraph"
+    "range" : "paragraph:2",
+    "type" : "paragraph",
+    "markdownEndLine" : 5
   }, {
-    "range" : "paragraph:3",
+    "section" : "document",
     "markdownStartLine" : 7,
-    "section" : "document",
-    "markdownEndLine" : 7,
-    "type" : "paragraph"
+    "range" : "paragraph:3",
+    "type" : "paragraph",
+    "markdownEndLine" : 7
   }, {
-    "range" : "paragraph:4",
+    "section" : "document",
     "markdownStartLine" : 9,
-    "section" : "document",
-    "markdownEndLine" : 9,
-    "type" : "paragraph"
+    "range" : "paragraph:4",
+    "type" : "paragraph",
+    "markdownEndLine" : 9
   }, {
-    "range" : "paragraph:5",
+    "section" : "document",
     "markdownStartLine" : 11,
-    "section" : "document",
-    "markdownEndLine" : 11,
-    "type" : "paragraph"
+    "range" : "paragraph:5",
+    "type" : "paragraph",
+    "markdownEndLine" : 11
   }, {
-    "range" : "paragraph:6",
+    "section" : "document",
     "markdownStartLine" : 13,
-    "section" : "document",
-    "markdownEndLine" : 13,
-    "type" : "paragraph"
+    "range" : "paragraph:6",
+    "type" : "paragraph",
+    "markdownEndLine" : 13
   }, {
-    "range" : "table:1",
+    "section" : "document",
     "markdownStartLine" : 15,
-    "section" : "document",
-    "markdownEndLine" : 18,
-    "type" : "table"
+    "range" : "table:1",
+    "type" : "table",
+    "markdownEndLine" : 18
   }, {
-    "range" : "paragraph:7",
+    "section" : "document",
     "markdownStartLine" : 20,
-    "section" : "document",
-    "markdownEndLine" : 20,
-    "type" : "paragraph"
+    "range" : "paragraph:7",
+    "type" : "paragraph",
+    "markdownEndLine" : 20
   }, {
-    "range" : "paragraph:8",
+    "section" : "document",
     "markdownStartLine" : 22,
-    "section" : "document",
-    "markdownEndLine" : 22,
-    "type" : "paragraph"
+    "range" : "paragraph:8",
+    "type" : "paragraph",
+    "markdownEndLine" : 22
   }, {
-    "range" : "paragraph:9",
+    "section" : "document",
     "markdownStartLine" : 24,
-    "section" : "document",
-    "markdownEndLine" : 24,
-    "type" : "paragraph"
+    "range" : "table:2",
+    "type" : "table",
+    "markdownEndLine" : 28
   }, {
-    "range" : "paragraph:10",
-    "markdownStartLine" : 26,
     "section" : "document",
-    "markdownEndLine" : 26,
-    "type" : "paragraph"
+    "markdownStartLine" : 30,
+    "range" : "paragraph:9",
+    "type" : "paragraph",
+    "markdownEndLine" : 30
+  }, {
+    "section" : "document",
+    "markdownStartLine" : 32,
+    "range" : "paragraph:10",
+    "type" : "paragraph",
+    "markdownEndLine" : 32
+  }, {
+    "section" : "document",
+    "markdownStartLine" : 34,
+    "range" : "paragraph:11",
+    "type" : "paragraph",
+    "markdownEndLine" : 34
+  }, {
+    "section" : "document",
+    "markdownStartLine" : 36,
+    "range" : "paragraph:12",
+    "type" : "paragraph",
+    "markdownEndLine" : 36
+  }, {
+    "section" : "document",
+    "markdownStartLine" : 38,
+    "range" : "paragraph:13",
+    "type" : "paragraph",
+    "markdownEndLine" : 38
   }, {
     "type" : "diagram",
     "section" : "document",
-    "range" : "paragraph:11/drawing:1",
-    "placement" : "VML、paragraph:11、ローカル座標（ページ位置未算出）、保存配置: position=不明、水平基準=不明、垂直基準=不明、left未指定、top未指定",
+    "range" : "paragraph:14/drawing:1",
+    "placement" : "VML、paragraph:14、ローカル座標（ページ位置未算出）、保存配置: position=不明、水平基準=不明、垂直基準=不明、left未指定、top未指定",
     "nodes" : [ {
       "type" : "角丸長方形",
       "text" : "日本語の図形\n時計回り 15 度",
@@ -120,22 +154,52 @@
       "height" : null
     }
   }, {
-    "range" : "paragraph:11",
-    "markdownStartLine" : 28,
     "section" : "document",
-    "markdownEndLine" : 36,
-    "type" : "paragraph"
-  }, {
-    "range" : "paragraph:12",
-    "markdownStartLine" : 38,
-    "section" : "document",
-    "markdownEndLine" : 38,
-    "type" : "paragraph"
+    "markdownStartLine" : 40,
+    "range" : "paragraph:14",
+    "type" : "paragraph",
+    "markdownEndLine" : 48
   }, {
     "type" : "diagram",
     "section" : "document",
-    "range" : "paragraph:13/drawing:2",
-    "placement" : "本文内、paragraph:13、ローカル座標（ページ位置未算出）",
+    "range" : "paragraph:15/drawing:2",
+    "placement" : "VML、paragraph:15、ローカル座標（ページ位置未算出）、保存配置: position=不明、水平基準=不明、垂直基準=不明、left未指定、top未指定",
+    "nodes" : [ {
+      "type" : "楕円",
+      "text" : "追加の確認図形\n表の例外を人が確認",
+      "x" : null,
+      "y" : null,
+      "width" : null,
+      "height" : null,
+      "id" : "shape-1"
+    } ],
+    "edges" : [ ],
+    "path" : "images/diagram-0002.png",
+    "metadata" : {
+      "type" : "楕円",
+      "text" : "追加の確認図形\n表の例外を人が確認",
+      "x" : null,
+      "y" : null,
+      "width" : null,
+      "height" : null
+    }
+  }, {
+    "section" : "document",
+    "markdownStartLine" : 50,
+    "range" : "paragraph:15",
+    "type" : "paragraph",
+    "markdownEndLine" : 58
+  }, {
+    "section" : "document",
+    "markdownStartLine" : 60,
+    "range" : "paragraph:16",
+    "type" : "paragraph",
+    "markdownEndLine" : 60
+  }, {
+    "type" : "diagram",
+    "section" : "document",
+    "range" : "paragraph:17/drawing:3",
+    "placement" : "本文内、paragraph:17、ローカル座標（ページ位置未算出）",
     "nodes" : [ {
       "type" : "画像",
       "text" : "shapes.png",
@@ -146,7 +210,7 @@
       "id" : "shape-1"
     } ],
     "edges" : [ ],
-    "path" : "images/diagram-0002.png",
+    "path" : "images/diagram-0003.png",
     "metadata" : {
       "type" : "画像",
       "text" : "shapes.png",
@@ -156,21 +220,26 @@
       "height" : 120
     }
   }, {
-    "range" : "paragraph:13",
-    "markdownStartLine" : 40,
     "section" : "document",
-    "markdownEndLine" : 48,
-    "type" : "paragraph"
+    "markdownStartLine" : 62,
+    "range" : "paragraph:17",
+    "type" : "paragraph",
+    "markdownEndLine" : 70
   } ],
   "assets" : [ {
-    "path" : "images/diagram-0001.png",
-    "contentType" : "image/png",
     "sizeBytes" : 16637,
+    "contentType" : "image/png",
+    "path" : "images/diagram-0001.png",
     "sha256" : "8734d06539cb11fc728ae7e9ed296f23f75891a6313d0cf2cf9e832e1f1fe74d"
   }, {
-    "path" : "images/diagram-0002.png",
+    "sizeBytes" : 10316,
     "contentType" : "image/png",
+    "path" : "images/diagram-0002.png",
+    "sha256" : "a31a8db685dffd7a3bdf13058328859d0d29216bd16270d53dbe3ffc85e4e057"
+  }, {
     "sizeBytes" : 9816,
+    "contentType" : "image/png",
+    "path" : "images/diagram-0003.png",
     "sha256" : "23d6b7b88699dabcd097078ecf232742f426068496d3a40abe78bf86ebf99a69"
   } ]
 }

@@ -1,7 +1,7 @@
 {
-  "capturedAt": "2026-09-23T08:02:34.083Z",
+  "capturedAt": "2026-10-04T07:29:55.670Z",
   "mode": "actual local Functions HTTP through unmodified Playground",
-  "sourceCommit": "8b4ee428d920ae052a0de374df30098d791d4fa3",
+  "sourceCommit": "66a904f3cf7e1fbd736795a75dd448fabf38a096",
   "sourceWorkingTreeDirty": true,
   "runtime": {
     "platform": "darwin",
@@ -9,12 +9,12 @@
     "node": "v24.2.0",
     "java": "openjdk version \"21\" 2023-09-19 LTS\nOpenJDK Runtime Environment Temurin-21+35 (build 21+35-LTS)\nOpenJDK 64-Bit Server VM Temurin-21+35 (build 21+35-LTS, mixed mode)",
     "coreTools": "4.9.0",
-    "browser": "153.0.8010.53"
+    "browser": "154.0.8037.93"
   },
   "input": {
     "path": "input.docx",
-    "sizeBytes": 10457,
-    "sha256": "e0f36ead555898d2d937169e782eab54cf0359fd00816dbede9139fb7e24fb0f"
+    "sizeBytes": 10911,
+    "sha256": "099a83f3c715b5fa3adcd5789e69ca262af7ab541c316dc1b79ebb4544610d5d"
   },
   "request": {
     "method": "POST",
@@ -25,34 +25,34 @@
   "response": {
     "status": 200,
     "contentType": "application/zip",
-    "elapsedMs": 180
+    "elapsedMs": 1437
   },
   "timingNote": "Local macOS measurement from submit click to completed Playground result (HTTP response, unzip and preview construction included). Not an Azure latency or throughput benchmark.",
   "sectionCount": 1,
   "sectionTitles": [
     "Word → Markdown の表示確認"
   ],
-  "assetCount": 2,
-  "warningCount": 1,
+  "assetCount": 3,
+  "warningCount": 2,
   "warningCodes": [
     "DRAWING_TEXT_APPROXIMATED"
   ],
-  "informationCount": 3,
+  "informationCount": 4,
   "files": [
     {
       "path": "result.zip",
-      "sizeBytes": 27678,
-      "sha256": "5e7ef4c719b8262b59393ff79b95118d7484d2dfcff153b72838dfc1fbfaae5b"
+      "sizeBytes": 38628,
+      "sha256": "b2050b7c548db6f2afeb796caf0e8c65a5005db741c84747732d4bddcfa70d92"
     },
     {
       "path": "output/document.md",
-      "sizeBytes": 1241,
-      "sha256": "678f0eaa62269358c632992f1c1c74b40cd82b342d9d430ba904f911ead7efab"
+      "sizeBytes": 2049,
+      "sha256": "7204e2051fc4af2d92181507e385276c70b3e72155379fde10ca3a90252453d6"
     },
     {
       "path": "output/report.json",
-      "sizeBytes": 5129,
-      "sha256": "466e067d8a5675709512e18ccc1cd2e38a88da4efa0c15b88b0ab69a25b1ed8b"
+      "sizeBytes": 7405,
+      "sha256": "1d0e89dd03ef3edb82e5607a28b849d27ef08b490ceff13afa6e93f195678cdb"
     },
     {
       "path": "output/images/diagram-0001.png",
@@ -61,28 +61,33 @@
     },
     {
       "path": "output/images/diagram-0002.png",
+      "sizeBytes": 10316,
+      "sha256": "a31a8db685dffd7a3bdf13058328859d0d29216bd16270d53dbe3ffc85e4e057"
+    },
+    {
+      "path": "output/images/diagram-0003.png",
       "sizeBytes": 9816,
       "sha256": "23d6b7b88699dabcd097078ecf232742f426068496d3a40abe78bf86ebf99a69"
     },
     {
       "path": "screenshots/overview.png",
-      "sizeBytes": 174902,
-      "sha256": "1c1b78e1a22f1e380dec6bb3fa701e52c378d31f1315b57720bb003043e29b91"
+      "sizeBytes": 194052,
+      "sha256": "bbf295d0d4ae5604bffdc354970695ce27d1a06b0757d40c3092f1d56a8a8ca7"
     },
     {
       "path": "screenshots/section-01.png",
-      "sizeBytes": 124591,
-      "sha256": "b02c94d0edaca1ac8350c7313b4236c96f07e228a0e09d068c32b13cd530f643"
+      "sizeBytes": 195573,
+      "sha256": "5a5df48f4aa4df5eb86f2da6807e71f7b4c494cdeeaf93910a582bb626f7a327"
     },
     {
       "path": "screenshots/markdown-source.png",
-      "sizeBytes": 90879,
-      "sha256": "430163b5754e749a6b77ca0b0dce9198fa18a766de591e60536ab03b0b649d10"
+      "sizeBytes": 105014,
+      "sha256": "0d8665a90f89be4cf69afd1bc56f0c3e66f99fa925c821006e81e440c0fc3274"
     },
     {
       "path": "screenshots/warnings.png",
-      "sizeBytes": 12852,
-      "sha256": "7f89d5a3f3e8654d9923562bc1ff44fbcf3a99e0329b6b2cb6ffe15c73bd1533"
+      "sizeBytes": 24181,
+      "sha256": "05f130817e601df720328eea066d34d223268cd7d0dcfffcca290657ce9db775"
     }
   ],
   "screenshotLayout": "Overview/source use normal Playground. Section screenshots expand the preview scroll region and image maximum height, and hide other sections. Excel tables-detail and group-detail crop the top 790 and 1000 CSS pixels; full sections are also included. Warnings expand the warning list. No original text, images or outputs are changed.",

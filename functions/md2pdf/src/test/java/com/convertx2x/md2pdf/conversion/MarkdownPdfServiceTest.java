@@ -19,10 +19,80 @@ import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import static org.junit.jupiter.api.Assertions.*;
 
 class MarkdownPdfServiceTest {
     private final MarkdownPdfService service = new MarkdownPdfService(ConversionLimits.defaults());
+
+    @TempDir Path inputDirectory;
+
+    @Test void rendersExistingMarkdownAndImagesWithoutAnInputArchive() throws Exception {
+        Path document = inputDirectory.resolve("document.md");
+        Path image = inputDirectory.resolve("images/chart.png");
+        Path report = inputDirectory.resolve("report.json");
+        Files.createDirectories(image.getParent());
+        Files.writeString(document, "# Monthly report\n\n![Chart](images/chart.png)");
+        Files.write(image, png());
+        Files.writeString(report, "{}");
+
+        try (ConversionResult result = service.convertFiles(Map.of(
+                "document.md", document, "images/chart.png", image, "report.json", report), "document.md");
+             PDDocument pdf = Loader.loadPDF(result.pdfBytes())) {
+            String text = new PDFTextStripper().getText(pdf);
+            assertTrue(text.contains("Monthly report"), text);
+            assertTrue(text.contains("Chart"), text);
+            assertEquals(1, imageCount(pdf));
+            assertEquals(0, result.warningCount());
+            assertEquals(ConversionWorkspace.sha256(Files.readAllBytes(document)),
+                    report(result).path("source").path("sha256").asText());
+        }
+    }
+
+    @Test void fileInputRejectsEscapingNamesForeignPathsAndSymlinks() throws Exception {
+        Path document = inputDirectory.resolve("document.md");
+        Files.writeString(document, "![outside](images/outside.png)");
+        Path outside = Files.createTempFile("md2pdf-outside-", ".png");
+        try {
+            Files.write(outside, png());
+            assertEquals("INVALID_FILE_PATH", assertThrows(ConversionException.class,
+                    () -> service.convertFiles(Map.of("document.md", document, "../outside.png", outside), "document.md")).code());
+            assertEquals("INVALID_FILE_PATH", assertThrows(ConversionException.class,
+                    () -> service.convertFiles(Map.of("document.md", document, "images/outside.png", outside), "document.md")).code());
+            Path link = inputDirectory.resolve("images/outside.png");
+            Files.createDirectories(link.getParent());
+            Files.createSymbolicLink(link, outside);
+            assertEquals("INVALID_FILE_PATH", assertThrows(ConversionException.class,
+                    () -> service.convertFiles(Map.of("document.md", document, "images/outside.png", link), "document.md")).code());
+        } finally {
+            Files.deleteIfExists(outside);
+        }
+    }
+
+    @Test void fileInputDoesNotReadUnregisteredOrExternalImages() throws Exception {
+        Path document = inputDirectory.resolve("document.md");
+        Path unregistered = inputDirectory.resolve("private.png");
+        Files.writeString(document, "![remote](https://images.invalid/image.png)\n\n![local](private.png)");
+        Files.write(unregistered, png());
+        try (ConversionResult result = service.convertFiles(Map.of("document.md", document), "document.md");
+             PDDocument pdf = Loader.loadPDF(result.pdfBytes())) {
+            assertEquals(0, imageCount(pdf));
+            assertEquals(2, result.warningCount());
+        }
+    }
+
+    @Test void fileInputBoundsAggregateMarkdownAndImageBytes() throws Exception {
+        Path document = inputDirectory.resolve("document.md");
+        Path image = inputDirectory.resolve("images/chart.png");
+        Files.createDirectories(image.getParent());
+        Files.writeString(document, "![Chart](images/chart.png)");
+        Files.write(image, png());
+        long belowCombinedSize = Files.size(document) + Files.size(image) - 1;
+        MarkdownPdfService limited = new MarkdownPdfService(
+                new ConversionLimits(belowCombinedSize, 10_000_000, 0, 20_000_000));
+        assertEquals("INPUT_BYTES_LIMIT", assertThrows(ConversionException.class,
+                () -> limited.convertFiles(Map.of("document.md", document, "images/chart.png", image), "document.md")).code());
+    }
 
     @Test void rendersJapaneseHeadingsListsQuotesCodeAndTablesAsSearchableText() throws Exception {
         String markdown = """
@@ -202,6 +272,38 @@ class MarkdownPdfServiceTest {
             assertTrue(text.contains("graph LR"), text);
             assertTrue(text.contains("A-->B"), text);
             assertTrue(result.warningCount() >= 2);
+        }
+    }
+
+    @Test void htmlBrRendersLineBreaksInParagraphsAndTableCells() throws Exception {
+        String markdown = """
+                First<br>Second<br/>Third<BR />Fourth
+
+                | Name | Value |
+                | --- | --- |
+                | Alpha<br>Beta | One<br/>Two<BR />Three |
+                """;
+        try (ConversionResult result = service.convert(utf8(markdown), "breaks.md");
+             PDDocument pdf = Loader.loadPDF(result.pdfBytes())) {
+            String text = new PDFTextStripper().getText(pdf);
+            assertTrue(text.contains("First\nSecond\nThird\nFourth"), text);
+            assertTrue(text.contains("Alpha\nBeta"), text);
+            assertTrue(text.contains("One\nTwo\nThree"), text);
+            for (String expected : new String[]{"First", "Second", "Third", "Fourth", "Alpha", "Beta", "One", "Two", "Three"})
+                assertTrue(text.contains(expected), expected + " absent from PDF: " + text);
+            assertFalse(text.toLowerCase(java.util.Locale.ROOT).contains("<br"), text);
+            assertEquals(0, result.warningCount());
+        }
+    }
+
+    @Test void otherInlineHtmlRemainsLiteralAndWarns() throws Exception {
+        try (ConversionResult result = service.convert(utf8("Before <span>inside</span> <br data-x> after"), "html.md");
+             PDDocument pdf = Loader.loadPDF(result.pdfBytes())) {
+            String text = new PDFTextStripper().getText(pdf);
+            assertTrue(text.contains("<span>"), text);
+            assertTrue(text.contains("</span>"), text);
+            assertTrue(text.contains("<br data-x>"), text);
+            assertEquals(1, result.warningCount());
         }
     }
 

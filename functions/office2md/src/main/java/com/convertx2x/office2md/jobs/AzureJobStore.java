@@ -24,6 +24,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.convertx2x.office2md.conversion.ConversionException;
 import com.convertx2x.office2md.conversion.ConversionLimits;
 import com.convertx2x.office2md.conversion.ConversionResult;
+import com.convertx2x.office2md.conversion.OutputFormat;
 import java.io.IOException;
 import java.io.ByteArrayOutputStream;
 import java.io.FilterOutputStream;
@@ -198,7 +199,11 @@ final class AzureJobStore implements JobStore {
         if (!result.files().containsKey("document.md") || !result.files().containsKey("report.json")) {
             throw new IllegalStateException("The conversion is missing required artifacts.");
         }
-        if (ConversionLimits.exceeds(result.files().size() - 2L, limits.maxAssets())) {
+        boolean pdf = OutputFormat.parse(request.outputFormat()) == OutputFormat.PDF;
+        if (pdf != result.files().containsKey("document.pdf")) {
+            throw new IllegalStateException("The conversion output does not match the requested format.");
+        }
+        if (ConversionLimits.exceeds(result.files().size() - (pdf ? 3L : 2L), limits.maxAssets())) {
             throw new ConversionException(413, "ARTIFACT_LIMIT_EXCEEDED", "The result contains too many artifacts.");
         }
         String token = UUID.randomUUID().toString();
@@ -242,7 +247,9 @@ final class AzureJobStore implements JobStore {
         }
         Map<String, Object> manifest = new LinkedHashMap<>();
         manifest.put("version", 1); manifest.put("jobId", request.jobId()); manifest.put("input", sourceInfo(request, inputETag));
-        manifest.put("metadata", request.metadata()); manifest.put("sectionCount", result.sectionCount());
+        manifest.put("metadata", request.metadata());
+        manifest.put("outputFormat", OutputFormat.parse(request.outputFormat()).wireValue());
+        manifest.put("sectionCount", result.sectionCount());
         manifest.put("warningCount", result.warningCount()); manifest.put("artifacts", artifacts);
         byte[] manifestBytes = jsonBytes(manifest);
         checkSize(Math.addExact(total, manifestBytes.length), limits.maxOutputBytes(), false);
@@ -304,7 +311,7 @@ final class AzureJobStore implements JobStore {
     }
 
     static void validateArtifact(String name) {
-        if ("document.md".equals(name) || "report.json".equals(name)) return;
+        if ("document.md".equals(name) || "document.pdf".equals(name) || "report.json".equals(name)) return;
         if (name == null || !name.matches("images/[A-Za-z0-9][A-Za-z0-9._-]{0,199}") || name.contains("..")) {
             throw new ConversionException(404, "ARTIFACT_NOT_FOUND", "The result artifact was not found.");
         }
@@ -312,6 +319,7 @@ final class AzureJobStore implements JobStore {
 
     private static String contentType(String path) {
         if (path.equals("document.md")) return "text/markdown; charset=utf-8";
+        if (path.equals("document.pdf")) return "application/pdf";
         if (path.equals("report.json")) return "application/json; charset=utf-8";
         String lower = path.toLowerCase(Locale.ROOT);
         if (lower.endsWith(".png")) return "image/png";

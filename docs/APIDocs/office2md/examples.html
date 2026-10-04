@@ -19,22 +19,24 @@
 <h1>実際の変換例</h1>
 <p class="lead">複数シートのExcel、変更履歴を含むWord、グループ図形を含むPowerPointを、実際のAPIとPlaygroundで変換しました。入力・変換結果・警告をまとめて確認できます。</p>
 <p>すべてこのリポジトリで作成したオリジナル資料です。掲載画像は実行後のPlaygroundを撮影したもので、変換結果の文章や図を補正していません。出力ZIPには <code>document.md</code>・<code>report.json</code>・<code>images/</code> が入っています。</p>
-<div class="cards example-index"><a class="card" href="#excel"><h3>Excel：13シートの包括例</h3><p>文章、6個の表、数式キャッシュ、図形・画像、非表示・未対応要素を一度に確認。</p></a><a class="card" href="#word"><h3>Word：変更履歴と脚注</h3><p>見出し、罫線なしの結合表、番号、脚注、回転図形と画像。</p></a><a class="card" href="#powerpoint"><h3>PowerPoint：表と図形の本文抽出</h3><p>4表示＋1非表示スライド。グループの図形・接続線・リンク・日本語を抽出。</p></a></div>
+<div class="cards example-index"><a class="card" href="#excel"><h3>Excel：13シートの包括例</h3><p>文章、6個の表、数式キャッシュ、図形・画像、非表示・未対応要素を一度に確認。</p></a><a class="card" href="#word"><h3>Word：2種類の表と脚注</h3><p>変更履歴、3列表、2件の脚注、2つの図形、画像を実変換。</p></a><a class="card" href="#powerpoint"><h3>PowerPoint：6スライドの表と図</h3><p>2種類の表、レビュー経路、接続線、埋め込み画像を抽出。</p></a></div>
 <p>Excelの見出し行とセル結合の扱いを詳しく比較する場合は、<a href="merge-cases.html">Excel結合・見出しの実例</a>をご覧ください。入力ブックの各ケースと実変換したMarkdown・reportを並べています。RAG向け業務フローのデモ：<a href="#word-rag">Word</a> · <a href="#powerpoint-rag">PowerPoint</a>。入力・実変換Markdown・JSON・スクリーンショットを掲載しています。</p>
 <div class="callout"><p>このページは<strong>同期HTTP</strong>の実行例です。非同期HTTP・直接Queueも同じ変換コアを使いますが、ここでQueue経由の動作やAzure上の性能を測定したものではありません。PowerPointは図中の文字・保存された接続関係・スライド上の大まかな位置を本文にし、位置と未接続の矢印が向く方向をJSONにも残します。見た目はスライド全体の参考画像で確認できます。Word・Excelも図形の文字と保存済み接続を本文に残します。Wordは描画グループ・キャンバス、Excelは明示グループまたは解決した接続を確認用画像にまとめます。</p></div>
 <section class="sample-case" aria-labelledby="excel">
 <h2 id="excel">Excel：文章・表・図形・未対応要素を含む13シート</h2>
-<p>13シートから、出力内容のある8シートを残します。非表示2シートと空・取消線のみ・罫線のみの3シートは除外されます。6個の罫線表、部分太字・リンク・取消線、結合セル、保存済みの数式結果、画像の重複、入れ子グループ・回転・接続線・未対応グラフを同じファイルに含めています。直接塗りつぶしが設定されたセルを1つ以上含む先頭の表示行が連続すれば各列の見出しを連結し、色のない先頭行は明細として残します。採用した元行は <code>report.json</code> の <code>headerSourceRows</code> で確認できます。全行が直接塗りなら全行が見出しに入り、明細はなくなります。この例の「04_画像」にも該当する表があります。全表示行で同じ明示的な横結合が続く列範囲は1列に畳み、元の列範囲を <code>sourceColumnSpans</code> に記録します。</p>
-<p class="sample-meta">HTTP 200 · 入力 152,173 bytes · ZIP 423,175 bytes · 8 出力セクション · 33 アセット · 警告 20 件</p>
+<p>13シートから、出力内容のある8シートを残します。非表示2シートと空・取消線のみ・罫線のみの3シートは除外されます。6個の罫線表、部分太字・リンク・取消線、結合セル、保存済みの数式結果、名前付き範囲、画像の重複、入れ子グループ・回転・接続線・未対応グラフを同じファイルに含めています。通常の罫線表では、直接塗りつぶしが設定されたセルを1つ以上含む先頭の表示行が連続すれば各列の見出しを連結し、先頭行に直接塗りがなければ元の行を明細として残します。左上角だけ罫線がないマトリックスは構造から見出しを判定する例外で、下の24ケースに実出力を示します。採用した元行は <code>report.json</code> の <code>headerSourceRows</code> で確認できます。全行が直接塗りなら全行が見出しに入り、明細はなくなります。この例の「04_画像」にも該当する表があります。全表示行で同じ明示的な横結合が続く列範囲は1列に畳み、元の列範囲を <code>sourceColumnSpans</code> に記録します。</p>
+<p class="sample-meta">HTTP 200 · 入力 152,253 bytes · ZIP 423,270 bytes · 8 出力セクション · 33 アセット · 警告 20 件</p>
 <div class="sample-links"><a href="examples/excel-complex/input.xlsx" download>入力 XLSX</a><a href="examples/excel-complex/result.zip" download>実際の出力 ZIP</a><a href="examples/excel-complex/output/document.md" download>document.md</a><a href="examples/excel-complex/output/report.json">report.json</a><a href="examples/excel-complex/run.json">実行記録・SHA-256</a></div>
 <div class="screenshot-grid">
 <figure class="example-figure"><a href="examples/excel-complex/screenshots/section-01.png"><img src="examples/excel-complex/screenshots/section-01.png" alt="Excelの文章・部分太字・リンク・取消線除去後の実際のMarkdownプレビュー" loading="lazy"></a><figcaption>文章シートの実出力。シート名がH1になり、部分太字・リンクが残り、取消線の文字は除外されています。 画像をクリックすると原寸で表示します。</figcaption></figure>
-<figure class="example-figure"><a href="examples/excel-complex/screenshots/tables-detail.png"><img src="examples/excel-complex/screenshots/tables-detail.png" alt="Excelの閉じた罫線が複数のMarkdown表になった実際の結果" loading="lazy"></a><figcaption>表シートの先頭790pxを撮影。先頭から色付き行が続く表では見出しを列ごとに連結し、色のない先頭行は明細に残します。全行で結合幅が揃わない範囲は元の列数を保ちます。<a href="examples/excel-complex/screenshots/section-02.png">シート全体</a>。画像をクリックすると原寸で表示します。</figcaption></figure>
+<figure class="example-figure"><a href="examples/excel-complex/screenshots/tables-detail.png"><img src="examples/excel-complex/screenshots/tables-detail.png" alt="Excelの名前付き範囲と閉じた罫線がMarkdownの名前と複数の表になった実際の結果" loading="lazy"></a><figcaption>表シートの先頭790pxを撮影。<code>InventoryGrid</code> は表と一致する名前付き範囲から出力した名前です。先頭から色付き行が続く表では見出しを列ごとに連結し、色のない先頭行は明細に残します。全行で結合幅が揃わない範囲は元の列数を保ちます。<a href="examples/excel-complex/screenshots/section-02.png">シート全体</a>。画像をクリックすると原寸で表示します。</figcaption></figure>
 <figure class="example-figure"><a href="examples/excel-complex/screenshots/group-detail.png"><img src="examples/excel-complex/screenshots/group-detail.png" alt="グループの図形文字を本文にし、角丸図形・楕円・画像を一つの確認用画像にまとめた結果" loading="lazy"></a><figcaption>グループシートの先頭1000px。文字と接続関係は本文にし、同じグループの図形・線・画像を確認用にまとめます。<a href="examples/excel-complex/screenshots/section-06.png">入れ子・重なりを含むシート全体</a>。 画像をクリックすると原寸で表示します。</figcaption></figure>
 <figure class="example-figure"><a href="examples/excel-complex/screenshots/section-07.png"><img src="examples/excel-complex/screenshots/section-07.png" alt="Excelのグラフや未対応図形の代替表示、縦書きの近似、加工画像の実変換結果" loading="lazy"></a><figcaption>未対応要素も含む出力。グラフは描画されず、星形の代替文、縦書きの横書き近似、切り抜き前の原本画像が見えます。 画像をクリックすると原寸で表示します。</figcaption></figure>
 </div>
 <p>数式は再計算しません。<code>1+2</code> に意図的に保存したキャッシュ <code>999</code> は、出力も <code>999</code> です。<code>IMAGE</code> 関数の画像は取得せず未対応表示になります。33アセットには確認用PNGとBMP添付を含みます。PNG/JPEGの回転・反転は確認用画像に反映し、同じ描画結果の画像ファイルは共有します。画像の切り抜きは未対応です。</p>
-<details class="sample-details"><summary>実際のMarkdown抜粋：表</summary><pre><code>| **項目** | **数量** |  | **備考** |
+<details class="sample-details"><summary>実際のMarkdown抜粋：表と名前付き範囲</summary><pre><code>**InventoryGrid**
+
+| **項目** | **数量** |  | **備考** |
 | --- | --- | --- | --- |
 | 売上 | 12 |  | 通常と**重要**の混在 |
 |  |  |  |  |
@@ -287,10 +289,196 @@ IMAGE関数は取得しない　\[セル内画像: 未対応\]
 
 ![{&quot;type&quot;:&quot;図&quot;,&quot;text&quot;:&quot;&quot;,&quot;x&quot;:126.031,&quot;y&quot;:1548,&quot;width&quot;:315.077,&quot;height&quot;:144}](images/diagram-0027.png)</code></pre></details>
 </section>
+<!-- EXCEL-MATRIX-HIGHLIGHTS:START -->
+<section class="sample-case" aria-labelledby="excel-matrix">
+<h2 id="excel-matrix">Excel：24シートで見出し・結合・罫線を比較</h2>
+<p>入力の直接塗り、横・縦結合、先頭だけ罫線のない表、多段見出しを変えた24シートを、現行の変換APIに送った結果です。代表10ケースを入力の画面表示と実際のMarkdownで並べました。残りも<a href="merge-cases.html">24ケースの比較ページ</a>で確認できます。</p>
+<p class="sample-meta">HTTP 200 · 24 出力シート · 24 検出表 · 警告 9 件</p>
+<div class="sample-links"><a href="examples/excel-merge-matrix/input.xlsx" download>入力 XLSX</a><a href="examples/excel-merge-matrix/result.zip" download>実際の出力 ZIP</a><a href="examples/excel-merge-matrix/output/document.md" download>document.md 全文</a><a href="examples/excel-merge-matrix/output/report.json">report.json</a><a href="examples/excel-merge-matrix/pairs.zip" download>24ケースの画像＋Markdown ZIP</a><a href="examples/excel-merge-matrix/run.json">実行記録・SHA-256</a></div>
+<div class="callout"><p>通常の罫線表は、先頭から直接色付きの行をヘッダーにします。左上だけ罫線がないマトリックスでは、保存された行列の罫線構造から見出しを判定する <code>matrix-grid</code> もあります。無罫線の注記は表の前に文章として出し、元のセルや結合範囲にない見出しは補いません。図は入力セルのブラウザー表示を撮影したもので、右の文章は実際の <code>document.md</code> から一字も変更せずに掲載しています。</p></div>
+<div class="sample-case" id="excel-c02">
+<h3>C02：色付き2行ヘッダー・結合なし</h3>
+<p>連続する2行の見出しを列ごとに階層化する。</p>
+<div class="screenshot-grid" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr));align-items:start">
+<figure class="example-figure"><a href="examples/excel-merge-matrix/screenshots/C02.png"><img src="examples/excel-merge-matrix/screenshots/C02.png" alt="C02の入力Excelにあるセル、直接塗り、結合範囲をブラウザーで可視化した画面" loading="lazy"></a><figcaption><strong>変換前：入力ブックのセル構造</strong>セル値・罫線・直接塗り・結合範囲を入力XLSXから抽出してブラウザーで表示したスクリーンショットです。Excelアプリの画面ではありません。</figcaption></figure>
+<div class="card" style="padding:16px">
+<h4>変換後：document.md の C02 シート</h4>
+<pre><code class="language-markdown"># [02\_複行\_色あり\_結合なし] シート
+
+| **分類** / **商品** | **数量** / **2025年** | **売上** / **2025年** |
+| --- | --- | --- |
+| りんご | 2 | 200 |</code></pre>
+<p style="margin:12px 0 0"><a href="examples/excel-merge-matrix/pairs/C02/document.md" download>このケースのMarkdownをダウンロード</a> · <a href="merge-cases.html#case-c02">全データを見る</a></p>
+</div></div>
+<p class="sample-meta">元の結合: <code>なし</code> · ヘッダー判定: <code>fill-color</code> · 元行: <code>1, 2</code> · 出力列→元列: <code>1列目=A; 2列目=B; 3列目=C</code></p>
+</div>
+<div class="sample-case" id="excel-c08">
+<h3>C08：1行ヘッダーだけ横結合</h3>
+<p>A1:B1の共有見出しを分かれた明細列へ引き継ぐ。</p>
+<div class="screenshot-grid" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr));align-items:start">
+<figure class="example-figure"><a href="examples/excel-merge-matrix/screenshots/C08.png"><img src="examples/excel-merge-matrix/screenshots/C08.png" alt="C08の入力Excelにあるセル、直接塗り、結合範囲をブラウザーで可視化した画面" loading="lazy"></a><figcaption><strong>変換前：入力ブックのセル構造</strong>セル値・罫線・直接塗り・結合範囲を入力XLSXから抽出してブラウザーで表示したスクリーンショットです。Excelアプリの画面ではありません。</figcaption></figure>
+<div class="card" style="padding:16px">
+<h4>変換後：document.md の C08 シート</h4>
+<pre><code class="language-markdown"># [08\_単行\_上だけ横結合] シート
+
+| **連絡先**（A列） | **連絡先**（B列） | **状態** |
+| --- | --- | --- |
+| 03\-1234 | a@example.com | 有効 |
+| 06\-5678 | b@example.com | 保留 |</code></pre>
+<p style="margin:12px 0 0"><a href="examples/excel-merge-matrix/pairs/C08/document.md" download>このケースのMarkdownをダウンロード</a> · <a href="merge-cases.html#case-c08">全データを見る</a></p>
+</div></div>
+<p class="sample-meta">元の結合: <code>A1:B1</code> · ヘッダー判定: <code>fill-color</code> · 元行: <code>1</code> · 出力列→元列: <code>1列目=A; 2列目=B; 3列目=C</code></p>
+</div>
+<div class="sample-case" id="excel-c11">
+<h3>C11：2行ヘッダー・縦結合と横結合</h3>
+<p>A1:A2の縦結合とB1:C1の横結合を同じ見出し内で扱う。</p>
+<div class="screenshot-grid" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr));align-items:start">
+<figure class="example-figure"><a href="examples/excel-merge-matrix/screenshots/C11.png"><img src="examples/excel-merge-matrix/screenshots/C11.png" alt="C11の入力Excelにあるセル、直接塗り、結合範囲をブラウザーで可視化した画面" loading="lazy"></a><figcaption><strong>変換前：入力ブックのセル構造</strong>セル値・罫線・直接塗り・結合範囲を入力XLSXから抽出してブラウザーで表示したスクリーンショットです。Excelアプリの画面ではありません。</figcaption></figure>
+<div class="card" style="padding:16px">
+<h4>変換後：document.md の C11 シート</h4>
+<pre><code class="language-markdown"># [11\_複行\_縦横結合] シート
+
+| **部門** | **売上** / **2025年** | **売上** / **2024年** |
+| --- | --- | --- |
+| 営業 | 120 | 95 |</code></pre>
+<p style="margin:12px 0 0"><a href="examples/excel-merge-matrix/pairs/C11/document.md" download>このケースのMarkdownをダウンロード</a> · <a href="merge-cases.html#case-c11">全データを見る</a></p>
+</div></div>
+<p class="sample-meta">元の結合: <code>A1:A2, B1:C1</code> · ヘッダー判定: <code>fill-color</code> · 元行: <code>1, 2</code> · 出力列→元列: <code>1列目=A; 2列目=B; 3列目=C</code></p>
+</div>
+<div class="sample-case" id="excel-c12">
+<h3>C12：全行で同じ幅の横結合・1行ヘッダー</h3>
+<p>A:Bを毎行同じ幅で結合し、論理的な1列として扱う。</p>
+<div class="screenshot-grid" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr));align-items:start">
+<figure class="example-figure"><a href="examples/excel-merge-matrix/screenshots/C12.png"><img src="examples/excel-merge-matrix/screenshots/C12.png" alt="C12の入力Excelにあるセル、直接塗り、結合範囲をブラウザーで可視化した画面" loading="lazy"></a><figcaption><strong>変換前：入力ブックのセル構造</strong>セル値・罫線・直接塗り・結合範囲を入力XLSXから抽出してブラウザーで表示したスクリーンショットです。Excelアプリの画面ではありません。</figcaption></figure>
+<div class="card" style="padding:16px">
+<h4>変換後：document.md の C12 シート</h4>
+<pre><code class="language-markdown"># [12\_全行同幅\_単行見出し] シート
+
+| **項目** | **状態** |
+| --- | --- |
+| 申請 | 完了 |
+| 確認 | 進行中 |</code></pre>
+<p style="margin:12px 0 0"><a href="examples/excel-merge-matrix/pairs/C12/document.md" download>このケースのMarkdownをダウンロード</a> · <a href="merge-cases.html#case-c12">全データを見る</a></p>
+</div></div>
+<p class="sample-meta">元の結合: <code>A1:B1, A2:B2, A3:B3</code> · ヘッダー判定: <code>fill-color</code> · 元行: <code>1</code> · 出力列→元列: <code>1列目=A:B; 2列目=C</code></p>
+</div>
+<div class="sample-case" id="excel-c14">
+<h3>C14：明細の一部だけ横結合</h3>
+<p>先頭ヘッダーは独立列。2行目のA:Bだけ結合しても列数を維持する。</p>
+<div class="screenshot-grid" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr));align-items:start">
+<figure class="example-figure"><a href="examples/excel-merge-matrix/screenshots/C14.png"><img src="examples/excel-merge-matrix/screenshots/C14.png" alt="C14の入力Excelにあるセル、直接塗り、結合範囲をブラウザーで可視化した画面" loading="lazy"></a><figcaption><strong>変換前：入力ブックのセル構造</strong>セル値・罫線・直接塗り・結合範囲を入力XLSXから抽出してブラウザーで表示したスクリーンショットです。Excelアプリの画面ではありません。</figcaption></figure>
+<div class="card" style="padding:16px">
+<h4>変換後：document.md の C14 シート</h4>
+<pre><code class="language-markdown"># [14\_明細だけ横結合] シート
+
+結合セル A2:B2「共通説明」は明細行の複数列に共通です。
+
+| **項目** | **値** | **状態** |
+| --- | --- | --- |
+| 共通説明 |  | 完了 |
+| 個別 | 20 | 進行中 |</code></pre>
+<p style="margin:12px 0 0"><a href="examples/excel-merge-matrix/pairs/C14/document.md" download>このケースのMarkdownをダウンロード</a> · <a href="merge-cases.html#case-c14">全データを見る</a></p>
+</div></div>
+<p class="sample-meta">元の結合: <code>A2:B2</code> · ヘッダー判定: <code>fill-color</code> · 元行: <code>1</code> · 出力列→元列: <code>1列目=A; 2列目=B; 3列目=C</code></p>
+</div>
+<div class="sample-case" id="excel-c15">
+<h3>C15：明細の縦結合</h3>
+<p>A2:A3の値は2行分にまたがる。後続行の扱いを変換結果で確認する。</p>
+<div class="screenshot-grid" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr));align-items:start">
+<figure class="example-figure"><a href="examples/excel-merge-matrix/screenshots/C15.png"><img src="examples/excel-merge-matrix/screenshots/C15.png" alt="C15の入力Excelにあるセル、直接塗り、結合範囲をブラウザーで可視化した画面" loading="lazy"></a><figcaption><strong>変換前：入力ブックのセル構造</strong>セル値・罫線・直接塗り・結合範囲を入力XLSXから抽出してブラウザーで表示したスクリーンショットです。Excelアプリの画面ではありません。</figcaption></figure>
+<div class="card" style="padding:16px">
+<h4>変換後：document.md の C15 シート</h4>
+<pre><code class="language-markdown"># [15\_明細だけ縦結合] シート
+
+結合セル A2:A3「営業」は複数の明細行に共通です。
+
+| **部門** | **担当** | **状態** |
+| --- | --- | --- |
+| 営業 | 佐藤 | 進行中 |
+|  | 鈴木 | 完了 |</code></pre>
+<p style="margin:12px 0 0"><a href="examples/excel-merge-matrix/pairs/C15/document.md" download>このケースのMarkdownをダウンロード</a> · <a href="merge-cases.html#case-c15">全データを見る</a></p>
+</div></div>
+<p class="sample-meta">元の結合: <code>A2:A3</code> · ヘッダー判定: <code>fill-color</code> · 元行: <code>1</code> · 出力列→元列: <code>1列目=A; 2列目=B; 3列目=C</code></p>
+</div>
+<div class="sample-case" id="excel-c21">
+<h3>C21：左上だけ罫線のないマトリックス</h3>
+<p>A1は空欄でセル自体に罫線がない。罫線付きの1月・2月を塗りなしでも1段の見出しにする。</p>
+<div class="screenshot-grid" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr));align-items:start">
+<figure class="example-figure"><a href="examples/excel-merge-matrix/screenshots/C21.png"><img src="examples/excel-merge-matrix/screenshots/C21.png" alt="C21の入力Excelにあるセル、直接塗り、結合範囲をブラウザーで可視化した画面" loading="lazy"></a><figcaption><strong>変換前：入力ブックのセル構造</strong>セル値・罫線・直接塗り・結合範囲を入力XLSXから抽出してブラウザーで表示したスクリーンショットです。Excelアプリの画面ではありません。</figcaption></figure>
+<div class="card" style="padding:16px">
+<h4>変換後：document.md の C21 シート</h4>
+<pre><code class="language-markdown"># [21\_左上無罫線のマトリックス] シート
+
+|  | 1月 | 2月 |
+| --- | --- | --- |
+| 東京 | 10 | 12 |
+| 大阪 | 8 | 9 |</code></pre>
+<p style="margin:12px 0 0"><a href="examples/excel-merge-matrix/pairs/C21/document.md" download>このケースのMarkdownをダウンロード</a> · <a href="merge-cases.html#case-c21">全データを見る</a></p>
+</div></div>
+<p class="sample-meta">元の結合: <code>なし</code> · ヘッダー判定: <code>matrix-grid</code> · 元行: <code>1</code> · 出力列→元列: <code>1列目=A; 2列目=B; 3列目=C</code></p>
+</div>
+<div class="sample-case" id="excel-c22">
+<h3>C22：通常表に続く、角だけ罫線のないマトリックス</h3>
+<p>A:Cの通常列とD:Fのマトリックスが横につながる。D1は空欄でセル自体に罫線がなく、全体を1表として扱う。</p>
+<div class="screenshot-grid" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr));align-items:start">
+<figure class="example-figure"><a href="examples/excel-merge-matrix/screenshots/C22.png"><img src="examples/excel-merge-matrix/screenshots/C22.png" alt="C22の入力Excelにあるセル、直接塗り、結合範囲をブラウザーで可視化した画面" loading="lazy"></a><figcaption><strong>変換前：入力ブックのセル構造</strong>セル値・罫線・直接塗り・結合範囲を入力XLSXから抽出してブラウザーで表示したスクリーンショットです。Excelアプリの画面ではありません。</figcaption></figure>
+<div class="card" style="padding:16px">
+<h4>変換後：document.md の C22 シート</h4>
+<pre><code class="language-markdown"># [22\_通常表に続くマトリックス] シート
+
+| **ID** | **担当** | **状態** |  | **1月** | **2月** |
+| --- | --- | --- | --- | --- | --- |
+| 1001 | 田中 | 完了 | 東京 | 10 | 12 |
+| 1002 | 佐藤 | 進行中 | 大阪 | 8 | 9 |</code></pre>
+<p style="margin:12px 0 0"><a href="examples/excel-merge-matrix/pairs/C22/document.md" download>このケースのMarkdownをダウンロード</a> · <a href="merge-cases.html#case-c22">全データを見る</a></p>
+</div></div>
+<p class="sample-meta">元の結合: <code>なし</code> · ヘッダー判定: <code>fill-color</code> · 元行: <code>1</code> · 出力列→元列: <code>1列目=A; 2列目=B; 3列目=C; 4列目=D; 5列目=E; 6列目=F</code></p>
+</div>
+<div class="sample-case" id="excel-c23">
+<h3>C23：無罫線の注記と3列幅の結合見出し</h3>
+<p>A1・B1の文字は無罫線の注記。C1:E1の売上見出しは3列幅の明示結合で、下段の個別見出しと合わせる。</p>
+<div class="screenshot-grid" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr));align-items:start">
+<figure class="example-figure"><a href="examples/excel-merge-matrix/screenshots/C23.png"><img src="examples/excel-merge-matrix/screenshots/C23.png" alt="C23の入力Excelにあるセル、直接塗り、結合範囲をブラウザーで可視化した画面" loading="lazy"></a><figcaption><strong>変換前：入力ブックのセル構造</strong>セル値・罫線・直接塗り・結合範囲を入力XLSXから抽出してブラウザーで表示したスクリーンショットです。Excelアプリの画面ではありません。</figcaption></figure>
+<div class="card" style="padding:16px">
+<h4>変換後：document.md の C23 シート</h4>
+<pre><code class="language-markdown"># [23\_注記と3列結合の見出し] シート
+
+集計対象: 店舗　単位: 千円
+
+| ID | 場所 | 売上 / 1月 | 売上 / 2月 | 売上 / 3月 |
+| --- | --- | --- | --- | --- |
+| 001 | 東京 | 10 | 12 | 14 |
+| 002 | 大阪 | 8 | 9 | 11 |</code></pre>
+<p style="margin:12px 0 0"><a href="examples/excel-merge-matrix/pairs/C23/document.md" download>このケースのMarkdownをダウンロード</a> · <a href="merge-cases.html#case-c23">全データを見る</a></p>
+</div></div>
+<p class="sample-meta">元の結合: <code>C1:E1</code> · ヘッダー判定: <code>matrix-grid</code> · 元行: <code>1, 2</code> · 出力列→元列: <code>1列目=A; 2列目=B; 3列目=C; 4列目=D; 5列目=E</code></p>
+</div>
+<div class="sample-case" id="excel-c24">
+<h3>C24：無罫線の注記と縦横結合を含む3段見出し</h3>
+<p>A1・B1の文字は無罫線の注記。売上はC1:D1だけの結合で、E1・F1は無罫線。A2:A3・B2:B3の縦結合と、月の横結合で3段を表す。上段結合の幅は固定規則ではなく入力の結合範囲に従う。</p>
+<div class="screenshot-grid" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr));align-items:start">
+<figure class="example-figure"><a href="examples/excel-merge-matrix/screenshots/C24.png"><img src="examples/excel-merge-matrix/screenshots/C24.png" alt="C24の入力Excelにあるセル、直接塗り、結合範囲をブラウザーで可視化した画面" loading="lazy"></a><figcaption><strong>変換前：入力ブックのセル構造</strong>セル値・罫線・直接塗り・結合範囲を入力XLSXから抽出してブラウザーで表示したスクリーンショットです。Excelアプリの画面ではありません。</figcaption></figure>
+<div class="card" style="padding:16px">
+<h4>変換後：document.md の C24 シート</h4>
+<pre><code class="language-markdown"># [24\_注記と縦横結合の3段見出し] シート
+
+集計対象: 店舗　単位: 千円
+
+| ID | 場所 | 売上 / 前半 / 1月 | 売上 / 後半 / 1月 | 前半 / 2月 | 後半 / 2月 |
+| --- | --- | --- | --- | --- | --- |
+| 001 | 東京 | 10 | 12 | 10 | 12 |
+| 002 | 大阪 | 8 | 9 | 8 | 9 |</code></pre>
+<p style="margin:12px 0 0"><a href="examples/excel-merge-matrix/pairs/C24/document.md" download>このケースのMarkdownをダウンロード</a> · <a href="merge-cases.html#case-c24">全データを見る</a></p>
+</div></div>
+<p class="sample-meta">元の結合: <code>C1:D1, A2:A3, B2:B3, C3:D3, E3:F3</code> · ヘッダー判定: <code>matrix-grid</code> · 元行: <code>1, 2, 3</code> · 出力列→元列: <code>1列目=A; 2列目=B; 3列目=C; 4列目=D; 5列目=E; 6列目=F</code></p>
+</div>
+<p><a href="merge-cases.html">全24ケースの比較ページへ</a> · <a href="examples/excel-merge-matrix/README.md">入力生成・HTTP実行・検証方法</a></p>
+</section>
+<!-- EXCEL-MATRIX-HIGHLIGHTS:END -->
 <section class="sample-case" aria-labelledby="word">
-<h2 id="word">Word：変更履歴・結合表・脚注・回転図形</h2>
-<p>明示的な見出し、太字とリンク、取消線、変更履歴、罫線なしの結合表、番号、脚注、15度回転した日本語図形、埋め込みPNGを含みます。図形内の文字も本文に残します。</p>
-<p class="sample-meta">HTTP 200 · 入力 10,457 bytes · ZIP 27,683 bytes · 1 出力セクション · 2 アセット · 警告 1 件</p>
+<h2 id="word">Word：2種類の結合表・脚注・図形を実変換</h2>
+<p>編集可能なDOCXに、罫線なしの結合表と3列の判定表、セル内の複数段落、太字とリンク、変更履歴、3から始まる番号、2件の脚注を収録しています。回転した角丸長方形、楕円、埋め込みPNGも同じ文書に入れ、図中の文字をMarkdown本文へ残します。</p>
+<p class="sample-meta">HTTP 200 · 入力 10,911 bytes · ZIP 38,628 bytes · 1 出力セクション · 3 アセット · 警告 2 件</p>
 <div class="sample-links">
 <a href="examples/word-complex/input.docx" download>入力 DOCX</a>
 <a href="examples/word-complex/result.zip" download>実際の出力 ZIP</a>
@@ -298,9 +486,30 @@ IMAGE関数は取得しない　\[セル内画像: 未対応\]
 <a href="examples/word-complex/output/report.json">report.json</a>
 <a href="examples/word-complex/run.json">実行記録・SHA-256</a>
 </div>
-<figure class="example-figure"><a href="examples/word-complex/screenshots/section-01.png"><img src="examples/word-complex/screenshots/section-01.png" alt="Wordの実出力。図形内文字と接続関係を本文に残し、図のまとまりを確認用画像にしています。" loading="lazy"></a><figcaption>Wordの実出力。図形内文字と接続関係を本文に残し、図のまとまりを確認用画像にしています。 画像をクリックすると原寸で表示します。</figcaption></figure>
-<p>この例は独立した図形と画像なので、確認用画像も別々です。Wordのページ全体は組版していません。位置が不明な場合、JSONの座標は <code>null</code> にし、保存配置は <code>report.json</code> の <code>placement</code> に残します。</p>
-<details class="sample-details"><summary>実際のMarkdown全文</summary><pre><code>[page 1]
+<div class="screenshot-grid" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr));align-items:start">
+<figure class="example-figure"><a href="examples/word-complex/screenshots/section-01.png"><img src="examples/word-complex/screenshots/section-01.png" alt="Word変換結果のPlayground表示。2つの表と脚注、2つの図形、画像を含む。" loading="lazy"></a><figcaption>実際のPlaygroundプレビュー。新しい3列表、脚注、図形の出力を確認できます。 画像をクリックすると原寸で表示します。</figcaption></figure>
+<div class="card" style="padding:16px"><h3>変換後：3列の判定表</h3>
+<pre><code class="language-markdown">## **判定条件と複数段落の表**
+
+二つ目の表では、3列の判定、セル内改行、結合した補足行を同時に確認します。
+
+| 条件 | 担当 | 判断 |
+| --- | --- | --- |
+| 通常申請 | 受付 | 当日確認 |
+| 添付不足 | 申請者 | 差し戻し&lt;br&gt;再提出後に再判定 |
+| 共通の補足：期限は営業日で数えます。 |  | 要確認 |</code></pre>
+<p><a href="examples/word-complex/output/document.md" download>Markdown全文をダウンロード</a></p></div>
+</div>
+<p>2つのWord表はMarkdown表として出力され、結合セルは開始セルに値を残します。追加したセル内の2段落は <code>&lt;br&gt;</code> でつながります。図形の文字は通常の本文にあり、参考画像3点で形を確認できます。簡易描画に関する2件の警告は下のJSONと実際のレポートに記録しています。</p>
+<h3>同じ入力から作ったPDF</h3>
+<p>同じDOCXを <code>POST /api/convert?filename=word-complex.docx&amp;output=pdf</code> に送った実際のHTTP 200応答です。PDFは変換後の内容を3ページに組んだもので、下の画像はその1ページ目を描画したものです。</p>
+<div class="sample-links">
+<a href="examples/word-complex/pdf/document.pdf" download>実変換PDF（3ページ）</a>
+<a href="examples/word-complex/pdf/page-01.png">PDF 1ページ目の画像</a>
+<a href="examples/word-complex/pdf/run.json">PDFの実行記録・SHA-256</a>
+</div>
+<figure class="example-figure"><a href="examples/word-complex/pdf/page-01.png"><img src="examples/word-complex/pdf/page-01.png" alt="実際のPDF応答の1ページ目。2つの表、脚注参照、図形テキストが表示されている" loading="lazy"></a><figcaption>実際のPDF応答の1ページ目をPNGに描画しました。画像をクリックすると原寸で表示します。</figcaption></figure>
+<details class="sample-details"><summary>実際のMarkdown全文</summary><pre><code class="language-markdown">[page 1]
 
 # **Word → Markdown の表示確認**
 
@@ -319,11 +528,23 @@ IMAGE関数は取得しない　\[セル内画像: 未対応\]
 | 表の構造 | 罫線がなくても Markdown 表になります。 |
 | 結合セルは左上に文字を保持します。 |  |
 
+## **判定条件と複数段落の表**
+
+二つ目の表では、3列の判定、セル内改行、結合した補足行を同時に確認します。
+
+| 条件 | 担当 | 判断 |
+| --- | --- | --- |
+| 通常申請 | 受付 | 当日確認 |
+| 添付不足 | 申請者 | 差し戻し&lt;br&gt;再提出後に再判定 |
+| 共通の補足：期限は営業日で数えます。 |  | 要確認 |
+
 ## **番号と脚注**
 
 3\. 番号は元の開始値 3 を保持します。
 
 4\. 参照付きの脚注です。[^footnote-1]
+
+判定表の例外条件にも補足を付けます。[^footnote-2]
 
 ## **時計回りに回転した日本語の図形**
 
@@ -337,6 +558,16 @@ IMAGE関数は取得しない　\[セル内画像: 未対応\]
 
 ![{&quot;type&quot;:&quot;角丸長方形&quot;,&quot;text&quot;:&quot;日本語の図形\n時計回り 15 度&quot;,&quot;x&quot;:null,&quot;y&quot;:null,&quot;width&quot;:null,&quot;height&quot;:null}](images/diagram-0001.png)
 
+
+
+図中の項目：
+
+- shape-1（楕円）：追加の確認図形&lt;br&gt;表の例外を人が確認
+
+
+
+![{&quot;type&quot;:&quot;楕円&quot;,&quot;text&quot;:&quot;追加の確認図形\n表の例外を人が確認&quot;,&quot;x&quot;:null,&quot;y&quot;:null,&quot;width&quot;:null,&quot;height&quot;:null}](images/diagram-0002.png)
+
 ## **埋め込み PNG 画像**
 
 
@@ -347,14 +578,24 @@ IMAGE関数は取得しない　\[セル内画像: 未対応\]
 
 
 
-![{&quot;type&quot;:&quot;画像&quot;,&quot;text&quot;:&quot;shapes.png&quot;,&quot;x&quot;:0,&quot;y&quot;:0,&quot;width&quot;:360,&quot;height&quot;:120}](images/diagram-0002.png)
+![{&quot;type&quot;:&quot;画像&quot;,&quot;text&quot;:&quot;shapes.png&quot;,&quot;x&quot;:0,&quot;y&quot;:0,&quot;width&quot;:360,&quot;height&quot;:120}](images/diagram-0003.png)
 
-[^footnote-1]: 脚注は本文の参照順に末尾へまとめます。</code></pre></details>
-<details class="sample-details"><summary>実際のreport.json：近似・不明な接続の警告</summary><pre><code>[
+[^footnote-1]: 脚注は本文の参照順に末尾へまとめます。
+
+[^footnote-2]: 例外条件は再提出された内容を確認してから処理します。
+
+</code></pre></details>
+<details class="sample-details"><summary>実際のreport.json：警告</summary><pre><code class="language-json">[
   {
     &quot;code&quot;: &quot;DRAWING_TEXT_APPROXIMATED&quot;,
     &quot;section&quot;: &quot;document&quot;,
-    &quot;range&quot;: &quot;paragraph:11&quot;,
+    &quot;range&quot;: &quot;paragraph:14&quot;,
+    &quot;message&quot;: &quot;Word図形内の文字は取消線・非表示を除去して簡易描画します。段落ごとの書式・余白・文字回転は近似です。&quot;
+  },
+  {
+    &quot;code&quot;: &quot;DRAWING_TEXT_APPROXIMATED&quot;,
+    &quot;section&quot;: &quot;document&quot;,
+    &quot;range&quot;: &quot;paragraph:15&quot;,
     &quot;message&quot;: &quot;Word図形内の文字は取消線・非表示を除去して簡易描画します。段落ごとの書式・余白・文字回転は近似です。&quot;
   }
 ]</code></pre></details>
@@ -362,8 +603,8 @@ IMAGE関数は取得しない　\[セル内画像: 未対応\]
 </section>
 <section class="sample-case" aria-labelledby="word-rag">
 <h2 id="word-rag">Word：RAG向けの購入申請フロー</h2>
-<p>編集可能なDrawingMLグループに、申請・確認・完了・修正再申請を配置したデモです。図の前後には通常の段落、末尾には表があり、本文との位置関係も確認できます。</p>
-<p class="sample-meta">HTTP 200 · 入力 3,812 bytes · ZIP 22,073 bytes · 1 出力セクション · 1 アセット · 警告 5 件</p>
+<p>編集可能なDrawingMLグループに、申請・確認・完了・修正再申請を配置しました。図の前後には通常の段落を置き、図形の文字と4件の確定した接続、1件の接続不明を本文の位置関係とともに確認できます。</p>
+<p class="sample-meta">HTTP 200 · 入力 3,646 bytes · ZIP 21,954 bytes · 1 出力セクション · 1 アセット · 警告 5 件</p>
 <div class="sample-links">
 <a href="examples/word-rag-flow/input.docx" download>入力 DOCX</a>
 <a href="examples/word-rag-flow/result.zip" download>実際の出力 ZIP</a>
@@ -371,10 +612,27 @@ IMAGE関数は取得しない　\[セル内画像: 未対応\]
 <a href="examples/word-rag-flow/output/report.json">report.json</a>
 <a href="examples/word-rag-flow/run.json">実行記録・SHA-256</a>
 </div>
-<figure class="example-figure"><a href="examples/word-rag-flow/screenshots/section-01.png"><img src="examples/word-rag-flow/screenshots/section-01.png" alt="Wordの実出力。図形内文字と接続関係を本文に残し、図のまとまりを確認用画像にしています。" loading="lazy"></a><figcaption>Wordの実出力。図形内文字と接続関係を本文に残し、図のまとまりを確認用画像にしています。 画像をクリックすると原寸で表示します。</figcaption></figure>
-<p>5本の線のうち4件を保存された接続先から確定しました。最下段の独立した矢印は接続先を持たず、「接続関係不明」とします。近くの図形や文章から業務上の意味を推測しません。</p>
-<p>非表示図形と取消線の検証用文字列は、本文・JSON・画像から除外されています。4件の図形文字の簡易描画と1件の接続不明を警告に記録しています。画像を読み取らなくても、本文から図形の文字と確定した関係を検索できます。</p>
-<details class="sample-details"><summary>実際のMarkdown全文</summary><pre><code>[page 1]
+<div class="screenshot-grid" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr));align-items:start">
+<figure class="example-figure"><a href="examples/word-rag-flow/screenshots/section-01.png"><img src="examples/word-rag-flow/screenshots/section-01.png" alt="Word購入申請フローの実変換結果。4つの図形と接続関係を表示。" loading="lazy"></a><figcaption>実際のPlaygroundプレビュー。図の前後の段落と接続関係が本文に並びます。 画像をクリックすると原寸で表示します。</figcaption></figure>
+<div class="card" style="padding:16px"><h3>変換後：図形と接続の本文</h3>
+<pre><code class="language-markdown">図中の項目：
+
+- shape-1（角丸長方形）：申請者&lt;br&gt;申請を作成
+- shape-2（角丸長方形）：担当者&lt;br&gt;内容を確認
+- shape-3（角丸長方形）：完了&lt;br&gt;登録・通知
+- shape-4（角丸長方形）：申請者&lt;br&gt;修正して再申請
+
+接続関係：
+
+- shape-5：shape-1「申請者 申請を作成」 → shape-2「担当者 内容を確認」
+- shape-6：shape-2「担当者 内容を確認」 → shape-3「完了 登録・通知」
+- shape-7：shape-2「担当者 内容を確認」 → shape-4「申請者 修正して再申請」
+- shape-8：shape-4「申請者 修正して再申請」 → shape-1「申請者 申請を作成」
+- shape-9：接続関係不明（接続先の保存情報がありません）</code></pre>
+<p><a href="examples/word-rag-flow/output/document.md" download>Markdown全文をダウンロード</a></p></div>
+</div>
+<p>非表示図形と取消線の検証用文字列は、本文・JSON・画像から除外されています。最下段の独立した矢印は接続先の保存情報がなく、近くの図形に推測で接続しません。</p>
+<details class="sample-details"><summary>実際のMarkdown全文</summary><pre><code class="language-markdown">[page 1]
 
 # **Word / 購入申請フロー**
 
@@ -389,7 +647,7 @@ IMAGE関数は取得しない　\[セル内画像: 未対応\]
 - shape-3（角丸長方形）：完了&lt;br&gt;登録・通知
 - shape-4（角丸長方形）：申請者&lt;br&gt;修正して再申請
 
-接続関係（保存情報）：
+接続関係：
 
 - shape-5：shape-1「申請者 申請を作成」 → shape-2「担当者 内容を確認」
 - shape-6：shape-2「担当者 内容を確認」 → shape-3「完了 登録・通知」
@@ -403,11 +661,8 @@ IMAGE関数は取得しない　\[セル内画像: 未対応\]
 
 図の後の説明：上段は確認から完了、下段は修正・再申請です。最下段の矢印は接続先を保存していないため、不明として扱います。
 
-| 記録 | 保存される内容 |
-| --- | --- |
-| Markdown | 図中の文字・確定した関係・不明な接続 |
-| report.json | 図形ID・種類・座標・接続先・方向 |</code></pre></details>
-<details class="sample-details"><summary>実際のreport.json：近似・不明な接続の警告</summary><pre><code>[
+</code></pre></details>
+<details class="sample-details"><summary>実際のreport.json：近似・不明な接続の警告</summary><pre><code class="language-json">[
   {
     &quot;code&quot;: &quot;DRAWING_TEXT_APPROXIMATED&quot;,
     &quot;section&quot;: &quot;document&quot;,
@@ -436,15 +691,15 @@ IMAGE関数は取得しない　\[セル内画像: 未対応\]
     &quot;code&quot;: &quot;DIAGRAM_CONNECTION_UNRESOLVED&quot;,
     &quot;section&quot;: &quot;document&quot;,
     &quot;range&quot;: &quot;paragraph:3/drawing:1&quot;,
-    &quot;message&quot;: &quot;図形の接続関係を確定できません。接続先の保存情報がありません。配置からは推測しません。図形ID: shape-9&quot;
+    &quot;message&quot;: &quot;図形の接続関係を確定できません。接続先の保存情報がありません。保存情報と線端の境界接触のどちらでも確定できません。図形ID: shape-9&quot;
   }
 ]</code></pre></details>
 <p><a href="examples/word-rag-flow/screenshots/overview.png">Playground全体</a> · <a href="examples/word-rag-flow/screenshots/markdown-source.png">Markdownタブ</a> · <a href="examples/word-rag-flow/screenshots/warnings.png">警告の画面</a></p>
 </section>
 <section class="sample-case" aria-labelledby="powerpoint">
-<h2 id="powerpoint">PowerPoint：本文・表・図形の文字を抽出</h2>
-<p>4表示＋1非表示スライド。通常本文・番号・リンク・結合表を保持し、図形内の文字も本文へ出します。この入力の線には接続先IDがないため関係は不明として残します。</p>
-<p class="sample-meta">HTTP 200 · 入力 37,307 bytes · ZIP 61,292 bytes · 4 表示スライド · 2 プレビュー · 警告 2 件</p>
+<h2 id="powerpoint">PowerPoint：6スライドの表・図形・画像を実変換</h2>
+<p>6表示＋1非表示スライドの編集可能なPPTXです。本文、番号、リンク、罫線なし結合表に加え、4列の条件別判定表、3つの図形を結ぶレビュー経路、埋め込みPNGを含みます。図形の文字と接続関係をMarkdown本文に、図形・線・位置をreport.jsonに残します。</p>
+<p class="sample-meta">HTTP 200 · 入力 40,698 bytes · ZIP 45,551 bytes · 6 表示スライド · 3 アセット · 警告 3 件</p>
 <div class="sample-links">
 <a href="examples/powerpoint-complex/input.pptx" download>入力 PPTX</a>
 <a href="examples/powerpoint-complex/result.zip" download>実際の出力 ZIP</a>
@@ -452,12 +707,55 @@ IMAGE関数は取得しない　\[セル内画像: 未対応\]
 <a href="examples/powerpoint-complex/output/report.json">report.json</a>
 <a href="examples/powerpoint-complex/run.json">実行記録・SHA-256</a>
 </div>
-<div class="screenshot-grid">
-<figure class="example-figure"><a href="examples/powerpoint-complex/screenshots/section-02.png"><img src="examples/powerpoint-complex/screenshots/section-02.png" alt="罫線のない結合表をMarkdown表として保持。" loading="lazy"></a><figcaption>罫線のない結合表をMarkdown表として保持。 画像をクリックすると原寸で表示します。</figcaption></figure>
-<figure class="example-figure"><a href="examples/powerpoint-complex/screenshots/section-03.png"><img src="examples/powerpoint-complex/screenshots/section-03.png" alt="図中の文字とリンクを本文に保持し、接続先不明を明記。確認用画像はスライド全体です。" loading="lazy"></a><figcaption>図中の文字とリンクを本文に保持し、接続先不明を明記。確認用画像はスライド全体です。 画像をクリックすると原寸で表示します。</figcaption></figure>
+<div class="screenshot-grid" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr));align-items:start">
+<figure class="example-figure"><a href="examples/powerpoint-complex/screenshots/section-05.png"><img src="examples/powerpoint-complex/screenshots/section-05.png" alt="PowerPointの5枚目にある条件別判定表の実変換プレビュー" loading="lazy"></a><figcaption>スライド5の4列表。結合行の値は開始セルに残ります。 画像をクリックすると原寸で表示します。</figcaption></figure>
+<div class="card" style="padding:16px"><h3>変換後：スライド5の表</h3>
+<pre><code class="language-markdown">[page 5]
+
+# 条件別の対応を表で比較
+
+区分・条件・担当・処理を1行ずつ対応付けます。結合行の値は開始セルに保持します。
+
+|  |  |  |  |
+| --- | --- | --- | --- |
+| 区分 | 条件 | 担当 | 処理 |
+| 通常 | 資料あり | 受付 | 当日確認 |
+| 差戻し | 添付不足 | 申請者 | 再提出 |
+| 共通の補足 |  | 管理者 | 期限は営業日 |
+| 例外 | 期限超過 | 責任者 | 翌朝判断 |
+
+補足：差戻し後は同じ申請番号で再判定します。</code></pre>
+</div></div>
+<div class="screenshot-grid" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr));align-items:start">
+<figure class="example-figure"><a href="examples/powerpoint-complex/screenshots/section-06.png"><img src="examples/powerpoint-complex/screenshots/section-06.png" alt="PowerPointの6枚目にあるレビュー経路図と接続関係の実変換プレビュー" loading="lazy"></a><figcaption>スライド6の図形と接続。3つのラベルと2本の関係が本文に残ります。 画像をクリックすると原寸で表示します。</figcaption></figure>
+<div class="card" style="padding:16px"><h3>変換後：スライド6の図形</h3>
+<pre><code class="language-markdown">[page 6]
+
+# レビュー経路の図形と補足
+
+図形のラベルを本文から検索できます。線の関係は確定できた場合だけ記録します。
+
+図中の項目：
+
+- shape-5（ひし形、スライド中央）：資料を確認
+- shape-4（角丸長方形、スライド左中央）：申請を受付
+- shape-6（角丸長方形、スライド右中央）：結果を通知
+
+接続関係：
+
+- shape-7：shape-4「申請を受付」 — shape-5「資料を確認」（向きなし）。スライド中央。
+- shape-8：shape-5「資料を確認」 — shape-6「結果を通知」（向きなし）。スライド中央。
+
+参考画像（接続図）：
+
+![{&quot;type&quot;:&quot;接続図&quot;,&quot;text&quot;:&quot;&quot;,&quot;x&quot;:0,&quot;y&quot;:0,&quot;width&quot;:960,&quot;height&quot;:540}](images/diagram-0003.png)</code></pre>
+</div></div>
+<p>従来の罫線なし結合表と、接続先IDを持たない線の例も残しています。スライド3の線は接続関係不明、スライド6の2本は変換結果で接続先を確定しています。非表示スライド、図形の取消線、非表示図形の文字は本文へ出しません。</p>
+<div class="screenshot-grid" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr));align-items:start">
+<figure class="example-figure"><a href="examples/powerpoint-complex/screenshots/section-02.png"><img src="examples/powerpoint-complex/screenshots/section-02.png" alt="PowerPointの2枚目にある罫線なし結合表の実変換プレビュー" loading="lazy"></a><figcaption>スライド2の罫線なし結合表。 画像をクリックすると原寸で表示します。</figcaption></figure>
+<figure class="example-figure"><a href="examples/powerpoint-complex/screenshots/section-03.png"><img src="examples/powerpoint-complex/screenshots/section-03.png" alt="PowerPointの3枚目にある図形と未解決接続の実変換プレビュー" loading="lazy"></a><figcaption>スライド3の図形と接続先不明の線。 画像をクリックすると原寸で表示します。</figcaption></figure>
 </div>
-<p>1接続中0件を保存データから解決しました。図形の文字とスライド上の位置、線の位置・接続が不明な理由は通常の本文にもあります。JSONのnodesに図形、edgesに接続、参考画像のmetadataにスライド範囲を保存します。この線には矢印の先端がないため、見た目の方向は出力しません。</p>
-<details class="sample-details"><summary>実際のMarkdown全文：文字と接続関係、確認用画像</summary><pre><code>[page 1]
+<details class="sample-details"><summary>実際のMarkdown全文：6枚の表示スライド</summary><pre><code class="language-markdown">[page 1]
 
 # PowerPointからMarkdownへ
 
@@ -491,26 +789,67 @@ IMAGE関数は取得しない　\[セル内画像: 未対応\]
 - shape-4（角丸長方形、スライド左中央）：[入力ファイル](https://example.com/input)
 - shape-5（楕円、スライド右中央）：Markdownと画像
 
-接続関係（保存情報）：
+接続関係：
 
 - shape-6：接続関係不明（接続先IDが保存されていません）。スライド中央。
 
-参考画像（スライド全体）：
+参考画像（接続図）：
 
-![{&quot;type&quot;:&quot;図&quot;,&quot;text&quot;:&quot;&quot;,&quot;x&quot;:0,&quot;y&quot;:0,&quot;width&quot;:960,&quot;height&quot;:540}](images/diagram-0001.png)
+![{&quot;type&quot;:&quot;接続図&quot;,&quot;text&quot;:&quot;&quot;,&quot;x&quot;:0,&quot;y&quot;:0,&quot;width&quot;:960,&quot;height&quot;:540}](images/diagram-0001.png)
 
 [page 4]
 
 # 保存済みの埋め込み画像
 
+画像は埋め込みデータを参照し、代替説明も残します。
+
 図中の項目：
 
 - shape-3（画像、スライド中央）：紺色背景と紫色の円
 
-参考画像（スライド全体）：
+参考画像（図形）：
 
-![{&quot;type&quot;:&quot;図&quot;,&quot;text&quot;:&quot;&quot;,&quot;x&quot;:0,&quot;y&quot;:0,&quot;width&quot;:960,&quot;height&quot;:540}](images/diagram-0002.png)</code></pre></details>
-<details class="sample-details"><summary>実際のreport.json：警告</summary><pre><code>[
+![{&quot;type&quot;:&quot;図形&quot;,&quot;text&quot;:&quot;&quot;,&quot;x&quot;:0,&quot;y&quot;:0,&quot;width&quot;:960,&quot;height&quot;:540}](images/diagram-0002.png)
+
+[page 5]
+
+# 条件別の対応を表で比較
+
+区分・条件・担当・処理を1行ずつ対応付けます。結合行の値は開始セルに保持します。
+
+|  |  |  |  |
+| --- | --- | --- | --- |
+| 区分 | 条件 | 担当 | 処理 |
+| 通常 | 資料あり | 受付 | 当日確認 |
+| 差戻し | 添付不足 | 申請者 | 再提出 |
+| 共通の補足 |  | 管理者 | 期限は営業日 |
+| 例外 | 期限超過 | 責任者 | 翌朝判断 |
+
+補足：差戻し後は同じ申請番号で再判定します。
+
+[page 6]
+
+# レビュー経路の図形と補足
+
+図形のラベルを本文から検索できます。線の関係は確定できた場合だけ記録します。
+
+図中の項目：
+
+- shape-5（ひし形、スライド中央）：資料を確認
+- shape-4（角丸長方形、スライド左中央）：申請を受付
+- shape-6（角丸長方形、スライド右中央）：結果を通知
+
+接続関係：
+
+- shape-7：shape-4「申請を受付」 — shape-5「資料を確認」（向きなし）。スライド中央。
+- shape-8：shape-5「資料を確認」 — shape-6「結果を通知」（向きなし）。スライド中央。
+
+参考画像（接続図）：
+
+![{&quot;type&quot;:&quot;接続図&quot;,&quot;text&quot;:&quot;&quot;,&quot;x&quot;:0,&quot;y&quot;:0,&quot;width&quot;:960,&quot;height&quot;:540}](images/diagram-0003.png)
+
+</code></pre></details>
+<details class="sample-details"><summary>実際のreport.json：警告</summary><pre><code class="language-json">[
   {
     &quot;code&quot;: &quot;TABLE_MERGE_FLATTENED&quot;,
     &quot;section&quot;: &quot;スライド2&quot;,
@@ -521,10 +860,16 @@ IMAGE関数は取得しない　\[セル内画像: 未対応\]
     &quot;code&quot;: &quot;DIAGRAM_CONNECTION_UNRESOLVED&quot;,
     &quot;section&quot;: &quot;スライド3&quot;,
     &quot;range&quot;: &quot;shape-6&quot;,
-    &quot;message&quot;: &quot;図形の接続関係を確定できません。接続先IDが保存されていません。配置からは推測しません。&quot;
+    &quot;message&quot;: &quot;図形の接続関係を確定できません。接続先IDが保存されていません。保存情報と線端の境界接触のどちらでも確定できません。&quot;
+  },
+  {
+    &quot;code&quot;: &quot;TABLE_MERGE_FLATTENED&quot;,
+    &quot;section&quot;: &quot;スライド5&quot;,
+    &quot;range&quot;: &quot;shape-4&quot;,
+    &quot;message&quot;: &quot;Markdown表では結合の開始セルだけに内容を残します。&quot;
   }
 ]</code></pre></details>
-<p><a href="examples/powerpoint-complex/output/images/diagram-0001.png">参考画像PNG</a> · <a href="examples/powerpoint-complex/screenshots/overview.png">Playground全体</a> · <a href="examples/powerpoint-complex/screenshots/markdown-source.png">Markdownタブの画面</a></p>
+<p><a href="examples/powerpoint-complex/output/images/diagram-0003.png">レビュー経路の参考画像</a> · <a href="examples/powerpoint-complex/screenshots/overview.png">Playground全体</a> · <a href="examples/powerpoint-complex/screenshots/markdown-source.png">Markdownタブ</a> · <a href="examples/powerpoint-complex/screenshots/warnings.png">警告の画面</a></p>
 </section>
 <section class="sample-case" aria-labelledby="powerpoint-rag">
 <h2 id="powerpoint-rag">PowerPoint：RAG向け業務フローのデモ</h2>
@@ -674,7 +1019,7 @@ RAGで検索したいこと：少額購入の承認経路／高額購入の追�
 <p><a href="examples/powerpoint-rag-flow/output/images/diagram-0001.png">参考画像PNG</a> · <a href="examples/powerpoint-rag-flow/screenshots/overview.png">Playground全体</a> · <a href="examples/powerpoint-rag-flow/screenshots/markdown-source.png">Markdownタブの画面</a></p>
 </section>
 <h2 id="reproduce">再現方法と記録の読み方</h2>
-<p>2026年9月23日に、macOS arm64 / Java 21 / Azure Functions Core Tools のローカルホストで全5例を再実行しました。<code>POST /api/convert?filename=input.xlsx</code> 等へファイル全体を送信し、HTTP 200のZIPを保存しています。オプションは既定値です。認証キーや外部Storageの設定は実行記録に含めていません。</p>
+<p>Excel・Word包括・Wordフロー・PowerPoint包括例は2026年10月4日、PowerPointフロー例は2026年9月23日に、macOS arm64 / Java 21 / Azure Functions Core Tools のローカルホストで実行しました。<code>POST /api/convert?filename=input.xlsx</code> 等へファイル全体を送信し、HTTP 200のZIPを保存しています。これらのZIP変換は既定オプションです。WordのPDF例は同じ入力を <code>output=pdf</code> 付きで送信しました。認証キーや外部Storageの設定は実行記録に含めていません。</p>
 <pre><code>curl --fail-with-body \
   -H 'Content-Type: application/octet-stream' \
   --data-binary @docs/APIDocs/office2md/examples/excel-complex/input.xlsx \
@@ -682,8 +1027,8 @@ RAGで検索したいこと：少額購入の承認経路／高額購入の追�
   -o result.zip</code></pre>
 <p>各 <code>run.json</code> に入力・出力ZIP・展開ファイル・スクリーンショットのSHA-256、HTTP結果、実行環境を保存しています。記録された時間はローカルの送信からZIP展開・プレビュー生成までで、Azureの起動時間・ネットワーク・同時処理性能の目安にはなりません。</p>
 <p>セクション別のスクリーンショットは、実際のプレビューのスクロール領域と画像の高さ上限を広げ、ほかのセクションを一時的に非表示にして撮影しました。Excelの表・グループの詳細画像は、それぞれ先頭790px・1000pxの切り出しです。本文・画像・成果物は変更していません。通常の画面も各ケースの「Playground全体」で確認できます。</p>
-<p><a href="examples/README.md">再現・検証手順</a> · <a href="examples/capture.cjs">実行と撮影のスクリプト</a> · <a href="examples/prepare_inputs.py">入力コピーの作成手順</a> · <a href="index.html#drawings">図形の変換ルール</a> · <a href="http.html#convert">HTTP API仕様</a></p>
-<footer class="page-footer"><p>実測確認：Excel・Word・PowerPoint 2026-09-23。成功した例でも、未対応・近似の情報はreport.jsonに残ります。</p></footer>
+<p><a href="examples/README.md">再現・検証手順</a> · <a href="examples/capture.cjs">ZIP変換と撮影のスクリプト</a> · <a href="examples/capture_pdf.py">PDF変換と1ページ目画像の記録</a> · <a href="examples/render_word_powerpoint.py">Word・PowerPoint例のページ更新</a> · <a href="examples/prepare_inputs.py">入力コピーの作成手順</a> · <a href="index.html#drawings">図形の変換ルール</a> · <a href="http.html#convert">HTTP API仕様</a></p>
+<footer class="page-footer"><p>実測確認：Excel・Word・PowerPoint 2026-10-04（一部PowerPointフローは2026-09-23）。成功した例でも、未対応・近似の情報はreport.jsonに残ります。</p></footer>
 </article>
 <aside class="toc" aria-label="このページの目次"><p class="toc-title">このページの内容</p><nav id="page-toc"></nav></aside>
 </div></main></body></html>

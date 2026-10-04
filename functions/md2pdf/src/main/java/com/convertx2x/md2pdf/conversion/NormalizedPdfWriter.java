@@ -189,7 +189,8 @@ final class NormalizedPdfWriter implements AutoCloseable {
             if (start > 0) pageBreak();
             if (columns > TABLE_COLUMNS_PER_SLICE) paragraph("列 " + (start + 1) + "–" + end, true);
             drawTableSlice(rows, start, end);
-            y -= 8f;
+            // Leave enough room for the ascent of a heading immediately after the table.
+            y -= 20f;
         }
     }
 

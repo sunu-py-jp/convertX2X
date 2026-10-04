@@ -2,8 +2,10 @@
 """Validate the published evidence without starting a server or recalculating Office files."""
 from pathlib import Path
 import hashlib
+from html import escape
 import json
 import re
+import struct
 import subprocess
 import sys
 import zipfile
@@ -11,9 +13,9 @@ import zipfile
 HERE = Path(__file__).resolve().parent
 EXPECTED = {
     "excel-complex": (8, 33, 20),
-    "word-complex": (1, 2, 1),
+    "word-complex": (1, 3, 2),
     "word-rag-flow": (1, 1, 5),
-    "powerpoint-complex": (4, 2, 2),
+    "powerpoint-complex": (6, 3, 3),
     "powerpoint-rag-flow": (3, 3, 1),
 }
 SLIDE_POSITIONS = {
@@ -73,6 +75,7 @@ def check_diagram_fields(report, name):
 
 
 def main():
+    examples_page = (HERE.parent / "examples.html").read_text(encoding="utf-8")
     for name, expected in EXPECTED.items():
         directory = HERE / name
         run = json.loads((directory / "run.json").read_text())
@@ -128,6 +131,50 @@ def main():
             assert "STRIKE_SECRET_RAG_DEMO" not in markdown and "HIDDEN_SECRET_RAG_DEMO" not in markdown
             assert "STRIKE_SECRET_RAG_DEMO" not in json.dumps(report) and "HIDDEN_SECRET_RAG_DEMO" not in json.dumps(report)
             assert markdown.index("本文の前後関係") < markdown.index("図中の項目") < markdown.index("図の後の説明")
+            assert "| 記録 | 保存される内容 |" not in markdown
+            with zipfile.ZipFile(directory / "input.docx") as source:
+                assert b"<w:tbl" not in source.read("word/document.xml")
+        if name == "word-complex":
+            assert (directory / "input.docx").read_bytes() == (
+                HERE.parents[3] / "functions/office2md/samples/office-sample.docx").read_bytes()
+            assert "## **判定条件と複数段落の表**" in markdown
+            assert "差し戻し<br>再提出後に再判定" in markdown
+            assert "[^footnote-2]" in markdown
+            assert "追加の確認図形" in markdown
+            pdf_directory = directory / "pdf"
+            pdf_run = json.loads((pdf_directory / "run.json").read_text(encoding="utf-8"))
+            assert pdf_run["mode"] == "actual local Functions HTTP"
+            assert pdf_run["request"]["path"] == "/api/convert?filename=word-complex.docx&output=pdf"
+            assert pdf_run["response"]["status"] == 200
+            assert pdf_run["response"]["contentType"] == "application/pdf"
+            assert pdf_run["response"]["sectionCount"] == run["sectionCount"]
+            assert pdf_run["response"]["warningCount"] == run["warningCount"]
+            assert pdf_run["source"]["sha256"] == run["input"]["sha256"]
+            assert pdf_run["source"]["sizeBytes"] == run["input"]["sizeBytes"]
+            assert re.fullmatch(r"[0-9a-f]{64}", pdf_run["hostArtifact"]["sha256"])
+            for key in ("pdf", "firstPage"):
+                record = pdf_run[key]
+                data = (pdf_directory / record["path"]).read_bytes()
+                assert len(data) == record["sizeBytes"]
+                assert hashlib.sha256(data).hexdigest() == record["sha256"]
+            assert (pdf_directory / "document.pdf").read_bytes().startswith(b"%PDF-")
+            png = (pdf_directory / "page-01.png").read_bytes()
+            assert png.startswith(b"\x89PNG\r\n\x1a\n")
+            assert struct.unpack(">II", png[16:24]) == (
+                pdf_run["firstPage"]["width"], pdf_run["firstPage"]["height"])
+            assert pdf_run["pdf"]["pages"] >= 1
+            assert "examples/word-complex/pdf/document.pdf" in examples_page
+            assert "examples/word-complex/pdf/page-01.png" in examples_page
+        if name == "powerpoint-complex":
+            assert (directory / "input.pptx").read_bytes() == (
+                HERE.parents[3] / "functions/office2md/samples/office-sample.pptx").read_bytes()
+            assert "# 条件別の対応を表で比較" in markdown
+            assert "# レビュー経路の図形と補足" in markdown
+            assert "資料を確認" in markdown and "結果を通知" in markdown
+            assert (len(edges), sum(edge["connectionResolutionStatus"] == "resolved" for edge in edges)) == (3, 2)
+        if name in ("word-complex", "word-rag-flow", "powerpoint-complex"):
+            assert escape(markdown) in examples_page, name
+            assert f'examples/{name}/output/document.md' in examples_page
         print(f"PASS {name}: input/output/screenshot hashes, ZIP contents, expected actual result")
     subprocess.run([sys.executable, str(HERE / "excel-merge-matrix/verify.py")], check=True)
 

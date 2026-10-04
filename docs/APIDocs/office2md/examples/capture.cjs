@@ -16,7 +16,7 @@ const cases = [
   { name: 'excel-complex', file: 'input.xlsx', sections: [0, 1, 5, 6] },
   { name: 'word-complex', file: 'input.docx', sections: [0] },
   { name: 'word-rag-flow', file: 'input.docx', sections: [0] },
-  { name: 'powerpoint-complex', file: 'input.pptx', sections: [1, 2] },
+  { name: 'powerpoint-complex', file: 'input.pptx', sections: [1, 2, 4, 5] },
   { name: 'powerpoint-rag-flow', file: 'input.pptx', sections: [0, 1, 2] },
 ];
 const selectedCases = process.env.OFFICE_EXAMPLE_CASE

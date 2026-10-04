@@ -54,6 +54,21 @@ class ConversionJobRequestTest {
         assertThrows(ConversionException.class, () -> new ConversionJobRequest(2, old.jobId(), old.input(), old.output(), old.filename(), bytes, null).normalized());
     }
 
+    @Test void pdfOutputIsAnExplicitVersionTwoOption() {
+        var old = request();
+        var pdf = new ConversionJobRequest(2, old.jobId(), old.input(), old.output(), old.filename(),
+                Map.of(), null, "pdf").normalized();
+        assertEquals("pdf", pdf.outputFormat());
+        assertTrue(pdf.toJson().contains("\"outputFormat\":\"pdf\""));
+        assertEquals(pdf, ConversionJobRequest.parse(pdf.toJson()));
+        assertFalse(old.toJson().contains("outputFormat"));
+        assertEquals("markdown", ConversionJobRequest.parse(old.toJson()).outputFormat());
+        assertEquals("INVALID_OUTPUT_FORMAT", assertThrows(ConversionException.class,
+                () -> ConversionJobRequest.parse(pdf.toJson().replace("\"pdf\"", "\"docx\""))).code());
+        assertThrows(ConversionException.class, () -> new ConversionJobRequest(1, old.jobId(), old.input(),
+                old.output(), old.filename(), Map.of(), null, "pdf").normalized());
+    }
+
     @Test void managedIdentityProfilesAndRetentionAreValidatedWithoutExposingSecrets() {
         var values = Map.of("CONVERSION_STORAGE__blobServiceUri", "https://account.blob.core.windows.net",
                 "CONVERSION_STORAGE__queueServiceUri", "https://account.queue.core.windows.net",

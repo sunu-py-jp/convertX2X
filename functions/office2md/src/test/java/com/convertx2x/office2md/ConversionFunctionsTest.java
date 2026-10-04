@@ -19,6 +19,21 @@ import static org.junit.jupiter.api.Assertions.*;
 class ConversionFunctionsTest {
     private final OfficeMarkdownService converter = new OfficeMarkdownService(ConversionLimits.defaults());
 
+    @Test void synchronousPdfOptionReturnsPdfAndRejectsUnknownOutput() throws Exception {
+        ConversionFunctions functions = new ConversionFunctions(AppConfig.from(Map.of()), converter,
+                () -> { throw new AssertionError("Storage must not initialize"); });
+        HttpResponseMessage response = functions.convert(request("/api/convert", workbook(),
+                Map.of("filename", "日本語.xlsx", "output", "pdf"), Map.of()), context());
+        assertEquals(200, response.getStatusCode());
+        assertEquals("application/pdf", response.getHeader("Content-Type"));
+        assertTrue(response.getHeader("Content-Disposition").contains("document.pdf"));
+        assertEquals("%PDF-", new String((byte[]) response.getBody(), 0, 5, StandardCharsets.US_ASCII));
+        HttpResponseMessage invalid = functions.convert(request("/api/convert", workbook(),
+                Map.of("filename", "日本語.xlsx", "output", "docx"), Map.of()), context());
+        assertEquals(400, invalid.getStatusCode());
+        assertTrue(invalid.getBody().toString().contains("INVALID_OUTPUT_FORMAT"));
+    }
+
     @Test void synchronousHttpReturnsZipContainingMarkdownAndReportWithoutStorage() throws Exception {
         ConversionFunctions functions = new ConversionFunctions(AppConfig.from(Map.of()), converter,
                 () -> { throw new AssertionError("Storage must not initialize"); });
@@ -50,6 +65,24 @@ class ConversionFunctionsTest {
         assertTrue(new String((byte[])markdown.getBody(), StandardCharsets.UTF_8).contains("日本語"));
         HttpResponseMessage archive = functions.archive(request("/custom/jobs/" + jobs.id + "/archive", "", Map.of(), Map.of()), jobs.id, context());
         assertArrayEquals(jobs.files.get("document.md"), unzip((byte[])archive.getBody()).get("document.md"));
+    }
+
+    @Test void asynchronousPdfOptionDownloadsPdfWhileArchiveRetainsMarkdown() throws Exception {
+        MemoryJobs jobs = new MemoryJobs(converter);
+        ConversionFunctions functions = new ConversionFunctions(
+                AppConfig.from(Map.of(AppConfig.STORAGE_SETTING, "test")), converter, () -> jobs);
+        HttpResponseMessage accepted = functions.submit(request("/api/jobs", workbook(),
+                Map.of("filename", "sample.xlsx", "output", "pdf"), Map.of()), context());
+        assertEquals(202, accepted.getStatusCode());
+        functions.process("message", context());
+        HttpResponseMessage pdf = functions.download(request("/api/jobs/" + jobs.id + "/result", "",
+                Map.of(), Map.of()), jobs.id, context());
+        assertEquals("application/pdf", pdf.getHeader("Content-Type"));
+        assertEquals("%PDF-", new String((byte[]) pdf.getBody(), 0, 5, StandardCharsets.US_ASCII));
+        HttpResponseMessage archive = functions.archive(request("/api/jobs/" + jobs.id + "/archive", "",
+                Map.of(), Map.of()), jobs.id, context());
+        assertEquals(Set.of("document.md", "document.pdf", "report.json"),
+                unzip((byte[]) archive.getBody()).keySet());
     }
 
     @Test void disabledAndInvalidRequestsNeverInitializeStorage() {
@@ -162,16 +195,23 @@ class ConversionFunctionsTest {
         final String id = UUID.randomUUID().toString();
         final Map<String, byte[]> files = new HashMap<>();
         JobStatus job; byte[] input, archive;
+        OutputFormat format = OutputFormat.MARKDOWN;
         MemoryJobs(OfficeMarkdownService converter) { this.converter = converter; }
         public JobStatus submit(byte[] bytes, String filename) {
             input = bytes;
             return job = new JobStatus(id, "queued", filename, "now", "now", null, null, null, null);
         }
+        public JobStatus submit(byte[] bytes, String filename, OutputFormat outputFormat) {
+            format = outputFormat;
+            return submit(bytes, filename);
+        }
         public Optional<JobStatus> find(String id) { return Optional.ofNullable(job); }
-        public JobDownload download(String id, String artifact) { return new JobDownload(files.get(artifact), "text/plain", artifact); }
+        public JobDownload download(String id, String artifact) { return new JobDownload(files.get(artifact),
+                artifact.equals("document.pdf") ? "application/pdf" : "text/plain", artifact); }
+        public JobDownload downloadResult(String id) { return download(id, format == OutputFormat.PDF ? "document.pdf" : "document.md"); }
         public JobDownload archive(String id) { return new JobDownload(archive, "application/zip", "document.zip"); }
         public void process(String message) {
-            try (ConversionResult result = converter.convert(input, job.filename())) {
+            try (ConversionResult result = converter.convert(input, job.filename(), format)) {
                 for (var file : result.files().entrySet()) files.put(file.getKey(), Files.readAllBytes(file.getValue()));
                 archive = result.zipBytes();
                 job = new JobStatus(id, "succeeded", job.filename(), "now", "now", result.sectionCount(), result.warningCount(), null, null);

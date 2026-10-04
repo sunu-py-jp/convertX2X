@@ -34,7 +34,11 @@
     for (const url of objectUrls) URL.revokeObjectURL(url);
     objectUrls.clear();
     for (const id of ['preview', 'markdown-source', 'report-source', 'warning-list']) $(id).replaceChildren();
-    for (const id of ['download-markdown', 'download-report']) $(id).removeAttribute('href');
+    for (const id of ['download-markdown', 'download-report', 'download-pdf']) $(id).removeAttribute('href');
+    $('pdf-preview').removeAttribute('src');
+    $('markdown-result').hidden = false;
+    $('pdf-result').hidden = true;
+    $('download-pdf-archive').hidden = true;
     $('result-content').hidden = true;
     $('result-empty').hidden = false;
     $('error-message').hidden = true;
@@ -46,9 +50,14 @@
     $('mode-async').disabled = !config?.asyncEnabled;
     $('submit-button').disabled = Boolean(active) || !config || !selectedFile;
     $('download-archive').disabled = Boolean(active);
+    $('download-pdf-archive').disabled = Boolean(active);
     $('retry-config').disabled = Boolean(active);
     $('cancel-area').hidden = !active;
-    $('mode-hint').textContent = $('mode-async').checked ? 'Queueへ登録し、完了後にMarkdown・画像・変換情報を取得します。' : '変換の完了を待ち、結果をZIPで受け取ります。';
+    const pdf = $('output-pdf').checked;
+    $('submit-label').textContent = pdf ? 'PDFに変換' : 'Markdownに変換';
+    $('mode-hint').textContent = $('mode-async').checked
+      ? (pdf ? 'Queueへ登録し、完了後にPDFを取得します。ZIPにはMarkdown・画像・変換情報も含まれます。' : 'Queueへ登録し、完了後にMarkdown・画像・変換情報を取得します。')
+      : (pdf ? '変換の完了を待ち、PDFを直接受け取ります。' : '変換の完了を待ち、結果をZIPで受け取ります。');
   }
   async function readStream(stream, limit, run) {
     const reader = stream.getReader(), chunks = [];
@@ -341,16 +350,33 @@
     $('result-meta').textContent = `${report.sectionCount ?? '—'} ${sectionLabel} · ${report.assets.length} 添付`;
     $('download-markdown').href = blobUrl(new Blob([files.get('document.md')], { type: 'text/markdown;charset=utf-8' }));
     $('download-report').href = blobUrl(new Blob([files.get('report.json')], { type: 'application/json' }));
-    result = { archiveUrl: archive ? blobUrl(new Blob([archive], { type: 'application/zip' })) : null, job };
+    result = { format: 'zip', archiveUrl: archive ? blobUrl(new Blob([archive], { type: 'application/zip' })) : null, job };
+    $('markdown-result').hidden = false; $('pdf-result').hidden = true;
     $('result-empty').hidden = true; $('result-content').hidden = false;
     status('success', '変換が完了しました', report.warnings.length ? '警告を確認してから、結果を保存してください。' : 'Markdownと画像を確認できます。ZIPにはすべての成果物が含まれます。');
+  }
+  function showPdfResult(response, bytes, job, run) {
+    alive(run);
+    check(/^application\/pdf(?:\s*;|\s*$)/i.test(response.headers.get('Content-Type') || ''), 'PDF形式の応答が返されませんでした。');
+    check(bytes.length >= 8 && utf8(bytes.subarray(0, 5)) === '%PDF-', 'PDFの内容が正しくありません。');
+    const url = blobUrl(new Blob([bytes], { type: 'application/pdf' }));
+    $('pdf-preview').src = url;
+    $('download-pdf').href = url;
+    $('download-pdf-archive').hidden = !job;
+    result = { format: 'pdf', archiveUrl: null, job };
+    $('markdown-result').hidden = true; $('pdf-result').hidden = false;
+    $('result-empty').hidden = true; $('result-content').hidden = false;
+    status('success', '変換が完了しました', job ? 'PDFを確認・保存できます。ZIPにはMarkdown・画像・変換情報も含まれます。' : 'PDFを確認・保存できます。');
   }
   async function convert(run) {
     check(run.file.size <= config.maxInputBytes, `ファイルサイズの上限は${sizeLabel(config.maxInputBytes)}です。`);
     const mode = $('mode-async').checked ? 'jobs' : 'convert';
+    const pdf = $('output-pdf').checked;
     const url = endpoint(mode); url.searchParams.set('filename', run.file.name);
+    if (pdf) url.searchParams.set('output', 'pdf');
     let response = await apiFetch(url, run, { method: 'POST', headers: { 'Content-Type': 'application/octet-stream' }, body: run.file });
     if (mode === 'convert') {
+      if (pdf) { showPdfResult(response, await responseBytes(response, budget().total + MiB, run), null, run); return; }
       const bytes = await responseBytes(response, budget().total + MiB, run), files = await unzip(bytes, run);
       const report = parseReport(files.get('report.json'));
       await showResult(files, report, bytes, null, run); return;
@@ -364,12 +390,17 @@
       if (state === 'failed') throw new Error(data.job.errorMessage || '非同期変換に失敗しました。');
       if (state === 'succeeded') break;
       check(['queued', 'running'].includes(state), '不明なジョブ状態が返されました。');
-      status('busy', state === 'queued' ? '順番を待っています' : 'Officeファイルを変換しています', '完了後にMarkdown・画像・変換情報を取得します。');
+      status('busy', state === 'queued' ? '順番を待っています' : 'Officeファイルを変換しています', pdf ? '完了後にPDFを取得します。' : '完了後にMarkdown・画像・変換情報を取得します。');
       await wait(retryDelay(response), run);
       response = await apiFetch(statusUrl, run);
       data = JSON.parse(utf8(await responseBytes(response, 65536, run)));
     }
     const job = { id, archiveUrl: checkedJobUrl(data.archiveUrl, id, '/archive') };
+    if (pdf) {
+      const pdfResponse = await apiFetch(checkedJobUrl(data.resultUrl, id, '/result'), run);
+      showPdfResult(pdfResponse, await responseBytes(pdfResponse, budget().total + MiB, run), job, run);
+      return;
+    }
     const base = checkedJobUrl(data.assetsBaseUrl, id, '/images/');
     const reportBytes = await responseBytes(await apiFetch(checkedJobUrl(data.reportUrl, id, '/report'), run), 20 * MiB, run);
     const report = parseReport(reportBytes), files = new Map([['report.json', reportBytes]]);
@@ -427,7 +458,7 @@
       check(/\.(?:xlsx?|docx|pptx)$/i.test(file.name), 'XLSX・XLS・DOCX・PPTXファイルを選んでください。');
       check(file.size > 0, 'ファイルが空です。');
       check(!config || file.size <= config.maxInputBytes, `ファイルサイズの上限は${sizeLabel(config?.maxInputBytes || 20 * MiB)}です。`);
-      selectedFile = file; $('selected-name').textContent = file.name; $('selected-meta').textContent = `${sizeLabel(file.size)} · クリックして変更`; $('dropzone').classList.add('has-file'); status('idle', '変換の準備ができました', '「Markdownに変換」を押してください。');
+      selectedFile = file; $('selected-name').textContent = file.name; $('selected-meta').textContent = `${sizeLabel(file.size)} · クリックして変更`; $('dropzone').classList.add('has-file'); status('idle', '変換の準備ができました', `「${$('output-pdf').checked ? 'PDF' : 'Markdown'}に変換」を押してください。`);
     } catch (error) { status('error', 'ファイルを確認してください'); errorMessage(error); }
     controls();
   }
@@ -438,18 +469,20 @@
   $('file-input').addEventListener('change', event => { if (event.target.files[0]) selectFile(event.target.files[0]); });
   $('cancel-button').addEventListener('click', () => active?.controller.abort());
   $('retry-config').addEventListener('click', loadConfig);
-  for (const id of ['mode-sync', 'mode-async']) $(id).addEventListener('change', controls);
+  for (const id of ['mode-sync', 'mode-async', 'output-zip', 'output-pdf']) $(id).addEventListener('change', controls);
   for (const name of ['preview', 'source', 'report']) {
     $(`tab-${name}`).addEventListener('click', () => selectTab(name));
     $(`tab-${name}`).addEventListener('keydown', event => { const tabs = ['preview', 'source', 'report']; if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) { event.preventDefault(); const index = tabs.indexOf(name); const next = event.key === 'Home' ? 0 : event.key === 'End' ? 2 : (index + (event.key === 'ArrowRight' ? 1 : 2)) % 3; selectTab(tabs[next]); $(`tab-${tabs[next]}`).focus(); } });
   }
-  $('download-archive').addEventListener('click', () => {
+  const saveArchive = () => {
     if (!result || active) return;
     const download = url => { const link = document.createElement('a'); link.href = url; link.download = 'document.zip'; document.body.append(link); link.click(); link.remove(); };
     if (result.archiveUrl) { download(result.archiveUrl); return; }
     const current = result;
-    perform(async run => { const bytes = await responseBytes(await apiFetch(current.job.archiveUrl, run), budget().total + MiB, run); alive(run); current.archiveUrl = blobUrl(new Blob([bytes], { type: 'application/zip' })); download(current.archiveUrl); status('success', 'ZIPを保存しました', 'Markdown・変換情報・画像が含まれます。'); }, false);
-  });
+    perform(async run => { const bytes = await responseBytes(await apiFetch(current.job.archiveUrl, run), budget().total + MiB, run); alive(run); current.archiveUrl = blobUrl(new Blob([bytes], { type: 'application/zip' })); download(current.archiveUrl); status('success', 'ZIPを保存しました', current.format === 'pdf' ? 'Markdown・変換情報・画像・PDFが含まれます。' : 'Markdown・変換情報・画像が含まれます。'); }, false);
+  };
+  $('download-archive').addEventListener('click', saveArchive);
+  $('download-pdf-archive').addEventListener('click', saveArchive);
   for (const name of ['dragenter', 'dragover']) $('dropzone').addEventListener(name, event => { event.preventDefault(); if (!active) $('dropzone').classList.add('dragover'); });
   for (const name of ['dragleave', 'drop']) $('dropzone').addEventListener(name, event => { event.preventDefault(); $('dropzone').classList.remove('dragover'); });
   $('dropzone').addEventListener('drop', event => { if (event.dataTransfer.files.length === 1) selectFile(event.dataTransfer.files[0]); else if (!active) errorMessage(new Error('一度に1ファイルを選んでください。')); });

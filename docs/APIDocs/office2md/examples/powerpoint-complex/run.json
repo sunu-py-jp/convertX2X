@@ -1,7 +1,7 @@
 {
-  "capturedAt": "2026-09-23T08:02:37.006Z",
+  "capturedAt": "2026-10-04T07:43:51.251Z",
   "mode": "actual local Functions HTTP through unmodified Playground",
-  "sourceCommit": "8b4ee428d920ae052a0de374df30098d791d4fa3",
+  "sourceCommit": "66a904f3cf7e1fbd736795a75dd448fabf38a096",
   "sourceWorkingTreeDirty": true,
   "runtime": {
     "platform": "darwin",
@@ -9,12 +9,12 @@
     "node": "v24.2.0",
     "java": "openjdk version \"21\" 2023-09-19 LTS\nOpenJDK Runtime Environment Temurin-21+35 (build 21+35-LTS)\nOpenJDK 64-Bit Server VM Temurin-21+35 (build 21+35-LTS, mixed mode)",
     "coreTools": "4.9.0",
-    "browser": "153.0.8010.53"
+    "browser": "154.0.8037.93"
   },
   "input": {
     "path": "input.pptx",
-    "sizeBytes": 37307,
-    "sha256": "7ccc7c840c007dd2916a813228a1a9d47a94b8a86b254f07634b3d0da8512d84"
+    "sizeBytes": 40698,
+    "sha256": "6cfb09beaa7ddc18b52459c9e1b5dd6b44a752eec27dee9c508b234675c8330a"
   },
   "request": {
     "method": "POST",
@@ -25,18 +25,20 @@
   "response": {
     "status": 200,
     "contentType": "application/zip",
-    "elapsedMs": 889
+    "elapsedMs": 1704
   },
   "timingNote": "Local macOS measurement from submit click to completed Playground result (HTTP response, unzip and preview construction included). Not an Azure latency or throughput benchmark.",
-  "sectionCount": 4,
+  "sectionCount": 6,
   "sectionTitles": [
     "PowerPointからMarkdownへ",
     "罫線なしの表もMarkdown表に",
     "図中の文字を検索可能な本文へ",
-    "保存済みの埋め込み画像"
+    "保存済みの埋め込み画像",
+    "条件別の対応を表で比較",
+    "レビュー経路の図形と補足"
   ],
-  "assetCount": 2,
-  "warningCount": 2,
+  "assetCount": 3,
+  "warningCount": 3,
   "warningCodes": [
     "TABLE_MERGE_FLATTENED",
     "DIAGRAM_CONNECTION_UNRESOLVED"
@@ -45,33 +47,38 @@
   "files": [
     {
       "path": "result.zip",
-      "sizeBytes": 61282,
-      "sha256": "04397b04dc583b2fbe0e4a3cd34ec652a00e291bd86ca70ccb6d84044c2618cd"
+      "sizeBytes": 45551,
+      "sha256": "3e636c1f7b2b63fb52f90a8fe29cae7d5889a58bf690d7fc012a56c4ea5bc867"
     },
     {
       "path": "output/document.md",
-      "sizeBytes": 1479,
-      "sha256": "0222d8c3b689753a410f3d56e3e30416b93141458692a8f6f4a9e43e173b5722"
+      "sizeBytes": 2828,
+      "sha256": "ccb8cc645bb89f036ebe9b34b1f01926e8988e2299cfbc9ba28b91871a70ba56"
     },
     {
       "path": "output/report.json",
-      "sizeBytes": 3666,
-      "sha256": "538c4d1583192b22ea485c7e16324358b96a46ab68c8de90ff6432707f60b41d"
+      "sizeBytes": 6503,
+      "sha256": "069d57c7f106bbe277000a00b51e9fb8d68c85dd0950fcfa3295f580b5436e91"
     },
     {
       "path": "output/images/diagram-0001.png",
-      "sizeBytes": 50902,
-      "sha256": "6158174f21d0bba79c3aee56a3c53950230aa1ace070c32677f5dad23cd42569"
+      "sizeBytes": 23788,
+      "sha256": "79b87d122649d9bb77e85cb20a5822d152bc67bc3768f0fa4026e1b49af8e0a6"
     },
     {
       "path": "output/images/diagram-0002.png",
-      "sizeBytes": 21098,
-      "sha256": "8e5d90496163718f3d762db1d9613721d5121f20cc88736af9e98f79caa4333f"
+      "sizeBytes": 10631,
+      "sha256": "cfcf358a16512739b62d8f4a480a964b3f7c40d9a716f79f013d07ddc247b4a2"
+    },
+    {
+      "path": "output/images/diagram-0003.png",
+      "sizeBytes": 25839,
+      "sha256": "29f37f6960fd3b80b9e946a58c72bf335083658d8bf56b24d4105a2ef410e281"
     },
     {
       "path": "screenshots/overview.png",
-      "sizeBytes": 175563,
-      "sha256": "639fdd4ac0e1c33afb09d0479921ad9e2d9b1fb7fb9b145a77e21b2a8f9efa07"
+      "sizeBytes": 186939,
+      "sha256": "332d70e6ea956ae6d501595aea44fe74757c38c15171ae5a32e19f75ebb09059"
     },
     {
       "path": "screenshots/section-02.png",
@@ -80,18 +87,28 @@
     },
     {
       "path": "screenshots/section-03.png",
-      "sizeBytes": 90886,
-      "sha256": "e8682f85bea715ed758ba76acf4a1db33e44aa340c4153ff87cfb0c79b42103d"
+      "sizeBytes": 63651,
+      "sha256": "418cf480f18e56387beb5b8897bfcdaf21e7da7642a69dd826f0ed08a2fbca16"
+    },
+    {
+      "path": "screenshots/section-05.png",
+      "sizeBytes": 46210,
+      "sha256": "958a21296afd6d96fa801ce205cf3647009609bed13b9453828137169f06c8fa"
+    },
+    {
+      "path": "screenshots/section-06.png",
+      "sizeBytes": 80288,
+      "sha256": "c90278beedad526ede68c005e1925de2d63ceae2cbde180ffe4d51e9aac33f26"
     },
     {
       "path": "screenshots/markdown-source.png",
-      "sizeBytes": 89902,
-      "sha256": "0facd5b1e5ce6db0a750244c3186dc97e7ea895f83b88070d67fdea1bed0f651"
+      "sizeBytes": 99975,
+      "sha256": "1373e3fa2aa58163c908b63eb66cceffe7fb4e49cdf5971a749e07d6c944ad1b"
     },
     {
       "path": "screenshots/warnings.png",
-      "sizeBytes": 18963,
-      "sha256": "7cdbf1b07026fbd1a0b27d632cffe3a2aaeb5f0d6977e0875f0f7c09368c5490"
+      "sizeBytes": 28791,
+      "sha256": "df6bd6a56afd1d8dba4edbc509cdd1e381f45eceb56cceae9fe24db77c0f1756"
     }
   ],
   "screenshotLayout": "Overview/source use normal Playground. Section screenshots expand the preview scroll region and image maximum height, and hide other sections. Excel tables-detail and group-detail crop the top 790 and 1000 CSS pixels; full sections are also included. Warnings expand the warning list. No original text, images or outputs are changed.",

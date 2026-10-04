@@ -59,7 +59,7 @@ record MarkdownInput(String markdown, String documentPath, Map<String, byte[]> a
         }
     }
 
-    private static String decode(byte[] bytes) {
+    static String decode(byte[] bytes) {
         try {
             String text = StandardCharsets.UTF_8.newDecoder().onMalformedInput(CodingErrorAction.REPORT)
                     .onUnmappableCharacter(CodingErrorAction.REPORT).decode(ByteBuffer.wrap(bytes)).toString();

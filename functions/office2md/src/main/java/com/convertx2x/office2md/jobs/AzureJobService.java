@@ -4,6 +4,7 @@ import com.convertx2x.office2md.conversion.ConversionException;
 import com.convertx2x.office2md.conversion.ConversionResult;
 import com.convertx2x.office2md.conversion.OfficeMarkdownService;
 import com.convertx2x.office2md.conversion.ConversionLimits;
+import com.convertx2x.office2md.conversion.OutputFormat;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Optional;
@@ -20,26 +21,37 @@ public final class AzureJobService implements JobService {
     }
 
     @FunctionalInterface
+    interface FormatConverter {
+        ConversionResult convert(byte[] input, String filename, OutputFormat outputFormat);
+    }
+
+    @FunctionalInterface
     interface Validator {
         void validate(byte[] input, String filename);
     }
 
     private final JobStore store;
-    private final Converter converter;
+    private final FormatConverter converter;
     private final Validator validator;
     private final Clock clock;
 
     public AzureJobService(String connectionString, OfficeMarkdownService converter, ConversionLimits limits,
                            BlobStorageProfiles profiles) {
-        this(new AzureJobStore(connectionString, limits, profiles), converter::convert, converter::validate, Clock.systemUTC());
+        this(new AzureJobStore(connectionString, limits, profiles),
+                (FormatConverter) converter::convert, converter::validate, Clock.systemUTC());
     }
 
     public AzureJobService(IntegrationSettings settings, OfficeMarkdownService converter, ConversionLimits limits,
                            BlobStorageProfiles profiles) {
-        this(new AzureJobStore(settings, limits, profiles), converter::convert, converter::validate, Clock.systemUTC());
+        this(new AzureJobStore(settings, limits, profiles),
+                (FormatConverter) converter::convert, converter::validate, Clock.systemUTC());
     }
 
     AzureJobService(JobStore store, Converter converter, Validator validator, Clock clock) {
+        this(store, (input, filename, ignored) -> converter.convert(input, filename), validator, clock);
+    }
+
+    AzureJobService(JobStore store, FormatConverter converter, Validator validator, Clock clock) {
         this.store = store;
         this.converter = converter;
         this.validator = validator;
@@ -48,12 +60,20 @@ public final class AzureJobService implements JobService {
 
     @Override
     public JobStatus submit(byte[] input, String filename) {
+        return submit(input, filename, OutputFormat.MARKDOWN);
+    }
+
+    @Override
+    public JobStatus submit(byte[] input, String filename, OutputFormat outputFormat) {
+        Objects.requireNonNull(outputFormat);
         String safeName = safeFilename(filename);
         validator.validate(input, safeName);
         String id = UUID.randomUUID().toString();
-        ConversionJobRequest request = new ConversionJobRequest(1, id,
+        ConversionJobRequest request = new ConversionJobRequest(
+                outputFormat == OutputFormat.PDF ? 2 : 1, id,
                 new ConversionJobRequest.BlobSource(CONTAINER_NAME, id + "/input"),
-                new ConversionJobRequest.BlobOutput(CONTAINER_NAME, ""), safeName).normalized();
+                new ConversionJobRequest.BlobOutput(CONTAINER_NAME, ""), safeName,
+                java.util.Map.of(), null, outputFormat.wireValue()).normalized();
         JobRecord record = queued(request);
         JobRecord submitting = new JobRecord(record.job(), null, request, null, null, null, true);
         store.ensure(submitting);
@@ -81,6 +101,14 @@ public final class AzureJobService implements JobService {
     @Override
     public JobDownload download(String id, String artifact) {
         return store.readResult(completed(id).result(), artifact);
+    }
+
+    @Override
+    public JobDownload downloadResult(String id) {
+        JobRecord record = completed(id);
+        String artifact = record.request() != null && OutputFormat.parse(record.request().outputFormat()) == OutputFormat.PDF
+                ? "document.pdf" : "document.md";
+        return store.readResult(record.result(), artifact);
     }
 
     @Override
@@ -119,7 +147,8 @@ public final class AzureJobService implements JobService {
                 store.validateLocations(request);
                 JobStore.InputData input = store.readInputVersioned(request.input());
                 inputETag = input.eTag();
-                try (ConversionResult result = converter.convert(input.bytes(), running.filename())) {
+                try (ConversionResult result = converter.convert(input.bytes(), running.filename(),
+                        OutputFormat.parse(request.outputFormat()))) {
                     JobRecord.ResultLocation location = store.writeResult(request, result, inputETag);
                     // Publish only after every artifact from one attempt has reached Storage.
                     lock.update(new JobRecord(transition(running, "succeeded", location.sectionCount(),
@@ -148,12 +177,12 @@ public final class AzureJobService implements JobService {
         String id = request.jobId();
         store.ensure(queued(request));
         Optional<JobRecord> existing = store.find(id);
-        if (existing.isEmpty() || !Objects.equals(existing.get().request(), request)) {
+        if (existing.isEmpty() || !sameRequest(existing.get().request(), request)) {
             return;
         }
         try (JobStore.JobLock lock = store.lock(id)) {
             JobRecord record = requireJob(id);
-            if (Objects.equals(record.request(), request) && !terminal(record.job())) {
+            if (sameRequest(record.request(), request) && !terminal(record.job())) {
                 lock.update(new JobRecord(transition(record.job(), "failed", null, null,
                         "PROCESSING_FAILED", "Conversion failed after repeated processing attempts."), null, request).withTrackingVersion(record.artifactTrackingVersion()));
             }
@@ -197,9 +226,14 @@ public final class AzureJobService implements JobService {
     }
 
     private static void checkRequest(JobRecord record, ConversionJobRequest request) {
-        if (!Objects.equals(record.request(), request)) {
+        if (!sameRequest(record.request(), request)) {
             throw new ConversionException(409, "JOB_ID_CONFLICT", "The job ID is already assigned to a different request.");
         }
+    }
+
+    private static boolean sameRequest(ConversionJobRequest stored, ConversionJobRequest incoming) {
+        // Records written before outputFormat existed deserialize it as null.
+        return stored != null && Objects.equals(stored.normalized(), incoming);
     }
 
     private JobStatus transition(JobStatus job, String status, Integer sectionCount, Integer warningCount, String code, String message) {

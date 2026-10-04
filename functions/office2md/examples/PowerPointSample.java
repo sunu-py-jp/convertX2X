@@ -67,6 +67,49 @@ public final class PowerPointSample {
             XSLFPictureShape picture = images.createPicture(deck.addPicture(png.toByteArray(), PictureData.PictureType.PNG));
             picture.setAnchor(new Rectangle2D.Double(80, 130, 640, 360));
             ((org.openxmlformats.schemas.presentationml.x2006.main.CTPicture) picture.getXmlObject()).getNvPicPr().getCNvPr().setDescr("紺色背景と紫色の円");
+            textSize(images, "画像は埋め込みデータを参照し、代替説明も残します。", 735, 150, 190, 280, 19.0);
+
+            XSLFSlide decisions = deck.createSlide(); title(decisions, "条件別の対応を表で比較");
+            textSize(decisions, "区分・条件・担当・処理を1行ずつ対応付けます。結合行の値は開始セルに保持します。", 40, 90, 870, 48, 20.0);
+            XSLFTable decisionTable = decisions.createTable(5, 4);
+            decisionTable.setAnchor(new Rectangle2D.Double(40, 150, 870, 275));
+            String[][] decisionValues = {
+                {"区分", "条件", "担当", "処理"},
+                {"通常", "資料あり", "受付", "当日確認"},
+                {"差戻し", "添付不足", "申請者", "再提出"},
+                {"共通の補足", "", "管理者", "期限は営業日"},
+                {"例外", "期限超過", "責任者", "翌朝判断"}
+            };
+            for (int r = 0; r < decisionValues.length; r++) {
+                decisionTable.setRowHeight(r, 55);
+                for (int c = 0; c < 4; c++) {
+                    decisionTable.setColumnWidth(c, c == 1 ? 240 : 210);
+                    XSLFTableCell cell = decisionTable.getCell(r, c);
+                    cell.setText(decisionValues[r][c]).setFontSize(20.0);
+                    if (r == 0) cell.setFillColor(new Color(218, 233, 242));
+                }
+            }
+            decisionTable.mergeCells(3, 3, 0, 1);
+            textSize(decisions, "補足：差戻し後は同じ申請番号で再判定します。", 45, 455, 850, 44, 20.0);
+
+            XSLFSlide path = deck.createSlide(); title(path, "レビュー経路の図形と補足");
+            XSLFGroupShape review = path.createGroup();
+            review.setAnchor(new Rectangle2D.Double(60, 130, 830, 250));
+            review.setInteriorAnchor(new Rectangle2D.Double(0, 0, 830, 250));
+            XSLFAutoShape request = review.createAutoShape(); request.setShapeType(ShapeType.ROUND_RECT);
+            request.setAnchor(new Rectangle2D.Double(0, 55, 210, 130)); request.setFillColor(new Color(220, 239, 255));
+            request.setText("申請を受付").setFontSize(26.0);
+            XSLFAutoShape check = review.createAutoShape(); check.setShapeType(ShapeType.DIAMOND);
+            check.setAnchor(new Rectangle2D.Double(310, 30, 190, 180)); check.setFillColor(new Color(255, 239, 209));
+            check.setText("資料を確認").setFontSize(24.0);
+            XSLFAutoShape complete = review.createAutoShape(); complete.setShapeType(ShapeType.ROUND_RECT);
+            complete.setAnchor(new Rectangle2D.Double(610, 55, 210, 130)); complete.setFillColor(new Color(222, 244, 225));
+            complete.setText("結果を通知").setFontSize(26.0);
+            XSLFConnectorShape firstLine = review.createConnector();
+            firstLine.setAnchor(new Rectangle2D.Double(210, 120, 100, 0)); firstLine.setLineWidth(3);
+            XSLFConnectorShape secondLine = review.createConnector();
+            secondLine.setAnchor(new Rectangle2D.Double(500, 120, 110, 0)); secondLine.setLineWidth(3);
+            textSize(path, "図形のラベルを本文から検索できます。線の関係は確定できた場合だけ記録します。", 55, 420, 860, 72, 21.0);
 
             XSLFSlide excluded = deck.createSlide(); excluded.setHidden(true); title(excluded, "非表示のスライドは出力しない");
             try (var stream = Files.newOutputStream(target)) { deck.write(stream); }
@@ -80,5 +123,11 @@ public final class PowerPointSample {
     private static XSLFTextBox text(XSLFSlide slide, String text, double x, double y, double width, double height) {
         XSLFTextBox box = slide.createTextBox(); box.setAnchor(new Rectangle2D.Double(x, y, width, height));
         box.setText(text).setFontSize(24.0); return box;
+    }
+    private static XSLFTextBox textSize(XSLFSlide slide, String value, double x, double y,
+                                        double width, double height, double size) {
+        XSLFTextBox box = text(slide, value, x, y, width, height);
+        box.getTextParagraphs().getFirst().getTextRuns().getFirst().setFontSize(size);
+        return box;
     }
 }

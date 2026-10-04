@@ -17,7 +17,7 @@ public class PlaygroundFunctions {
             "style.css", "text/css; charset=utf-8",
             "app.js", "text/javascript; charset=utf-8");
     private static final String CONTENT_POLICY = "default-src 'none'; script-src 'self'; style-src 'self'; "
-            + "img-src 'self' blob:; connect-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'";
+            + "img-src 'self' blob:; frame-src blob:; connect-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'";
     private final AppConfig config;
 
     public PlaygroundFunctions() {
@@ -62,6 +62,7 @@ public class PlaygroundFunctions {
         Map<String, Object> options = new LinkedHashMap<>();
         options.put("asyncEnabled", config.asyncEnabled());
         options.put("supportedFormats", List.of("xlsx", "xls", "docx", "pptx"));
+        options.put("supportedOutputs", List.of("markdown", "pdf"));
         options.put("maxInputBytes", config.limits().maxInputBytes());
         options.put("maxSections", config.limits().maxSections());
         options.put("maxReadItems", config.limits().maxReadItems());

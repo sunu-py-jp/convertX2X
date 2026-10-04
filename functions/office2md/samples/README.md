@@ -6,8 +6,8 @@ Officeの各形式を編集可能な元ファイルで試せます。すべて�
 
 | サンプル | 確認する内容 |
 | --- | --- |
-| [office-sample.docx](office-sample.docx) | H1/H2、太字・リンク、取消線、最終変更履歴、罫線なし表・結合、3からの番号、脚注、日本語の回転図形、埋め込み画像 |
-| [office-sample.pptx](office-sample.pptx) | 4表示＋1非表示スライド、タイトル・本文、番号、罫線なし結合表、図形内文字・座標・取消線・リンク、埋め込み画像 |
+| [office-sample.docx](office-sample.docx) | H1/H2、太字・リンク、取消線、最終変更履歴、罫線なし表と3列の判定表・結合・複数段落セル、3からの番号、2脚注、日本語の回転図形・楕円、埋め込み画像 |
+| [office-sample.pptx](office-sample.pptx) | 6表示＋1非表示スライド、タイトル・本文、番号、2種類の結合表、レビュー経路の図形・接続線、リンク、埋め込み画像 |
 | [PowerPointのRAG向け業務フロー](../../../docs/APIDocs/office2md/examples/powerpoint-rag-flow/input.pptx) | 分岐・差戻し・グループ・双方向・始点矢印・接続先不明の線。[実変換結果と再生成手順](../../../docs/APIDocs/office2md/examples/powerpoint-rag-flow/README.md) |
 | [WordのRAG向け業務フロー](../../../docs/APIDocs/office2md/examples/word-rag-flow/input.docx) | グループ・描画キャンバス内の図形文字と保存済み接続、本文位置、まとめた参考画像。[生成プログラム](../examples/WordRagSample.java) |
 | [full-feature.xlsx](full-feature.xlsx) | Excelの包括ケース。罫線表を起点にした左右の値・横並び表の取り込みも含む。詳細は以下 |
@@ -45,7 +45,7 @@ java -Djava.awt.headless=true -cp 'target/sample-tools:target/azure-functions/of
 node scripts/test_playground_browser.cjs --base http://localhost:7072 --fixtures target/fixtures --out target/office-browser
 ```
 
-WordのRAG向け業務フローは、図の前後の本文、4つの表示ノード、4つの解決済み接続と1つの接続先不明の線、通常表を含みます。次のコマンドで再生成できます。
+WordのRAG向け業務フローは、図の前後の本文、4つの表示ノード、4つの解決済み接続と1つの接続先不明の線を含みます。次のコマンドで再生成できます。
 
 ```sh
 javac -encoding UTF-8 -cp 'target/azure-functions/office2md-local/lib/*' \
@@ -63,7 +63,7 @@ java -Djava.awt.headless=true -cp 'target/sample-tools:target/azure-functions/of
 | シート | 確認する機能 |
 | --- | --- |
 | 01_文章と書式 | 日本語、段落、複数セル、全体・部分太字、通常書式の明示、全体・部分取消線、取り消したリンクと数式の除外、HTTP/HTTPS/mailto、太字リンク、空の表示名、不正・内部・ファイルリンクの文字保持、Markdown/HTMLのエスケープ、改行、結合文章、非表示行・列 |
-| 02_罫線の表 | 閉じた罫線、直接セル塗りのある先頭連続行を1行のMarkdownヘッダーにまとめる動作と塗りのない先頭行を明細に残す動作、空行・空列、表内の書式・リンク・改行・縦棒、横並びの別表、同じ行範囲の左右取り込み、片側罫線、非表示行、結合見出し、Excelテーブル定義、スタイルだけの表、囲み・不完全な罫線・下線、空の表、条件付き書式 |
+| 02_罫線の表 | 閉じた罫線、直接セル塗りのある先頭連続行を1行のMarkdownヘッダーにまとめる動作と塗りのない先頭行を明細に残す動作、空行・空列、表内の書式・リンク・改行・縦棒、横並びの別表、同じ行範囲の左右取り込み、片側罫線、非表示行、結合見出し、名前付き範囲・Excelテーブル定義、スタイルだけの表、囲み・不完全な罫線・下線、空の表、条件付き書式 |
 | 03_表示値と数式 | 先頭ゼロ、桁区切り、通貨、割合、日付、時刻、負数、指数、真偽値、エラー、ゼロと空欄、数式キャッシュ、キャッシュなし、固定・動的HYPERLINK、IMAGEの代替表示、数値の取消線 |
 | 04_画像 | PNG/JPEGの参考画像への描画、重複データ共有、罫線表の直後への配置、非表示画像と非表示アンカーの除外 |
 | 05_基本図形 | 長方形、角丸、楕円、上下左右矢印、直線、コネクター、テキストボックス、日本語Sans/Serifの通常・太字、部分取消線、リンク、回転、反転、テーマ色 |
@@ -73,6 +73,8 @@ java -Djava.awt.headless=true -cp 'target/sample-tools:target/azure-functions/of
 | 末尾の5シート | 非表示・VeryHiddenと、出力内容のないシートを除外 |
 
 Excelの表では、ヘッダーと明細の全表示行が同じ隣接列をそれぞれ明示的に横結合している範囲だけ、1つのMarkdown列に畳みます。結合幅が行によって違う場合は元の列を保ち、結合した1行ヘッダーの共通見出しを各列へ継承します。複数行ヘッダーでは結合した上位見出しを子列へ引き継ぎます。各出力列の元の列範囲は `report.json` の `sourceColumnSpans` で確認できます。罫線から推定した見た目上の結合は、列を畳む根拠にしません。
+
+名前付き範囲 `InventoryGrid` は `02_罫線の表!A4:D9` と一致し、実出力では表の直前に名前が付き、`report.json` の表ブロックにも `definedNames` として記録されます。もう一つの `CachedResultCells` は `03_表示値と数式!A17:C18` を指しますが、そこは表として検出されないため表名にはなりません。
 
 `03_表示値と数式!C17` は意図的に `1+2` の数式と保存キャッシュ `999` を持ちます。生成したファイルをそのまま送信すると、再計算せず `999` を出力します。Excelなどで開いて再保存すると再計算される可能性があるため、厳密な検証には再生成したファイルを使います。
 

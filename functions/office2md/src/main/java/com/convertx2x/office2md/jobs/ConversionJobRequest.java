@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.convertx2x.office2md.conversion.ConversionException;
+import com.convertx2x.office2md.conversion.OutputFormat;
 import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.Map;
@@ -17,11 +18,16 @@ import java.util.UUID;
 
 /** A versioned queue request. Storage names refer to server-configured aliases, never credentials or URLs. */
 public record ConversionJobRequest(int version, String jobId, BlobSource input, BlobOutput output,
-                                   String filename, Map<String, String> metadata, Notification notification) {
+                                   String filename, Map<String, String> metadata, Notification notification,
+                                   String outputFormat) {
     public static final int VERSION = 1;
     public static final int LATEST_VERSION = 2;
     public ConversionJobRequest(int version, String jobId, BlobSource input, BlobOutput output, String filename) {
-        this(version, jobId, input, output, filename, Map.of(), null);
+        this(version, jobId, input, output, filename, Map.of(), null, null);
+    }
+    public ConversionJobRequest(int version, String jobId, BlobSource input, BlobOutput output, String filename,
+                                Map<String, String> metadata, Notification notification) {
+        this(version, jobId, input, output, filename, metadata, notification, null);
     }
     public ConversionJobRequest { metadata = metadata == null ? Map.of() : Map.copyOf(metadata); }
     public record Notification(String queue) { }
@@ -67,7 +73,7 @@ public record ConversionJobRequest(int version, String jobId, BlobSource input, 
         int version = versionNode.intValue();
         if (version != 1 && version != 2) throw invalid("Only queue message versions 1 and 2 are supported.");
         object(root, "message", version == 1 ? Set.of("version", "jobId", "input", "output", "filename")
-                : Set.of("version", "jobId", "input", "output", "filename", "metadata", "notification"));
+                : Set.of("version", "jobId", "input", "output", "filename", "metadata", "notification", "outputFormat"));
         JsonNode inputNode = root.get("input");
         object(inputNode, "input", version == 1 ? Set.of("storage", "container", "blobName") : Set.of("storage", "container", "blobName", "expectedETag"));
         JsonNode outputNode = root.get("output");
@@ -76,7 +82,8 @@ public record ConversionJobRequest(int version, String jobId, BlobSource input, 
                 new BlobSource(optionalString(inputNode, "storage"), requiredString(inputNode, "container"), requiredString(inputNode, "blobName"), optionalString(inputNode, "expectedETag")),
                 new BlobOutput(optionalString(outputNode, "storage"), requiredString(outputNode, "container"),
                         optionalString(outputNode, "prefix")),
-                optionalString(root, "filename"), readMetadata(root.get("metadata")), readNotification(root.get("notification"))).normalized();
+                optionalString(root, "filename"), readMetadata(root.get("metadata")), readNotification(root.get("notification")),
+                optionalString(root, "outputFormat")).normalized();
     }
 
     public String toJson() {
@@ -84,7 +91,10 @@ public record ConversionJobRequest(int version, String jobId, BlobSource input, 
             ConversionJobRequest request = normalized();
             ObjectNode node = JSON.valueToTree(request);
             if (version == 1) {
-                node.remove("metadata"); node.remove("notification"); ((ObjectNode) node.get("input")).remove("expectedETag");
+                node.remove("metadata"); node.remove("notification"); node.remove("outputFormat");
+                ((ObjectNode) node.get("input")).remove("expectedETag");
+            } else if (request.outputFormat().equals(OutputFormat.MARKDOWN.wireValue())) {
+                node.remove("outputFormat");
             }
             String message = JSON.writeValueAsString(node);
             if (message.getBytes(StandardCharsets.UTF_8).length > MAX_MESSAGE_BYTES) {
@@ -103,6 +113,9 @@ public record ConversionJobRequest(int version, String jobId, BlobSource input, 
         }
         if (version == 1 && (!metadata.isEmpty() || notification != null || (input != null && input.expectedETag() != null)))
             throw invalid("Additional integration fields require queue message version 2.");
+        OutputFormat format = OutputFormat.parse(outputFormat);
+        if (version == 1 && format != OutputFormat.MARKDOWN)
+            throw invalid("outputFormat requires queue message version 2.");
         validateMetadata(metadata);
         Notification notify = notification == null ? null : new Notification(normalizeStorageAlias(notification.queue()));
         if (notification != null && notification.queue() == null) throw invalid("notification.queue is required.");
@@ -138,7 +151,8 @@ public record ConversionJobRequest(int version, String jobId, BlobSource input, 
             throw invalid("filename must have a valid basename of at most 255 characters.");
         }
         return new ConversionJobRequest(version, id, new BlobSource(inputStorage, input.container(), input.blobName(), input.expectedETag()),
-                new BlobOutput(outputStorage, output.container(), prefix), name, new TreeMap<>(metadata), notify);
+                new BlobOutput(outputStorage, output.container(), prefix), name, new TreeMap<>(metadata), notify,
+                format.wireValue());
     }
 
     private static Map<String, String> readMetadata(JsonNode node) {

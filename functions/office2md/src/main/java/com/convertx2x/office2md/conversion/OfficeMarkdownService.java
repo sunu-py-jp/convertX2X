@@ -2,6 +2,9 @@ package com.convertx2x.office2md.conversion;
 
 import com.convertx2x.office2md.presentation.PowerPointMarkdownConverter;
 import com.convertx2x.office2md.word.WordMarkdownConverter;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.concurrent.Semaphore;
@@ -11,6 +14,7 @@ import org.apache.poi.poifs.filesystem.FileMagic;
 /** One format-neutral entry point for HTTP and Queue. Input files never supply a network destination. */
 public final class OfficeMarkdownService {
     private static final Semaphore SLOT = new Semaphore(1, true);
+    private static final ObjectMapper JSON = new ObjectMapper();
     private final ConversionLimits limits;
     private final ExcelMarkdownService excel;
     private final WordMarkdownConverter word;
@@ -43,6 +47,11 @@ public final class OfficeMarkdownService {
     }
 
     public ConversionResult convert(byte[] input, String filename) {
+        return convert(input, filename, OutputFormat.MARKDOWN);
+    }
+
+    public ConversionResult convert(byte[] input, String filename, OutputFormat outputFormat) {
+        Objects.requireNonNull(outputFormat);
         validate(input, filename);
         try { SLOT.acquire(); }
         catch (InterruptedException failure) {
@@ -50,12 +59,32 @@ public final class OfficeMarkdownService {
             throw new ConversionException(503, "CONVERSION_INTERRUPTED", "変換が中断されました。", failure);
         }
         try {
-            return switch (extension(filename)) {
+            ConversionResult result = switch (extension(filename)) {
                 case "xlsx", "xls" -> excel.convert(input, filename);
                 case "docx" -> word.convert(input, filename);
                 case "pptx" -> presentation.convert(input, filename);
                 default -> throw new IllegalStateException("Validated format is unavailable");
             };
+            if (outputFormat == OutputFormat.MARKDOWN) return result;
+            try {
+                var pdfLimits = new com.convertx2x.md2pdf.conversion.ConversionLimits(
+                        limits.maxOutputBytes(), limits.maxOutputBytes(), 0, limits.maxImagePixels());
+                var renderer = new com.convertx2x.md2pdf.conversion.MarkdownPdfService(pdfLimits);
+                try (var rendered = renderer.convertFiles(result.files(), "document.md")) {
+                    result.addPdf(rendered.pdfBytes(), rendered.pageCount(),
+                            JSON.readTree(Files.readAllBytes(rendered.files().get("report.json"))));
+                }
+                return result;
+            } catch (IOException failure) {
+                result.close();
+                throw ConversionWorkspace.io(failure);
+            } catch (com.convertx2x.md2pdf.conversion.ConversionException failure) {
+                result.close();
+                throw new ConversionException(failure.statusCode(), failure.code(), failure.getMessage(), failure);
+            } catch (RuntimeException failure) {
+                result.close();
+                throw failure;
+            }
         } catch (ConversionException failure) {
             throw failure;
         } catch (EncryptedDocumentException failure) {

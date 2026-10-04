@@ -1,0 +1,38 @@
+{
+  "capturedAt": "2026-10-04T07:39:08.493635+00:00",
+  "mode": "actual local Functions HTTP",
+  "hostArtifact": {
+    "path": "functions/office2md/target/azure-functions/office2md-local/office2md-1.0.0-SNAPSHOT.jar",
+    "sha256": "79463b57381bc246579bbaedb0ebf307390b909ac010a9058c6d1627c893bddb"
+  },
+  "request": {
+    "method": "POST",
+    "path": "/api/convert?filename=word-complex.docx&output=pdf",
+    "contentType": "application/octet-stream"
+  },
+  "response": {
+    "status": 200,
+    "contentType": "application/pdf",
+    "sectionCount": 1,
+    "warningCount": 2
+  },
+  "source": {
+    "path": "../input.docx",
+    "sizeBytes": 10911,
+    "sha256": "099a83f3c715b5fa3adcd5789e69ca262af7ab541c316dc1b79ebb4544610d5d"
+  },
+  "pdf": {
+    "path": "document.pdf",
+    "sizeBytes": 97403,
+    "sha256": "3c1620d51fe52336af223b22d72125d623aa534d24bf588fd120351de4651280",
+    "pages": 3
+  },
+  "firstPage": {
+    "path": "page-01.png",
+    "sizeBytes": 157068,
+    "sha256": "406b5d07f63676aeffdc5db912f91273d625eda5d0370bc3e5b9c37d4f491ede",
+    "width": 990,
+    "height": 1400,
+    "rendering": "pdftoppm first page, scale-to 1400 pixels"
+  }
+}

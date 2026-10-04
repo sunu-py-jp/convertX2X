@@ -1,0 +1,34 @@
+name: Publish API Docs
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Stage API Docs
+        run: python3 .github/scripts/build_apidocs.py --repository "$GITHUB_REPOSITORY" --ref "$GITHUB_SHA" --output "$RUNNER_TEMP/apidocs-site"
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: ${{ runner.temp }}/apidocs-site
+      - id: deployment
+        uses: actions/deploy-pages@v4

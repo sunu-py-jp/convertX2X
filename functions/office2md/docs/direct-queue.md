@@ -79,17 +79,18 @@ result:  storage, container, sectionCount, warningCount,
 
 `job.status` が `succeeded` になったら、`result.artifacts` の `blobName` を使って各成果物を取得します。`result.storage` はサーバーに登録した出力Storage名です。状態・成果物の取得にはBlobの認証が必要です。HTTPの状態APIはこの内部レコードをそのまま返さず、ジョブ情報と取得用URLだけを公開します。
 
-実際の保存先は `{output.prefix}/{jobId}/results/{attemptId}/document.md`、同じ場所の `report.json` と `images/...` です。`attemptId` は実行時に生成するUUIDで、成果物ごとのパスは状態レコードから取得してください。全ファイルの保存が済んだ試行だけを成功状態に公開します。途中で失敗したBlobや別の試行を列挙して結果に混ぜないでください。ZIPは保存せず、必要ならHTTPの `/api/jobs/{id}/archive` で生成します。
+実際の保存先は `{output.prefix}/{jobId}/results/{attemptId}/document.md`、同じ場所の `report.json` と `images/...` です。PDFジョブでは同じ場所に `document.pdf` も保存します。`attemptId` は実行時に生成するUUIDで、成果物ごとのパスは状態レコードから取得してください。全ファイルの保存が済んだ試行だけを成功状態に公開します。途中で失敗したBlobや別の試行を列挙して結果に混ぜないでください。ZIPは保存せず、必要ならHTTPの `/api/jobs/{id}/archive` で生成します。PDFジョブのZIPにはMarkdown・report・画像・PDFが入ります。
 
 HTTPの `/result`、`/report`、`/images/{assetName}` も利用できます。`/api/jobs/{id}` が返すURLに `x-functions-key` ヘッダーを付けてアクセスします。StorageのキーとFunction Appのホストキーは別のものです。
 
 非一時的な変換エラーは `failed` になります。一時的な処理エラーはQueueの設定に従って再試行され、上限後は `office2md-jobs-poison` に移ります。構文が壊れたメッセージなど、ジョブを特定できない入力では状態レコードを作れません。入力・状態・完了成果物・失敗した試行のBlobについて、保持期間と清掃方法を運用側で決めてください。
 
-## Version 2：入力版・付加情報・結果通知
+## Version 2：PDF・入力版・付加情報・結果通知
 
 `version: 1` の既存依頼は引き続き使用できます。以下の拡張は `version: 2` を指定します。未知のキー・重複キー・型違いは引き続き拒否し、新しいフィールドをversion 1へ混ぜることはできません。
 
 - `input.expectedETag`：任意。原本のETagを引用符も含めて指定し、不一致は `INPUT_VERSION_MISMATCH`。省略時も実際に読み取ったETagを記録します。
+- `outputFormat`：任意。`"pdf"` でPDFジョブにし、HTTPの `/api/jobs/{id}/result` が `application/pdf` の `document.pdf` を返します。省略時は従来のMarkdown結果です。version 1には指定できません。
 - `metadata`：任意の文字列マップ。最大16項目、キー64文字・値512文字・全体8KiB以下。IDやrevisionの引き継ぎに使い、秘密情報は含めません。
 - `notification.queue`：任意。管理者が登録した結果Queueのエイリアス。未登録先は拒否します。
 
@@ -108,6 +109,7 @@ HTTPの `/result`、`/report`、`/images/{assetName}` も利用できます。`/
     "container": "converted-results",
     "prefix": "exports"
   },
+  "outputFormat": "pdf",
   "metadata": {
     "documentId": "document-123",
     "revision": "7"
@@ -118,7 +120,7 @@ HTTPの `/result`、`/report`、`/images/{assetName}` も利用できます。`/
 }
 ```
 
-Officeの成果物にはMarkdown・report・画像一式と、それらの参照・サイズ・SHA-256を持つManifestがあります。通知には大量の画像一覧を埋め込まず、確定した成果物の参照を返します。
+Officeの成果物にはMarkdown・report・画像一式、PDFジョブではPDFと、それらの参照・サイズ・SHA-256を持つManifestがあります。通知には大量の画像一覧を埋め込まず、確定した成果物の参照を返します。
 
 `source`・`archive`・`completed` は事前登録が必要です。ETagは例をそのまま使わず、実際の原本から取得します。入力版が一致しても、その結果を最新として採用できるかは利用側で現在のrevisionと照合してください。
 

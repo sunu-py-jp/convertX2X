@@ -44,6 +44,14 @@ class AzureJobStoreIntegrationTest {
                 JobRecord.ResultLocation first = store.writeResult(request, converted);
                 JobRecord.ResultLocation second = store.writeResult(request, converted);
                 assertEquals(3, first.artifacts().size());
+                try (ConversionResult pdfConverted = AzureJobServiceTest.result()) {
+                    pdfConverted.addPdf("%PDF-test".getBytes(java.nio.charset.StandardCharsets.US_ASCII));
+                    var pdfRequest = new ConversionJobRequest(2, id, request.input(), request.output(),
+                            request.filename(), Map.of(), null, "pdf");
+                    JobRecord.ResultLocation pdfOutput = store.writeResult(pdfRequest, pdfConverted);
+                    assertEquals("application/pdf", store.readResult(pdfOutput, "document.pdf").contentType());
+                    assertArrayEquals(pdfConverted.pdfBytes(), store.readResult(pdfOutput, "document.pdf").bytes());
+                }
                 String root = first.artifacts().getFirst().blobName().replace("document.md", "");
                 assertTrue(root.startsWith("customer/" + id + "/results/"));
                 assertNotEquals(root, second.artifacts().getFirst().blobName().replace("document.md", ""));

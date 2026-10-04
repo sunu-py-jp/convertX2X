@@ -128,6 +128,7 @@ final class MarkdownPdfConverter {
                 else if (node instanceof Image image) parts.add(new ImagePart(image.getDestination(), plainText(image)));
                 else if (node instanceof HtmlInline html) {
                     if (isPageBreak(html.getLiteral())) parts.add(new BreakPart());
+                    else if (isLineBreak(html.getLiteral())) parts.add(style.span("\n"));
                     else { warnHtml(); parts.add(style.span(html.getLiteral())); }
                 } else inlines(node, style, parts);
             }
@@ -194,5 +195,10 @@ final class MarkdownPdfConverter {
         }
 
         private boolean isPageBreak(String text) { return text != null && text.strip().equals("<!-- pagebreak -->"); }
+
+        private boolean isLineBreak(String text) {
+            return text != null && (text.equalsIgnoreCase("<br>")
+                    || text.equalsIgnoreCase("<br/>") || text.equalsIgnoreCase("<br />"));
+        }
     }
 }

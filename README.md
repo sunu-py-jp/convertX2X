@@ -7,7 +7,7 @@
 | 機能 | 入力 → 出力 | Docs |
 | --- | --- | --- |
 | PowerPoint / PDF → 画像 | PPTX・PPT・PDF → PNG・JPEG・ZIP | [API資料](docs/APIDocs/ppt-pdf-to-images/index.html) |
-| Office → Markdown | Excel・Word・PowerPoint → Markdown・画像 | [API資料](docs/APIDocs/office2md/index.html) |
+| Office → Markdown | Excel・Word・PowerPoint → Markdown・画像、生成したMarkdownからPDFも出力 | [API資料](docs/APIDocs/office2md/index.html) |
 | Office → PDF | Excel・Word・PowerPoint → Document Intelligence向けPDF | [API資料](docs/APIDocs/office2pdf/index.html) |
 | Markdown → PDF | Markdown・画像入りZIP → 検索可能な日本語PDF | [API資料](docs/APIDocs/md2pdf/index.html) |
 | Movie → Audio | 動画ファイル・URL・Blob → AAC音声をコピーしたM4A | [API資料](docs/APIDocs/movie2audio/index.html) |
@@ -18,6 +18,7 @@
 
 ## ドキュメント
 
+- [公開API資料（GitHub Pages）](https://sunu-py-jp.github.io/convertX2X/)
 - [APIリファレンス](docs/APIDocs/index.html)：同期・非同期・直接Queueの仕様とリクエスト例
 - [利用・開発ガイド](docs/README.md)：機能別の使い方、構成、起動・設定・検証・デプロイ
 - [開発への参加](CONTRIBUTING.md)：機能追加・変更のルール

@@ -30,6 +30,29 @@ class AzureJobServiceTest {
         assertEquals("succeeded", service.find(request.jobId()).orElseThrow().status());
     }
 
+    @Test void pdfOutputFlowsThroughHttpSubmissionAndDirectQueueRequests() {
+        MemoryStore store = new MemoryStore();
+        List<OutputFormat> formats = new ArrayList<>();
+        AzureJobService service = new AzureJobService(store, (bytes, name, format) -> {
+            formats.add(format);
+            ConversionResult converted = result();
+            if (format == OutputFormat.PDF) converted.addPdf("%PDF-test".getBytes(StandardCharsets.US_ASCII));
+            return converted;
+        }, (bytes, name) -> { }, Clock.systemUTC());
+        JobStatus submitted = service.submit(new byte[]{1, 2}, "source.xlsx", OutputFormat.PDF);
+        assertEquals(2, ConversionJobRequest.parse(store.enqueued).version());
+        assertEquals("pdf", ConversionJobRequest.parse(store.enqueued).outputFormat());
+        service.process(store.enqueued);
+        assertEquals("document.pdf", service.downloadResult(submitted.id()).filename());
+        assertEquals("%PDF-test", new String(service.downloadResult(submitted.id()).bytes(), StandardCharsets.US_ASCII));
+        var base = ConversionJobRequestTest.request();
+        var direct = new ConversionJobRequest(2, base.jobId(), base.input(), base.output(), base.filename(),
+                Map.of(), null, "pdf");
+        service.process(direct.toJson());
+        assertEquals("document.pdf", service.downloadResult(direct.jobId()).filename());
+        assertEquals(List.of(OutputFormat.PDF, OutputFormat.PDF), formats);
+    }
+
     @Test void retriesTransientUploadWithoutPublishingPartialResultAndClosesWorkspace() {
         MemoryStore store = new MemoryStore(); store.failUpload = true;
         AzureJobService service = service(store, (bytes, name) -> result());
@@ -93,6 +116,18 @@ class AzureJobServiceTest {
         service(store, (bytes, name) -> result()).process(request.toJson());
         assertEquals("succeeded", store.records.get(request.jobId()).job().status());
         assertEquals(0, store.records.get(request.jobId()).artifactTrackingVersion());
+    }
+
+    @Test void queuedStateFromBeforeOutputOptionStillMatchesItsOriginalMessage() {
+        MemoryStore store = new MemoryStore();
+        var normalized = ConversionJobRequestTest.request();
+        var legacy = new ConversionJobRequest(normalized.version(), normalized.jobId(), normalized.input(),
+                normalized.output(), normalized.filename());
+        assertNull(legacy.outputFormat());
+        store.ensure(new JobRecord(new JobStatus(legacy.jobId(), "queued", legacy.filename(), "created", "updated",
+                null, null, null, null), null, legacy));
+        service(store, (bytes, name) -> result()).process(legacy.toJson());
+        assertEquals("succeeded", store.records.get(legacy.jobId()).job().status());
     }
 
     @Test void failedHttpInputOrEnqueueLeavesTerminalOwnedStateForCleanup() {

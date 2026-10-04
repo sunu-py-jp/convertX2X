@@ -1,7 +1,7 @@
 {
-  "capturedAt": "2026-10-03T15:01:08.719Z",
+  "capturedAt": "2026-10-04T07:33:22.535Z",
   "mode": "actual local Functions HTTP through unmodified Playground",
-  "sourceCommit": "7f1641d1632f629f1d21a417ba3c9a81cb491421",
+  "sourceCommit": "66a904f3cf7e1fbd736795a75dd448fabf38a096",
   "sourceWorkingTreeDirty": true,
   "runtime": {
     "platform": "darwin",
@@ -13,8 +13,8 @@
   },
   "input": {
     "path": "input.xlsx",
-    "sizeBytes": 152173,
-    "sha256": "f3413b479078eec557e01839ccd798edf64bd77bace63053826196a966b39f35"
+    "sizeBytes": 152253,
+    "sha256": "ab1b8bfa379af7848e71e8335a68498366519b51021561689b4d6d847c2843c5"
   },
   "request": {
     "method": "POST",
@@ -25,7 +25,7 @@
   "response": {
     "status": 200,
     "contentType": "application/zip",
-    "elapsedMs": 2226
+    "elapsedMs": 2133
   },
   "timingNote": "Local macOS measurement from submit click to completed Playground result (HTTP response, unzip and preview construction included). Not an Azure latency or throughput benchmark.",
   "sectionCount": 8,
@@ -61,18 +61,18 @@
   "files": [
     {
       "path": "result.zip",
-      "sizeBytes": 423175,
-      "sha256": "9f74c0c9043c2f73c246d5a51f4d7a6a57c2f31e8e09a97ff4241cf700d1a1b7"
+      "sizeBytes": 423270,
+      "sha256": "14289f6f376f8d36c79426ec71fdff557331d93905c78e776272477b85a84afd"
     },
     {
       "path": "output/document.md",
-      "sizeBytes": 13883,
-      "sha256": "23cd77170405c971a2897378f46fcc8c412525c79a48b2a5a02fbb306a5d1fbb"
+      "sizeBytes": 13902,
+      "sha256": "f583bf4e5681af390715adfa0decdd0256c33256296b6944adbcfc1f8e2690de"
     },
     {
       "path": "output/report.json",
-      "sizeBytes": 65434,
-      "sha256": "390cb956eac7bb46c69983e6571c322feef006e72e449604b82194de7e2a0a18"
+      "sizeBytes": 65705,
+      "sha256": "f7848e73c70019aba90d5537fa8e25748503e948ae153687e25481c76fd44792"
     },
     {
       "path": "output/images/diagram-0001.png",
@@ -241,8 +241,8 @@
     },
     {
       "path": "screenshots/overview.png",
-      "sizeBytes": 246654,
-      "sha256": "72851ec9330973aaf1ae898a2d17296f14f5a93ba16610ed991e8489d5608532"
+      "sizeBytes": 242059,
+      "sha256": "9302a65c6aa94d9fc79040528abad19b6f1f25eb639366da0740c75fac094a8d"
     },
     {
       "path": "screenshots/section-01.png",
@@ -251,8 +251,8 @@
     },
     {
       "path": "screenshots/section-02.png",
-      "sizeBytes": 109895,
-      "sha256": "0848d02389d60151ecb3c67fb32277f37ab8c3df60b1611fe7c1e99095fee74e"
+      "sizeBytes": 111680,
+      "sha256": "e888b01b460d79a831f1797a249b071e1771094d31c82eecb735fb1525c58762"
     },
     {
       "path": "screenshots/section-06.png",
@@ -266,8 +266,8 @@
     },
     {
       "path": "screenshots/tables-detail.png",
-      "sizeBytes": 63339,
-      "sha256": "703b44a1120f574c7bf3bfcdf5b453aab0d288bc8aa4b9a3b6f76b2f8b2dc2a1"
+      "sizeBytes": 62759,
+      "sha256": "8031d7404ef2601bb5755f997428fdb0916194ab1b3b3aadfa9c3db32472d27c"
     },
     {
       "path": "screenshots/group-detail.png",
@@ -276,13 +276,13 @@
     },
     {
       "path": "screenshots/markdown-source.png",
-      "sizeBytes": 162416,
-      "sha256": "7c9a2b36d07194ff2d0fdbdd70be9feb928cae7ba8064747679c10ebcd3a9427"
+      "sizeBytes": 157247,
+      "sha256": "00576100ddfebdf1640aeca48b11c82816179b7f7389e1996ceda7a22a20be6e"
     },
     {
       "path": "screenshots/warnings.png",
-      "sizeBytes": 187486,
-      "sha256": "906905636505b269ffe921711ab3094afa065e8aa0342738eb61c40aefbf682b"
+      "sizeBytes": 189317,
+      "sha256": "70f4787a7a43d8824712bd205c3cb6fc78b7dbe30bf1eedfd4dd17b286f51efe"
     }
   ],
   "screenshotLayout": "Overview/source use normal Playground. Section screenshots expand the preview scroll region and image maximum height, and hide other sections. Excel tables-detail and group-detail crop the top 790 and 1000 CSS pixels; full sections are also included. Warnings expand the warning list. No original text, images or outputs are changed.",

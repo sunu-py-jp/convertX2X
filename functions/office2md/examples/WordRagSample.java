@@ -33,9 +33,6 @@ public final class WordRagSample {
                 + paragraph("本文の前後関係を保ち、図形の文字と保存された接続関係を検索可能な本文に残す例です。", false)
                 + drawing
                 + paragraph("図の後の説明：上段は確認から完了、下段は修正・再申請です。最下段の矢印は接続先を保存していないため、不明として扱います。", false)
-                + "<w:tbl><w:tblGrid><w:gridCol w:w='3000'/><w:gridCol w:w='6000'/></w:tblGrid>"
-                + row("記録", "保存される内容", true) + row("Markdown", "図中の文字・確定した関係・不明な接続", false)
-                + row("report.json", "図形ID・種類・座標・接続先・方向", false) + "</w:tbl>"
                 + "<w:sectPr><w:pgSz w:w='12240' w:h='15840'/><w:pgMar w:top='720' w:right='720' w:bottom='720' w:left='720'/></w:sectPr>";
         String xml = "<w:document xmlns:w='" + W + "' xmlns:wp='http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing'"
                 + " xmlns:a='http://schemas.openxmlformats.org/drawingml/2006/main'"
@@ -53,10 +50,6 @@ public final class WordRagSample {
                 + "<w:r><w:rPr><w:rFonts w:ascii='Noto Sans CJK JP' w:eastAsia='Noto Sans CJK JP'/>"
                 + (heading ? "<w:b/><w:sz w:val='36'/>" : "<w:sz w:val='22'/>")
                 + "</w:rPr><w:t>" + text + "</w:t></w:r></w:p>";
-    }
-    private static String row(String a, String b, boolean header) {
-        return "<w:tr>" + (header ? "<w:trPr><w:tblHeader/></w:trPr>" : "")
-                + "<w:tc>" + paragraph(a, false) + "</w:tc><w:tc>" + paragraph(b, false) + "</w:tc></w:tr>";
     }
     private static String shape(int id, int x, int y, String title, String subtitle, String color, boolean strike) {
         String text = "<w:p><w:pPr><w:jc w:val='center'/></w:pPr><w:r><w:rPr><w:b/><w:sz w:val='26'/>"

@@ -4,10 +4,10 @@
 
 | ケース | 入力 | 実際の結果 |
 | --- | --- | --- |
-| `excel-complex` | 13シート、罫線表、保存済み数式、図形・画像、接続IDなしの線端接触、未対応要素 | 8シート、6表、33アセット、6接続（3確定・3不明）、20警告 |
-| `word-complex` | 見出し、変更履歴、罫線なし結合表、脚注、回転図形、画像 | 1文書、2アセット、1警告 |
-| `word-rag-flow` | 購入申請・修正再申請のDrawingMLグループ、接続先なしの矢印、前後の段落・表 | 1文書、1プレビュー、5接続（4確定・1不明）、5警告 |
-| `powerpoint-complex` | 4表示＋1非表示スライド、表、グループ図形、接続先不明の線、画像 | 4スライド、2プレビュー、2警告 |
+| `excel-complex` | 13シート、罫線表と名前付き範囲、保存済み数式、図形・画像、接続IDなしの線端接触、未対応要素 | 8シート、6表、33アセット、6接続（3確定・3不明）、20警告 |
+| `word-complex` | 罫線なし結合表と3列の判定表、複数段落セル、変更履歴、2脚注、回転図形・楕円・画像 | 1文書、3アセット、2警告。別途3ページの実PDFと1ページ目画像 |
+| `word-rag-flow` | 購入申請・修正再申請のDrawingMLグループ、接続先なしの矢印、前後の段落 | 1文書、1プレビュー、5接続（4確定・1不明）、5警告 |
+| `powerpoint-complex` | 6表示＋1非表示スライド、2種類の結合表、レビュー経路の図形・接続線、画像 | 6スライド、3プレビュー、3警告 |
 | `powerpoint-rag-flow` | 3スライド、購入申請の分岐・差戻し、グループ内外の接続、双方向・始点矢印、接続先不明の線 | 3スライド、3プレビュー、14接続（13確定・1不明）、1警告 |
 | [`excel-merge-matrix`](../merge-cases.html) | 色付き1～3行ヘッダー、無色、部分・全幅の横結合、縦結合、非表示行、無罫線の角を持つ多段マトリックスなど24シート | 24シートの入力Excelと実変換Markdownをケース別に比較 |
 
@@ -46,6 +46,36 @@ python3 docs/APIDocs/office2md/examples/verify.py
 
 `prepare_inputs.py` は包括例3件をコピーします。フロー用の2件は同梱済みです。再生成は [Wordの手順](word-rag-flow/README.md)・[PowerPointの手順](powerpoint-rag-flow/README.md) を参照してください。
 
+拡張したWord・PowerPointの包括例は `WordSample.java`・`PowerPointSample.java` をコンパイルし、`functions/office2md/samples/office-sample.docx`・`office-sample.pptx` を再生成してから `prepare_inputs.py` でコピーします。Wordフロー例は `WordRagSample.java` から `word-rag-flow/input.docx` を直接再生成します。各入力を変更したら、対象ケースの `capture.cjs` を再実行し、変換結果と画面を更新してください。
+
+```sh
+mkdir -p functions/office2md/target/sample-tools
+javac -encoding UTF-8 -cp 'functions/office2md/target/azure-functions/office2md-local/lib/*' \
+  -d functions/office2md/target/sample-tools \
+  functions/office2md/examples/WordSample.java \
+  functions/office2md/examples/PowerPointSample.java \
+  functions/office2md/examples/WordRagSample.java
+java -Djava.awt.headless=true \
+  -cp 'functions/office2md/target/sample-tools:functions/office2md/target/azure-functions/office2md-local/lib/*' \
+  WordSample functions/office2md/samples/office-sample.docx
+java -Djava.awt.headless=true \
+  -cp 'functions/office2md/target/sample-tools:functions/office2md/target/azure-functions/office2md-local/lib/*' \
+  PowerPointSample functions/office2md/samples/office-sample.pptx
+java -Djava.awt.headless=true \
+  -cp 'functions/office2md/target/sample-tools:functions/office2md/target/azure-functions/office2md-local/lib/*' \
+  WordRagSample docs/APIDocs/office2md/examples/word-rag-flow/input.docx
+python3 docs/APIDocs/office2md/examples/prepare_inputs.py
+```
+
+WordのPDF例は同じ `word-complex/input.docx` を `output=pdf` 付きの実HTTP APIへ送った応答です。[PDF](word-complex/pdf/document.pdf)と[1ページ目画像](word-complex/pdf/page-01.png)、[実行記録](word-complex/pdf/run.json)を保存しています。ローカルホスト起動後に次のコマンドで再取得できます。
+1ページ目の画像作成とページ数の検査には `pdftoppm` と `pdfinfo` を使います。
+
+```sh
+python3 docs/APIDocs/office2md/examples/capture_pdf.py --base http://localhost:7072
+python3 docs/APIDocs/office2md/examples/render_word_powerpoint.py
+python3 docs/APIDocs/office2md/examples/verify.py
+```
+
 独立した場所へPlaywrightを準備する場合の例です。
 
 ```sh
@@ -59,7 +89,7 @@ NODE_PATH=/tmp/office2md-docs-tools/node_modules \
 
 ## 記録の範囲
 
-- Excel例は2026-09-30、その他4例は2026-09-23に、macOS arm64・Java 21・ローカルFunctionsで実行しました。成果物の `report.json` は `specVersion: 1` です。`run.json` の時間は送信操作から応答ZIPの展開・プレビュー生成までを含みます。コールドスタートやAzureの性能を測るものではありません。
+- Excel・Word包括・Wordフロー・PowerPoint包括例は2026-10-04、PowerPointフロー例は2026-09-23に、macOS arm64・Java 21・ローカルFunctionsで実行しました。成果物の `report.json` は `specVersion: 1` です。`run.json` の時間は送信操作から応答ZIPの展開・プレビュー生成までを含みます。コールドスタートやAzureの性能を測るものではありません。
 - この記録は同期HTTPの結果です。Queue・別Storage・Azureデプロイの検証記録ではありません。
 - 通常の画面は `screenshots/overview.png` と `markdown-source.png`。セクション別画像はプレビューのスクロールと画像高さを広げ、ほかのセクションを隠して撮影しています。元の文章・画像は編集していません。
 - Excelの `tables-detail.png` / `group-detail.png` は先頭790 / 1000 CSSピクセルを撮影し、同じセクションの全体画像も保存しています。警告の画像は警告リストを展開して撮影しています。

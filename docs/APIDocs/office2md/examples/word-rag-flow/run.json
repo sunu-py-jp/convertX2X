@@ -1,7 +1,7 @@
 {
-  "capturedAt": "2026-09-23T08:02:35.119Z",
+  "capturedAt": "2026-10-04T07:30:09.559Z",
   "mode": "actual local Functions HTTP through unmodified Playground",
-  "sourceCommit": "8b4ee428d920ae052a0de374df30098d791d4fa3",
+  "sourceCommit": "66a904f3cf7e1fbd736795a75dd448fabf38a096",
   "sourceWorkingTreeDirty": true,
   "runtime": {
     "platform": "darwin",
@@ -9,12 +9,12 @@
     "node": "v24.2.0",
     "java": "openjdk version \"21\" 2023-09-19 LTS\nOpenJDK Runtime Environment Temurin-21+35 (build 21+35-LTS)\nOpenJDK 64-Bit Server VM Temurin-21+35 (build 21+35-LTS, mixed mode)",
     "coreTools": "4.9.0",
-    "browser": "153.0.8010.53"
+    "browser": "154.0.8037.93"
   },
   "input": {
     "path": "input.docx",
-    "sizeBytes": 3812,
-    "sha256": "77bbbe893b44471a906a70b7163da80df7b50d71536f93fb57fec5a37114f45c"
+    "sizeBytes": 3646,
+    "sha256": "c8a25d71ffaadda604874e86d1d860a8991f3bfcb6ef18edf61d91e7ddd18c77"
   },
   "request": {
     "method": "POST",
@@ -25,7 +25,7 @@
   "response": {
     "status": 200,
     "contentType": "application/zip",
-    "elapsedMs": 100
+    "elapsedMs": 93
   },
   "timingNote": "Local macOS measurement from submit click to completed Playground result (HTTP response, unzip and preview construction included). Not an Azure latency or throughput benchmark.",
   "sectionCount": 1,
@@ -42,18 +42,18 @@
   "files": [
     {
       "path": "result.zip",
-      "sizeBytes": 22068,
-      "sha256": "8b914618aeabe16cf5417d505a5de75cac9c3a411cb625a478be868b55d89d58"
+      "sizeBytes": 21954,
+      "sha256": "88d484334ae9773926108ae48b88329995c6db4c0c021323850493e35081fc80"
     },
     {
       "path": "output/document.md",
-      "sizeBytes": 1408,
-      "sha256": "7f184234f29c79a0762d392ac064246b8400889ed5a2e267c4bf196490d7863d"
+      "sizeBytes": 1204,
+      "sha256": "ae29f15ee3e3eafccb4b713b597a5cee686baa2bbb6ad61e49ba3ee95c4e41c5"
     },
     {
       "path": "output/report.json",
-      "sizeBytes": 6724,
-      "sha256": "c131f888e931f164673c565bda741affcbb89756627ff4725ae35a768378ee9f"
+      "sizeBytes": 6627,
+      "sha256": "d33b3c8742ab2ef65ed0bc631da935ce664cee9d22fffe3847783170fc80e8bc"
     },
     {
       "path": "output/images/diagram-0001.png",
@@ -62,23 +62,23 @@
     },
     {
       "path": "screenshots/overview.png",
-      "sizeBytes": 235991,
-      "sha256": "673d579a9c5775af1eecfe5f796eea60d743043425ed20430e667ff791390196"
+      "sizeBytes": 239985,
+      "sha256": "bedd4c001ac93822e0c564ea4545c92a8b92621fbff0d714f622044ffbaf2536"
     },
     {
       "path": "screenshots/section-01.png",
-      "sizeBytes": 132652,
-      "sha256": "d2f259fb3073e993400f496d8b1770656299c369e2c9614d0d9ea3a99ae300f0"
+      "sizeBytes": 116893,
+      "sha256": "ffa43fce7896e88f294c185798e43a94cfed111789a30976531f91086f59436d"
     },
     {
       "path": "screenshots/markdown-source.png",
-      "sizeBytes": 152423,
-      "sha256": "20c6820325a0074ea6f850b72daf65fb2f6e50653f20d56cc7951eb14f09c454"
+      "sizeBytes": 153356,
+      "sha256": "d0cc21697521952fb6e163ed39d87e467e226ba8851a139eec2632b9c6aac352"
     },
     {
       "path": "screenshots/warnings.png",
-      "sizeBytes": 58930,
-      "sha256": "94c1dba5121aa46948492e1f823c3de8994afac9e74ce2ecefd63378d62dbbae"
+      "sizeBytes": 61278,
+      "sha256": "2a96b2f47ddde9e7cabc7dfbd2e75d8d55f5e9550729594eac36a4f8aef975d0"
     }
   ],
   "screenshotLayout": "Overview/source use normal Playground. Section screenshots expand the preview scroll region and image maximum height, and hide other sections. Excel tables-detail and group-detail crop the top 790 and 1000 CSS pixels; full sections are also included. Warnings expand the warning list. No original text, images or outputs are changed.",

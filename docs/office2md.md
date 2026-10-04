@@ -2,7 +2,7 @@
 
 [マニュアルの入口](README.md) · [共通の作業手順](development.md)
 
-`functions/office2md` の変換処理を修正・拡張するための実装案内です。Java 21 と Apache POI を使う独立した Azure Functions アプリで、PowerPoint/PDF 変換機能の配置や実行環境を参照しません。
+`functions/office2md` の変換処理を修正・拡張するための実装案内です。Java 21 と Apache POI を使う Azure Functions アプリです。PDF出力にはリポジトリ内の `md2pdf` 変換ソースとフォントをビルド時に取り込みます。
 
 利用・配置手順は [利用ガイド](../functions/office2md/docs/usage.md)、API一覧は [HTTP API](../functions/office2md/docs/usage.md#http-api)、環境変数は [上限](../functions/office2md/docs/usage.md#上限) と [直接Queue投入](../functions/office2md/docs/direct-queue.md) を参照してください。[初期設計メモ](designs/office2md.md) は判断理由と確認観点を記録した参考資料です。
 
@@ -22,14 +22,17 @@ Javaのルートパッケージは `com.convertx2x.office2md` です。`conversi
 | 図形の座標変換、参考PNGのJava2D描画 | [DrawingScene](../functions/office2md/src/main/java/com/convertx2x/office2md/drawing/DrawingScene.java) |
 | Excel・Wordの保存済み接続の解決と本文、画像のJSON | [DiagramGraph](../functions/office2md/src/main/java/com/convertx2x/office2md/drawing/DiagramGraph.java)、[DiagramMetadata](../functions/office2md/src/main/java/com/convertx2x/office2md/drawing/DiagramMetadata.java) |
 | 図形文字の書式抽出・除外と、行の計測・配置 | [DrawingText](../functions/office2md/src/main/java/com/convertx2x/office2md/drawing/DrawingText.java)、[DrawingTextLayout](../functions/office2md/src/main/java/com/convertx2x/office2md/drawing/DrawingTextLayout.java) |
-| 一時ファイル、上限、重複画像、report、ZIP | [ConversionWorkspace](../functions/office2md/src/main/java/com/convertx2x/office2md/conversion/ConversionWorkspace.java)、[ConversionResult](../functions/office2md/src/main/java/com/convertx2x/office2md/conversion/ConversionResult.java) |
+| 一時ファイル、上限、重複画像、report、ZIP・PDF | [ConversionWorkspace](../functions/office2md/src/main/java/com/convertx2x/office2md/conversion/ConversionWorkspace.java)、[ConversionResult](../functions/office2md/src/main/java/com/convertx2x/office2md/conversion/ConversionResult.java)、[OutputFormat](../functions/office2md/src/main/java/com/convertx2x/office2md/conversion/OutputFormat.java) |
 | HTTP/Queueの入口、設定、サービスの共有 | [ConversionFunctions](../functions/office2md/src/main/java/com/convertx2x/office2md/ConversionFunctions.java)、[AppConfig](../functions/office2md/src/main/java/com/convertx2x/office2md/AppConfig.java)、[RuntimeServices](../functions/office2md/src/main/java/com/convertx2x/office2md/RuntimeServices.java) |
 | ジョブ状態、重複配送、Blobへの入出力 | [AzureJobService](../functions/office2md/src/main/java/com/convertx2x/office2md/jobs/AzureJobService.java)、[AzureJobStore](../functions/office2md/src/main/java/com/convertx2x/office2md/jobs/AzureJobStore.java)、[JobStore](../functions/office2md/src/main/java/com/convertx2x/office2md/jobs/JobStore.java) |
 | 静的UIの配信と安全なプレビュー | [PlaygroundFunctions](../functions/office2md/src/main/java/com/convertx2x/office2md/PlaygroundFunctions.java)、[playground/app.js](../functions/office2md/src/main/resources/playground/app.js) |
 
 ## 共通入口と形式別の変換
 
-`OfficeMarkdownService` が入力サイズ・拡張子・形式シグネチャを検査し、Excelは `ExcelMarkdownService`、Wordは `WordMarkdownConverter`、PowerPointは `PowerPointMarkdownConverter` へ渡します。形式別コンバーターはOOXMLの本文パーツ型なども検査し、拡張子を変えた別形式やマクロ有効形式を受け付けません。`.xlsx` / `.xls` / `.docx` / `.pptx` が対象で、`.doc` / `.ppt` / PDFは対象外です。
+`OfficeMarkdownService` が入力サイズ・拡張子・形式シグネチャを検査し、Excelは `ExcelMarkdownService`、Wordは `WordMarkdownConverter`、PowerPointは `PowerPointMarkdownConverter` へ渡します。形式別コンバーターはOOXMLの本文パーツ型なども検査し、拡張子を変えた別形式やマクロ有効形式を受け付けません。入力は `.xlsx` / `.xls` / `.docx` / `.pptx` が対象で、`.doc` / `.ppt` / PDFは対象外です。
+
+出力形式は `OutputFormat` で選びます。既定のMarkdown結果は従来のZIPとして返し、PDF指定では生成したMarkdownと画像を `md2pdf` のレンダラーへ渡して `document.pdf` を追加します。PDFは入力形式ではありません。同期HTTPはPDF本体を返し、非同期では `/result` がPDF、`/archive` がMarkdown・report・画像・PDFのZIPになります。
+PDF配置時の警告は `PDF_` 接頭辞でOfficeの `report.json` の `warnings` に統合し、`pdfOutput` にページ数・サイズ・SHA-256・PDF警告件数を残します。
 
 | 形式 | 構造・読む順番 | 表・除外対象 |
 | --- | --- | --- |
@@ -157,10 +160,10 @@ Excelとは異なる組版なので、フォント置換後の字幅・改行位
 
 `report.json` は `specVersion: 1` です。接続情報は `arrowheadDirectionAlongLine / connectionResolutionStatus / connectionResolutionReason / connectionResolutionExplanation` を使います。Queue依頼本文の `version` は独立した仕様です。`source.format` は入力拡張子、`sectionKind` は `sheet` / `slide` / `document`、`sectionCount` は出力したセクション数です。診断やブロックの `section` は形式別の位置名です。`blocks` は元の位置・範囲との対応を持ち、ExcelではMarkdown行番号も記録し、表には元の行列番号・ヘッダー判定・結合範囲・出力列ごとの `sourceColumnSpans` を付けます。無罫線の角にある文字列を表の前に示す注記は `type: text` と `noteKind: unbordered-top-note`、明細の結合範囲を示す注記は `type: text` と `noteKind: body-merge` を持ちます。名前付き範囲を採用した表には `definedNames`、分割した表には元範囲の `sourceTableRange` を付けます。PowerPointの `diagram` ブロックとExcel・Wordの `drawing` ブロックは `nodes / edges`、参考画像があれば `path / metadata` を持ちます。添付ファイルにも `path / metadata` を付けます。`assets` はファイルのパス・MIME・サイズ・SHA-256です。フィールドは形式とブロック種別ごとに読み取ってください。レポート形式を変える場合はUIとQueueの成果物取得も確認します。
 
-- 同期HTTPは `OfficeMarkdownService.convert` の結果を `ConversionResult.zipBytes()` でZIP化する。最終レスポンスは上限付きのメモリーバッファで、HTTPストリーミングではない。
+- 同期HTTPは既定で `OfficeMarkdownService.convert` の結果を `ConversionResult.zipBytes()` でZIP化し、`output=pdf` のときは `pdfBytes()` を返す。最終レスポンスは上限付きのメモリーバッファで、HTTPストリーミングではない。
 - HTTPからの非同期受付は入力と状態を保存してからQueueへ送る。直接Queueも同じ `AzureJobService.process` と変換コアへ入る。
 - QueueはBlobリースで同じジョブの配送を直列化し、正規化した依頼が一致するか確認する。完了済みジョブを別の内容で上書きしない。
-- `AzureJobStore` は試行ごとに成果物を個別Blobへ保存する。すべて保存できた試行だけを成功状態へ公開し、保存途中のBlobを結果一覧へ混ぜない。ZIPは取得要求時に作る。
+- `AzureJobStore` は試行ごとに成果物を個別Blobへ保存する。PDFジョブでは `document.pdf` も保存し、`/result` はPDFを選ぶ。すべて保存できた試行だけを成功状態へ公開し、保存途中のBlobを結果一覧へ混ぜない。ZIPは取得要求時に作る。
 - 入力はダウンロード中、完成成果物は保存時のETagに対して検査する。再試行をまたいで同じ入力Blobを差し替えてよいという意味ではない。
 
 Queue JSONは [ConversionJobRequest](../functions/office2md/src/main/java/com/convertx2x/office2md/jobs/ConversionJobRequest.java) が検証し、Storageは [BlobStorageProfiles](../functions/office2md/src/main/java/com/convertx2x/office2md/jobs/BlobStorageProfiles.java) の入力用・出力用登録名で解決します。依頼側から任意URLや資格情報を受け取りません。登録名の分離とStorage側の実権限は別です。HTTPのホストキーもStorageの資格情報とは異なります。プロトコル・保存先・再送手順は [直接Queue投入](../functions/office2md/docs/direct-queue.md) に集約しています。
@@ -186,7 +189,7 @@ Queue JSONは [ConversionJobRequest](../functions/office2md/src/main/java/com/co
 | 成果物・上限・一時ファイル | `ConversionWorkspace`、`ConversionResult`、`ConversionLimits`、`AppConfig` | コア・描画テストの上限、ZIP内容、清掃ケース |
 | HTTP契約・設定・非同期の有効化 | `ConversionFunctions`、設定と起動スクリプト | [ConversionFunctionsTest](../functions/office2md/src/test/java/com/convertx2x/office2md/ConversionFunctionsTest.java)、[test_settings_scripts.py](../functions/office2md/scripts/test_settings_scripts.py) |
 | Queue契約・再試行・Storage | `ConversionJobRequest`、`AzureJobService`、`AzureJobStore` | [jobs配下のテスト](../functions/office2md/src/test/java/com/convertx2x/office2md/jobs/)、[非同期E2E](../functions/office2md/scripts/test_async_e2e.py) |
-| ZIPプレビュー・画像取得・認証 | `playground/app.js`、`PlaygroundFunctions` | [ブラウザ検証](../functions/office2md/scripts/test_playground_browser.cjs) |
+| ZIP・PDFプレビュー、画像取得、認証 | `playground/app.js`、`PlaygroundFunctions` | [ブラウザ検証](../functions/office2md/scripts/test_playground_browser.cjs) |
 
 図形の試験では、取消線を削除した参照入力との画像一致、色・位置・寸法などを使います。異なるOSのフォントやJava2Dで生成したPNGとの無条件なバイト一致を前提にせず、Linuxでも日本語・フォント置換を確認してください。
 

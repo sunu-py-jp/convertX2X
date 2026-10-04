@@ -22,6 +22,7 @@
     "&lt;script&gt;window.",
     "セル内の1行目\nセル内の2行目",
     "結合セルの文章は左上だけを出力します。",
+    "**InventoryGrid**",
     "上限 | 下限",
     "通常と**重要**の混在",
     "[表のリンク<br>2行目](https://example.com/table)",

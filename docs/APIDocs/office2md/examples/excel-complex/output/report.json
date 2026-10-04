@@ -1,9 +1,9 @@
 {
   "specVersion" : 1,
   "source" : {
+    "sha256" : "ab1b8bfa379af7848e71e8335a68498366519b51021561689b4d6d847c2843c5",
     "filename" : "input.xlsx",
-    "format" : "xlsx",
-    "sha256" : "f3413b479078eec557e01839ccd798edf64bd77bace63053826196a966b39f35"
+    "format" : "xlsx"
   },
   "sectionKind" : "sheet",
   "sectionCount" : 8,
@@ -35,7 +35,7 @@
     "code" : "TABLE_MERGE_FLATTENED",
     "section" : "02_罫線の表",
     "range" : "A20:C23",
-    "message" : "Markdown表はセル結合を直接表せないため、共有見出しは各列へ継承し、それ以外の結合の続きは空欄です。"
+    "message" : "Markdown表はセル結合を直接表せないため、共有見出しは各列へ継承し、明細の結合範囲は表の直前に記して続きのセルは空欄にします。"
   }, {
     "code" : "FORMULA_CACHE_MISSING",
     "section" : "03_表示値と数式",
@@ -593,13 +593,15 @@
     "markdownStartLine" : 42,
     "markdownEndLine" : 42
   }, {
-    "inferredMergedRanges" : [ ],
+    "definedName" : "InventoryGrid",
+    "type" : "table-name",
+    "section" : "02_罫線の表",
+    "range" : "A4:D9",
+    "markdownStartLine" : 44,
+    "markdownEndLine" : 44
+  }, {
     "sourceRows" : [ 4, 5, 6, 7, 8, 9 ],
-    "mergedRanges" : [ ],
     "sourceColumns" : [ 1, 2, 3, 4 ],
-    "headerSourceRows" : [ 4 ],
-    "header" : "fill-color",
-    "detectedRanges" : [ "A4:D9" ],
     "sourceColumnSpans" : [ {
       "first" : 1,
       "last" : 1
@@ -613,19 +615,20 @@
       "first" : 4,
       "last" : 4
     } ],
+    "header" : "fill-color",
+    "headerSourceRows" : [ 4 ],
+    "mergedRanges" : [ ],
+    "detectedRanges" : [ "A4:D9" ],
+    "inferredMergedRanges" : [ ],
+    "definedNames" : [ "InventoryGrid" ],
     "type" : "table",
     "section" : "02_罫線の表",
     "range" : "A4:D9",
-    "markdownStartLine" : 44,
-    "markdownEndLine" : 50
+    "markdownStartLine" : 46,
+    "markdownEndLine" : 52
   }, {
-    "inferredMergedRanges" : [ ],
     "sourceRows" : [ 4, 5, 6, 7 ],
-    "mergedRanges" : [ ],
     "sourceColumns" : [ 6, 7, 8 ],
-    "headerSourceRows" : [ 4 ],
-    "header" : "fill-color",
-    "detectedRanges" : [ "F4:H7" ],
     "sourceColumnSpans" : [ {
       "first" : 6,
       "last" : 6
@@ -636,19 +639,19 @@
       "first" : 8,
       "last" : 8
     } ],
+    "header" : "fill-color",
+    "headerSourceRows" : [ 4 ],
+    "mergedRanges" : [ ],
+    "detectedRanges" : [ "F4:H7" ],
+    "inferredMergedRanges" : [ ],
     "type" : "table",
     "section" : "02_罫線の表",
     "range" : "F4:H7",
-    "markdownStartLine" : 52,
-    "markdownEndLine" : 56
+    "markdownStartLine" : 54,
+    "markdownEndLine" : 58
   }, {
-    "inferredMergedRanges" : [ ],
     "sourceRows" : [ 13, 15, 16 ],
-    "mergedRanges" : [ ],
     "sourceColumns" : [ 1, 2, 3, 6, 7 ],
-    "headerSourceRows" : [ 13 ],
-    "header" : "fill-color",
-    "detectedRanges" : [ "A13:C16", "F13:G16" ],
     "sourceColumnSpans" : [ {
       "first" : 1,
       "last" : 1
@@ -665,19 +668,19 @@
       "first" : 7,
       "last" : 7
     } ],
+    "header" : "fill-color",
+    "headerSourceRows" : [ 13 ],
+    "mergedRanges" : [ ],
+    "detectedRanges" : [ "A13:C16", "F13:G16" ],
+    "inferredMergedRanges" : [ ],
     "type" : "table",
     "section" : "02_罫線の表",
     "range" : "A13:G16",
-    "markdownStartLine" : 58,
-    "markdownEndLine" : 61
+    "markdownStartLine" : 60,
+    "markdownEndLine" : 63
   }, {
-    "inferredMergedRanges" : [ ],
     "sourceRows" : [ 20, 21, 22, 23 ],
-    "mergedRanges" : [ "A20:C20" ],
     "sourceColumns" : [ 1, 2, 3 ],
-    "headerSourceRows" : [ 20 ],
-    "header" : "fill-color",
-    "detectedRanges" : [ "A20:C23" ],
     "sourceColumnSpans" : [ {
       "first" : 1,
       "last" : 1
@@ -688,19 +691,19 @@
       "first" : 3,
       "last" : 3
     } ],
+    "header" : "fill-color",
+    "headerSourceRows" : [ 20 ],
+    "mergedRanges" : [ "A20:C20" ],
+    "detectedRanges" : [ "A20:C23" ],
+    "inferredMergedRanges" : [ ],
     "type" : "table",
     "section" : "02_罫線の表",
     "range" : "A20:C23",
-    "markdownStartLine" : 63,
-    "markdownEndLine" : 67
+    "markdownStartLine" : 65,
+    "markdownEndLine" : 69
   }, {
-    "inferredMergedRanges" : [ ],
     "sourceRows" : [ 27, 28, 29, 30 ],
-    "mergedRanges" : [ ],
     "sourceColumns" : [ 1, 2, 3, 6, 7, 8 ],
-    "headerSourceRows" : [ 27 ],
-    "header" : "fill-color",
-    "detectedRanges" : [ "A27:C30" ],
     "sourceColumnSpans" : [ {
       "first" : 1,
       "last" : 1
@@ -720,191 +723,196 @@
       "first" : 8,
       "last" : 8
     } ],
+    "header" : "fill-color",
+    "headerSourceRows" : [ 27 ],
+    "mergedRanges" : [ ],
+    "detectedRanges" : [ "A27:C30" ],
+    "inferredMergedRanges" : [ ],
     "type" : "table",
     "section" : "02_罫線の表",
     "range" : "A27:H30",
-    "markdownStartLine" : 69,
-    "markdownEndLine" : 73
-  }, {
-    "type" : "text",
-    "section" : "02_罫線の表",
-    "range" : "A34:H34",
-    "markdownStartLine" : 75,
+    "markdownStartLine" : 71,
     "markdownEndLine" : 75
   }, {
     "type" : "text",
     "section" : "02_罫線の表",
-    "range" : "F35:H35",
-    "markdownStartLine" : 76,
-    "markdownEndLine" : 76
-  }, {
-    "type" : "text",
-    "section" : "02_罫線の表",
-    "range" : "F36:H36",
+    "range" : "A34:H34",
     "markdownStartLine" : 77,
     "markdownEndLine" : 77
   }, {
     "type" : "text",
     "section" : "02_罫線の表",
-    "range" : "A38",
+    "range" : "F35:H35",
+    "markdownStartLine" : 78,
+    "markdownEndLine" : 78
+  }, {
+    "type" : "text",
+    "section" : "02_罫線の表",
+    "range" : "F36:H36",
     "markdownStartLine" : 79,
     "markdownEndLine" : 79
   }, {
     "type" : "text",
     "section" : "02_罫線の表",
-    "range" : "A44",
+    "range" : "A38",
     "markdownStartLine" : 81,
     "markdownEndLine" : 81
   }, {
     "type" : "text",
     "section" : "02_罫線の表",
+    "range" : "A44",
+    "markdownStartLine" : 83,
+    "markdownEndLine" : 83
+  }, {
+    "type" : "text",
+    "section" : "02_罫線の表",
     "range" : "A45",
-    "markdownStartLine" : 82,
-    "markdownEndLine" : 82
+    "markdownStartLine" : 84,
+    "markdownEndLine" : 84
   }, {
     "type" : "text",
     "section" : "03_表示値と数式",
     "range" : "A1",
-    "markdownStartLine" : 86,
-    "markdownEndLine" : 86
+    "markdownStartLine" : 88,
+    "markdownEndLine" : 88
   }, {
     "type" : "text",
     "section" : "03_表示値と数式",
     "range" : "A2",
-    "markdownStartLine" : 87,
-    "markdownEndLine" : 87
-  }, {
-    "type" : "text",
-    "section" : "03_表示値と数式",
-    "range" : "A4:C4",
     "markdownStartLine" : 89,
     "markdownEndLine" : 89
   }, {
     "type" : "text",
     "section" : "03_表示値と数式",
-    "range" : "A5:C5",
-    "markdownStartLine" : 90,
-    "markdownEndLine" : 90
-  }, {
-    "type" : "text",
-    "section" : "03_表示値と数式",
-    "range" : "A6:C6",
+    "range" : "A4:C4",
     "markdownStartLine" : 91,
     "markdownEndLine" : 91
   }, {
     "type" : "text",
     "section" : "03_表示値と数式",
-    "range" : "A7:C7",
+    "range" : "A5:C5",
     "markdownStartLine" : 92,
     "markdownEndLine" : 92
   }, {
     "type" : "text",
     "section" : "03_表示値と数式",
-    "range" : "A8:C8",
+    "range" : "A6:C6",
     "markdownStartLine" : 93,
     "markdownEndLine" : 93
   }, {
     "type" : "text",
     "section" : "03_表示値と数式",
-    "range" : "A9:C9",
+    "range" : "A7:C7",
     "markdownStartLine" : 94,
     "markdownEndLine" : 94
   }, {
     "type" : "text",
     "section" : "03_表示値と数式",
-    "range" : "A10:C10",
+    "range" : "A8:C8",
     "markdownStartLine" : 95,
     "markdownEndLine" : 95
   }, {
     "type" : "text",
     "section" : "03_表示値と数式",
-    "range" : "A11:C11",
+    "range" : "A9:C9",
     "markdownStartLine" : 96,
     "markdownEndLine" : 96
   }, {
     "type" : "text",
     "section" : "03_表示値と数式",
-    "range" : "A12:C12",
+    "range" : "A10:C10",
     "markdownStartLine" : 97,
     "markdownEndLine" : 97
   }, {
     "type" : "text",
     "section" : "03_表示値と数式",
-    "range" : "A13:C13",
+    "range" : "A11:C11",
     "markdownStartLine" : 98,
     "markdownEndLine" : 98
   }, {
     "type" : "text",
     "section" : "03_表示値と数式",
-    "range" : "A14:C14",
+    "range" : "A12:C12",
     "markdownStartLine" : 99,
     "markdownEndLine" : 99
   }, {
     "type" : "text",
     "section" : "03_表示値と数式",
-    "range" : "A15",
+    "range" : "A13:C13",
     "markdownStartLine" : 100,
     "markdownEndLine" : 100
   }, {
     "type" : "text",
     "section" : "03_表示値と数式",
-    "range" : "A17:C17",
+    "range" : "A14:C14",
+    "markdownStartLine" : 101,
+    "markdownEndLine" : 101
+  }, {
+    "type" : "text",
+    "section" : "03_表示値と数式",
+    "range" : "A15",
     "markdownStartLine" : 102,
     "markdownEndLine" : 102
   }, {
     "type" : "text",
     "section" : "03_表示値と数式",
-    "range" : "A18:C18",
-    "markdownStartLine" : 103,
-    "markdownEndLine" : 103
+    "range" : "A17:C17",
+    "markdownStartLine" : 104,
+    "markdownEndLine" : 104
   }, {
     "type" : "text",
     "section" : "03_表示値と数式",
-    "range" : "A20:C20",
+    "range" : "A18:C18",
     "markdownStartLine" : 105,
     "markdownEndLine" : 105
   }, {
     "type" : "text",
     "section" : "03_表示値と数式",
-    "range" : "A22:C22",
+    "range" : "A20:C20",
     "markdownStartLine" : 107,
     "markdownEndLine" : 107
   }, {
     "type" : "text",
     "section" : "03_表示値と数式",
-    "range" : "A23:C23",
-    "markdownStartLine" : 108,
-    "markdownEndLine" : 108
-  }, {
-    "type" : "text",
-    "section" : "03_表示値と数式",
-    "range" : "A24:C24",
+    "range" : "A22:C22",
     "markdownStartLine" : 109,
     "markdownEndLine" : 109
   }, {
     "type" : "text",
     "section" : "03_表示値と数式",
-    "range" : "A26:C26",
+    "range" : "A23:C23",
+    "markdownStartLine" : 110,
+    "markdownEndLine" : 110
+  }, {
+    "type" : "text",
+    "section" : "03_表示値と数式",
+    "range" : "A24:C24",
     "markdownStartLine" : 111,
     "markdownEndLine" : 111
   }, {
     "type" : "text",
     "section" : "03_表示値と数式",
-    "range" : "A28",
+    "range" : "A26:C26",
     "markdownStartLine" : 113,
     "markdownEndLine" : 113
   }, {
     "type" : "text",
+    "section" : "03_表示値と数式",
+    "range" : "A28",
+    "markdownStartLine" : 115,
+    "markdownEndLine" : 115
+  }, {
+    "type" : "text",
     "section" : "04_画像",
     "range" : "A1",
-    "markdownStartLine" : 117,
-    "markdownEndLine" : 117
+    "markdownStartLine" : 119,
+    "markdownEndLine" : 119
   }, {
     "type" : "text",
     "section" : "04_画像",
     "range" : "A3:G3",
-    "markdownStartLine" : 119,
-    "markdownEndLine" : 119
+    "markdownStartLine" : 121,
+    "markdownEndLine" : 121
   }, {
     "nodes" : [ {
       "type" : "画像",
@@ -928,8 +936,8 @@
     "type" : "drawing",
     "section" : "04_画像",
     "range" : "A4:E10",
-    "markdownStartLine" : 121,
-    "markdownEndLine" : 127
+    "markdownStartLine" : 123,
+    "markdownEndLine" : 129
   }, {
     "nodes" : [ {
       "type" : "画像",
@@ -953,14 +961,14 @@
     "type" : "drawing",
     "section" : "04_画像",
     "range" : "G4:K10",
-    "markdownStartLine" : 129,
-    "markdownEndLine" : 135
+    "markdownStartLine" : 131,
+    "markdownEndLine" : 137
   }, {
     "type" : "text",
     "section" : "04_画像",
     "range" : "A13",
-    "markdownStartLine" : 137,
-    "markdownEndLine" : 137
+    "markdownStartLine" : 139,
+    "markdownEndLine" : 139
   }, {
     "nodes" : [ {
       "type" : "画像",
@@ -984,8 +992,8 @@
     "type" : "drawing",
     "section" : "04_画像",
     "range" : "A14:E20",
-    "markdownStartLine" : 139,
-    "markdownEndLine" : 145
+    "markdownStartLine" : 141,
+    "markdownEndLine" : 147
   }, {
     "nodes" : [ {
       "type" : "画像",
@@ -1009,22 +1017,17 @@
     "type" : "drawing",
     "section" : "04_画像",
     "range" : "G14:K20",
-    "markdownStartLine" : 147,
-    "markdownEndLine" : 153
+    "markdownStartLine" : 149,
+    "markdownEndLine" : 155
   }, {
     "type" : "text",
     "section" : "04_画像",
     "range" : "A23",
-    "markdownStartLine" : 155,
-    "markdownEndLine" : 155
+    "markdownStartLine" : 157,
+    "markdownEndLine" : 157
   }, {
-    "inferredMergedRanges" : [ ],
     "sourceRows" : [ 24, 25, 26, 27, 28, 29 ],
-    "mergedRanges" : [ ],
     "sourceColumns" : [ 1, 2, 3, 4, 5, 8 ],
-    "headerSourceRows" : [ 24, 25, 26, 27, 28, 29 ],
-    "header" : "fill-color",
-    "detectedRanges" : [ "A24:E29" ],
     "sourceColumnSpans" : [ {
       "first" : 1,
       "last" : 1
@@ -1044,11 +1047,16 @@
       "first" : 8,
       "last" : 8
     } ],
+    "header" : "fill-color",
+    "headerSourceRows" : [ 24, 25, 26, 27, 28, 29 ],
+    "mergedRanges" : [ ],
+    "detectedRanges" : [ "A24:E29" ],
+    "inferredMergedRanges" : [ ],
     "type" : "table",
     "section" : "04_画像",
     "range" : "A24:H29",
-    "markdownStartLine" : 157,
-    "markdownEndLine" : 158
+    "markdownStartLine" : 159,
+    "markdownEndLine" : 160
   }, {
     "nodes" : [ {
       "type" : "画像",
@@ -1072,26 +1080,26 @@
     "type" : "drawing",
     "section" : "04_画像",
     "range" : "B26:D29",
-    "markdownStartLine" : 160,
-    "markdownEndLine" : 166
+    "markdownStartLine" : 162,
+    "markdownEndLine" : 168
   }, {
     "type" : "text",
     "section" : "04_画像",
     "range" : "A33",
-    "markdownStartLine" : 168,
-    "markdownEndLine" : 168
+    "markdownStartLine" : 170,
+    "markdownEndLine" : 170
   }, {
     "type" : "text",
     "section" : "05_基本図形",
     "range" : "A1",
-    "markdownStartLine" : 172,
-    "markdownEndLine" : 172
+    "markdownStartLine" : 174,
+    "markdownEndLine" : 174
   }, {
     "type" : "text",
     "section" : "05_基本図形",
     "range" : "A3:M3",
-    "markdownStartLine" : 174,
-    "markdownEndLine" : 174
+    "markdownStartLine" : 176,
+    "markdownEndLine" : 176
   }, {
     "nodes" : [ {
       "type" : "長方形",
@@ -1115,8 +1123,8 @@
     "type" : "drawing",
     "section" : "05_基本図形",
     "range" : "A4:E10",
-    "markdownStartLine" : 176,
-    "markdownEndLine" : 182
+    "markdownStartLine" : 178,
+    "markdownEndLine" : 184
   }, {
     "nodes" : [ {
       "type" : "角丸長方形",
@@ -1140,8 +1148,8 @@
     "type" : "drawing",
     "section" : "05_基本図形",
     "range" : "G4:K10",
-    "markdownStartLine" : 184,
-    "markdownEndLine" : 190
+    "markdownStartLine" : 186,
+    "markdownEndLine" : 192
   }, {
     "nodes" : [ {
       "type" : "楕円",
@@ -1165,14 +1173,14 @@
     "type" : "drawing",
     "section" : "05_基本図形",
     "range" : "M4:Q10",
-    "markdownStartLine" : 192,
-    "markdownEndLine" : 198
+    "markdownStartLine" : 194,
+    "markdownEndLine" : 200
   }, {
     "type" : "text",
     "section" : "05_基本図形",
     "range" : "A13",
-    "markdownStartLine" : 200,
-    "markdownEndLine" : 200
+    "markdownStartLine" : 202,
+    "markdownEndLine" : 202
   }, {
     "nodes" : [ {
       "type" : "右矢印",
@@ -1196,8 +1204,8 @@
     "type" : "drawing",
     "section" : "05_基本図形",
     "range" : "A14:D21",
-    "markdownStartLine" : 202,
-    "markdownEndLine" : 208
+    "markdownStartLine" : 204,
+    "markdownEndLine" : 210
   }, {
     "nodes" : [ {
       "type" : "左矢印",
@@ -1221,8 +1229,8 @@
     "type" : "drawing",
     "section" : "05_基本図形",
     "range" : "F14:I21",
-    "markdownStartLine" : 210,
-    "markdownEndLine" : 216
+    "markdownStartLine" : 212,
+    "markdownEndLine" : 218
   }, {
     "nodes" : [ {
       "type" : "上矢印",
@@ -1246,8 +1254,8 @@
     "type" : "drawing",
     "section" : "05_基本図形",
     "range" : "K14:N21",
-    "markdownStartLine" : 218,
-    "markdownEndLine" : 224
+    "markdownStartLine" : 220,
+    "markdownEndLine" : 226
   }, {
     "nodes" : [ {
       "type" : "下矢印",
@@ -1271,14 +1279,14 @@
     "type" : "drawing",
     "section" : "05_基本図形",
     "range" : "P14:S21",
-    "markdownStartLine" : 226,
-    "markdownEndLine" : 232
+    "markdownStartLine" : 228,
+    "markdownEndLine" : 234
   }, {
     "type" : "text",
     "section" : "05_基本図形",
     "range" : "A24:G24",
-    "markdownStartLine" : 234,
-    "markdownEndLine" : 234
+    "markdownStartLine" : 236,
+    "markdownEndLine" : 236
   }, {
     "nodes" : [ ],
     "edges" : [ {
@@ -1308,8 +1316,8 @@
     "type" : "drawing",
     "section" : "05_基本図形",
     "range" : "A25:E25",
-    "markdownStartLine" : 236,
-    "markdownEndLine" : 242
+    "markdownStartLine" : 238,
+    "markdownEndLine" : 244
   }, {
     "nodes" : [ ],
     "edges" : [ {
@@ -1339,14 +1347,14 @@
     "type" : "drawing",
     "section" : "05_基本図形",
     "range" : "G25:K25",
-    "markdownStartLine" : 244,
-    "markdownEndLine" : 250
+    "markdownStartLine" : 246,
+    "markdownEndLine" : 252
   }, {
     "type" : "text",
     "section" : "05_基本図形",
     "range" : "A30",
-    "markdownStartLine" : 252,
-    "markdownEndLine" : 252
+    "markdownStartLine" : 254,
+    "markdownEndLine" : 254
   }, {
     "nodes" : [ {
       "type" : "長方形",
@@ -1370,8 +1378,8 @@
     "type" : "drawing",
     "section" : "05_基本図形",
     "range" : "A31:G38",
-    "markdownStartLine" : 254,
-    "markdownEndLine" : 260
+    "markdownStartLine" : 256,
+    "markdownEndLine" : 262
   }, {
     "nodes" : [ {
       "type" : "長方形",
@@ -1395,14 +1403,14 @@
     "type" : "drawing",
     "section" : "05_基本図形",
     "range" : "I31:O38",
-    "markdownStartLine" : 262,
-    "markdownEndLine" : 268
+    "markdownStartLine" : 264,
+    "markdownEndLine" : 270
   }, {
     "type" : "text",
     "section" : "05_基本図形",
     "range" : "A40",
-    "markdownStartLine" : 270,
-    "markdownEndLine" : 270
+    "markdownStartLine" : 272,
+    "markdownEndLine" : 272
   }, {
     "nodes" : [ {
       "type" : "長方形",
@@ -1426,8 +1434,8 @@
     "type" : "drawing",
     "section" : "05_基本図形",
     "range" : "A41:G48",
-    "markdownStartLine" : 272,
-    "markdownEndLine" : 278
+    "markdownStartLine" : 274,
+    "markdownEndLine" : 280
   }, {
     "nodes" : [ {
       "type" : "長方形",
@@ -1451,14 +1459,14 @@
     "type" : "drawing",
     "section" : "05_基本図形",
     "range" : "I41:O48",
-    "markdownStartLine" : 280,
-    "markdownEndLine" : 286
+    "markdownStartLine" : 282,
+    "markdownEndLine" : 288
   }, {
     "type" : "text",
     "section" : "05_基本図形",
     "range" : "A50",
-    "markdownStartLine" : 288,
-    "markdownEndLine" : 288
+    "markdownStartLine" : 290,
+    "markdownEndLine" : 290
   }, {
     "nodes" : [ {
       "type" : "長方形",
@@ -1482,14 +1490,14 @@
     "type" : "drawing",
     "section" : "05_基本図形",
     "range" : "A51:H59",
-    "markdownStartLine" : 290,
-    "markdownEndLine" : 296
+    "markdownStartLine" : 292,
+    "markdownEndLine" : 298
   }, {
     "type" : "text",
     "section" : "05_基本図形",
     "range" : "K51",
-    "markdownStartLine" : 298,
-    "markdownEndLine" : 298
+    "markdownStartLine" : 300,
+    "markdownEndLine" : 300
   }, {
     "nodes" : [ {
       "type" : "右矢印",
@@ -1513,14 +1521,14 @@
     "type" : "drawing",
     "section" : "05_基本図形",
     "range" : "K52:P58",
-    "markdownStartLine" : 300,
-    "markdownEndLine" : 300
+    "markdownStartLine" : 302,
+    "markdownEndLine" : 302
   }, {
     "type" : "text",
     "section" : "05_基本図形",
     "range" : "A60:I60",
-    "markdownStartLine" : 302,
-    "markdownEndLine" : 302
+    "markdownStartLine" : 304,
+    "markdownEndLine" : 304
   }, {
     "nodes" : [ {
       "type" : "角丸長方形",
@@ -1544,8 +1552,8 @@
     "type" : "drawing",
     "section" : "05_基本図形",
     "range" : "A61:G71",
-    "markdownStartLine" : 304,
-    "markdownEndLine" : 310
+    "markdownStartLine" : 306,
+    "markdownEndLine" : 312
   }, {
     "nodes" : [ {
       "type" : "角丸長方形",
@@ -1569,20 +1577,20 @@
     "type" : "drawing",
     "section" : "05_基本図形",
     "range" : "I63:O70",
-    "markdownStartLine" : 312,
-    "markdownEndLine" : 318
+    "markdownStartLine" : 314,
+    "markdownEndLine" : 320
   }, {
     "type" : "text",
     "section" : "06_グループと接続",
     "range" : "A1",
-    "markdownStartLine" : 322,
-    "markdownEndLine" : 322
+    "markdownStartLine" : 324,
+    "markdownEndLine" : 324
   }, {
     "type" : "text",
     "section" : "06_グループと接続",
     "range" : "A3",
-    "markdownStartLine" : 324,
-    "markdownEndLine" : 324
+    "markdownStartLine" : 326,
+    "markdownEndLine" : 326
   }, {
     "nodes" : [ {
       "type" : "角丸長方形",
@@ -1636,14 +1644,14 @@
     "type" : "drawing",
     "section" : "06_グループと接続",
     "range" : "A5:M11",
-    "markdownStartLine" : 326,
-    "markdownEndLine" : 338
+    "markdownStartLine" : 328,
+    "markdownEndLine" : 340
   }, {
     "type" : "text",
     "section" : "06_グループと接続",
     "range" : "A17",
-    "markdownStartLine" : 340,
-    "markdownEndLine" : 340
+    "markdownStartLine" : 342,
+    "markdownEndLine" : 342
   }, {
     "nodes" : [ {
       "type" : "長方形",
@@ -1675,14 +1683,14 @@
     "type" : "drawing",
     "section" : "06_グループと接続",
     "range" : "A17:I26",
-    "markdownStartLine" : 342,
-    "markdownEndLine" : 351
+    "markdownStartLine" : 344,
+    "markdownEndLine" : 353
   }, {
     "type" : "text",
     "section" : "06_グループと接続",
     "range" : "A34",
-    "markdownStartLine" : 353,
-    "markdownEndLine" : 353
+    "markdownStartLine" : 355,
+    "markdownEndLine" : 355
   }, {
     "nodes" : [ {
       "type" : "角丸長方形",
@@ -1732,14 +1740,14 @@
     "type" : "drawing",
     "section" : "06_グループと接続",
     "range" : "A35:O41",
-    "markdownStartLine" : 355,
-    "markdownEndLine" : 366
+    "markdownStartLine" : 357,
+    "markdownEndLine" : 368
   }, {
     "type" : "text",
     "section" : "06_グループと接続",
     "range" : "A46",
-    "markdownStartLine" : 368,
-    "markdownEndLine" : 368
+    "markdownStartLine" : 370,
+    "markdownEndLine" : 370
   }, {
     "nodes" : [ {
       "type" : "長方形",
@@ -1763,8 +1771,8 @@
     "type" : "drawing",
     "section" : "06_グループと接続",
     "range" : "A47:G55",
-    "markdownStartLine" : 370,
-    "markdownEndLine" : 376
+    "markdownStartLine" : 372,
+    "markdownEndLine" : 378
   }, {
     "nodes" : [ {
       "type" : "楕円",
@@ -1788,14 +1796,14 @@
     "type" : "drawing",
     "section" : "06_グループと接続",
     "range" : "C49:I57",
-    "markdownStartLine" : 378,
-    "markdownEndLine" : 384
+    "markdownStartLine" : 380,
+    "markdownEndLine" : 386
   }, {
     "type" : "text",
     "section" : "06_グループと接続",
     "range" : "A62",
-    "markdownStartLine" : 386,
-    "markdownEndLine" : 386
+    "markdownStartLine" : 388,
+    "markdownEndLine" : 388
   }, {
     "nodes" : [ {
       "type" : "角丸長方形",
@@ -1819,8 +1827,8 @@
     "type" : "drawing",
     "section" : "06_グループと接続",
     "range" : "A63:J73",
-    "markdownStartLine" : 388,
-    "markdownEndLine" : 388
+    "markdownStartLine" : 390,
+    "markdownEndLine" : 390
   }, {
     "nodes" : [ {
       "type" : "画像",
@@ -1844,14 +1852,14 @@
     "type" : "drawing",
     "section" : "06_グループと接続",
     "range" : "C65:H71",
-    "markdownStartLine" : 390,
-    "markdownEndLine" : 396
+    "markdownStartLine" : 392,
+    "markdownEndLine" : 398
   }, {
     "type" : "text",
     "section" : "06_グループと接続",
     "range" : "A78",
-    "markdownStartLine" : 398,
-    "markdownEndLine" : 398
+    "markdownStartLine" : 400,
+    "markdownEndLine" : 400
   }, {
     "nodes" : [ {
       "type" : "角丸長方形",
@@ -1927,20 +1935,20 @@
     "type" : "drawing",
     "section" : "06_グループと接続",
     "range" : "A79:X96",
-    "markdownStartLine" : 400,
-    "markdownEndLine" : 413
+    "markdownStartLine" : 402,
+    "markdownEndLine" : 415
   }, {
     "type" : "text",
     "section" : "07_未対応と加工",
     "range" : "A1",
-    "markdownStartLine" : 417,
-    "markdownEndLine" : 417
+    "markdownStartLine" : 419,
+    "markdownEndLine" : 419
   }, {
     "type" : "text",
     "section" : "07_未対応と加工",
     "range" : "A3",
-    "markdownStartLine" : 419,
-    "markdownEndLine" : 419
+    "markdownStartLine" : 421,
+    "markdownEndLine" : 421
   }, {
     "nodes" : [ {
       "type" : "グラフ・SmartArt等",
@@ -1955,32 +1963,32 @@
     "type" : "drawing",
     "section" : "07_未対応と加工",
     "range" : "E4:Q15",
-    "markdownStartLine" : 421,
-    "markdownEndLine" : 421
-  }, {
-    "type" : "text",
-    "section" : "07_未対応と加工",
-    "range" : "A5:B5",
     "markdownStartLine" : 423,
     "markdownEndLine" : 423
   }, {
     "type" : "text",
     "section" : "07_未対応と加工",
-    "range" : "A6:B6",
-    "markdownStartLine" : 424,
-    "markdownEndLine" : 424
-  }, {
-    "type" : "text",
-    "section" : "07_未対応と加工",
-    "range" : "A7:B7",
+    "range" : "A5:B5",
     "markdownStartLine" : 425,
     "markdownEndLine" : 425
   }, {
     "type" : "text",
     "section" : "07_未対応と加工",
-    "range" : "A19:N19",
+    "range" : "A6:B6",
+    "markdownStartLine" : 426,
+    "markdownEndLine" : 426
+  }, {
+    "type" : "text",
+    "section" : "07_未対応と加工",
+    "range" : "A7:B7",
     "markdownStartLine" : 427,
     "markdownEndLine" : 427
+  }, {
+    "type" : "text",
+    "section" : "07_未対応と加工",
+    "range" : "A19:N19",
+    "markdownStartLine" : 429,
+    "markdownEndLine" : 429
   }, {
     "nodes" : [ {
       "type" : "星（5角）",
@@ -1995,8 +2003,8 @@
     "type" : "drawing",
     "section" : "07_未対応と加工",
     "range" : "A20:E28",
-    "markdownStartLine" : 429,
-    "markdownEndLine" : 435
+    "markdownStartLine" : 431,
+    "markdownEndLine" : 437
   }, {
     "nodes" : [ {
       "type" : "長方形",
@@ -2020,8 +2028,8 @@
     "type" : "drawing",
     "section" : "07_未対応と加工",
     "range" : "G20:L28",
-    "markdownStartLine" : 437,
-    "markdownEndLine" : 443
+    "markdownStartLine" : 439,
+    "markdownEndLine" : 445
   }, {
     "nodes" : [ {
       "type" : "長方形",
@@ -2045,14 +2053,14 @@
     "type" : "drawing",
     "section" : "07_未対応と加工",
     "range" : "N20:Q30",
-    "markdownStartLine" : 445,
-    "markdownEndLine" : 451
+    "markdownStartLine" : 447,
+    "markdownEndLine" : 453
   }, {
     "type" : "text",
     "section" : "07_未対応と加工",
     "range" : "A33:J33",
-    "markdownStartLine" : 453,
-    "markdownEndLine" : 453
+    "markdownStartLine" : 455,
+    "markdownEndLine" : 455
   }, {
     "nodes" : [ {
       "type" : "画像",
@@ -2076,8 +2084,8 @@
     "type" : "drawing",
     "section" : "07_未対応と加工",
     "range" : "A33:G44",
-    "markdownStartLine" : 455,
-    "markdownEndLine" : 461
+    "markdownStartLine" : 457,
+    "markdownEndLine" : 463
   }, {
     "nodes" : [ {
       "type" : "画像",
@@ -2104,8 +2112,8 @@
     "type" : "drawing",
     "section" : "07_未対応と加工",
     "range" : "J35:P43",
-    "markdownStartLine" : 463,
-    "markdownEndLine" : 469
+    "markdownStartLine" : 465,
+    "markdownEndLine" : 471
   }, {
     "nodes" : [ {
       "type" : "画像",
@@ -2129,173 +2137,173 @@
     "type" : "drawing",
     "section" : "08_画像だけ",
     "range" : "A3:J16",
-    "markdownStartLine" : 473,
-    "markdownEndLine" : 479
+    "markdownStartLine" : 475,
+    "markdownEndLine" : 481
   } ],
   "assets" : [ {
+    "contentType" : "image/png",
     "sizeBytes" : 15707,
     "sha256" : "ad60cc7750f935d48632674c26e8376def658e4de0a5e5fb552170300c2b1ce9",
-    "path" : "images/diagram-0001.png",
-    "contentType" : "image/png"
+    "path" : "images/diagram-0001.png"
   }, {
+    "contentType" : "image/png",
     "sizeBytes" : 33924,
     "sha256" : "31725436596e47176cd7a7e11cbce6fefcd65abc21275dd5ceaa8e37bdbf7c8c",
-    "path" : "images/diagram-0002.png",
-    "contentType" : "image/png"
+    "path" : "images/diagram-0002.png"
   }, {
+    "contentType" : "image/png",
     "sizeBytes" : 5259,
     "sha256" : "c5863ec492dedfafdbdc99378838e4a2692ed374ff8466c1bc8479299d521b51",
-    "path" : "images/diagram-0003.png",
-    "contentType" : "image/png"
+    "path" : "images/diagram-0003.png"
   }, {
+    "contentType" : "image/png",
     "sizeBytes" : 3771,
     "sha256" : "a10404683252f071d9bb76f661c37f05f427443c82328edc415de83bf6bd65d5",
-    "path" : "images/diagram-0004.png",
-    "contentType" : "image/png"
+    "path" : "images/diagram-0004.png"
   }, {
+    "contentType" : "image/png",
     "sizeBytes" : 5835,
     "sha256" : "3244328c34299b4672f122188cb6acf66454c119d7c07634e312160db5e172ac",
-    "path" : "images/diagram-0005.png",
-    "contentType" : "image/png"
+    "path" : "images/diagram-0005.png"
   }, {
+    "contentType" : "image/png",
     "sizeBytes" : 8619,
     "sha256" : "d3e9558e0ef55f1af10b5b3a1ddf6a1a33b5f266ba97dbb01bd8b2515cf89520",
-    "path" : "images/diagram-0006.png",
-    "contentType" : "image/png"
+    "path" : "images/diagram-0006.png"
   }, {
+    "contentType" : "image/png",
     "sizeBytes" : 5193,
     "sha256" : "9a7e459865dd4225f07164e41c08ecd663d34ae339e6decc5d91deedb2e9fc2b",
-    "path" : "images/diagram-0007.png",
-    "contentType" : "image/png"
+    "path" : "images/diagram-0007.png"
   }, {
+    "contentType" : "image/png",
     "sizeBytes" : 5364,
     "sha256" : "17ce8ba6aa2c9588966ad7a346ca48d4edc83b5135f78393099e3eb384cec86d",
-    "path" : "images/diagram-0008.png",
-    "contentType" : "image/png"
+    "path" : "images/diagram-0008.png"
   }, {
+    "contentType" : "image/png",
     "sizeBytes" : 4495,
     "sha256" : "7895170e0b2cc2f0fe7878798214f87025db070f557e6c077a7615b48318d62d",
-    "path" : "images/diagram-0009.png",
-    "contentType" : "image/png"
+    "path" : "images/diagram-0009.png"
   }, {
+    "contentType" : "image/png",
     "sizeBytes" : 2377,
     "sha256" : "fd48f34f3d2462529b0c3df942b3c086cb856ba7daf64b268ab5079510e7b4ac",
-    "path" : "images/diagram-0010.png",
-    "contentType" : "image/png"
+    "path" : "images/diagram-0010.png"
   }, {
+    "contentType" : "image/png",
     "sizeBytes" : 141,
     "sha256" : "d01b97af321cdf4658b55544ac6a729cb8776a655b921080c841957eb046d0b4",
-    "path" : "images/diagram-0011.png",
-    "contentType" : "image/png"
+    "path" : "images/diagram-0011.png"
   }, {
+    "contentType" : "image/png",
     "sizeBytes" : 278,
     "sha256" : "ee4d97734325c9663d7bee39b546b843a6703c0f44db2bd16857152371566033",
-    "path" : "images/diagram-0012.png",
-    "contentType" : "image/png"
+    "path" : "images/diagram-0012.png"
   }, {
+    "contentType" : "image/png",
     "sizeBytes" : 10773,
     "sha256" : "c99a1aa712d5b5d25db487919ee848528ca3d53741a1a9df088871feefb441e5",
-    "path" : "images/diagram-0013.png",
-    "contentType" : "image/png"
+    "path" : "images/diagram-0013.png"
   }, {
+    "contentType" : "image/png",
     "sizeBytes" : 10839,
     "sha256" : "efa6082e3b6daa66fd680358bb69766f2f525f309a2d363882003119e5bb06e2",
-    "path" : "images/diagram-0014.png",
-    "contentType" : "image/png"
+    "path" : "images/diagram-0014.png"
   }, {
+    "contentType" : "image/png",
     "sizeBytes" : 11606,
     "sha256" : "f9ce1d6fc18a2d9cd613ce5aef0411fb6e557c0a43f08de002c754c8471aed3f",
-    "path" : "images/diagram-0015.png",
-    "contentType" : "image/png"
+    "path" : "images/diagram-0015.png"
   }, {
+    "contentType" : "image/png",
     "sizeBytes" : 10551,
     "sha256" : "2884475946de395100572a2c0d83c6bd18f81715c52fc34ecf65020cba993f1f",
-    "path" : "images/diagram-0016.png",
-    "contentType" : "image/png"
+    "path" : "images/diagram-0016.png"
   }, {
+    "contentType" : "image/png",
     "sizeBytes" : 9554,
     "sha256" : "29d582b03135e628cbad43738658a4417534054ad4c8886c2980e2d14ed0cab9",
-    "path" : "images/diagram-0017.png",
-    "contentType" : "image/png"
+    "path" : "images/diagram-0017.png"
   }, {
+    "contentType" : "image/png",
     "sizeBytes" : 2000,
     "sha256" : "e08e04dbde48b4b185faab22f11515287f2469c8b6f314c0d2697b661378a95a",
-    "path" : "images/diagram-0018.png",
-    "contentType" : "image/png"
+    "path" : "images/diagram-0018.png"
   }, {
+    "contentType" : "image/png",
     "sizeBytes" : 24305,
     "sha256" : "bcbf8560d62cc6b4286132fca854bd6d117b89b878ac1ed6b3d6343d85f0d711",
-    "path" : "images/diagram-0019.png",
-    "contentType" : "image/png"
+    "path" : "images/diagram-0019.png"
   }, {
+    "contentType" : "image/png",
     "sizeBytes" : 5158,
     "sha256" : "8afcbcdae0448f0660c50283f7445800261408043fa04ccd930065472e4c5141",
-    "path" : "images/diagram-0020.png",
-    "contentType" : "image/png"
+    "path" : "images/diagram-0020.png"
   }, {
+    "contentType" : "image/png",
     "sizeBytes" : 30795,
     "sha256" : "01d1cea9623966a902043493fdfe03e4c2677ddac079fcd0426b49ea894fc4aa",
-    "path" : "images/diagram-0021.png",
-    "contentType" : "image/png"
+    "path" : "images/diagram-0021.png"
   }, {
+    "contentType" : "image/png",
     "sizeBytes" : 29120,
     "sha256" : "06e7c448795ecd97cae8df80edc73f50b7e022b4f1339883b3d97a21374c52be",
-    "path" : "images/diagram-0022.png",
-    "contentType" : "image/png"
+    "path" : "images/diagram-0022.png"
   }, {
+    "contentType" : "image/png",
     "sizeBytes" : 7552,
     "sha256" : "c3b0d087a18b82229c6511f87f59e874f1bb15260077b602e2a4a38e8338b0b8",
-    "path" : "images/diagram-0023.png",
-    "contentType" : "image/png"
+    "path" : "images/diagram-0023.png"
   }, {
+    "contentType" : "image/png",
     "sizeBytes" : 3544,
     "sha256" : "6f4833a4ed024c923e78bf98c0e41b10a9969bf62c313fa8767f5054216b14e5",
-    "path" : "images/diagram-0024.png",
-    "contentType" : "image/png"
+    "path" : "images/diagram-0024.png"
   }, {
+    "contentType" : "image/png",
     "sizeBytes" : 12507,
     "sha256" : "7b233a8a680480f3ff6c99011b5903ebba2a074d19b898ed27873127a613c18f",
-    "path" : "images/diagram-0025.png",
-    "contentType" : "image/png"
+    "path" : "images/diagram-0025.png"
   }, {
+    "contentType" : "image/png",
     "sizeBytes" : 4190,
     "sha256" : "ef70c1e860f780c85f9b4df5d6581902b8524c9a639c888c094d170fc67c7a7d",
-    "path" : "images/diagram-0026.png",
-    "contentType" : "image/png"
+    "path" : "images/diagram-0026.png"
   }, {
+    "contentType" : "image/png",
     "sizeBytes" : 17853,
     "sha256" : "e33d32bceb5ca9460582ac0b68d054951cb89c69d1152b2fcbf5de4f5590a5e7",
-    "path" : "images/diagram-0027.png",
-    "contentType" : "image/png"
+    "path" : "images/diagram-0027.png"
   }, {
+    "contentType" : "image/png",
     "sizeBytes" : 22202,
     "sha256" : "9f25ee5804c3aea4eadb11a53109be0724eda5429b106995a51ab36f7883427a",
-    "path" : "images/diagram-0028.png",
-    "contentType" : "image/png"
+    "path" : "images/diagram-0028.png"
   }, {
+    "contentType" : "image/png",
     "sizeBytes" : 7208,
     "sha256" : "0cb9b7746f89b9fcece174f78a76b434a5c0969c982f31310d46069824368ff6",
-    "path" : "images/diagram-0029.png",
-    "contentType" : "image/png"
+    "path" : "images/diagram-0029.png"
   }, {
+    "contentType" : "image/png",
     "sizeBytes" : 6803,
     "sha256" : "11fc2b1be070585b319661396385de36744b78f389874f5e8fd5610eb9313fea",
-    "path" : "images/diagram-0030.png",
-    "contentType" : "image/png"
+    "path" : "images/diagram-0030.png"
   }, {
+    "contentType" : "image/png",
     "sizeBytes" : 37744,
     "sha256" : "7e3e985399c6d46d28d311e2b4dbe22c7f34ce2776caa10b1eae450c021094f4",
-    "path" : "images/diagram-0031.png",
-    "contentType" : "image/png"
+    "path" : "images/diagram-0031.png"
   }, {
+    "contentType" : "image/bmp",
     "sizeBytes" : 933174,
     "sha256" : "f259c4c60577e261310dcbf8dbbd4c55457b48c0f0786f33a51dfa2048c01505",
-    "path" : "images/image-0001.bmp",
-    "contentType" : "image/bmp"
+    "path" : "images/image-0001.bmp"
   }, {
+    "contentType" : "image/png",
     "sizeBytes" : 57324,
     "sha256" : "426bede3a1787ab4c6343ac0aa8647ba217c568c042424fa786f6159d4fbcbfd",
-    "path" : "images/diagram-0032.png",
-    "contentType" : "image/png"
+    "path" : "images/diagram-0032.png"
   } ]
 }

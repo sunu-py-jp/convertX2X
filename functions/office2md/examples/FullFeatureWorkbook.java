@@ -27,7 +27,7 @@ public final class FullFeatureWorkbook {
             titleFont.setColor(IndexedColors.WHITE.getIndex()); fixture.title.setFont(titleFont);
             fixture.header.setFillForegroundColor(IndexedColors.LIGHT_TURQUOISE.getIndex());
             fixture.header.setFillPattern(FillPatternType.SOLID_FOREGROUND);
-            fixture.textSheet(); fixture.tableSheet(); fixture.valueSheet();
+            fixture.textSheet(); fixture.tableSheet(); fixture.valueSheet(); fixture.namedRanges();
             FullFeatureDrawings.populate(book);
             fixture.hiddenAndEmptySheets();
             book.getProperties().getCoreProperties().setTitle("office2md 全機能テスト");
@@ -165,6 +165,14 @@ public final class FullFeatureWorkbook {
         cell(s,24,1,"リンク先が動的ならリンク化しない");XSSFCell dynamic=cell(s,24,3,"");dynamic.setCellFormula("HYPERLINK(A4,\"動的なリンク表示\")");dynamic.setCellValue("動的なリンク表示");
         cell(s,26,1,"IMAGE関数は取得しない");XSSFCell image=cell(s,26,3,"");image.setCellFormula("_xlfn.IMAGE(\"https://example.invalid/not-fetched.png\")");image.getCTCell().unsetV();
         cell(s,28,1,"取消線がある数値も除外");XSSFCell removed=cell(s,28,3,"");removed.setCellValue(987654321);removed.setCellStyle(strike);
+    }
+    private void namedRanges() {
+        Name inventory = book.createName();
+        inventory.setNameName("InventoryGrid");
+        inventory.setRefersToFormula("'02_罫線の表'!$A$4:$D$9");
+        Name cached = book.createName();
+        cached.setNameName("CachedResultCells");
+        cached.setRefersToFormula("'03_表示値と数式'!$A$17:$C$18");
     }
     private void hiddenAndEmptySheets() {
         XSSFSheet hidden=book.createSheet("非表示シート");cell(hidden,1,1,"HIDDEN_SHEET_TOKEN");book.setSheetVisibility(book.getSheetIndex(hidden),SheetVisibility.HIDDEN);

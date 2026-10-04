@@ -1,6 +1,6 @@
 # office2md
 
-Excel（`.xlsx` / `.xls`）、Word（`.docx`）、PowerPoint（`.pptx`）からMarkdown・画像・変換情報を取り出す、Java 21のAzure Functionsアプリです。ブラウザ用の簡単なPlayground、同期HTTP、非同期Queueが同じ変換処理を使います。このディレクトリだけでビルド・起動・デプロイできます。
+Excel（`.xlsx` / `.xls`）、Word（`.docx`）、PowerPoint（`.pptx`）からMarkdown・画像・変換情報を取り出し、PDFも生成するJava 21のAzure Functionsアプリです。ブラウザ用の簡単なPlayground、同期HTTP、非同期Queueが同じ変換処理を使います。`functions/office2md` でビルド・起動します。PDF出力のビルドには隣接する `functions/md2pdf` の変換ソースとフォントも必要です。
 
 開発・保守向けの構成と変更箇所は [Officeの開発者ガイド](../../../docs/office2md.md)、環境構築・検証・デプロイは [共通の作業手順](../../../docs/development.md) を参照してください。このガイドはAPI・設定・変換ルールの利用手順です。
 
@@ -24,7 +24,7 @@ python scripts/run_local.py
 
 起動スクリプトはWindowsでは `mvnw.cmd`、macOS/Linuxでは `mvnw` を選びます。Windowsの `func.cmd` と `func.exe` の両方に対応します。起動に失敗した場合は、処理名と `WinError` / `errno` または終了コードを表示します。接続設定や例外の本文は表示しません。
 
-<http://localhost:7072/api/playground> を開き、Officeファイルを選んで「Markdownに変換」を押します。Markdownのプレビュー・ソース・警告を確認し、ZIPを保存できます。画面用のNode.js、npm、CDNは不要です。既存のビルドを使う場合は `--skip-build`、ポート変更は `--port 7082` を指定します。
+<http://localhost:7072/api/playground> を開き、Officeファイルと出力形式を選んで変換します。既定のMarkdown ZIPではプレビュー・ソース・警告を確認でき、PDFを選ぶとブラウザ内で確認・保存できます。非同期PDFジョブではMarkdown・画像・report・PDFを含むZIPも保存できます。画面用のNode.js、npm、CDNは不要です。既存のビルドを使う場合は `--skip-build`、ポート変更は `--port 7082` を指定します。
 
 Storage接続を設定しなければ同期だけが有効です。非同期を使う場合は、実行環境の `CONVERSION_STORAGE_CONNECTION_STRING` または `local.settings.json` の同名設定に接続文字列を設定して起動します。Azuriteなら、先にBlob・Queueサービスを起動し、値を `UseDevelopmentStorage=true` にします。接続文字列やキーをリポジトリに保存しないでください。
 
@@ -34,7 +34,7 @@ Storage接続を設定しなければ同期だけが有効です。非同期を�
 
 ## 出力と形式ごとのルール
 
-同期HTTPは常に `document.zip` を返します。画像がなくても `document.md` と `report.json` が入ります。
+同期HTTPの既定出力は `document.zip` です。画像がなくても `document.md` と `report.json` が入ります。`output=pdf` を指定した同期HTTPは `application/pdf` の `document.pdf` を直接返します。
 
 ```text
 document.md
@@ -44,6 +44,8 @@ images/diagram-0001.png   # Excel・Wordの個別図形、PPTXのスライド参
 ```
 
 Markdownからは `![画像](images/image-0001.png)` のような相対パスで参照します。ZIPを展開した後も、`document.md` と `images/` を同じ場所に置いて利用できます。
+
+PDF指定時の非同期 `report.json` には `pdfOutput` としてページ数・サイズ・SHA-256・PDF配置時の警告件数を追加します。PDFレンダラーの警告は `PDF_` で始まるコードとして通常の `warnings` に含まれ、HTTPの `X-Warning-Count` とジョブ状態の `warningCount` にも反映されます。同期PDF応答はPDF本体のみなので、詳細なreportが必要な場合は非同期ジョブの `/report` または `/archive` を利用してください。
 
 次のルールを形式ごとに適用します。ファイル別のルールJSONや範囲指定はありません。
 
@@ -185,14 +187,14 @@ Playgroundも数式を実行せず、画像は変換結果に含まれるファ�
 
 | メソッド・パス | 内容 |
 | --- | --- |
-| `POST /api/convert?filename=sample.xlsx` | Officeファイルの生バイト列を受け、ZIPを返す |
-| `POST /api/jobs?filename=sample.xlsx` | 非同期を登録。202と `job` / `statusUrl`、`Retry-After` を返す |
+| `POST /api/convert?filename=sample.xlsx` | Officeファイルの生バイト列を受け、既定でZIPを返す。`&output=pdf` でPDF本体を返す |
+| `POST /api/jobs?filename=sample.xlsx` | 非同期を登録。`&output=pdf` でPDFジョブ。202と `job` / `statusUrl`、`Retry-After` を返す |
 | `GET /api/jobs/{id}` | `queued` → `running` → `succeeded` / `failed` を確認 |
-| `GET /api/jobs/{id}/result` | 完成した `document.md` |
+| `GET /api/jobs/{id}/result` | 既定ジョブは `document.md`、PDFジョブは `document.pdf` |
 | `GET /api/jobs/{id}/report` | 完成した `report.json` |
 | `GET /api/jobs/{id}/images/{assetName}` | 完成した結果に含まれる画像・添付ファイル1件 |
-| `GET /api/jobs/{id}/archive` | 完成した成果物から、その場でZIPを生成 |
-| `GET /api/capabilities` | `asyncEnabled`、対応拡張子、設定された11種類の上限 |
+| `GET /api/jobs/{id}/archive` | 完成した成果物から、その場でZIPを生成。PDFジョブではPDFも含む |
+| `GET /api/capabilities` | `asyncEnabled`、対応拡張子・出力形式、設定された11種類の上限 |
 
 ```sh
 curl --fail-with-body \
@@ -202,11 +204,13 @@ curl --fail-with-body \
   -o document.zip
 ```
 
-`filename` には入力と一致する拡張子を指定します。省略時の名前は従来の `workbook.xlsx` のため、Word・PowerPointでは必ず指定してください。`multipart/form-data` やJSONではなく、`application/octet-stream` でファイル本体を送ります。ページや幅、変換ルールなどのオプションはありません。同期レスポンスには `X-Section-Count` と `X-Warning-Count` が付きます。失敗時は成功したZIPの代わりにHTTPエラーと `error.code` / `error.message` を返します。
+PDFを直接受け取る場合は `?filename=sample.xlsx&output=pdf` として `document.pdf` に保存します。非同期では同じ `output=pdf` を `/api/jobs` に付け、成功後の `/result` から `application/pdf` を取得します。どちらも省略時は既定のMarkdown出力です。
 
-非同期の成功状態には `resultUrl`、`reportUrl`、`archiveUrl`、`assetsBaseUrl` が加わります。`assetsBaseUrl` は `/api/jobs/{id}/images/` を指します。返されたURLを使い、各取得リクエストにも認証ヘッダーを付けます。Blobの保存場所や資格情報はHTTP状態APIに含めません。保存するのはMarkdown・変換情報・画像それぞれで、ZIPを常時保存しません。非同期が無効ならジョブAPIは503を返します。
+`filename` には入力と一致する拡張子を指定します。省略時の名前は従来の `workbook.xlsx` のため、Word・PowerPointでは必ず指定してください。`multipart/form-data` やJSONではなく、`application/octet-stream` でファイル本体を送ります。出力形式以外にページや幅、変換ルールなどのオプションはありません。同期レスポンスには `X-Section-Count` と `X-Warning-Count` が付きます。失敗時は成功した成果物の代わりにHTTPエラーと `error.code` / `error.message` を返します。
 
-PlaygroundはキーをURLやブラウザストレージに保存せず、結果URLの同一オリジンとジョブのパスを検証します。プレビューは生成されるMarkdownの基本構文に限定し、入力HTMLを実行せず、外部画像を取得しません。表示は先頭20万文字、ブロック・表セルの合計1万件、警告一覧は300件までです。取得・展開は合計100 MiB、Markdownと変換情報各20 MiB、添付1件20 MiBを上限とし、サーバーの設定が小さければそちらを適用します。添付数に画面独自の固定上限はなく、サーバーで画像配置数と図形数の両方を制限した場合だけ、その合計を上限とします。ZIPの展開には `DecompressionStream` の `deflate-raw` に対応したブラウザが必要です。「待機を停止」は画面の通信を止める操作で、サーバージョブを取り消しません。
+非同期の成功状態には `resultUrl`、`reportUrl`、`archiveUrl`、`assetsBaseUrl` が加わります。`assetsBaseUrl` は `/api/jobs/{id}/images/` を指します。返されたURLを使い、各取得リクエストにも認証ヘッダーを付けます。Blobの保存場所や資格情報はHTTP状態APIに含めません。保存するのはMarkdown・変換情報・画像、PDFジョブではPDFも含む各ファイルで、ZIPを常時保存しません。非同期が無効ならジョブAPIは503を返します。
+
+PlaygroundはキーをURLやブラウザストレージに保存せず、結果URLの同一オリジンとジョブのパスを検証します。Markdownプレビューは生成される基本構文に限定し、入力HTMLを実行せず、外部画像を取得しません。PDFはブラウザのPDF表示機能でプレビューし、表示できない環境でも保存できます。Markdown表示は先頭20万文字、ブロック・表セルの合計1万件、警告一覧は300件までです。取得・展開は合計100 MiB、Markdownと変換情報各20 MiB、添付1件20 MiBを上限とし、サーバーの設定が小さければそちらを適用します。添付数に画面独自の固定上限はなく、サーバーで画像配置数と図形数の両方を制限した場合だけ、その合計を上限とします。ZIPの展開には `DecompressionStream` の `deflate-raw` に対応したブラウザが必要です。「待機を停止」は画面の通信を止める操作で、サーバージョブを取り消しません。
 
 ## 非同期の設定と直接Queue投入
 
@@ -304,11 +308,11 @@ node scripts/test_playground_browser.cjs --out /tmp/office2md-browser
 node scripts/test_playground_browser.cjs --base http://localhost:7072 --fixtures target/fixtures --out /tmp/office2md-live
 ```
 
-既定では隔離したテストAPIで、同期・非同期、ZIP内パス、認証、HTML・外部画像の抑止、エラー、画面幅を確認します。`./mvnw test` は日本語の `target/fixtures/sample.xlsx` と `sample.xls` も生成します。Word・PowerPoint用の `sample.docx` / `sample.pptx` は [生成手順](../samples/README.md#wordpowerpointを試す) で用意します。起動済みのローカルホストに `--base` とこのディレクトリを指定すると、実APIで変換し、スクリーンショット・ZIP・JSON形式の検証レポートを指定先に保存します。Storageが有効なら非同期も確認します。これはローカル検証で、Azure上の動作確認を代替しません。
+既定では隔離したテストAPIで、同期・非同期のMarkdown ZIPとPDF、PDFプレビュー・保存、ZIP内パス、認証、HTML・外部画像の抑止、エラー、画面幅を確認します。`./mvnw test` は日本語の `target/fixtures/sample.xlsx` と `sample.xls` も生成します。Word・PowerPoint用の `sample.docx` / `sample.pptx` は [生成手順](../samples/README.md#wordpowerpointを試す) で用意します。起動済みのローカルホストに `--base` とこのディレクトリを指定すると、実APIで変換し、スクリーンショット・ZIP・JSON形式の検証レポートを指定先に保存します。Storageが有効なら非同期も確認します。これはローカル検証で、Azure上の動作確認を代替しません。
 
 ## ライセンス
 
-このプロジェクトのコードは [MIT License](../LICENSE) です。Apache POIなどの依存ライブラリには各ライブラリのライセンスが適用されます。同梱のNoto Sans CJK JP / Noto Serif CJK JP（Regular・Bold）はSIL Open Font License 1.1です。[フォントの出典・ライセンス](../src/main/resources/fonts/noto/README.md) と原文・SHA-256をJARにも含めています。Playgroundは独自のHTML/CSS/JavaScriptで、外部のMarkdown・ZIPライブラリやWebフォントを含みません。
+このプロジェクトのコードは [MIT License](../LICENSE) です。Apache POIなどの依存ライブラリには各ライブラリのライセンスが適用されます。同梱のNoto Sans CJK JP / Noto Serif CJK JP（Regular・Bold）はSIL Open Font License 1.1です。[フォントの出典・ライセンス](../src/main/resources/fonts/noto/README.md) と原文・SHA-256をJARにも含めています。PDF出力で使うBIZ UDフォントなどは [NOTICE](../NOTICE.md) を参照してください。Playgroundは独自のHTML/CSS/JavaScriptで、外部のMarkdown・ZIPライブラリやWebフォントを含みません。
 
 ## Managed Identity・結果通知・保持期間
 
