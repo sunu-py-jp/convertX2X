@@ -162,7 +162,7 @@ def verify(output, files, request, limits, expected, checks):
     require(isinstance(report, dict), "report.json must be an object")
     def check(name, passed, actual=None, expectation=None):
         checks.append({"name": name, "passed": bool(passed), "actual": actual, "expected": expectation})
-    check("レポートの形式バージョン", report.get("specVersion") == 2, report.get("specVersion"), 2)
+    check("レポートの形式バージョン", report.get("specVersion") == 1, report.get("specVersion"), 1)
     check("入力SHA-256とレポートの一致", report.get("source", {}).get("sha256") == request["inputSha256"],
           report.get("source", {}).get("sha256"), request["inputSha256"])
     headings = [plain_markdown(match.group(1)) for match in re.finditer(r"^# ([^\n]+)$", markdown, re.MULTILINE)]

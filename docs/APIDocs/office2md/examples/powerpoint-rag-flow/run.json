@@ -1,7 +1,7 @@
 {
-  "capturedAt": "2026-09-22T09:01:55.259Z",
+  "capturedAt": "2026-09-23T08:02:38.571Z",
   "mode": "actual local Functions HTTP through unmodified Playground",
-  "sourceCommit": "e1ae5a05d9eedde5a08cd5007804e04db5057e24",
+  "sourceCommit": "8b4ee428d920ae052a0de374df30098d791d4fa3",
   "sourceWorkingTreeDirty": true,
   "runtime": {
     "platform": "darwin",
@@ -25,7 +25,7 @@
   "response": {
     "status": 200,
     "contentType": "application/zip",
-    "elapsedMs": 2827
+    "elapsedMs": 323
   },
   "timingNote": "Local macOS measurement from submit click to completed Playground result (HTTP response, unzip and preview construction included). Not an Azure latency or throughput benchmark.",
   "sectionCount": 3,
@@ -43,18 +43,18 @@
   "files": [
     {
       "path": "result.zip",
-      "sizeBytes": 257126,
-      "sha256": "85e2b9b5b06ca2f689e9c8db6e40da4aab4cbeecc03ab60d457ae6ac7cb5c9e0"
+      "sizeBytes": 257411,
+      "sha256": "1e63a4579a460fc0959bf9b28e74869532253153b0781b86db7328d53fd42a80"
     },
     {
       "path": "output/document.md",
-      "sizeBytes": 4375,
-      "sha256": "2b897304984e8ee99890af6695a315da1f164c5722d57d048dd071bf3f91fb50"
+      "sizeBytes": 5134,
+      "sha256": "41a43b41d60f4598ca765aeb0eef4ab1e687f100d86b36769ff2449c8de4752e"
     },
     {
       "path": "output/report.json",
-      "sizeBytes": 10925,
-      "sha256": "44e17f71d67588a7b1f22608d0ba0134a18c7d377c9c245b18db977b4eb59ac2"
+      "sizeBytes": 13731,
+      "sha256": "f93fbda53ad5cbac69e891214126d77cee34b4c41449457078e45246ad7c2db7"
     },
     {
       "path": "output/images/diagram-0001.png",
@@ -73,28 +73,28 @@
     },
     {
       "path": "screenshots/overview.png",
-      "sizeBytes": 181953,
-      "sha256": "3be56a059e6912afd9b09cf3f65b825a76229979430f20758f8e132122908995"
+      "sizeBytes": 188630,
+      "sha256": "4a03162e15edf29a50ee5bb5153d341a3b63e7179841d1483de92e4a28688eec"
     },
     {
       "path": "screenshots/section-01.png",
-      "sizeBytes": 255652,
-      "sha256": "c0b130b56d1ce1f2f35630eb7a841c22d80033a35ec55a9f1162acf382f26222"
+      "sizeBytes": 276250,
+      "sha256": "820b38ae595a2f78fced71f6045c9a60bcd3958e5c3c9e1550021d153d43771d"
     },
     {
       "path": "screenshots/section-02.png",
-      "sizeBytes": 182085,
-      "sha256": "e9e3d3e53b7681e28247301d285eb8ebe25c9ffde9926c4f36c74e358dcaa1ff"
+      "sizeBytes": 192208,
+      "sha256": "da99f6741be4b059e0890243b7a9c3afb66fb45efa05c78324995e2052694598"
     },
     {
       "path": "screenshots/section-03.png",
-      "sizeBytes": 191984,
-      "sha256": "f561fdfa8b07aa4f3bec096a8f65f3631143b19e084d18d8c7b35f43776ddb4a"
+      "sizeBytes": 200584,
+      "sha256": "882d572702388e066886e6f3f9d91d3052b11ef3538a425ee7e87318ca3635e9"
     },
     {
       "path": "screenshots/markdown-source.png",
-      "sizeBytes": 118425,
-      "sha256": "48f260735791e03785f671a261a31194006ef9f12d5b4229ec4bbd04c03a83b8"
+      "sizeBytes": 129949,
+      "sha256": "8b77da3c25d0c4f41e5fa090dc21e5379a465898d4a72b4bfc7da6eca1b3650f"
     },
     {
       "path": "screenshots/warnings.png",

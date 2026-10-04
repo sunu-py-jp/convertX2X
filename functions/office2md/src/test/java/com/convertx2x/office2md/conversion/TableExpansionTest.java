@@ -197,11 +197,13 @@ class TableExpansionTest {
         try (var book = new XSSFWorkbook()) {
             var sheet = book.createSheet("テーブル"); table(sheet, 0, 1, 0, 1);
             cell(sheet, 0, 0, "商品"); cell(sheet, 0, 1, "価格"); cell(sheet, 1, 0, "りんご");
+            colorRow(sheet, 0, 0, 1, IndexedColors.GREY_25_PERCENT.getIndex());
             sheet.createTable(new AreaReference("A1:B2", book.getSpreadsheetVersion()));
             cell(sheet, 0, 3, "備考"); cell(sheet, 1, 3, "特売");
             try (var result = convert(book)) {
                 assertTrue(md(result).contains("| 商品 | 価格 | 備考 |\n| --- | --- | --- |\n| りんご |  | 特売 |"));
-                assertEquals("excel-table", tables(result).getFirst().path("header").asText());
+                assertEquals("fill-color", tables(result).getFirst().path("header").asText());
+                assertEquals(List.of(1), JSON.convertValue(tables(result).getFirst().path("headerSourceRows"), List.class));
             }
             var limits = com.convertx2x.office2md.AppConfig.from(java.util.Map.of("CONVERSION_MAX_TABLE_CELLS", "4")).limits();
             assertEquals("TABLE_CELLS_LIMIT", assertThrows(ConversionException.class,

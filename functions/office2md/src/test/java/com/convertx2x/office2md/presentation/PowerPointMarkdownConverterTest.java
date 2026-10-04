@@ -91,7 +91,7 @@ class PowerPointMarkdownConverterTest {
         }
     }
 
-    @Test void connectedAndOverlappingShapesKeepSearchableTextAndOneSlidePreview() throws Exception {
+    @Test void connectedAndOverlappingShapesKeepSearchableTextAndOneConnectedPreview() throws Exception {
         try (XMLSlideShow deck = deck()) {
             XSLFSlide slide = deck.createSlide();
             XSLFAutoShape rectangle = box(slide, "図内の処理", 40, 80, 180, 100);
@@ -109,9 +109,9 @@ class PowerPointMarkdownConverterTest {
             try (ConversionResult result = convert(bytes(deck))) {
                 String md = md(result);
                 List<String> images = md.lines().filter(line -> line.startsWith("![")).toList();
-                assertEquals(1, images.size(), "The complete slide provides one optional visual reference");
+                assertEquals(1, images.size(), "The connected shapes provide one optional visual reference");
                 JsonNode firstMetadata = imageMetadata(images.get(0));
-                assertEquals("図", firstMetadata.path("type").asText());
+                assertEquals("接続図", firstMetadata.path("type").asText());
                 assertEquals("", firstMetadata.path("text").asText());
                 assertImageMetadata(result, images);
                 String searchable = withoutImages(md);
@@ -129,6 +129,25 @@ class PowerPointMarkdownConverterTest {
                     assertSlideCanvas(image);
                     assertEquals(Color.BLACK.getRGB(), image.getRGB(px(290), px(130)), "A zero-height horizontal connector must survive in the preview");
                 } finally { image.flush(); }
+            }
+        }
+    }
+
+    @Test void connectorEndpointContactFillsOnlyMissingSavedRelationships() throws Exception {
+        try (XMLSlideShow deck = deck()) {
+            XSLFSlide slide = deck.createSlide();
+            XSLFAutoShape start = box(slide, "開始", 40, 80, 180, 80);
+            XSLFAutoShape end = box(slide, "終了", 360, 80, 180, 80);
+            XSLFConnectorShape touching = slide.createConnector();
+            touching.setAnchor(new Rectangle2D.Double(220, 120, 140, 0));
+            touching.setLineTailDecoration(LineDecoration.DecorationShape.TRIANGLE);
+            try (ConversionResult result = convert(bytes(deck))) {
+                JsonNode edge = edgeById(result, "shape-" + touching.getShapeId());
+                assertEquals("resolved", edge.path("connectionResolutionStatus").asText());
+                assertEquals("shape-" + start.getShapeId(), edge.path("startId").asText());
+                assertEquals("shape-" + end.getShapeId(), edge.path("endId").asText());
+                assertEquals(1, imageLines(md(result)).size());
+                assertEquals(2, diagram(result).path("nodes").size());
             }
         }
     }
@@ -152,6 +171,8 @@ class PowerPointMarkdownConverterTest {
                 JsonNode firstNode = diagram(result).path("nodes").get(0);
                 assertEquals("長方形", firstNode.path("type").asText());
                 assertBounds(firstNode, 320, 120, 40, 80);
+                assertEquals("center-top", firstNode.path("positionOnSlide").asText(),
+                        "A group leaf uses its transformed slide position, not its untransformed group coordinates");
                 assertImageMetadata(result, images);
                 assertEquals("テキストボックス", nodeByText(result, "図の文字").path("type").asText());
                 assertTrue(withoutImages(md).contains("図の文字"));
@@ -548,8 +569,12 @@ class PowerPointMarkdownConverterTest {
                     assertEquals("shape-" + connector.getShapeId(), edge.path("id").asText());
                     assertEquals("shape-" + start.getShapeId(), edge.path("startId").asText());
                     assertEquals("shape-" + end.getShapeId(), edge.path("endId").asText());
-                    assertEquals("resolved", edge.path("status").asText());
-                    assertEquals(directions.get(i), edge.path("direction").asText());
+                    assertEquals("resolved", edge.path("connectionResolutionStatus").asText());
+                    assertEquals(directions.get(i), edge.path("arrowheadDirectionAlongLine").asText());
+                    assertEquals("", edge.path("connectionResolutionReason").asText());
+                    assertEquals("center-top", edge.path("positionOnSlide").asText());
+                    assertFalse(edge.has("arrowheadPointsToward"), "Attached connectors do not get a visual-bearing hint");
+                    for (String oldKey : List.of("status", "direction", "reason")) assertFalse(edge.has(oldKey), oldKey);
                     assertEquals(combinations.get(i).get(0).name().toLowerCase(Locale.ROOT), edge.path("startArrow").asText());
                     assertEquals(combinations.get(i).get(1).name().toLowerCase(Locale.ROOT), edge.path("endArrow").asText());
                     if (directions.get(i).equals("start-to-end")) {
@@ -574,6 +599,112 @@ class PowerPointMarkdownConverterTest {
         }
     }
 
+    @Test void diagramNodesUseTheNineSlideRegionsAndKeepUnknownPositionExplicit() throws Exception {
+        try (XMLSlideShow deck = deck()) {
+            XSLFSlide slide = deck.createSlide();
+            String[] columns = {"left", "center", "right"};
+            String[] rows = {"top", "middle", "bottom"};
+            double[] centerX = {100, 360, 620}, centerY = {90, 270, 450};
+            for (int row = 0; row < rows.length; row++) {
+                for (int column = 0; column < columns.length; column++) {
+                    String name = "zone-" + rows[row] + "-" + columns[column];
+                    box(slide, name, centerX[column] - 15, centerY[row] - 15, 30, 30);
+                }
+            }
+            box(slide, "区画境界", 230, 170, 20, 20); // Center (240, 180) belongs to the center-middle cell.
+            box(slide, "スライド外", 730, 30, 20, 20);
+            try (ConversionResult result = convert(bytes(deck))) {
+                for (String row : rows) for (String column : columns)
+                    assertEquals(column + "-" + row,
+                            nodeByText(result, "zone-" + row + "-" + column).path("positionOnSlide").asText());
+                assertEquals("center-middle", nodeByText(result, "区画境界").path("positionOnSlide").asText());
+                JsonNode outside = nodeByText(result, "スライド外");
+                assertTrue(outside.has("positionOnSlide"));
+                assertTrue(outside.path("positionOnSlide").isNull(), "An out-of-slide center is not assigned a nearby zone");
+                String upperLeftLine = diagramLine(md(result), nodeByText(result, "zone-top-left").path("id").asText());
+                assertTrue(upperLeftLine.contains("左上"), upperLeftLine);
+                String lowerRightLine = diagramLine(md(result), nodeByText(result, "zone-bottom-right").path("id").asText());
+                assertTrue(lowerRightLine.contains("右下"), lowerRightLine);
+            }
+        }
+    }
+
+    @Test void unattachedStraightArrowsExposeEightVisualDirectionsWithoutInventingConnections() throws Exception {
+        try (XMLSlideShow deck = deck()) {
+            XSLFSlide slide = deck.createSlide();
+            record Case(XSLFConnectorShape connector, String bearing) { }
+            List<Case> cases = List.of(
+                    new Case(unattachedArrow(slide, 50, 50, 90, 0, false, false), "right-middle"),
+                    new Case(unattachedArrow(slide, 180, 50, 90, 0, true, false), "left-middle"),
+                    new Case(unattachedArrow(slide, 310, 50, 0, 90, false, false), "center-bottom"),
+                    new Case(unattachedArrow(slide, 410, 50, 0, 90, true, false), "center-top"),
+                    new Case(unattachedArrow(slide, 50, 200, 90, 90, false, false), "right-bottom"),
+                    new Case(unattachedArrow(slide, 180, 200, 90, 90, true, false), "left-top"),
+                    new Case(unattachedArrow(slide, 310, 200, 90, 90, false, true), "right-top"),
+                    new Case(unattachedArrow(slide, 440, 200, 90, 90, true, true), "left-bottom"));
+            try (ConversionResult result = convert(bytes(deck))) {
+                assertEquals(cases.size(), diagram(result).path("edges").size());
+                for (Case test : cases) {
+                    JsonNode edge = edgeById(result, "shape-" + test.connector().getShapeId());
+                    assertEquals(test.bearing(), edge.path("arrowheadPointsToward").asText(), edge.toString());
+                    assertTrue(edge.path("positionOnSlide").isTextual(), edge.toString());
+                    assertEquals("unresolved", edge.path("connectionResolutionStatus").asText());
+                    assertEquals("MISSING_ENDPOINT", edge.path("connectionResolutionReason").asText());
+                    assertTrue(edge.path("connectionResolutionExplanation").asText().contains("接続先"));
+                    assertFalse(edge.has("fromId")); assertFalse(edge.has("toId"));
+                }
+                String downRightLine = diagramLine(md(result), "shape-" + cases.get(4).connector().getShapeId());
+                assertTrue(downRightLine.contains("右下"), downRightLine);
+                assertTrue(downRightLine.contains("矢印"), downRightLine);
+                assertTrue(downRightLine.contains("接続関係不明"), downRightLine);
+            }
+        }
+    }
+
+    @Test void visualArrowBearingIsOmittedWhenIneligibleAndNullWhenGeometryCannotProveIt() throws Exception {
+        try (XMLSlideShow deck = deck()) {
+            XSLFSlide slide = deck.createSlide();
+            XSLFAutoShape source = box(slide, "保存済み接続元", 20, 20, 160, 60);
+            XSLFConnectorShape noArrow = slide.createConnector();
+            noArrow.setAnchor(new Rectangle2D.Double(20, 380, 60, 0));
+            XSLFConnectorShape doubleArrow = slide.createConnector();
+            doubleArrow.setAnchor(new Rectangle2D.Double(110, 380, 60, 0));
+            doubleArrow.setLineHeadDecoration(LineDecoration.DecorationShape.TRIANGLE);
+            doubleArrow.setLineTailDecoration(LineDecoration.DecorationShape.TRIANGLE);
+            XSLFConnectorShape markerAndArrow = unattachedArrow(slide, 200, 380, 60, 0, false, false);
+            markerAndArrow.setLineHeadDecoration(LineDecoration.DecorationShape.OVAL);
+            XSLFConnectorShape partiallyAttached = unattachedArrow(slide, 290, 380, 60, 0, false, false);
+            var connection = ((org.openxmlformats.schemas.presentationml.x2006.main.CTConnector) partiallyAttached.getXmlObject())
+                    .getNvCxnSpPr().getCNvCxnSpPr().addNewStCxn();
+            connection.setId(source.getShapeId()); connection.setIdx(0);
+            XSLFConnectorShape bent = unattachedArrow(slide, 380, 380, 60, 60, false, false);
+            bent.setShapeType(ShapeType.BENT_CONNECTOR_3);
+            XSLFConnectorShape curved = unattachedArrow(slide, 470, 380, 60, 60, false, false);
+            curved.setShapeType(ShapeType.CURVED_CONNECTOR_3);
+            XSLFConnectorShape zeroLength = unattachedArrow(slide, 570, 380, 0, 0, false, false);
+            XSLFConnectorShape outside = unattachedArrow(slide, 740, 380, 60, 0, false, false);
+            try (ConversionResult result = convert(bytes(deck))) {
+                for (XSLFConnectorShape connector : List.of(noArrow, doubleArrow, partiallyAttached)) {
+                    JsonNode edge = edgeById(result, "shape-" + connector.getShapeId());
+                    assertFalse(edge.has("arrowheadPointsToward"), edge.toString());
+                    assertTrue(edge.has("positionOnSlide"));
+                }
+                assertEquals("right-middle", edgeById(result, "shape-" + markerAndArrow.getShapeId())
+                        .path("arrowheadPointsToward").asText(), "The oval is decoration, leaving one directional arrowhead");
+                for (XSLFConnectorShape connector : List.of(bent, curved, zeroLength)) {
+                    JsonNode edge = edgeById(result, "shape-" + connector.getShapeId());
+                    assertTrue(edge.has("arrowheadPointsToward"), edge.toString());
+                    assertTrue(edge.path("arrowheadPointsToward").isNull(), edge.toString());
+                }
+                JsonNode offSlide = edgeById(result, "shape-" + outside.getShapeId());
+                assertTrue(offSlide.has("positionOnSlide"));
+                assertTrue(offSlide.path("positionOnSlide").isNull());
+                assertEquals("right-middle", offSlide.path("arrowheadPointsToward").asText(),
+                        "Where the line points is independent of whether its midpoint is on the slide");
+            }
+        }
+    }
+
     @Test void nearbyCaptionsAndUnattachedConnectorsNeverInventRelationships() throws Exception {
         try (XMLSlideShow deck = deck()) {
             XSLFSlide slide = deck.createSlide();
@@ -586,20 +717,21 @@ class PowerPointMarkdownConverterTest {
             unattached.setLineHeadDecoration(LineDecoration.DecorationShape.OVAL);
             unattached.setLineTailDecoration(LineDecoration.DecorationShape.DIAMOND);
             try (ConversionResult result = convert(bytes(deck))) {
-                JsonNode graph = diagram(result);
-                assertEquals(2, graph.path("nodes").size(), "An adjacent caption remains ordinary text, not a fabricated graph node");
-                assertEquals(2, graph.path("edges").size());
+                assertEquals(2, diagramItemCount(result, "nodes"), "An adjacent caption remains ordinary text, not a fabricated graph node");
+                assertEquals(2, diagramItemCount(result, "edges"));
                 JsonNode unknown = edgeById(result, "shape-" + unattached.getShapeId());
-                assertEquals("unresolved", unknown.path("status").asText());
+                assertEquals("unresolved", unknown.path("connectionResolutionStatus").asText());
                 assertTrue(unknown.path("startId").isMissingNode()); assertTrue(unknown.path("endId").isMissingNode());
-                assertEquals("MISSING_ENDPOINT", unknown.path("reason").asText());
-                assertEquals("undirected", unknown.path("direction").asText());
+                assertEquals("MISSING_ENDPOINT", unknown.path("connectionResolutionReason").asText());
+                assertEquals("undirected", unknown.path("arrowheadDirectionAlongLine").asText());
+                assertFalse(unknown.has("arrowheadPointsToward"));
                 assertEquals("oval", unknown.path("startArrow").asText());
                 assertEquals("diamond", unknown.path("endArrow").asText());
-                for (JsonNode edge : graph.path("edges")) {
-                    assertFalse(edge.has("label"));
-                    assertFalse(edge.toString().contains("承認なら進む"), "Proximity alone is never evidence for a branch label");
-                }
+                for (JsonNode block : report(result).path("blocks")) if (block.path("type").asText().equals("diagram"))
+                    for (JsonNode edge : block.path("edges")) {
+                        assertFalse(edge.has("label"));
+                        assertFalse(edge.toString().contains("承認なら進む"), "Proximity alone is never evidence for a branch label");
+                    }
                 String body = withoutImages(md(result));
                 assertTrue(body.lines().anyMatch(line -> line.equals("承認なら進む")));
                 assertTrue(body.contains("shape-" + unattached.getShapeId()));
@@ -625,7 +757,7 @@ class PowerPointMarkdownConverterTest {
                 assertTrue(bodyMd.contains("| 金額 | 100万円 |"));
                 JsonNode graph = diagram(result);
                 assertEquals(3, graph.path("nodes").size());
-                for (JsonNode edge : graph.path("edges")) assertEquals("resolved", edge.path("status").asText());
+                for (JsonNode edge : graph.path("edges")) assertEquals("resolved", edge.path("connectionResolutionStatus").asText());
                 assertEquals("shape-" + title.getShapeId(), nodeByText(result, "判断の根拠").path("id").asText());
                 assertEquals("shape-" + body.getShapeId(), nodeByText(result, "担当者が確認").path("id").asText());
                 assertFalse(nodeById(result, "shape-" + table.getShapeId()).path("text").asText().isBlank(), "The target table must supply text for relationship labels");
@@ -648,7 +780,7 @@ class PowerPointMarkdownConverterTest {
                 assertNotEquals(graph.path("nodes").get(0).path("id"), graph.path("nodes").get(1).path("id"));
                 String body = withoutImages(md(result));
                 assertTrue(body.contains("shape-" + first.getShapeId())); assertTrue(body.contains("shape-" + second.getShapeId()));
-                assertEquals("unresolved", edgeById(result, "shape-" + toHidden.getShapeId()).path("status").asText());
+                assertEquals("unresolved", edgeById(result, "shape-" + toHidden.getShapeId()).path("connectionResolutionStatus").asText());
                 assertFalse(body.contains("HIDDEN_SECRET")); assertFalse(report(result).toString().contains("HIDDEN_SECRET"));
             }
         }
@@ -779,16 +911,25 @@ class PowerPointMarkdownConverterTest {
         fail("Expected a diagram report block"); return null;
     }
     private static JsonNode nodeByText(ConversionResult result, String text) throws Exception {
-        for (JsonNode node : diagram(result).path("nodes")) if (node.path("text").asText().equals(text)) return node;
+        for (JsonNode block : report(result).path("blocks")) if (block.path("type").asText().equals("diagram"))
+            for (JsonNode node : block.path("nodes")) if (node.path("text").asText().equals(text)) return node;
         fail("Expected diagram node with text: " + text); return null;
     }
     private static JsonNode nodeById(ConversionResult result, String id) throws Exception {
-        for (JsonNode node : diagram(result).path("nodes")) if (node.path("id").asText().equals(id)) return node;
+        for (JsonNode block : report(result).path("blocks")) if (block.path("type").asText().equals("diagram"))
+            for (JsonNode node : block.path("nodes")) if (node.path("id").asText().equals(id)) return node;
         fail("Expected diagram node with id: " + id); return null;
     }
     private static JsonNode edgeById(ConversionResult result, String id) throws Exception {
-        for (JsonNode edge : diagram(result).path("edges")) if (edge.path("id").asText().equals(id)) return edge;
+        for (JsonNode block : report(result).path("blocks")) if (block.path("type").asText().equals("diagram"))
+            for (JsonNode edge : block.path("edges")) if (edge.path("id").asText().equals(id)) return edge;
         fail("Expected diagram edge with id: " + id); return null;
+    }
+    private static int diagramItemCount(ConversionResult result, String field) throws Exception {
+        int count = 0;
+        for (JsonNode block : report(result).path("blocks")) if (block.path("type").asText().equals("diagram"))
+            count += block.path(field).size();
+        return count;
     }
     private static XSLFConnectorShape connected(XSLFSlide slide, XSLFShape start, XSLFShape end) {
         XSLFConnectorShape connector = slide.createConnector();
@@ -799,9 +940,24 @@ class PowerPointMarkdownConverterTest {
         properties.addNewEndCxn().setId(end.getShapeId()); properties.getEndCxn().setIdx(0);
         return connector;
     }
+    private static XSLFConnectorShape unattachedArrow(XSLFSlide slide, double x, double y,
+                                                       double width, double height, boolean atStart, boolean flipVertical) {
+        XSLFConnectorShape connector = slide.createConnector();
+        connector.setShapeType(ShapeType.STRAIGHT_CONNECTOR_1);
+        connector.setAnchor(new Rectangle2D.Double(x, y, width, height));
+        connector.setLineColor(Color.BLACK);
+        if (atStart) connector.setLineHeadDecoration(LineDecoration.DecorationShape.TRIANGLE);
+        else connector.setLineTailDecoration(LineDecoration.DecorationShape.TRIANGLE);
+        connector.setFlipVertical(flipVertical);
+        return connector;
+    }
+    private static String diagramLine(String markdown, String id) {
+        return markdown.lines().filter(line -> line.startsWith("- " + id + "：") || line.startsWith("- " + id + "（"))
+                .findFirst().orElseThrow(() -> new AssertionError("Expected Markdown diagram item: " + id));
+    }
     private static void assertNodeFields(JsonNode node) {
         Set<String> fields = new HashSet<>(); node.fieldNames().forEachRemaining(fields::add);
-        assertEquals(Set.of("id", "type", "text", "x", "y", "width", "height"), fields);
+        assertEquals(Set.of("id", "type", "text", "x", "y", "width", "height", "positionOnSlide"), fields);
         assertTrue(node.path("id").asText().matches("shape-\\d+"));
         for (String coordinate : List.of("x", "y", "width", "height")) assertTrue(node.path(coordinate).isNumber());
     }

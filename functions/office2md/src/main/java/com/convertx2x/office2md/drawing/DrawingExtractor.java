@@ -5,6 +5,7 @@ import com.convertx2x.office2md.conversion.ConversionWorkspace;
 import com.convertx2x.office2md.conversion.Markdown;
 import java.awt.Color;
 import java.awt.geom.AffineTransform;
+import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -64,6 +65,20 @@ public final class DrawingExtractor {
             for (var item : items) {
                 item.graphId = item.sourceId == null ? "shape-generated-" + item.order
                         : "shape-" + item.sourceId + (counts.get(item.sourceId) > 1 ? "-" + item.order : "");
+            }
+            Map<String, Rectangle2D> contactTargets = new LinkedHashMap<>();
+            for (var item : items) if (!item.connector && item.positionKnown && item.sourceId != null
+                    && counts.getOrDefault(item.sourceId, 0L) == 1 && axisAligned(item.transform))
+                contactTargets.put(item.sourceId, item.placementBounds());
+            for (var item : items) if (item.connector && item.positionKnown) {
+                Point2D start = item.transform.transform(new Point2D.Double(0, 0), null);
+                Point2D end = item.transform.transform(new Point2D.Double(item.width, item.height), null);
+                if (item.startId == null || item.startId.isBlank())
+                    item.startId = ConnectorGeometry.uniqueBoundaryContact(start, contactTargets);
+                if (item.endId == null || item.endId.isBlank())
+                    item.endId = ConnectorGeometry.uniqueBoundaryContact(end, contactTargets);
+            }
+            for (var item : items) {
                 if (item.connector) {
                     connections.add(new DiagramGraph.Connection(item.graphId, item.startId, item.endId,
                             item.startArrowType, item.endArrowType));
@@ -96,9 +111,9 @@ public final class DrawingExtractor {
                     if (previous != null) union(parents, item.graphId, previous);
                 }
             }
-            for (var edge : edges) if ("resolved".equals(edge.status())) {
-                union(parents, edge.id(), edge.startId());
-                union(parents, edge.id(), edge.endId());
+            for (var edge : edges) {
+                if (edge.startId() != null) union(parents, edge.id(), edge.startId());
+                if (edge.endId() != null) union(parents, edge.id(), edge.endId());
             }
             Map<String, List<DrawingScene.Item>> components = new LinkedHashMap<>();
             for (var item : items) components.computeIfAbsent(root(parents, item.graphId), ignored -> new ArrayList<>()).add(item);
@@ -158,6 +173,10 @@ public final class DrawingExtractor {
                 blocks.add(new DrawingBlock(Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE, "[グラフの描画は未対応です]"));
             }
             return blocks;
+        }
+
+        private static boolean axisAligned(AffineTransform transform) {
+            return Math.abs(transform.getShearX()) < 1e-9 && Math.abs(transform.getShearY()) < 1e-9;
         }
 
         private void read(Shape shape, AffineTransform parent, boolean child, boolean knownPosition,

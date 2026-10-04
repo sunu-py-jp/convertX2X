@@ -1,7 +1,7 @@
 {
-  "capturedAt": "2026-09-22T09:01:55.334Z",
+  "capturedAt": "2026-09-23T08:02:37.006Z",
   "mode": "actual local Functions HTTP through unmodified Playground",
-  "sourceCommit": "e1ae5a05d9eedde5a08cd5007804e04db5057e24",
+  "sourceCommit": "8b4ee428d920ae052a0de374df30098d791d4fa3",
   "sourceWorkingTreeDirty": true,
   "runtime": {
     "platform": "darwin",
@@ -25,7 +25,7 @@
   "response": {
     "status": 200,
     "contentType": "application/zip",
-    "elapsedMs": 2906
+    "elapsedMs": 889
   },
   "timingNote": "Local macOS measurement from submit click to completed Playground result (HTTP response, unzip and preview construction included). Not an Azure latency or throughput benchmark.",
   "sectionCount": 4,
@@ -45,18 +45,18 @@
   "files": [
     {
       "path": "result.zip",
-      "sizeBytes": 61175,
-      "sha256": "2d5b65e5d2a0b4e594f6eb352038d7d5cc53fc7bb86a02a0ad5d0265e9fa2b10"
+      "sizeBytes": 61282,
+      "sha256": "04397b04dc583b2fbe0e4a3cd34ec652a00e291bd86ca70ccb6d84044c2618cd"
     },
     {
       "path": "output/document.md",
-      "sizeBytes": 1386,
-      "sha256": "eedb686688bdd225c2c700d2052228b2b361fb30a3f601bbf0010b12897a214b"
+      "sizeBytes": 1479,
+      "sha256": "0222d8c3b689753a410f3d56e3e30416b93141458692a8f6f4a9e43e173b5722"
     },
     {
       "path": "output/report.json",
-      "sizeBytes": 3352,
-      "sha256": "f30e7055afd11130daec5581cfc946911aba9e929aee02f0ab8c9306b2621d23"
+      "sizeBytes": 3666,
+      "sha256": "538c4d1583192b22ea485c7e16324358b96a46ab68c8de90ff6432707f60b41d"
     },
     {
       "path": "output/images/diagram-0001.png",
@@ -70,8 +70,8 @@
     },
     {
       "path": "screenshots/overview.png",
-      "sizeBytes": 175549,
-      "sha256": "1dc60d72a499356f15f7fe0796c14fd8f98868942107a09180d581c709177ce6"
+      "sizeBytes": 175563,
+      "sha256": "639fdd4ac0e1c33afb09d0479921ad9e2d9b1fb7fb9b145a77e21b2a8f9efa07"
     },
     {
       "path": "screenshots/section-02.png",
@@ -80,13 +80,13 @@
     },
     {
       "path": "screenshots/section-03.png",
-      "sizeBytes": 86895,
-      "sha256": "b52e1c661ee67f31cc14c2e5b7d116af96f22744bd58f63b3128633dbf61c70b"
+      "sizeBytes": 90886,
+      "sha256": "e8682f85bea715ed758ba76acf4a1db33e44aa340c4153ff87cfb0c79b42103d"
     },
     {
       "path": "screenshots/markdown-source.png",
-      "sizeBytes": 89886,
-      "sha256": "117a40e653a645373e749ec9a67f037f91f72c186d28ec4eadfa65e74b4e7b86"
+      "sizeBytes": 89902,
+      "sha256": "0facd5b1e5ce6db0a750244c3186dc97e7ea895f83b88070d67fdea1bed0f651"
     },
     {
       "path": "screenshots/warnings.png",

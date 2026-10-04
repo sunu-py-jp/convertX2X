@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-/** Saved diagram relationships only. The caller supplies visible, sanitized vertices in one ID scope. */
+/** Diagram relationships resolved from saved IDs or conservative format-specific endpoint contact. */
 public final class DiagramGraph {
     private static final Set<String> ARROWS = Set.of("triangle", "stealth", "arrow");
     private static final Set<String> NON_DIRECTIONAL_MARKERS = Set.of("none", "oval", "diamond");
@@ -37,7 +37,10 @@ public final class DiagramGraph {
             if (startId != null) result.put("startId", startId);
             if (endId != null) result.put("endId", endId);
             result.put("startArrow", startArrow); result.put("endArrow", endArrow);
-            result.put("direction", direction); result.put("status", status); result.put("reason", reason);
+            result.put("arrowheadDirectionAlongLine", direction);
+            result.put("connectionResolutionStatus", status);
+            result.put("connectionResolutionReason", reason);
+            result.put("connectionResolutionExplanation", reason.isEmpty() ? "" : DiagramGraph.reason(reason));
             if (status.equals("resolved") && direction.equals("start-to-end")) {
                 result.put("fromId", startId); result.put("toId", endId);
             } else if (status.equals("resolved") && direction.equals("end-to-start")) {
@@ -103,13 +106,14 @@ public final class DiagramGraph {
         }
         if (started) result.append("\n");
         if (!edges.isEmpty()) {
-            result.append("接続関係（保存情報）：\n\n");
+            result.append("接続関係：\n\n");
             for (Edge edge : edges) {
                 String relation;
                 if (!edge.status().equals("resolved")) {
                     relation = "接続関係不明（" + reason(edge.reason()) + "）";
                     workspace.warning("DIAGRAM_CONNECTION_UNRESOLVED", section, range,
-                            "図形の接続関係を確定できません。" + reason(edge.reason()) + "。配置からは推測しません。図形ID: " + edge.id());
+                            "図形の接続関係を確定できません。" + reason(edge.reason())
+                                    + "。保存情報と線端の境界接触のどちらでも確定できません。図形ID: " + edge.id());
                 } else {
                     String start = label(edge.startId(), byId), end = label(edge.endId(), byId);
                     relation = switch (edge.direction()) {

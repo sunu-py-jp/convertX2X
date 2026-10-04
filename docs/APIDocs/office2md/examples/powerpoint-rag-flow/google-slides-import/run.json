@@ -1,0 +1,50 @@
+{
+  "testedAtUtc": "2026-09-23T08:28:50+00:00",
+  "source": {
+    "file": "../input.pptx",
+    "sha256": "ea04a5987e48b96778fc6e0e2118edbd4f21eee14d0a660260b3985d1f966a43"
+  },
+  "roundTrip": {
+    "operation": "Google Slides import and PPTX export",
+    "file": "exported.pptx",
+    "bytes": 965702,
+    "sha256": "df970dbc7ff6e2b43238340138695f1f5f50c7e377509f6243a03174ed4592b3"
+  },
+  "conversion": {
+    "api": "POST /api/convert?filename=exported.pptx",
+    "httpStatus": 200,
+    "archive": "result.zip",
+    "archiveSha256": "e9ea4e40d65225c5f9daa00de6792c76b5fc6d6f16e5343d01a844fb7367b7f2",
+    "markdown": "output/document.md",
+    "report": "output/report.json"
+  },
+  "comparison": {
+    "original": {
+      "slides": 3,
+      "diagramBlocks": 3,
+      "nodes": 16,
+      "edges": 14,
+      "resolvedEdges": 13,
+      "unresolvedEdges": 1
+    },
+    "roundTrip": {
+      "slides": 3,
+      "diagramBlocks": 3,
+      "nodes": 16,
+      "edges": 14,
+      "resolvedEdges": 13,
+      "unresolvedEdges": 1
+    },
+    "nodeTexts": "same",
+    "resolvedRelations": "same",
+    "connectionStatuses": "same",
+    "slideGridPositions": "same",
+    "warningCodes": "same",
+    "markdownEqualAfterShapeIdsAndAddedTableHeaderNormalized": true,
+    "knownDifferences": [
+      "OOXML shape IDs were renumbered",
+      "One blank Markdown table header row was added on slide 3",
+      "Rendered image pixels were not compared"
+    ]
+  }
+}

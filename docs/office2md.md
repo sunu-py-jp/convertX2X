@@ -37,7 +37,7 @@ Javaのルートパッケージは `com.convertx2x.office2md` です。`conversi
 | Word | `[page n]`、文書順、見出しスタイルまたはoutlineのH1〜H6、箇条書き、保存された番号 | ネイティブ表は罫線不要。挿入・移動先を残し、削除・移動元・コメント・ヘッダー・フッター・非表示文字を除外 |
 | PowerPoint | 元のスライド番号による `[page n]`、H1、本文・表、図中の項目・接続関係、参考画像 | ネイティブ表は罫線不要。非表示スライド・図形、ノート、ヘッダー・フッターを除外 |
 
-太字・安全なリンクを残し、取消線は本文・表・図形PNG・代替テキストから除去します。各形式の図形文字は検索できる通常のMarkdownとしても出力します。表の先頭行を見た目から推定せず、明示ヘッダーがなければ空ヘッダーを追加します。結合の続きは空欄です。
+太字・安全なリンクを残し、取消線は本文・表・図形PNG・代替テキストから除去します。各形式の図形文字は検索できる通常のMarkdownとしても出力します。Excelの検出した罫線表は、先頭から直接塗りつぶしが設定された行をヘッダーとし、複数行なら各列を上から ` / ` で連結してMarkdownの1行にします。無罫線の角を持つ確定済み格子は、最上段の罫線付き・非空セルを1段の見出しとし、結合の構造を確認できれば下段も見出しへ含めます。それ以外で先頭行に直接セル塗りがなければ空のヘッダーを作り、元の行はすべて明細に残します。Word・PowerPointは明示ヘッダーがなければ空ヘッダーを追加します。Excelでヘッダーと明細の全表示行が同じ幅・位置で明示的に横結合されている列範囲は、1つのMarkdown列に畳みます。一部の行だけ結合されている場合は元の列を保ちます。
 
 ### Excelの処理
 
@@ -62,16 +62,19 @@ Javaのルートパッケージは `com.convertx2x.office2md` です。`conversi
 
 各表示スライドの先頭に、元のスライド番号を使った `[page n]` を付けます。非表示スライドを除外すると番号は飛びます。`PresentationText` が文字を抽出し、明示タイトルをH1、タイトルなしなら `# スライドN` にします。H2以降は追加しません。通常本文・表を上→下・左→右の順で出し、続けて「図中の項目：」「接続関係（保存情報）：」とスライド全体の参考画像を出します。図形文字は太字・リンクを保った通常のMarkdownであり、画像やaltを解釈しなくても取得できます。接続先になった通常テキストボックスも図中の項目へ移し、本文と重複させません。関係のない本文はそのまま残します。
 
-`PresentationConnections` は、表示対象の図形IDとコネクターに保存された `stCxn` / `endCxn` だけを使います。開始点の `headEnd`、終端の `tailEnd` にある `triangle` / `stealth` / `arrow` から向きを判定します。丸（●、`oval`）・ひし形（◆、`diamond`）は方向判定では矢印なしとして扱い、JSONの `startArrow / endArrow` には元の端点種類を残します。開始点が `oval`、終端が `triangle` なら `start-to-end`、両端が丸・ひし形なら `undirected` です。未知の端点記号の `direction` は `unknown` です。近さ・横並び・重なりから接続や読む順序を推測せず、近くの文字を分岐ラベルへ結び付けません。参照の欠落・除外済みの対象・重複ID・未知の端点記号は本文で「接続関係不明」と表示し、`DIAGRAM_CONNECTION_UNRESOLVED` を記録します。双方向・無方向・循環・自己接続は保存された関係のまま扱い、実行順へ並べ替えません。
+`PresentationConnections` は、表示対象の図形IDとコネクターに保存された `stCxn` / `endCxn` だけを使います。開始点の `headEnd`、終端の `tailEnd` にある `triangle` / `stealth` / `arrow` から向きを判定します。丸（●、`oval`）・ひし形（◆、`diamond`）は方向判定では矢印なしとして扱い、JSONの `startArrow / endArrow` には元の端点種類を残します。開始点が `oval`、終端が `triangle` なら `start-to-end`、両端が丸・ひし形なら `undirected` です。未知の端点記号の `arrowheadDirectionAlongLine` は `unknown` です。近さ・横並び・重なりから接続や読む順序を推測せず、近くの文字を分岐ラベルへ結び付けません。参照の欠落・除外済みの対象・重複ID・未知の端点記号は本文で「接続関係不明」と表示し、`DIAGRAM_CONNECTION_UNRESOLVED` を記録します。双方向・無方向・循環・自己接続は保存された関係のまま扱い、実行順へ並べ替えません。
 
-`report.json` の `type: "diagram"` ブロックに `nodes` と `edges` を格納します。IDはスライド内の `shape-N` で、資料全体では `section` と組み合わせて識別します。
+PowerPointの図形・コネクターは、変形後の外接矩形の中心をスライドの縦横3等分に当てはめ、`positionOnSlide` に `left-top` などの9値を記録します。中心がスライド外・取得不能ならJSONの `null` です。Markdownにも日本語で位置を記します。両端に保存された接続先IDがなく、矢印が片端だけにあるコネクターは、見た目の矢印先端方向を `arrowheadPointsToward` に8方向で記録します。曲線・折れ線・長さゼロなど先端方向を確定できないものはJSONの `null` です。このキーは対象のコネクターだけに付けます。保存IDが欠ける端点は、線端が軸に沿った図形の境界に一意に接触する場合だけ接続を補完します。図形の中心位置、矢印の向き、近さ、重なり、線の交差からは接続を補いません。
+
+`report.json` のPowerPoint `type: "diagram"` ブロックに `nodes` と `edges` を格納します。Excel・Wordは `type: "drawing"` ブロックに格納します。PowerPointのIDはスライド内の `shape-N` で、資料全体では `section` と組み合わせて識別します。
 
 | 項目 | 構造 |
 | --- | --- |
-| `nodes[]` | `id`、形状種類の `type`、取消線除去後の `text`、外接矩形の `x / y / width / height`。画像の文字情報は保存済みの `descr`、なければ `title` |
-| `edges[]` | コネクターの `id`、解決できた `startId / endId`、端点記号の `startArrow / endArrow`、`direction`、`status`、`reason` |
-| `direction` | `start-to-end / end-to-start / bidirectional / undirected / unknown` |
-| `status / reason` | 両端点と向きを確認できれば `resolved` と空文字の理由。それ以外は `unresolved` と `MISSING_ENDPOINT / TARGET_UNAVAILABLE / AMBIGUOUS_TARGET / UNKNOWN_ARROWHEAD` |
+| `nodes[]` | `id`、形状種類の `type`、取消線除去後の `text`、外接矩形の `x / y / width / height`、9区画の `positionOnSlide`。画像の文字情報は保存済みの `descr`、なければ `title` |
+| `edges[]` | コネクターの `id`、解決できた `startId / endId`、端点記号の `startArrow / endArrow`、`positionOnSlide`、`arrowheadDirectionAlongLine`、`connectionResolutionStatus / connectionResolutionReason / connectionResolutionExplanation`。該当する未接続の片方向矢印だけ `arrowheadPointsToward` を追加 |
+| `arrowheadDirectionAlongLine` | 保存された線の始点・終点に対する矢印の向き。`start-to-end / end-to-start / bidirectional / undirected / unknown` |
+| `connectionResolutionStatus / connectionResolutionReason / connectionResolutionExplanation` | 接続関係の状態・理由コード・日本語説明。`resolved` なら理由と説明は空文字。それ以外は `unresolved` と `MISSING_ENDPOINT / TARGET_UNAVAILABLE / AMBIGUOUS_TARGET / UNKNOWN_ARROWHEAD` |
+| `positionOnSlide / arrowheadPointsToward` | 9区画の位置と8方向の矢印先端方向。判定できない値は `null`。後者は対象外の線には付けない |
 | `fromId / toId` | `resolved` かつ片方向の接続だけに追加する、向きを反映した始点・終点。未解決の端点キーは省略 |
 
 グループを内部で子要素へ展開して座標を求めますが、個別PNGにはしません。`PresentationRenderer` が表示対象の対応要素を元の重なり順と親からの座標変換で描き、図を含むスライドにつき全体の参考PNGを1枚出します。図形・PNG/JPEGの回転・反転・グループ変形を反映し、PNG/JPEGは参考画像に含めます。原本を個別抽出する挙動ではありません。その他の画像形式は警告と原本添付にし、加工を適用しません。保存・継承された単色背景はテーマ参照を含めて反映し、背景指定がなければ白にします。画像・グラデーションなど未対応の背景は白へ置き換えて `UNSUPPORTED_SLIDE_BACKGROUND` を記録し、外部の背景画像は取得しません。外部画像参照と取消線Runは描画前に作業中のモデルから除外します。入力バイト列は変更しません。
@@ -82,19 +85,25 @@ Javaのルートパッケージは `com.convertx2x.office2md` です。`conversi
 ![{"type":"図","text":"","x":0,"y":0,"width":960,"height":540}](images/diagram-0001.png)
 ```
 
-参考画像の `type` は「図」、`text` は空文字、寸法は入力スライドの寸法です。各図形の情報は `nodes` から取得します。添付ファイルのリンクには個別の形状種類・文字・外接矩形のJSONを使います。座標はスライド左上を原点とし、右がXの正方向、下がYの正方向です。単位はpt（1/72インチ）で固定し、原点・単位・回転角のフィールドは出力しません。図形の外接矩形は変形後の範囲を小数3桁まで丸め、描画余白・ストロークを含みません。
+参考画像の `type` は「図」、`text` は空文字、寸法は入力スライドの寸法です。各図形の情報は `nodes` から取得します。添付ファイルのリンクには個別の形状種類・文字・外接矩形と `positionOnSlide` のJSONを使います。座標はスライド左上を原点とし、右がXの正方向、下がYの正方向です。単位はpt（1/72インチ）で固定し、原点・単位・回転角のフィールドは出力しません。図形の外接矩形は変形後の範囲を小数3桁まで丸め、描画余白・ストロークを含みません。
 
 altにはコンパクトなJSONを埋め込み、Markdownの構文になる文字はJSONのUnicodeエスケープで保護します。例えば文字列内の `[`・引用符・バックスラッシュは `\u005B`・`\u0022`・`\u005C` です。JSON化した後に通常の `Markdown.escape` や1行化処理を重ねないでください。Markdownソースのaltにも、レンダリング後の画像の `alt` にも、そのまま `JSON.parse` を適用できます。
 
-RAGへの取り込みでは `[page n]` / H1でスライドを識別し、図中の項目と接続関係を同じチャンクへ残す構成を推奨します。分割する場合も、参照するノードの文字を接続と一緒に持たせ、`unresolved` を確定した関係として扱わないでください。画像に焼き込まれた文字にはOCRを行わず、LLMで意味を補完しません。参考PNGもPOIの対応範囲に限られ、元資料の完全な再現ではありません。[業務フローのデモPPTX](APIDocs/office2md/examples/powerpoint-rag-flow/input.pptx) と [実変換Markdown](APIDocs/office2md/examples/powerpoint-rag-flow/output/document.md) で確認できます。
+RAGへの取り込みでは `[page n]` / H1でスライドを識別し、図中の項目と接続関係を同じチャンクへ残す構成を推奨します。分割する場合も、参照するノードの文字を接続と一緒に持たせ、`connectionResolutionStatus: unresolved` を確定した関係として扱わないでください。位置や矢印先端方向は見た目の補助情報であり、未接続の線の相手先を確定しません。画像に焼き込まれた文字にはOCRを行わず、LLMで意味を補完しません。参考PNGもPOIの対応範囲に限られ、元資料の完全な再現ではありません。[業務フローのデモPPTX](APIDocs/office2md/examples/powerpoint-rag-flow/input.pptx) と [実変換Markdown](APIDocs/office2md/examples/powerpoint-rag-flow/output/document.md) で確認できます。
 
 ## Excelの表・本文・数式で維持するルール
 
-`BorderTables` はセルの上下左右の罫線を境界集合へ変換します。隣接セルの片側にだけ線がある場合も利用し、結合セルを一つの区画として扱います。複数の閉じた区画が連結し、外接範囲を過不足なく埋め、外枠が閉じている候補を通常表の起点にします。図形の線、画面のグリッド線、テーブルスタイル、条件付き書式を罫線として評価しません。
+`BorderTables` はセルの上下左右の罫線を境界集合へ変換します。隣接セルの片側にだけ線がある場合も利用し、結合セルを一つの区画として扱います。複数の閉じた区画が連結し、外接範囲を過不足なく埋め、外枠が閉じている候補を通常表の起点にします。最上段に無罫線セルが連続していても、同段の罫線付き区画と、外周が閉じ横にも分割された下段格子から範囲を確定できる場合は、欠けた範囲を同じ表の位置として認識します。表の左端だけでなく、通常列の右に続くマトリックスの角も対象です。隣接する二つの表が区切りなく接続していれば一表として扱います。欠けたセルが空なら `TABLE_OPEN_TOP_CELL`、文字列なら `TABLE_OPEN_TOP_NOTE` を記録し、後者の文字は表の値に入れず表直前の注記へ出します。右端の無罫線欠けも、上段に罫線付き・非空の横結合見出しがあり、下段の閉じた分割格子で範囲を確定できる場合は対象です。その根拠がない右端だけの欠けや、数式・数値が置かれた欠けは推測せず、罫線のない値だけから表を新設しません。図形の線、画面のグリッド線、テーブルスタイル、条件付き書式を罫線として評価しません。
 
 `TableExpansion` は、通常表と開始行・終了行が同じ横並びの表をまとめ、同じ行範囲にある左右の表示値を列として取り込みます。通常表の内部列は空でも保持し、表同士や値までの空列は省きます。行範囲の異なる表を境界にして所有範囲を分けるため、一つの値を複数表へ重複出力しません。通常表が一つもない値だけの範囲から表を作ることはありません。
 
-実結合でなくても、横に並ぶ区画の外枠と上下線が閉じ、中の縦線だけがない場合は見た目上の結合セルとして扱います。値を全角空白で連結して左端へ置き、続くMarkdown列を空欄にします。`TABLE_EXPANDED` と `TABLE_VISUAL_MERGE_FLATTENED` はこの変換を示します。検出できない値は本文へ残します。`BORDER_NOT_TABLE` はシートの罫線範囲に対する診断であり、未採用の囲み枠すべてに個別の警告を生成するものではありません。表のヘッダー判定はサービス側にあり、検出した通常表と有効なExcelテーブル定義が一致する場合だけ先頭行をヘッダーにします。それ以外は空ヘッダーを追加し、元の全行を保持します。
+Excelの名前付き範囲は、罫線表を検出・展開した後でのみ参照します。表全体と一致する名前は表の直前に `**名前**` として出力します。一表の中に重ならない名前付き範囲が複数あり、全行を覆う列帯または全列を覆う行帯として安全に分割できる場合は、それぞれ別表にして名前を添えます。名前が重なる、分割線を結合セルがまたぐ、動的な式や外部参照を使うなど、境界を確定できない場合は元の表を維持します。名前の式は評価しません。
+
+実結合でなくても、横に並ぶ区画の外枠と上下線が閉じ、中の縦線だけがない場合は見た目上の結合セルとして扱います。値を全角空白で連結して左端へ置き、続くMarkdown列を空欄にします。`TABLE_EXPANDED` と `TABLE_VISUAL_MERGE_FLATTENED` はこの変換を示します。検出できない値は本文へ残します。`BORDER_NOT_TABLE` はシートの罫線範囲に対する診断であり、未採用の囲み枠すべてに個別の警告を生成するものではありません。検出した罫線表では、先頭の表示行から直接塗りつぶしが設定されたセルを1つ以上含む行が連続する範囲をヘッダーとみなします。無罫線の角を伴う確定済み格子では、最上段の罫線付き・非空セルを塗りなしでも1段のヘッダーにします。次段を見出しへ含めるのは、無罫線の角が表の左端にあり上段に横結合見出しがある場合など、見出し構造を確認できるときだけです。さらに縦結合が下段へ続き、その段に横結合された下位ラベルがあれば、確認できる段まで延長します。欠けが表の途中にあるだけで後続行の意味が曖昧なら、最上段のみを見出しとして後続行を明細に残します。結合見出しの幅は固定せず、実際の結合範囲外へ語を広げません。縦結合の語は重複させません。複数行なら各出力列に属する文字を上から ` / ` で連結し、Markdownが表現できる1行のヘッダーにします。いずれの条件にも当たらず先頭行に直接セル塗りがなければ、空のヘッダーを生成して元の行をすべて明細に残します。`report.json` の表ブロックの `header` は `fill-color`、`matrix-grid`、`empty-generated` のいずれかです。`headerSourceRows` には採用した元行を1始まりの行番号配列で記録し、空ヘッダーの場合は空配列にします。全行に直接塗りがあれば全行がヘッダーになり、明細は残りません。明細にしたい行の直接塗りを外す必要があります。Excelテーブル定義、条件付き書式、テーブルスタイルの見た目の色は判定に使いません。
+
+上段の結合見出しの直下が見出しか最初の明細かは、同じ罫線・結合構造なら一意に決まりません。推定した行は `report.json` の `headerSourceRows` で確認できます。
+
+列の畳み込みは、検出した表のすべての表示行で、同じ隣接列の範囲がそれぞれ明示的に横結合されているときだけ行います。例えば全行で `A:B` が結合されていれば、A・Bを1つのMarkdown列にします。1行でも結合幅・位置が異なればA・Bを別列として残し、1行ヘッダーの `A1:B1=連絡先` は両列へ継承して、区別が必要なら `連絡先（A列）`・`連絡先（B列）` のように元列を添えます。複数行ヘッダーでは結合した上位見出しを各子列へ継承し、`売上 / 2025年` のように階層を表します。値や見た目から「電話」「メール」などの列名は推測しません。畳まない明細の明示的な横・縦結合は、値を左上セルに一度だけ出し、元の結合範囲と共有関係を表に隣接するMarkdown注記に残します。罫線から推定した見た目上の結合は、この列の畳み込みの根拠にしません。`report.json` の表ブロックでは `sourceColumns` が元の物理列を保持し、`sourceColumnSpans` の各要素は出力Markdown列に対応する元列の範囲を1始まりの `first` / `last` で記録します。
 
 本文と表は同じ `CellMarkdown` を通ります。取消線を除去してから太字・リンクを生成し、全削除されたリンクをURL補完で復活させません。数式結果にもセル全体の取消線を適用します。元の文字列と表示形式の位置対応が失われる場合は、取消線を安全に除去できる文字列を優先します。削除内容や未検証のURLを診断メッセージへ追加しないでください。
 
@@ -112,13 +121,13 @@ RAGへの取り込みでは `[page n]` / H1でスライドを識別し、図中�
 
 Excelでは `DrawingExtractor` の形式別分岐がDrawingML（`.xlsx`）またはEscher（`.xls`）を読み、`DrawingScene.Item` へ渡します。左上アンカーの行・列が非表示の場合も除外します。位置不明はシート末尾へ送り、診断を残します。
 
-Excelの参考画像は、明示された最上位グループと、保存された接続先を確認できたコネクターでつながる図を単位にします。入れ子グループの子要素も同じ画像へ描きます。近さ・重なり・横並びだけで図をまとめず、セル本文や罫線も画像へ取り込みません。図形文字と接続を本文へ出し、図の左上アンカーに沿って通常のセル本文・表の間へ配置します。表と重なる図は最後に重なる表の直後です。`.xlsx` は保存された `stCxn` / `endCxn` を読みます。`.xls` の線は描画できますが、端点の関係は推測せず未解決として残し、`XLS_CONNECTION_UNSUPPORTED` も記録します。
+Excelの参考画像は、明示された最上位グループと、保存済み接続または保存IDがない場合の一意な線端・図形境界の接触でつながる図を単位にします。入れ子グループの子要素も同じ画像へ描きます。近さ・重なり・横並び・線の交差だけで図をまとめず、セル本文や罫線も画像へ取り込みません。図形文字と接続を本文へ出し、図の左上アンカーに沿って通常のセル本文・表の間へ配置します。表と重なる図は最後に重なる表の直後です。`.xlsx` は保存された `stCxn` / `endCxn` を優先します。`.xls` は接続先IDを取得できないため `XLS_CONNECTION_UNSUPPORTED` を記録しますが、一意な線端接触は補完対象です。
 
 Wordは一つの `wp:inline` / `wp:anchor`、または独立した図形グループ・描画キャンバスを参考画像の単位にします。独立した描画オブジェクトを近さだけで合成しません。図形文字・接続・参考画像は、その描画が属する本文位置に出力します。DrawingMLの保存済み接続先だけを読み、VMLの線の接続関係は推測せず未解決として残します。未対応の基本形状も読み取れる文字・IDをノードとして残し、画像へ描けなくても保存済み接続を解決できます。折れ線・曲線コネクターは参考画像では直線で近似し、警告を残します。本文・表の変換ルールは変更しません。
 
 Wordのコネクター自身が持つ文字は「接続線 … の文字」として本文へ出し、その接続の `edges[]` にも `type / text / x / y / width / height` を加えます。近くの独立したテキストボックスは接続のラベルへ結び付けません。
 
-Excel・Wordは共有の `DiagramGraph` で、図形文字を「図中の項目：」、保存された接続を「接続関係（保存情報）：」として通常のMarkdownへ出し、`diagram` ブロックの `nodes / edges` に構造を残します。形式別の処理が表示対象だけのノードと保存済み接続先を渡し、共有処理は近い文字を分岐条件に結び付けたり、配置から意味を補完したりしません。IDはExcelではシート、Wordでは描画ブロック内で有効なので、`section / range` と組み合わせてください。参照先・向きを確認できない接続は「接続関係不明」と `DIAGRAM_CONNECTION_UNRESOLVED` を残します。接続の `direction / status / reason` と端点記号の方向判定はPowerPointと同じルールを使います。
+Excel・Wordは共有の `DiagramGraph` で、図形文字を「図中の項目：」、保存された接続を「接続関係（保存情報）：」として通常のMarkdownへ出し、`diagram` ブロックの `nodes / edges` に構造を残します。形式別の処理が表示対象だけのノードと保存済み接続先を渡し、共有処理は近い文字を分岐条件に結び付けたり、配置から意味を補完したりしません。IDはExcelではシート、Wordでは描画ブロック内で有効なので、`section / range` と組み合わせてください。参照先・向きを確認できない接続は「接続関係不明」と `DIAGRAM_CONNECTION_UNRESOLVED` を残します。接続の `arrowheadDirectionAlongLine / connectionResolutionStatus / connectionResolutionReason / connectionResolutionExplanation` と端点記号の方向判定はPowerPointと同じルールを使います。`positionOnSlide / arrowheadPointsToward` はスライド座標を持つPowerPointだけのフィールドです。
 
 参考画像と添付リンクのaltは、`DiagramMetadata` が生成する `type / text / x / y / width / height` の6項目のJSONです。PowerPointと同じ規則でMarkdownの構文になる文字を保護し、同じ内容を `blocks[].metadata` に格納します。原点・単位・回転角のフィールドは出力しません。座標はpt、Excelではシート左上、Wordでは描画オブジェクト内のローカル座標です。Wordの保存された本文配置指定は図の `placement` 文字列として別に残し、ページ上の絶対位置を推測しません。変形後の外接矩形は描画余白やストロークを含まず、位置不明は `null` にしてPNG描画用の仮座標を流用しません。
 
@@ -146,7 +155,7 @@ Excelとは異なる組版なので、フォント置換後の字幅・改行位
 
 `ConversionWorkspace` が出力ファイル名、SHA-256とバイト比較による同一カテゴリ内の重複排除、件数・バイト数の上限、診断を管理します。入力由来のシート名・画像名を出力パスに使いません。上限超過を警告へ落として途中成果物を成功扱いにする変更は避けてください。
 
-`report.json` は `specVersion: 2` です。`source.format` は入力拡張子、`sectionKind` は `sheet` / `slide` / `document`、`sectionCount` は出力したセクション数です。診断やブロックの `section` は形式別の位置名です。`blocks` は元の位置・範囲との対応を持ち、ExcelではMarkdown行番号も記録し、表には元の行列番号・ヘッダー判定・結合範囲を付けます。各形式の `diagram` ブロックは `nodes / edges`、参考画像があれば `path / metadata` を持ちます。添付ファイルにも `path / metadata` を付けます。`assets` はファイルのパス・MIME・サイズ・SHA-256です。フィールドは形式とブロック種別ごとに読み取ってください。レポート形式を変える場合はUIとQueueの成果物取得も確認します。
+`report.json` は `specVersion: 1` です。接続情報は `arrowheadDirectionAlongLine / connectionResolutionStatus / connectionResolutionReason / connectionResolutionExplanation` を使います。Queue依頼本文の `version` は独立した仕様です。`source.format` は入力拡張子、`sectionKind` は `sheet` / `slide` / `document`、`sectionCount` は出力したセクション数です。診断やブロックの `section` は形式別の位置名です。`blocks` は元の位置・範囲との対応を持ち、ExcelではMarkdown行番号も記録し、表には元の行列番号・ヘッダー判定・結合範囲・出力列ごとの `sourceColumnSpans` を付けます。無罫線の角にある文字列を表の前に示す注記は `type: text` と `noteKind: unbordered-top-note`、明細の結合範囲を示す注記は `type: text` と `noteKind: body-merge` を持ちます。名前付き範囲を採用した表には `definedNames`、分割した表には元範囲の `sourceTableRange` を付けます。PowerPointの `diagram` ブロックとExcel・Wordの `drawing` ブロックは `nodes / edges`、参考画像があれば `path / metadata` を持ちます。添付ファイルにも `path / metadata` を付けます。`assets` はファイルのパス・MIME・サイズ・SHA-256です。フィールドは形式とブロック種別ごとに読み取ってください。レポート形式を変える場合はUIとQueueの成果物取得も確認します。
 
 - 同期HTTPは `OfficeMarkdownService.convert` の結果を `ConversionResult.zipBytes()` でZIP化する。最終レスポンスは上限付きのメモリーバッファで、HTTPストリーミングではない。
 - HTTPからの非同期受付は入力と状態を保存してからQueueへ送る。直接Queueも同じ `AzureJobService.process` と変換コアへ入る。

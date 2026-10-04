@@ -70,8 +70,9 @@ public final class FullFeatureDrawings {
                 "GRP01: 06_グループと接続!A4:N14 図形・線・PNGの明示グループ",
                 "GRP02: 06_グループと接続!A18:N30 入れ子グループの拡大縮小・回転",
                 "GRP03: 06_グループと接続!A35:F41,J35:O41 接続ID付きの未グループ図形",
-                "GRP04: 06_グループと接続!A47:G55,C49:I57 重なった未グループ図形",
-                "GRP05: 06_グループと接続!A63:J73 画像と背景図形の合成・重複配置なし",
+                "GRP04: 06_グループと接続!A47:G55,C49:I57 重なりだけでは統合しない未グループ図形",
+                "GRP05: 06_グループと接続!A63:J73 背景図形とPNGを別々に出力",
+                "GRP06: 06_グループと接続!A79:X96 保存IDのない横・斜めコネクターを線端接触で連鎖統合",
                 "UNS01: 07_未対応と加工!E4:Q15 実データ付き棒グラフは代替表示",
                 "UNS02: 07_未対応と加工!A20:E28 星形は文字と代替表示",
                 "UNS03: 07_未対応と加工!G20:L28 グラデーションを簡略化して警告",
@@ -159,7 +160,7 @@ public final class FullFeatureDrawings {
     private static void groupsAndConnections(XSSFWorkbook book, int png) {
         XSSFSheet sheet = sheet(book, "06_グループと接続", "06  グループ・接続・重なり");
         XSSFDrawing drawing = sheet.createDrawingPatriarch();
-        label(sheet, 2, 0, "GRP01  明示グループ：図形・線・画像を1枚に合成");
+        label(sheet, 2, 0, "GRP01  明示グループ：文字を本文へ、図形・線・画像は確認用に合成");
         XSSFShapeGroup group = drawing.createGroup(anchor(0, 3, 13, 13));
         group.setCoordinates(0, 0, 720 * EMU, 240 * EMU);
         groupShape(group, childAnchor(0, 30, 200, 190), ShapeTypes.ROUND_RECT, "グループ\n受付", SANS, true, BLUE);
@@ -189,12 +190,28 @@ public final class FullFeatureDrawings {
         var properties = connection.getCTConnector().getNvCxnSpPr().getCNvCxnSpPr();
         var from = properties.addNewStCxn(); from.setId(start.getShapeId()); from.setIdx(3);
         var to = properties.addNewEndCxn(); to.setId(end.getShapeId()); to.setIdx(1);
-        label(sheet, 45, 0, "GRP04  未グループ：描画領域の重なりで1枚にまとめる");
+        label(sheet, 45, 0, "GRP04  未グループ：重なった図形も個別に出力");
         shape(drawing, anchor(0, 46, 6, 54), ShapeTypes.RECT, "背面の四角", SANS, false, BLUE);
         shape(drawing, anchor(2, 48, 8, 56), ShapeTypes.ELLIPSE, "前面の楕円", SANS, true, PALE);
-        label(sheet, 61, 0, "GRP05  背景図形＋PNG：合成画像として一度だけ出力");
+        label(sheet, 61, 0, "GRP05  背景図形＋PNG：図形と画像を別々に出力");
         shape(drawing, anchor(0, 62, 9, 72), ShapeTypes.ROUND_RECT, "", SANS, false, BLUE);
         picture(drawing, anchor(2, 64, 7, 70), png, "背景図形に重なるPNG");
+        label(sheet, 77, 0, "GRP06  保存IDなし：線端が境界に接触する横・斜めの接続を1枚に統合");
+        XSSFSimpleShape request = shape(drawing, anchor(0, 78, 5, 84), ShapeTypes.ROUND_RECT,
+                "申請", SANS, true, BLUE);
+        XSSFSimpleShape review = shape(drawing, anchor(9, 78, 14, 84), ShapeTypes.ROUND_RECT,
+                "確認", SANS, true, PALE);
+        XSSFSimpleShape archive = shape(drawing, anchor(18, 89, 23, 95), ShapeTypes.ROUND_RECT,
+                "保管", SANS, true, BLUE);
+        endpointConnector(drawing, anchor(5, 81, 9, 81));
+        endpointConnector(drawing, anchor(14, 81, 18, 92));
+    }
+
+    private static XSSFConnector endpointConnector(XSSFDrawing drawing, XSSFClientAnchor anchor) {
+        XSSFConnector connector = drawing.createConnector(anchor);
+        connector.setShapeType(ShapeTypes.STRAIGHT_CONNECTOR_1); connector.setLineWidth(2);
+        connector.getCTConnector().getSpPr().getLn().addNewTailEnd().setType(STLineEndType.TRIANGLE);
+        return connector;
     }
 
     private static void unsupportedAndEffects(XSSFWorkbook book, int cropped, int bitmap) {

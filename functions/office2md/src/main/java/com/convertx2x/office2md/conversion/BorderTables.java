@@ -4,10 +4,11 @@ import java.util.*;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
 
-/** Closed-grid seeds for horizontal table expansion. Border color/style do not affect connectivity. */
+/** Grid seeds for horizontal table expansion. Border color/style do not affect connectivity. */
 final class BorderTables {
     private final Set<Long> horizontal = new HashSet<>(), vertical = new HashSet<>();
     private final Set<Long> candidates = new HashSet<>();
+    private final Set<Long> openTop = new HashSet<>();
     private final Sheet sheet;
     private final MergedRanges merges;
     private final ConversionWorkspace workspace;
@@ -19,8 +20,13 @@ final class BorderTables {
     static int col(long key) { return (int) key; }
     boolean hasHorizontal(int row, int column) { return horizontal.contains(key(row, column)); }
     boolean hasVertical(int row, int column) { return vertical.contains(key(row, column)); }
+    Set<Long> openTopCells() { return Set.copyOf(openTop); }
 
     List<CellRangeAddress> detect() {
+        horizontal.clear();
+        vertical.clear();
+        candidates.clear();
+        openTop.clear();
         for (Row row : sheet) for (Cell cell : row) {
             int r = cell.getRowIndex(), c = cell.getColumnIndex();
             CellStyle style = cell.getCellStyle();
@@ -66,9 +72,29 @@ final class BorderTables {
             CellRangeAddress bounds = bounds(group);
             long cells = group.stream().mapToLong(BorderTables::area).sum();
             if (area(bounds) == cells && closed(bounds) && !protrudingVertically(bounds)) result.add(bounds);
+            else if (openTopRowGap(bounds, occupied) && !protrudingVertically(bounds)) {
+                // A matrix may leave its top corner unbordered, even when it starts
+                // after ordinary columns in the same table. The closed, horizontally
+                // divided lower grid fixes its position without guessing from text.
+                workspace.limits().checkTableCells(area(bounds));
+                result.add(bounds);
+                for (int column = bounds.getFirstColumn(); column <= bounds.getLastColumn(); column++) {
+                    int top = bounds.getFirstRow();
+                    long coordinate = key(top, column);
+                    if (occupied.containsKey(coordinate)) continue;
+                    openTop.add(coordinate);
+                    Row first = sheet.getRow(top);
+                    Cell cell = first == null ? null : first.getCell(column);
+                    boolean note = cell != null && cell.getCellType() == CellType.STRING && !cell.getStringCellValue().isBlank();
+                    workspace.info(note ? "TABLE_OPEN_TOP_NOTE" : "TABLE_OPEN_TOP_CELL", sheet.getSheetName(),
+                            new CellRangeAddress(top, top, column, column).formatAsString(),
+                            note ? "罫線のない上段の文字列を表外の注記として保持しました。"
+                                    : "罫線のない上段の空欄を、外周が閉じ横に分割された下段に基づいて表へ含めました。");
+                }
+            }
             else {
                 // A closed outer rectangle may contain a regular full-height grid beside a
-                // visually merged span. Never recover a seed from an open outer border.
+                // visually merged span. Never recover a seed from a generally open outer border.
                 if (closed(bounds) && !protrudingVertically(bounds)) result.addAll(fullHeightSeeds(group, bounds));
                 rejected = true;
             }
@@ -110,6 +136,69 @@ final class BorderTables {
             count++;
         }
         if (count >= 2 && closed(seed)) seeds.add(seed);
+    }
+    /** Accept unbordered text or blank top-row runs only when a closed, divided lower grid anchors them. */
+    private boolean openTopRowGap(CellRangeAddress bounds, Map<Long, Integer> occupied) {
+        int top = bounds.getFirstRow(), bottom = bounds.getLastRow();
+        int left = bounds.getFirstColumn(), right = bounds.getLastColumn();
+        if (top == bottom || left == right || !closed(new CellRangeAddress(top + 1, bottom, left, right))) return false;
+        boolean lowerHasColumnDivision = false;
+        for (int row = top + 1; row <= bottom; row++) {
+            for (int column = left; column <= right; column++)
+                if (!occupied.containsKey(key(row, column))) return false;
+            if (!occupied.get(key(row, left)).equals(occupied.get(key(row, right))))
+                lowerHasColumnDivision = true;
+        }
+        if (!lowerHasColumnDivision) return false;
+        boolean lowerHasRowDivision = false;
+        for (int row = top + 1; row < bottom && !lowerHasRowDivision; row++)
+            for (int column = left; column <= right; column++)
+                if (!occupied.get(key(row, column)).equals(occupied.get(key(row + 1, column)))) {
+                    lowerHasRowDivision = true;
+                    break;
+                }
+        if (!lowerHasRowDivision) return false;
+        boolean missing = false, covered = false, openRun = false;
+        Row first = sheet.getRow(top);
+        for (int column = left; column <= right; column++) {
+            if (occupied.containsKey(key(top, column))) {
+                covered = true;
+                openRun = false;
+                continue;
+            }
+            missing = openRun = true;
+            Cell cell = first == null ? null : first.getCell(column);
+            if (horizontal.contains(key(top, column)) || merges.at(top, column) != null
+                    || !unborderedTextOrBlank(cell)) return false;
+        }
+        // A trailing gap is ambiguous unless the top row contains an explicit,
+        // nonblank merged group caption. Its width comes from the workbook; the
+        // lower closed grid anchors any unbordered columns outside that caption.
+        return missing && covered && (!openRun || hasTopGroupCaption(bounds));
+    }
+    private boolean hasTopGroupCaption(CellRangeAddress bounds) {
+        int top = bounds.getFirstRow();
+        for (CellRangeAddress merge : merges.all()) {
+            if (merge.getFirstRow() != top || merge.getLastRow() != top
+                    || merge.getFirstColumn() < bounds.getFirstColumn()
+                    || merge.getLastColumn() > bounds.getLastColumn()
+                    || merge.getFirstColumn() == merge.getLastColumn()
+                    || !closed(merge)) continue;
+            Row row = sheet.getRow(top);
+            Cell caption = row == null ? null : row.getCell(merge.getFirstColumn());
+            if (caption != null && caption.getCellType() == CellType.STRING
+                    && !caption.getStringCellValue().isBlank()) return true;
+        }
+        return false;
+    }
+    private static boolean unborderedTextOrBlank(Cell cell) {
+        if (cell == null) return true;
+        // Formula cells are deliberately excluded: their value could depend on an
+        // external source, so the inferred note must never require evaluation.
+        if (cell.getCellType() != CellType.BLANK && cell.getCellType() != CellType.STRING) return false;
+        CellStyle style = cell.getCellStyle();
+        return style.getBorderTop() == BorderStyle.NONE && style.getBorderBottom() == BorderStyle.NONE
+                && style.getBorderLeft() == BorderStyle.NONE && style.getBorderRight() == BorderStyle.NONE;
     }
     private void horizontal(int r, int c) {
         horizontal.add(key(r, c)); candidates.add(key(r, c));

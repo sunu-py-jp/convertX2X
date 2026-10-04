@@ -27,6 +27,13 @@ class DiagramGraphTest {
         assertTrue(edges.stream().allMatch(edge -> edge.status().equals("resolved")));
         assertEquals("b", edges.get(1).metadata().get("fromId"));
         assertFalse(edges.get(2).metadata().containsKey("fromId"));
+        assertEquals("end-to-start", edges.get(1).metadata().get("arrowheadDirectionAlongLine"));
+        assertEquals("resolved", edges.get(1).metadata().get("connectionResolutionStatus"));
+        assertEquals("", edges.get(1).metadata().get("connectionResolutionReason"));
+        assertEquals("", edges.get(1).metadata().get("connectionResolutionExplanation"));
+        assertFalse(edges.get(1).metadata().containsKey("direction"));
+        assertFalse(edges.get(1).metadata().containsKey("status"));
+        assertFalse(edges.get(1).metadata().containsKey("reason"));
     }
 
     @Test void ovalAndDiamondRetainTheirMarkersWithoutAddingArrowDirectionsOrWarnings() throws Exception {
@@ -92,6 +99,12 @@ class DiagramGraphTest {
         assertEquals("unknown", edges.get(3).direction()); assertEquals("unknown", edges.get(4).direction());
         assertEquals("future-decoration", edges.get(3).metadata().get("startArrow"));
         assertEquals("future-decoration", edges.get(4).metadata().get("endArrow"));
+        assertEquals("unresolved", edges.get(0).metadata().get("connectionResolutionStatus"));
+        assertEquals("MISSING_ENDPOINT", edges.get(0).metadata().get("connectionResolutionReason"));
+        assertEquals("接続先の保存情報がありません", edges.get(0).metadata().get("connectionResolutionExplanation"));
+        assertEquals("接続先が出力対象にありません", edges.get(1).metadata().get("connectionResolutionExplanation"));
+        assertEquals("接続先IDが重複しています", edges.get(2).metadata().get("connectionResolutionExplanation"));
+        assertEquals("矢印の向きを確定できません", edges.get(3).metadata().get("connectionResolutionExplanation"));
         assertTrue(edges.stream().noneMatch(edge -> edge.metadata().containsKey("fromId")));
         try (var workspace = new ConversionWorkspace(ConversionLimits.defaults())) {
             String markdown = DiagramGraph.markdown(nodes, edges, workspace, "対象", "図-1");

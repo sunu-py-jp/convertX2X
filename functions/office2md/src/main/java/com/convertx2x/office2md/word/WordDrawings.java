@@ -4,11 +4,13 @@ import com.convertx2x.office2md.conversion.ConversionException;
 import com.convertx2x.office2md.conversion.ConversionWorkspace;
 import com.convertx2x.office2md.conversion.Markdown;
 import com.convertx2x.office2md.drawing.DrawingAltText;
+import com.convertx2x.office2md.drawing.ConnectorGeometry;
 import com.convertx2x.office2md.drawing.DiagramMetadata;
 import com.convertx2x.office2md.drawing.DiagramGraph;
 import com.convertx2x.office2md.drawing.NativeDrawingRenderer;
 import java.awt.Color;
 import java.awt.geom.AffineTransform;
+import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -46,7 +48,7 @@ final class WordDrawings {
         String font = "Noto Sans CJK JP";
         boolean bold, flipped, geometryKnown, rotationKnown = true;
         Double savedWidth, savedHeight;
-        String reference, sourceId, startId, endId;
+        String reference, graphId, sourceId, startId, endId;
         String startArrow = "none", endArrow = "none";
         boolean connector, renderable = true;
         String unsupportedMessage;
@@ -111,8 +113,26 @@ final class WordDrawings {
             Rectangle2D union = null;
             boolean geometryKnown = true;
             int ordinal = 0;
+            Map<String, Long> sourceCounts = new LinkedHashMap<>();
+            for (Item item : items) if (item.sourceId != null && !item.sourceId.isBlank())
+                sourceCounts.merge(item.sourceId, 1L, Long::sum);
+            for (Item item : items) item.graphId = "shape-" + (++ordinal);
+            Map<String, Rectangle2D> contactTargets = new LinkedHashMap<>();
+            for (Item item : items) if (!item.connector && item.geometryKnown && item.sourceId != null
+                    && !item.sourceId.isBlank() && sourceCounts.getOrDefault(item.sourceId, 0L) == 1
+                    && axisAligned(item.transform))
+                contactTargets.put(item.sourceId, item.transform.createTransformedShape(
+                        new Rectangle2D.Double(0, 0, item.width, item.height)).getBounds2D());
+            for (Item item : items) if (item.connector && item.geometryKnown) {
+                Point2D start = item.transform.transform(new Point2D.Double(0, 0), null);
+                Point2D end = item.transform.transform(new Point2D.Double(item.width, item.height), null);
+                if (item.startId == null || item.startId.isBlank())
+                    item.startId = ConnectorGeometry.uniqueBoundaryContact(start, contactTargets);
+                if (item.endId == null || item.endId.isBlank())
+                    item.endId = ConnectorGeometry.uniqueBoundaryContact(end, contactTargets);
+            }
             for (Item item : items) {
-                String id = "shape-" + (++ordinal);
+                String id = item.graphId;
                 Rectangle2D bounds = item.geometryKnown ? item.transform.createTransformedShape(
                         new Rectangle2D.Double(0, 0, item.width, item.height)).getBounds2D() : null;
                 if (item.renderable && (item.picture == null || item.inlineImage())) {
@@ -164,6 +184,10 @@ final class WordDrawings {
             output.addAll(attachments);
             workspace.block(block);
             return String.join("\n\n", output);
+        }
+
+        private static boolean axisAligned(AffineTransform transform) {
+            return Math.abs(transform.getShearX()) < 1e-9 && Math.abs(transform.getShearY()) < 1e-9;
         }
 
         private void read(Node node, Frame parent, double width, double height,

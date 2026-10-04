@@ -1,6 +1,7 @@
 package com.convertx2x.office2md.presentation;
 
 import com.convertx2x.office2md.conversion.*;
+import com.convertx2x.office2md.drawing.ConnectorGeometry;
 import com.convertx2x.office2md.drawing.DrawingAltText;
 import org.apache.poi.EncryptedDocumentException;
 import org.apache.poi.openxml4j.opc.OPCPackage;
@@ -13,6 +14,7 @@ import org.w3c.dom.*;
 import javax.imageio.ImageIO;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.geom.AffineTransform;
+import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -89,12 +91,13 @@ public final class PowerPointMarkdownConverter {
                 sequence = 0;
                 List<Entry> entries = new ArrayList<>();
                 for (XSLFShape shape : List.copyOf(slide.getShapes())) {
-                    Entry entry = inspect(shape, 0, new AffineTransform());
+                    Entry entry = inspect(shape, 0, new AffineTransform(), null);
                     if (entry != null) leaves(entry, entries);
                 }
                 List<Entry> visible = List.copyOf(entries);
                 List<PresentationConnections.Edge> edges = PresentationConnections.extract(visible.stream()
                         .filter(entry -> entry.unsupported == null).map(entry -> entry.shape).toList());
+                edges = inferMissingConnections(visible, edges);
                 Set<String> endpoints = new HashSet<>();
                 for (var edge : edges) {
                     if (edge.startId() != null) endpoints.add(edge.startId());
@@ -102,7 +105,7 @@ public final class PowerPointMarkdownConverter {
                 }
                 List<Entry> nodes = visible.stream().filter(entry -> entry.unsupported == null
                         && !(entry.shape instanceof XSLFConnectorShape)
-                        && (drawing(entry) || endpoints.contains(range(entry.shape))))
+                        && (drawing(entry) || endpoints.contains(range(entry.shape)) || entry.groupKey != null))
                         .sorted(readingOrder()).toList();
                 Entry title = entries.stream().filter(entry -> isTitle(entry.shape) && !entry.text.plain().isBlank())
                         .min(readingOrder()).orElse(null);
@@ -113,9 +116,14 @@ public final class PowerPointMarkdownConverter {
                 entries.sort(readingOrder());
                 for (Entry entry : entries)
                     if (!drawing(entry) && !(entry.normalText && endpoints.contains(range(entry.shape)))) emit(entry);
-                if (!nodes.isEmpty() || !edges.isEmpty())
-                    emitDiagram(slide, visible, nodes, edges, ordinal, new Rectangle2D.Double(0, 0,
-                            presentation.getPageSize().getWidth(), presentation.getPageSize().getHeight()));
+                if (!nodes.isEmpty() || !edges.isEmpty()) {
+                    Rectangle2D slideBounds = new Rectangle2D.Double(0, 0,
+                            presentation.getPageSize().getWidth(), presentation.getPageSize().getHeight());
+                    int componentOrdinal = 0;
+                    for (DiagramComponent component : components(visible, nodes, edges))
+                        emitDiagram(slide, component.entries(), component.nodes(), component.edges(), ordinal,
+                                ++componentOrdinal, slideBounds);
+                }
             }
             workspace.write("document.md", markdown.toString().getBytes(StandardCharsets.UTF_8));
         }
@@ -125,7 +133,7 @@ public final class PowerPointMarkdownConverter {
             if (ConversionLimits.exceeds(readItems, limits.maxReadItems())) throw ConversionWorkspace.limit("READ_ITEMS_LIMIT", "文字・読み取り要素数が上限を超えました。");
         }
 
-        private Entry inspect(XSLFShape shape, int depth, AffineTransform parent) throws IOException {
+        private Entry inspect(XSLFShape shape, int depth, AffineTransform parent, String groupKey) throws IOException {
             workspace.shapeVisited(depth);
             if (hidden(shape) || excludedPlaceholder(shape)) return null;
             Rectangle2D anchor = anchor(shape);
@@ -134,13 +142,9 @@ public final class PowerPointMarkdownConverter {
                 return null;
             }
             if (!finite(anchor)) throw ConversionWorkspace.limit("IMAGE_PIXELS_LIMIT", "図形の座標が有効な範囲ではありません。");
-            AffineTransform transform = new AffineTransform(parent);
-            transform.translate(anchor.getCenterX(), anchor.getCenterY());
-            transform.rotate(Math.toRadians(rotation(shape)));
-            transform.scale(flipH(shape) ? -1 : 1, flipV(shape) ? -1 : 1);
-            transform.translate(-anchor.getCenterX(), -anchor.getCenterY());
+            AffineTransform transform = shapeTransform(shape, parent, anchor);
             Entry entry = new Entry(shape, transform.createTransformedShape(anchor).getBounds2D(), sequence++,
-                    new AffineTransform(parent));
+                    new AffineTransform(parent), groupKey);
             stripExternalBlips(shape);
             if (shape instanceof XSLFTable table) {
                 long cells = (long) table.getNumberOfRows() * table.getNumberOfColumns();
@@ -148,6 +152,7 @@ public final class PowerPointMarkdownConverter {
                 limits.checkTableCells(tableCells);
                 entry.table = table(table, entry);
             } else if (shape instanceof XSLFGroupShape group) {
+                String nestedGroup = groupKey == null ? range(shape) : groupKey;
                 Rectangle2D interior = group.getInteriorAnchor();
                 if (!finite(interior) || interior.getWidth() <= 0 || interior.getHeight() <= 0) {
                     entry.unsupported = "グループの座標";
@@ -158,7 +163,7 @@ public final class PowerPointMarkdownConverter {
                 transform.scale(anchor.getWidth() / interior.getWidth(), anchor.getHeight() / interior.getHeight());
                 transform.translate(-interior.getX(), -interior.getY());
                 for (XSLFShape child : List.copyOf(group.getShapes())) {
-                    Entry part = inspect(child, depth + 1, transform);
+                    Entry part = inspect(child, depth + 1, transform, nestedGroup);
                     if (part != null) entry.children.add(part);
                 }
                 if (entry.children.isEmpty()) return null;
@@ -247,7 +252,7 @@ public final class PowerPointMarkdownConverter {
         }
 
         private void emitDiagram(XSLFSlide slide, List<Entry> visible, List<Entry> nodes, List<PresentationConnections.Edge> edges,
-                                 int ordinal, Rectangle2D slideBounds) throws IOException {
+                                 int ordinal, int componentOrdinal, Rectangle2D slideBounds) throws IOException {
             Map<String, Entry> byId = new HashMap<>();
             Set<String> endpoints = new HashSet<>();
             for (var edge : edges) {
@@ -260,12 +265,16 @@ public final class PowerPointMarkdownConverter {
             for (Entry node : nodes) {
                 String id = range(node.shape), plain = nodeText(node);
                 Map<String, Object> metadata = PresentationImageMetadata.of(typeName(node), plain, node.bounds);
+                String position = PresentationSpatialMetadata.positionOnSlide(node.bounds, slideBounds);
+                metadata.put("positionOnSlide", position);
                 metadata.put("id", id); nodeMetadata.add(metadata);
                 if (!plain.isBlank() || endpoints.contains(id)) {
                     if (!itemsStarted) { append("図中の項目：\n\n"); itemsStarted = true; }
                     String content = node.picture != null || node.table != null ? Markdown.escape(plain) : node.text.markdown();
                     if (content.isBlank()) content = "文字なし";
-                    append("- " + id + "（" + Markdown.escape(typeName(node)) + "）：" + content.replace("  \n", "<br>").replace("\n", "<br>") + "\n");
+                    append("- " + id + "（" + Markdown.escape(typeName(node)) + "、"
+                            + PresentationSpatialMetadata.japanesePosition(position) + "）："
+                            + content.replace("  \n", "<br>").replace("\n", "<br>") + "\n");
                 }
                 if (node.attachment) {
                     String extension = node.pictureType.extension.replace(".", "").toLowerCase(Locale.ROOT);
@@ -273,6 +282,7 @@ public final class PowerPointMarkdownConverter {
                     String path = workspace.addAsset("image", node.picture.getData(), extension,
                             Objects.requireNonNullElse(node.pictureType.contentType, "application/octet-stream"));
                     Map<String, Object> attachmentMetadata = PresentationImageMetadata.of(typeName(node), plain, node.bounds);
+                    attachmentMetadata.put("positionOnSlide", position);
                     append("\n[" + PresentationImageMetadata.imageAlt(attachmentMetadata)
                             + "](" + path + ")\n\n");
                     workspace.block(Map.of("type", "attachment", "section", section, "range", id, "path", path, "metadata", attachmentMetadata));
@@ -281,22 +291,42 @@ public final class PowerPointMarkdownConverter {
                     append("\n" + Markdown.link(Markdown.escape(plain.isBlank() ? "リンク" : DrawingAltText.singleLine(plain)), node.shapeLink) + "\n\n");
             }
             if (itemsStarted) append("\n");
+            List<Entry> connectors = visible.stream()
+                    .filter(entry -> entry.unsupported == null && entry.shape instanceof XSLFConnectorShape).toList();
+            List<Map<String, Object>> edgeMetadata = new ArrayList<>();
             if (!edges.isEmpty()) {
-                append("接続関係（保存情報）：\n\n");
-                for (var edge : edges) {
+                append("接続関係：\n\n");
+                for (int i = 0; i < edges.size(); i++) {
+                    var edge = edges.get(i);
+                    Entry connectorEntry = i < connectors.size() ? connectors.get(i) : null;
+                    String position = PresentationSpatialMetadata.positionOnSlide(
+                            connectorEntry == null ? null : connectorEntry.bounds, slideBounds);
+                    Map<String, Object> metadata = new LinkedHashMap<>(edge.metadata());
+                    metadata.put("positionOnSlide", position);
+                    PresentationSpatialMetadata.VisualArrow visualArrow = connectorEntry == null
+                            ? new PresentationSpatialMetadata.VisualArrow(false, null)
+                            : PresentationSpatialMetadata.visualArrow((XSLFConnectorShape) connectorEntry.shape, edge,
+                                    shapeTransform(connectorEntry.shape, connectorEntry.parentTransform,
+                                            anchor(connectorEntry.shape)));
+                    if (visualArrow.applicable()) metadata.put("arrowheadPointsToward", visualArrow.bearing());
+                    edgeMetadata.add(metadata);
                     String start = endpointLabel(edge.startId(), byId), end = endpointLabel(edge.endId(), byId);
                     String relation;
                     if (!edge.status().equals("resolved")) {
-                        relation = "接続関係不明（" + connectionReason(edge.reason()) + "）";
+                        relation = "接続関係不明（" + PresentationConnections.reasonExplanation(edge.reason()) + "）";
                         workspace.warning("DIAGRAM_CONNECTION_UNRESOLVED", section, edge.id(),
-                                "図形の接続関係を確定できません。" + connectionReason(edge.reason()) + "。配置からは推測しません。");
+                                "図形の接続関係を確定できません。" + PresentationConnections.reasonExplanation(edge.reason())
+                                        + "。保存情報と線端の境界接触のどちらでも確定できません。");
                     } else relation = switch (edge.direction()) {
                         case "start-to-end" -> start + " → " + end;
                         case "end-to-start" -> end + " → " + start;
                         case "bidirectional" -> start + " ↔ " + end;
                         default -> start + " — " + end + "（向きなし）";
                     };
-                    append("- " + edge.id() + "：" + relation + "\n");
+                    append("- " + edge.id() + "：" + relation + "。"
+                            + PresentationSpatialMetadata.japanesePosition(position)
+                            + (visualArrow.applicable() ? "。" + PresentationSpatialMetadata.japaneseBearing(visualArrow.bearing()) : "")
+                            + "。\n");
                 }
                 append("\n");
             } else if (nodes.size() > 1) append("図形間の接続情報はありません。配置から順序や関係を推測していません。\n\n");
@@ -305,18 +335,114 @@ public final class PowerPointMarkdownConverter {
                     .sorted(Comparator.comparingInt(entry -> entry.order))
                     .map(entry -> new PresentationRenderer.Layer(entry.shape, entry.parentTransform)).toList();
             Map<String, Object> block = new LinkedHashMap<>();
-            block.put("type", "diagram"); block.put("section", section); block.put("range", "slide-" + ordinal + "-diagram");
-            block.put("nodes", nodeMetadata); block.put("edges", edges.stream().map(PresentationConnections.Edge::metadata).toList());
+            String blockRange = "slide-" + ordinal + "-diagram-" + componentOrdinal;
+            block.put("type", "diagram"); block.put("section", section); block.put("range", blockRange);
+            block.put("nodes", nodeMetadata); block.put("edges", edgeMetadata);
             if (!layers.isEmpty()) {
                 var background = PresentationRenderer.background(slide);
                 if (background.approximated()) workspace.warning("UNSUPPORTED_SLIDE_BACKGROUND", section, "slide-" + ordinal,
                         "参考画像の背景は単色のみ対応しています。画像・グラデーションなどの背景は取得せず白色に置き換えました。");
                 String path = workspace.addAsset("diagram", PresentationRenderer.png(layers, slideBounds, background.color(), limits), "png", "image/png");
-                Map<String, Object> metadata = PresentationImageMetadata.of("図", "", slideBounds);
-                append("参考画像（スライド全体）：\n\n![" + PresentationImageMetadata.imageAlt(metadata) + "](" + path + ")\n\n");
+                Map<String, Object> metadata = PresentationImageMetadata.of(edges.isEmpty() ? "図形" : "接続図", "", slideBounds);
+                append("参考画像（" + (edges.isEmpty() ? "図形" : "接続図") + "）：\n\n!["
+                        + PresentationImageMetadata.imageAlt(metadata) + "](" + path + ")\n\n");
                 block.put("path", path); block.put("metadata", metadata);
             }
             workspace.block(block);
+        }
+
+        private List<PresentationConnections.Edge> inferMissingConnections(
+                List<Entry> visible, List<PresentationConnections.Edge> edges) {
+            Map<String, Rectangle2D> targets = new LinkedHashMap<>();
+            Map<String, Entry> connectors = new HashMap<>();
+            for (Entry entry : visible) if (entry.unsupported == null) {
+                if (entry.shape instanceof XSLFConnectorShape) connectors.put(range(entry.shape), entry);
+                else {
+                    Rectangle2D entryAnchor = anchor(entry.shape);
+                    if (entryAnchor != null && axisAligned(shapeTransform(entry.shape, entry.parentTransform, entryAnchor)))
+                        targets.put(range(entry.shape), entry.bounds);
+                }
+            }
+            List<PresentationConnections.Edge> resolved = new ArrayList<>();
+            for (var edge : edges) {
+                Entry entry = connectors.get(edge.id());
+                if (entry == null || !"MISSING_ENDPOINT".equals(edge.reason())) {
+                    resolved.add(edge); continue;
+                }
+                Rectangle2D connectorAnchor = anchor(entry.shape);
+                AffineTransform transform = connectorAnchor == null ? null
+                        : shapeTransform(entry.shape, entry.parentTransform, connectorAnchor);
+                Point2D startPoint = transform == null ? null : transform.transform(
+                        new Point2D.Double(connectorAnchor.getMinX(), connectorAnchor.getMinY()), null);
+                Point2D endPoint = transform == null ? null : transform.transform(
+                        new Point2D.Double(connectorAnchor.getMaxX(), connectorAnchor.getMaxY()), null);
+                String startId = edge.startId() == null
+                        ? ConnectorGeometry.uniqueBoundaryContact(startPoint, targets) : edge.startId();
+                String endId = edge.endId() == null
+                        ? ConnectorGeometry.uniqueBoundaryContact(endPoint, targets) : edge.endId();
+                String reason = startId == null || endId == null ? "MISSING_ENDPOINT"
+                        : "unknown".equals(edge.direction()) ? "UNKNOWN_ARROWHEAD" : "";
+                resolved.add(new PresentationConnections.Edge(edge.id(), startId, endId,
+                        edge.startArrow(), edge.endArrow(), edge.direction(),
+                        reason.isEmpty() ? "resolved" : "unresolved", reason));
+            }
+            return List.copyOf(resolved);
+        }
+
+        private List<DiagramComponent> components(List<Entry> visible, List<Entry> nodes,
+                                                   List<PresentationConnections.Edge> edges) {
+            Map<String, Entry> candidates = new LinkedHashMap<>();
+            for (Entry node : nodes) candidates.put(range(node.shape), node);
+            for (Entry entry : visible) if (entry.unsupported == null && entry.shape instanceof XSLFConnectorShape)
+                candidates.put(range(entry.shape), entry);
+            Map<String, String> parents = new LinkedHashMap<>();
+            Map<String, String> groupRoots = new HashMap<>();
+            for (Entry entry : candidates.values()) {
+                String id = range(entry.shape); parents.put(id, id);
+                if (entry.groupKey != null) {
+                    String first = groupRoots.putIfAbsent(entry.groupKey, id);
+                    if (first != null) union(parents, id, first);
+                }
+            }
+            for (var edge : edges) {
+                if (!parents.containsKey(edge.id())) continue;
+                if (edge.startId() != null && parents.containsKey(edge.startId())) union(parents, edge.id(), edge.startId());
+                if (edge.endId() != null && parents.containsKey(edge.endId())) union(parents, edge.id(), edge.endId());
+            }
+            Map<String, List<Entry>> grouped = new LinkedHashMap<>();
+            for (Entry entry : candidates.values()) grouped.computeIfAbsent(root(parents, range(entry.shape)), ignored -> new ArrayList<>()).add(entry);
+            List<DiagramComponent> result = new ArrayList<>();
+            List<Entry> unconnected = new ArrayList<>();
+            for (List<Entry> entries : grouped.values()) {
+                entries.sort(Comparator.comparingInt(entry -> entry.order));
+                if (entries.size() == 1) unconnected.add(entries.getFirst());
+                else result.add(component(entries, nodes, edges));
+            }
+            if (!unconnected.isEmpty()) result.add(component(unconnected, nodes, edges));
+            result.sort(Comparator.comparingInt(component -> component.entries().getFirst().order));
+            return result;
+        }
+
+        private DiagramComponent component(List<Entry> entries, List<Entry> nodes,
+                                           List<PresentationConnections.Edge> edges) {
+            List<Entry> ordered = entries.stream().sorted(Comparator.comparingInt(entry -> entry.order)).toList();
+            Set<String> ids = new HashSet<>();
+            for (Entry entry : ordered) ids.add(range(entry.shape));
+            List<Entry> componentNodes = nodes.stream().filter(node -> ids.contains(range(node.shape)))
+                    .sorted(readingOrder()).toList();
+            List<PresentationConnections.Edge> componentEdges = edges.stream().filter(edge -> ids.contains(edge.id())).toList();
+            return new DiagramComponent(ordered, componentNodes, componentEdges);
+        }
+
+        private String root(Map<String, String> parents, String id) {
+            String parent = parents.get(id);
+            if (parent == null || parent.equals(id)) return id;
+            String found = root(parents, parent); parents.put(id, found); return found;
+        }
+
+        private void union(Map<String, String> parents, String left, String right) {
+            String leftRoot = root(parents, left), rightRoot = root(parents, right);
+            if (!leftRoot.equals(rightRoot)) parents.put(rightRoot, leftRoot);
         }
 
         private String endpointLabel(String id, Map<String, Entry> nodes) {
@@ -372,16 +498,20 @@ public final class PowerPointMarkdownConverter {
     private static final class Entry {
         final XSLFShape shape; final Rectangle2D bounds; final int order;
         final AffineTransform parentTransform;
+        final String groupKey;
         final List<Entry> children = new ArrayList<>();
         PresentationText.Content text = PresentationText.Content.EMPTY;
         boolean normalText, attachment;
         String table, unsupported, shapeLink, pictureDescription = "";
         XSLFPictureData picture; PictureType pictureType;
-        Entry(XSLFShape shape, Rectangle2D bounds, int order, AffineTransform parentTransform) {
+        Entry(XSLFShape shape, Rectangle2D bounds, int order, AffineTransform parentTransform, String groupKey) {
             this.shape = shape; this.bounds = bounds; this.order = order;
             this.parentTransform = parentTransform;
+            this.groupKey = groupKey;
         }
     }
+    private record DiagramComponent(List<Entry> entries, List<Entry> nodes,
+                                    List<PresentationConnections.Edge> edges) { }
     private static void leaves(Entry entry, List<Entry> target) {
         if (entry.children.isEmpty()) target.add(entry); else entry.children.forEach(child -> leaves(child, target));
     }
@@ -390,15 +520,6 @@ public final class PowerPointMarkdownConverter {
     }
     private static String nodeText(Entry entry) {
         return entry.picture != null ? entry.pictureDescription : entry.text.plain();
-    }
-    private static String connectionReason(String reason) {
-        return switch (reason) {
-            case "MISSING_ENDPOINT" -> "接続先IDが保存されていません";
-            case "TARGET_UNAVAILABLE" -> "接続先が出力対象にありません";
-            case "AMBIGUOUS_TARGET" -> "接続先IDが重複しています";
-            case "UNKNOWN_ARROWHEAD" -> "矢印の向きを確定できません";
-            default -> "保存情報が不足しています";
-        };
     }
     private static Comparator<Entry> readingOrder() {
         return Comparator.comparingDouble((Entry entry) -> entry.bounds.getY()).thenComparingDouble(entry -> entry.bounds.getX()).thenComparingInt(entry -> entry.order);
@@ -446,6 +567,17 @@ public final class PowerPointMarkdownConverter {
         if (shape instanceof XSLFGroupShape group) return group.getAnchor();
         if (shape instanceof XSLFGraphicFrame frame) return frame.getAnchor();
         return null;
+    }
+    private static AffineTransform shapeTransform(XSLFShape shape, AffineTransform parent, Rectangle2D anchor) {
+        AffineTransform transform = new AffineTransform(parent);
+        transform.translate(anchor.getCenterX(), anchor.getCenterY());
+        transform.rotate(Math.toRadians(rotation(shape)));
+        transform.scale(flipH(shape) ? -1 : 1, flipV(shape) ? -1 : 1);
+        transform.translate(-anchor.getCenterX(), -anchor.getCenterY());
+        return transform;
+    }
+    private static boolean axisAligned(AffineTransform transform) {
+        return Math.abs(transform.getShearX()) < 1e-9 && Math.abs(transform.getShearY()) < 1e-9;
     }
     private static boolean finite(Rectangle2D r) { return r != null && Double.isFinite(r.getX()) && Double.isFinite(r.getY()) && Double.isFinite(r.getWidth()) && Double.isFinite(r.getHeight()) && r.getWidth() >= 0 && r.getHeight() >= 0; }
     private static double rotation(XSLFShape shape) {

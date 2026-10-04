@@ -163,7 +163,7 @@
   }
   function parseReport(bytes) {
     const report = JSON.parse(utf8(bytes));
-    check(report && report.specVersion === 2 && Array.isArray(report.assets) && Array.isArray(report.warnings));
+    check(report && report.specVersion === 1 && Array.isArray(report.assets) && Array.isArray(report.warnings));
     check(report.assets.length <= budget().images);
     const names = new Set();
     for (const asset of report.assets) {

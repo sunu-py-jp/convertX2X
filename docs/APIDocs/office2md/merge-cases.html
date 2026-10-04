@@ -1,0 +1,1053 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Excelの結合・見出し比較 | office2md API</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+  <script src="../assets/app.js" defer></script>
+  <style>
+    .merge-case-groups{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:22px 0 30px}
+    .merge-index-group{min-width:0;border:1px solid var(--border);border-radius:9px;padding:13px 14px;background:#fbfdfb}
+    .merge-index-group h3{font-size:13px;margin:0 0 9px;color:#385a42}
+    .merge-case-index{display:grid;grid-template-columns:minmax(0,1fr);gap:7px;margin:0;padding:0;list-style:none}
+    .merge-case-index li{margin:0;padding:0}
+    .merge-case-index a{display:block;padding:8px 10px;border:1px solid var(--border);border-radius:7px;font-size:12px;line-height:1.5}
+    .merge-case-index a span{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;color:var(--accent);margin-right:6px}
+    .merge-comparison{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;margin:18px 0}
+    .merge-panel{min-width:0;border:1px solid var(--border);border-radius:9px;background:#fff;overflow:hidden}
+    .merge-panel h3{font-size:13px;line-height:1.5;background:#f7faf7;margin:0;padding:11px 14px;border-bottom:1px solid var(--border)}
+    .merge-panel-body{padding:13px 14px;min-width:0}
+    .merge-panel .table-wrap,.merge-panel .code-block{margin:0}
+    .merge-panel pre{margin:0;min-height:100%;white-space:pre;overflow-x:auto}
+    .merge-panel .sheet-grid{width:auto;min-width:100%;font-size:12px;table-layout:auto}
+    .merge-panel .sheet-grid th,.merge-panel .sheet-grid td{border:1px solid #d9e3da;padding:7px 9px;white-space:nowrap}
+    .merge-panel .sheet-grid .sheet-axis{background:#f3f6f4;color:#67786a;text-align:center;font-size:11px}
+    .merge-panel .sheet-grid .sheet-filled{background:#dcefdc;color:#243f2d}
+    .merge-panel .sheet-grid .sheet-hidden{opacity:.58}
+    .merge-legend{display:flex;align-items:center;gap:8px;margin:0 0 12px;font-size:11px;color:#65766c}
+    .merge-legend-swatch{display:inline-block;width:15px;height:15px;background:#dcefdc;border:1px solid #bad7bd;border-radius:3px}
+    .merge-facts{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 21px}
+    .merge-facts span{display:inline-block;padding:4px 7px;border:1px solid var(--border);border-radius:4px;background:#f8faf8;font-size:11px}
+    .merge-case{border-top:1px solid var(--border);padding-top:4px;margin:35px 0 45px}
+    .merge-case h2{margin-top:22px}
+    .merge-case .merge-case-id{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;color:var(--accent);font-size:12px;margin-right:8px}
+    .merge-case .merge-note{color:#60736a}
+    .merge-pair-links{display:flex;flex-wrap:wrap;gap:9px;margin:12px 0 4px}
+    .merge-pair-links a{display:inline-block;padding:7px 11px;border:1px solid #abcdb4;border-radius:7px;background:#f3faf5;font-size:12px;font-weight:600}
+    .merge-screenshot{margin:0}
+    .merge-screenshot a{display:block;line-height:0}
+    .merge-screenshot img{display:block;width:100%;height:auto;border:1px solid #d9e3da;border-radius:5px}
+    .merge-screenshot figcaption{margin-top:8px;color:#65766c;font-size:11px;line-height:1.5}
+    .merge-source-details{margin-top:15px;border-top:1px solid var(--border);padding-top:12px}
+    .merge-source-details summary{cursor:pointer;color:var(--accent);font-size:12px;font-weight:600}
+    .merge-source-details .merge-legend{margin-top:12px}
+    @media(max-width:760px){.merge-case-groups,.merge-comparison{grid-template-columns:minmax(0,1fr)}}
+  </style>
+</head>
+<body data-page="office-merge-cases">
+<a class="skip-link" href="#main-content">本文へ移動</a>
+<div id="site-header"></div>
+<aside id="sidebar" class="sidebar" aria-label="APIナビゲーション"></aside>
+<div id="menu-overlay" class="menu-overlay" hidden></div>
+<main id="main-content" class="main-content" tabindex="-1">
+<div class="page-layout">
+<article class="article">
+<p class="eyebrow">Office → Markdown / Excel table cases</p>
+<h1>Excelの結合・見出しを実変換で比較</h1>
+<p class="lead">色付き見出し、複数行見出し、横・縦結合、明細の結合を含む入力Excelと、同じファイルをoffice2mdへ送った結果をケースごとに並べます。</p>
+<p>左側は、入力ブックと同じ生成器が記録したセル値・直接塗り・直接罫線・結合範囲をHTMLで表した画面のスクリーンショットです。Excelアプリの画面ではありません。右側には実際の <code>document.md</code> の該当シートの内容をそのまま載せます。元のHTMLセル表も各ケースで開けます。画面で完全な書式を確認するには入力XLSXを開いてください。このページは静的HTMLなので <code>file://</code> でも閲覧できます。</p>
+<div class="sample-links"><a href="examples/excel-merge-matrix/pairs.zip" download>24組の画像＋Markdown（ZIP）</a><a href="examples/excel-merge-matrix/pairs/index.md">ケース別ファイル一覧</a><a href="examples/excel-merge-matrix/input.xlsx" download>入力XLSX</a><a href="examples/excel-merge-matrix/result.zip" download>実変換ZIP</a><a href="examples/excel-merge-matrix/output/document.md" download>document.md</a><a href="examples/excel-merge-matrix/output/report.json">report.json</a><a href="examples/excel-merge-matrix/cases.json">入力ケース定義</a><a href="examples/excel-merge-matrix/run.json">実行記録</a></div>
+<div class="callout"><p>Excelの表は直接セル罫線から検出します。最上段の無罫線セルが連続していても、その右の罫線付き区画と下段の閉じた格子で範囲を確定できれば同じ表として扱います。無罫線セルに文字があれば、表の値や見出しには混ぜず表直前の注記にします。無罫線の角を持つ確定済み格子では、最上段の罫線付き・非空セルを塗りなしでも1段の見出しとします。左端の無罫線角と上段の横結合見出しなどで構造を確認できる場合だけ下段も含め、さらに縦結合の継続と下位の横結合ラベルがあれば後続の段まで延長します。欠けが表の途中にあるだけで次行の意味が曖昧なら、後続行は明細に残します。結合見出しの幅は元の範囲に従い、その外側の列へ語を広げず、縦結合の語は重複させません。それ以外の無色の先頭行は空のMarkdownヘッダーを作り、元の全行を明細として残します。見出し判定に使う色はセルへの直接塗りです。条件付き書式やテーブルスタイルの見た目の色は判定しません。</p></div>
+<p>Markdownの表ヘッダーは1行だけです。複数行の見出しは列ごとに連結し、明示的な横結合が全表示行で同じ幅・位置に続く場合だけ列を畳みます。各ケースの <code>sourceColumnSpans</code> は出力列が対応する元のExcel列を表します。</p>
+<!-- CASES:START -->
+<h2 id="cases">ケース一覧</h2>
+<nav class="merge-case-groups" aria-label="ケースの分類">
+<div class="merge-index-group">
+<h3>色付き見出しの行数</h3>
+<ul class="merge-case-index">
+<li><a href="#case-c01"><span>C01</span>色付き1行ヘッダー・結合なし</a></li>
+<li><a href="#case-c02"><span>C02</span>色付き2行ヘッダー・結合なし</a></li>
+<li><a href="#case-c03"><span>C03</span>色付き3行ヘッダー</a></li>
+</ul></div>
+<div class="merge-index-group">
+<h3>色の有無と見出しの境界</h3>
+<ul class="merge-case-index">
+<li><a href="#case-c04"><span>C04</span>色なし・結合なし</a></li>
+<li><a href="#case-c05"><span>C05</span>先頭無色・次行だけ色付き</a></li>
+<li><a href="#case-c06"><span>C06</span>色付き→無色→色付き</a></li>
+<li><a href="#case-c07"><span>C07</span>先頭の1セルだけ色付き</a></li>
+</ul></div>
+<div class="merge-index-group">
+<h3>見出しセルの結合</h3>
+<ul class="merge-case-index">
+<li><a href="#case-c08"><span>C08</span>1行ヘッダーだけ横結合</a></li>
+<li><a href="#case-c09"><span>C09</span>1行ヘッダーが全列横結合</a></li>
+<li><a href="#case-c10"><span>C10</span>2行ヘッダー・上段だけ横結合</a></li>
+<li><a href="#case-c11"><span>C11</span>2行ヘッダー・縦結合と横結合</a></li>
+</ul></div>
+<div class="merge-index-group">
+<h3>全行で同じ幅の結合</h3>
+<ul class="merge-case-index">
+<li><a href="#case-c12"><span>C12</span>全行で同じ幅の横結合・1行ヘッダー</a></li>
+<li><a href="#case-c13"><span>C13</span>全行で同じ幅の横結合・2行ヘッダー</a></li>
+</ul></div>
+<div class="merge-index-group">
+<h3>明細行とずれた結合</h3>
+<ul class="merge-case-index">
+<li><a href="#case-c14"><span>C14</span>明細の一部だけ横結合</a></li>
+<li><a href="#case-c15"><span>C15</span>明細の縦結合</a></li>
+<li><a href="#case-c16"><span>C16</span>複数行ヘッダーで横結合位置がずれる</a></li>
+</ul></div>
+<div class="merge-index-group">
+<h3>境界・非表示・隣接結合</h3>
+<ul class="merge-case-index">
+<li><a href="#case-c17"><span>C17</span>全行に直接塗りがある</a></li>
+<li><a href="#case-c18"><span>C18</span>無色の先頭行・全行で同じ幅の横結合</a></li>
+<li><a href="#case-c19"><span>C19</span>非表示の分割行を挟む同幅結合</a></li>
+<li><a href="#case-c20"><span>C20</span>隣り合う2組の同幅結合</a></li>
+</ul></div>
+<div class="merge-index-group">
+<h3>枠の欠けたマトリックス</h3>
+<ul class="merge-case-index">
+<li><a href="#case-c21"><span>C21</span>左上だけ罫線のないマトリックス</a></li>
+<li><a href="#case-c22"><span>C22</span>通常表に続く、角だけ罫線のないマトリックス</a></li>
+<li><a href="#case-c23"><span>C23</span>無罫線の注記と3列幅の結合見出し</a></li>
+<li><a href="#case-c24"><span>C24</span>無罫線の注記と縦横結合を含む3段見出し</a></li>
+</ul></div>
+</nav>
+<p class="sample-meta">HTTP 200 · 24 ケース · 24 検出表 · 9 警告</p>
+<section class="merge-case" aria-labelledby="case-c01">
+<h2 id="case-c01"><span class="merge-case-id">C01</span>色付き1行ヘッダー・結合なし</h2>
+<p class="merge-note">先頭行の直接塗りをヘッダーとする基本形。</p>
+<nav class="merge-pair-links" aria-label="このケースのファイル">
+<a href="examples/excel-merge-matrix/screenshots/C01.png" download>入力スクショ（PNG）</a>
+<a href="examples/excel-merge-matrix/pairs/C01/document.md" download>変換後Markdown</a>
+</nav>
+<div class="merge-comparison">
+<div class="merge-panel"><h3>入力表のスクリーンショット</h3><div class="merge-panel-body">
+<figure class="merge-screenshot">
+<a href="examples/excel-merge-matrix/screenshots/C01.png"><img src="examples/excel-merge-matrix/screenshots/C01.png" alt="C01 色付き1行ヘッダー・結合なし の入力セル表" loading="lazy"></a>
+<figcaption>入力ブックのセル・色・結合をHTMLで表した画面です。Excelアプリの画面ではありません。</figcaption>
+</figure>
+<details class="merge-source-details"><summary>セル・結合をHTML表で確認</summary>
+<p class="merge-legend"><span class="merge-legend-swatch" aria-hidden="true"></span>緑のセル＝直接塗り。枠線は各セルの直接罫線。結合セルは実際の範囲で表示。</p>
+<table class="sheet-grid"><caption class="sr-only">01_単行_色あり_結合なし の入力セル</caption>
+<thead><tr><th class="sheet-axis"></th><th scope="col" class="sheet-axis">A</th><th scope="col" class="sheet-axis">B</th><th scope="col" class="sheet-axis">C</th></tr></thead><tbody>
+<tr><th scope="row" class="sheet-axis">1</th><td class="sheet-filled" title="A1">商品</td><td class="sheet-filled" title="B1">数量</td><td class="sheet-filled" title="C1">単価</td></tr>
+<tr><th scope="row" class="sheet-axis">2</th><td title="A2">りんご</td><td title="B2">2</td><td title="C2">100</td></tr>
+<tr><th scope="row" class="sheet-axis">3</th><td title="A3">みかん</td><td title="B3">3</td><td title="C3">80</td></tr>
+</tbody></table>
+</details>
+</div></div>
+<div class="merge-panel"><h3>実変換のMarkdown（該当シート）</h3><div class="merge-panel-body">
+<pre><code class="language-markdown">| **商品** | **数量** | **単価** |
+| --- | --- | --- |
+| りんご | 2 | 100 |
+| みかん | 3 | 80 |</code></pre>
+</div></div>
+</div>
+<div class="merge-facts">
+<span>入力範囲: <code>A1:C3</code></span>
+<span>明示結合: <code>なし</code></span>
+<span>非表示行: <code>なし</code></span>
+<span>ヘッダー判定・元行: <code>fill-color：1</code></span>
+<span>出力列→元列: <code>1列目=A; 2列目=B; 3列目=C</code></span>
+</div>
+</section>
+<section class="merge-case" aria-labelledby="case-c02">
+<h2 id="case-c02"><span class="merge-case-id">C02</span>色付き2行ヘッダー・結合なし</h2>
+<p class="merge-note">連続する2行の見出しを列ごとに階層化する。</p>
+<nav class="merge-pair-links" aria-label="このケースのファイル">
+<a href="examples/excel-merge-matrix/screenshots/C02.png" download>入力スクショ（PNG）</a>
+<a href="examples/excel-merge-matrix/pairs/C02/document.md" download>変換後Markdown</a>
+</nav>
+<div class="merge-comparison">
+<div class="merge-panel"><h3>入力表のスクリーンショット</h3><div class="merge-panel-body">
+<figure class="merge-screenshot">
+<a href="examples/excel-merge-matrix/screenshots/C02.png"><img src="examples/excel-merge-matrix/screenshots/C02.png" alt="C02 色付き2行ヘッダー・結合なし の入力セル表" loading="lazy"></a>
+<figcaption>入力ブックのセル・色・結合をHTMLで表した画面です。Excelアプリの画面ではありません。</figcaption>
+</figure>
+<details class="merge-source-details"><summary>セル・結合をHTML表で確認</summary>
+<p class="merge-legend"><span class="merge-legend-swatch" aria-hidden="true"></span>緑のセル＝直接塗り。枠線は各セルの直接罫線。結合セルは実際の範囲で表示。</p>
+<table class="sheet-grid"><caption class="sr-only">02_複行_色あり_結合なし の入力セル</caption>
+<thead><tr><th class="sheet-axis"></th><th scope="col" class="sheet-axis">A</th><th scope="col" class="sheet-axis">B</th><th scope="col" class="sheet-axis">C</th></tr></thead><tbody>
+<tr><th scope="row" class="sheet-axis">1</th><td class="sheet-filled" title="A1">分類</td><td class="sheet-filled" title="B1">数量</td><td class="sheet-filled" title="C1">売上</td></tr>
+<tr><th scope="row" class="sheet-axis">2</th><td class="sheet-filled" title="A2">商品</td><td class="sheet-filled" title="B2">2025年</td><td class="sheet-filled" title="C2">2025年</td></tr>
+<tr><th scope="row" class="sheet-axis">3</th><td title="A3">りんご</td><td title="B3">2</td><td title="C3">200</td></tr>
+</tbody></table>
+</details>
+</div></div>
+<div class="merge-panel"><h3>実変換のMarkdown（該当シート）</h3><div class="merge-panel-body">
+<pre><code class="language-markdown">| **分類** / **商品** | **数量** / **2025年** | **売上** / **2025年** |
+| --- | --- | --- |
+| りんご | 2 | 200 |</code></pre>
+</div></div>
+</div>
+<div class="merge-facts">
+<span>入力範囲: <code>A1:C3</code></span>
+<span>明示結合: <code>なし</code></span>
+<span>非表示行: <code>なし</code></span>
+<span>ヘッダー判定・元行: <code>fill-color：1, 2</code></span>
+<span>出力列→元列: <code>1列目=A; 2列目=B; 3列目=C</code></span>
+</div>
+</section>
+<section class="merge-case" aria-labelledby="case-c03">
+<h2 id="case-c03"><span class="merge-case-id">C03</span>色付き3行ヘッダー</h2>
+<p class="merge-note">先頭から3行連続して直接塗りがある。</p>
+<nav class="merge-pair-links" aria-label="このケースのファイル">
+<a href="examples/excel-merge-matrix/screenshots/C03.png" download>入力スクショ（PNG）</a>
+<a href="examples/excel-merge-matrix/pairs/C03/document.md" download>変換後Markdown</a>
+</nav>
+<div class="merge-comparison">
+<div class="merge-panel"><h3>入力表のスクリーンショット</h3><div class="merge-panel-body">
+<figure class="merge-screenshot">
+<a href="examples/excel-merge-matrix/screenshots/C03.png"><img src="examples/excel-merge-matrix/screenshots/C03.png" alt="C03 色付き3行ヘッダー の入力セル表" loading="lazy"></a>
+<figcaption>入力ブックのセル・色・結合をHTMLで表した画面です。Excelアプリの画面ではありません。</figcaption>
+</figure>
+<details class="merge-source-details"><summary>セル・結合をHTML表で確認</summary>
+<p class="merge-legend"><span class="merge-legend-swatch" aria-hidden="true"></span>緑のセル＝直接塗り。枠線は各セルの直接罫線。結合セルは実際の範囲で表示。</p>
+<table class="sheet-grid"><caption class="sr-only">03_複行3段_色あり の入力セル</caption>
+<thead><tr><th class="sheet-axis"></th><th scope="col" class="sheet-axis">A</th><th scope="col" class="sheet-axis">B</th><th scope="col" class="sheet-axis">C</th></tr></thead><tbody>
+<tr><th scope="row" class="sheet-axis">1</th><td class="sheet-filled" title="A1">地域</td><td class="sheet-filled" title="B1">販売</td><td class="sheet-filled" title="C1">販売</td></tr>
+<tr><th scope="row" class="sheet-axis">2</th><td class="sheet-filled" title="A2">都道府県</td><td class="sheet-filled" title="B2">2025年</td><td class="sheet-filled" title="C2">2024年</td></tr>
+<tr><th scope="row" class="sheet-axis">3</th><td class="sheet-filled" title="A3">名称</td><td class="sheet-filled" title="B3">数量</td><td class="sheet-filled" title="C3">数量</td></tr>
+<tr><th scope="row" class="sheet-axis">4</th><td title="A4">東京</td><td title="B4">12</td><td title="C4">10</td></tr>
+</tbody></table>
+</details>
+</div></div>
+<div class="merge-panel"><h3>実変換のMarkdown（該当シート）</h3><div class="merge-panel-body">
+<pre><code class="language-markdown">| **地域** / **都道府県** / **名称** | **販売** / **2025年** / **数量** | **販売** / **2024年** / **数量** |
+| --- | --- | --- |
+| 東京 | 12 | 10 |</code></pre>
+</div></div>
+</div>
+<div class="merge-facts">
+<span>入力範囲: <code>A1:C4</code></span>
+<span>明示結合: <code>なし</code></span>
+<span>非表示行: <code>なし</code></span>
+<span>ヘッダー判定・元行: <code>fill-color：1, 2, 3</code></span>
+<span>出力列→元列: <code>1列目=A; 2列目=B; 3列目=C</code></span>
+</div>
+</section>
+<section class="merge-case" aria-labelledby="case-c04">
+<h2 id="case-c04"><span class="merge-case-id">C04</span>色なし・結合なし</h2>
+<p class="merge-note">先頭行が無色なら空ヘッダーを生成し、元の先頭行も明細として残す。</p>
+<nav class="merge-pair-links" aria-label="このケースのファイル">
+<a href="examples/excel-merge-matrix/screenshots/C04.png" download>入力スクショ（PNG）</a>
+<a href="examples/excel-merge-matrix/pairs/C04/document.md" download>変換後Markdown</a>
+</nav>
+<div class="merge-comparison">
+<div class="merge-panel"><h3>入力表のスクリーンショット</h3><div class="merge-panel-body">
+<figure class="merge-screenshot">
+<a href="examples/excel-merge-matrix/screenshots/C04.png"><img src="examples/excel-merge-matrix/screenshots/C04.png" alt="C04 色なし・結合なし の入力セル表" loading="lazy"></a>
+<figcaption>入力ブックのセル・色・結合をHTMLで表した画面です。Excelアプリの画面ではありません。</figcaption>
+</figure>
+<details class="merge-source-details"><summary>セル・結合をHTML表で確認</summary>
+<p class="merge-legend"><span class="merge-legend-swatch" aria-hidden="true"></span>緑のセル＝直接塗り。枠線は各セルの直接罫線。結合セルは実際の範囲で表示。</p>
+<table class="sheet-grid"><caption class="sr-only">04_全行_色なし の入力セル</caption>
+<thead><tr><th class="sheet-axis"></th><th scope="col" class="sheet-axis">A</th><th scope="col" class="sheet-axis">B</th><th scope="col" class="sheet-axis">C</th></tr></thead><tbody>
+<tr><th scope="row" class="sheet-axis">1</th><td title="A1">商品</td><td title="B1">数量</td><td title="C1">単価</td></tr>
+<tr><th scope="row" class="sheet-axis">2</th><td title="A2">りんご</td><td title="B2">2</td><td title="C2">100</td></tr>
+<tr><th scope="row" class="sheet-axis">3</th><td title="A3">みかん</td><td title="B3">3</td><td title="C3">80</td></tr>
+</tbody></table>
+</details>
+</div></div>
+<div class="merge-panel"><h3>実変換のMarkdown（該当シート）</h3><div class="merge-panel-body">
+<pre><code class="language-markdown">|  |  |  |
+| --- | --- | --- |
+| 商品 | 数量 | 単価 |
+| りんご | 2 | 100 |
+| みかん | 3 | 80 |</code></pre>
+</div></div>
+</div>
+<div class="merge-facts">
+<span>入力範囲: <code>A1:C3</code></span>
+<span>明示結合: <code>なし</code></span>
+<span>非表示行: <code>なし</code></span>
+<span>ヘッダー判定・元行: <code>empty-generated：なし</code></span>
+<span>出力列→元列: <code>1列目=A; 2列目=B; 3列目=C</code></span>
+</div>
+</section>
+<section class="merge-case" aria-labelledby="case-c05">
+<h2 id="case-c05"><span class="merge-case-id">C05</span>先頭無色・次行だけ色付き</h2>
+<p class="merge-note">途中から色が付いてもヘッダー判定を再開しない。</p>
+<nav class="merge-pair-links" aria-label="このケースのファイル">
+<a href="examples/excel-merge-matrix/screenshots/C05.png" download>入力スクショ（PNG）</a>
+<a href="examples/excel-merge-matrix/pairs/C05/document.md" download>変換後Markdown</a>
+</nav>
+<div class="merge-comparison">
+<div class="merge-panel"><h3>入力表のスクリーンショット</h3><div class="merge-panel-body">
+<figure class="merge-screenshot">
+<a href="examples/excel-merge-matrix/screenshots/C05.png"><img src="examples/excel-merge-matrix/screenshots/C05.png" alt="C05 先頭無色・次行だけ色付き の入力セル表" loading="lazy"></a>
+<figcaption>入力ブックのセル・色・結合をHTMLで表した画面です。Excelアプリの画面ではありません。</figcaption>
+</figure>
+<details class="merge-source-details"><summary>セル・結合をHTML表で確認</summary>
+<p class="merge-legend"><span class="merge-legend-swatch" aria-hidden="true"></span>緑のセル＝直接塗り。枠線は各セルの直接罫線。結合セルは実際の範囲で表示。</p>
+<table class="sheet-grid"><caption class="sr-only">05_先頭無色_次行色あり の入力セル</caption>
+<thead><tr><th class="sheet-axis"></th><th scope="col" class="sheet-axis">A</th><th scope="col" class="sheet-axis">B</th><th scope="col" class="sheet-axis">C</th></tr></thead><tbody>
+<tr><th scope="row" class="sheet-axis">1</th><td title="A1">先頭明細</td><td title="B1">A</td><td title="C1">1</td></tr>
+<tr><th scope="row" class="sheet-axis">2</th><td class="sheet-filled" title="A2">色付き明細</td><td class="sheet-filled" title="B2">B</td><td class="sheet-filled" title="C2">2</td></tr>
+<tr><th scope="row" class="sheet-axis">3</th><td title="A3">末尾明細</td><td title="B3">C</td><td title="C3">3</td></tr>
+</tbody></table>
+</details>
+</div></div>
+<div class="merge-panel"><h3>実変換のMarkdown（該当シート）</h3><div class="merge-panel-body">
+<pre><code class="language-markdown">|  |  |  |
+| --- | --- | --- |
+| 先頭明細 | A | 1 |
+| **色付き明細** | **B** | **2** |
+| 末尾明細 | C | 3 |</code></pre>
+</div></div>
+</div>
+<div class="merge-facts">
+<span>入力範囲: <code>A1:C3</code></span>
+<span>明示結合: <code>なし</code></span>
+<span>非表示行: <code>なし</code></span>
+<span>ヘッダー判定・元行: <code>empty-generated：なし</code></span>
+<span>出力列→元列: <code>1列目=A; 2列目=B; 3列目=C</code></span>
+</div>
+</section>
+<section class="merge-case" aria-labelledby="case-c06">
+<h2 id="case-c06"><span class="merge-case-id">C06</span>色付き→無色→色付き</h2>
+<p class="merge-note">先頭からの連続色付き行だけがヘッダー。3行目の色は明細扱い。</p>
+<nav class="merge-pair-links" aria-label="このケースのファイル">
+<a href="examples/excel-merge-matrix/screenshots/C06.png" download>入力スクショ（PNG）</a>
+<a href="examples/excel-merge-matrix/pairs/C06/document.md" download>変換後Markdown</a>
+</nav>
+<div class="merge-comparison">
+<div class="merge-panel"><h3>入力表のスクリーンショット</h3><div class="merge-panel-body">
+<figure class="merge-screenshot">
+<a href="examples/excel-merge-matrix/screenshots/C06.png"><img src="examples/excel-merge-matrix/screenshots/C06.png" alt="C06 色付き→無色→色付き の入力セル表" loading="lazy"></a>
+<figcaption>入力ブックのセル・色・結合をHTMLで表した画面です。Excelアプリの画面ではありません。</figcaption>
+</figure>
+<details class="merge-source-details"><summary>セル・結合をHTML表で確認</summary>
+<p class="merge-legend"><span class="merge-legend-swatch" aria-hidden="true"></span>緑のセル＝直接塗り。枠線は各セルの直接罫線。結合セルは実際の範囲で表示。</p>
+<table class="sheet-grid"><caption class="sr-only">06_色_無色_色 の入力セル</caption>
+<thead><tr><th class="sheet-axis"></th><th scope="col" class="sheet-axis">A</th><th scope="col" class="sheet-axis">B</th><th scope="col" class="sheet-axis">C</th></tr></thead><tbody>
+<tr><th scope="row" class="sheet-axis">1</th><td class="sheet-filled" title="A1">商品</td><td class="sheet-filled" title="B1">数量</td><td class="sheet-filled" title="C1">単価</td></tr>
+<tr><th scope="row" class="sheet-axis">2</th><td title="A2">りんご</td><td title="B2">2</td><td title="C2">100</td></tr>
+<tr><th scope="row" class="sheet-axis">3</th><td class="sheet-filled" title="A3">色付き明細</td><td class="sheet-filled" title="B3">3</td><td class="sheet-filled" title="C3">80</td></tr>
+</tbody></table>
+</details>
+</div></div>
+<div class="merge-panel"><h3>実変換のMarkdown（該当シート）</h3><div class="merge-panel-body">
+<pre><code class="language-markdown">| **商品** | **数量** | **単価** |
+| --- | --- | --- |
+| りんご | 2 | 100 |
+| **色付き明細** | **3** | **80** |</code></pre>
+</div></div>
+</div>
+<div class="merge-facts">
+<span>入力範囲: <code>A1:C3</code></span>
+<span>明示結合: <code>なし</code></span>
+<span>非表示行: <code>なし</code></span>
+<span>ヘッダー判定・元行: <code>fill-color：1</code></span>
+<span>出力列→元列: <code>1列目=A; 2列目=B; 3列目=C</code></span>
+</div>
+</section>
+<section class="merge-case" aria-labelledby="case-c07">
+<h2 id="case-c07"><span class="merge-case-id">C07</span>先頭の1セルだけ色付き</h2>
+<p class="merge-note">表の先頭行の検出範囲内に直接塗りが1セルでもあればヘッダー。</p>
+<nav class="merge-pair-links" aria-label="このケースのファイル">
+<a href="examples/excel-merge-matrix/screenshots/C07.png" download>入力スクショ（PNG）</a>
+<a href="examples/excel-merge-matrix/pairs/C07/document.md" download>変換後Markdown</a>
+</nav>
+<div class="merge-comparison">
+<div class="merge-panel"><h3>入力表のスクリーンショット</h3><div class="merge-panel-body">
+<figure class="merge-screenshot">
+<a href="examples/excel-merge-matrix/screenshots/C07.png"><img src="examples/excel-merge-matrix/screenshots/C07.png" alt="C07 先頭の1セルだけ色付き の入力セル表" loading="lazy"></a>
+<figcaption>入力ブックのセル・色・結合をHTMLで表した画面です。Excelアプリの画面ではありません。</figcaption>
+</figure>
+<details class="merge-source-details"><summary>セル・結合をHTML表で確認</summary>
+<p class="merge-legend"><span class="merge-legend-swatch" aria-hidden="true"></span>緑のセル＝直接塗り。枠線は各セルの直接罫線。結合セルは実際の範囲で表示。</p>
+<table class="sheet-grid"><caption class="sr-only">07_先頭1セルだけ色あり の入力セル</caption>
+<thead><tr><th class="sheet-axis"></th><th scope="col" class="sheet-axis">A</th><th scope="col" class="sheet-axis">B</th><th scope="col" class="sheet-axis">C</th></tr></thead><tbody>
+<tr><th scope="row" class="sheet-axis">1</th><td class="sheet-filled" title="A1">商品</td><td title="B1">数量</td><td title="C1">単価</td></tr>
+<tr><th scope="row" class="sheet-axis">2</th><td title="A2">りんご</td><td title="B2">2</td><td title="C2">100</td></tr>
+</tbody></table>
+</details>
+</div></div>
+<div class="merge-panel"><h3>実変換のMarkdown（該当シート）</h3><div class="merge-panel-body">
+<pre><code class="language-markdown">| **商品** | 数量 | 単価 |
+| --- | --- | --- |
+| りんご | 2 | 100 |</code></pre>
+</div></div>
+</div>
+<div class="merge-facts">
+<span>入力範囲: <code>A1:C2</code></span>
+<span>明示結合: <code>なし</code></span>
+<span>非表示行: <code>なし</code></span>
+<span>ヘッダー判定・元行: <code>fill-color：1</code></span>
+<span>出力列→元列: <code>1列目=A; 2列目=B; 3列目=C</code></span>
+</div>
+</section>
+<section class="merge-case" aria-labelledby="case-c08">
+<h2 id="case-c08"><span class="merge-case-id">C08</span>1行ヘッダーだけ横結合</h2>
+<p class="merge-note">A1:B1の共有見出しを分かれた明細列へ引き継ぐ。</p>
+<nav class="merge-pair-links" aria-label="このケースのファイル">
+<a href="examples/excel-merge-matrix/screenshots/C08.png" download>入力スクショ（PNG）</a>
+<a href="examples/excel-merge-matrix/pairs/C08/document.md" download>変換後Markdown</a>
+</nav>
+<div class="merge-comparison">
+<div class="merge-panel"><h3>入力表のスクリーンショット</h3><div class="merge-panel-body">
+<figure class="merge-screenshot">
+<a href="examples/excel-merge-matrix/screenshots/C08.png"><img src="examples/excel-merge-matrix/screenshots/C08.png" alt="C08 1行ヘッダーだけ横結合 の入力セル表" loading="lazy"></a>
+<figcaption>入力ブックのセル・色・結合をHTMLで表した画面です。Excelアプリの画面ではありません。</figcaption>
+</figure>
+<details class="merge-source-details"><summary>セル・結合をHTML表で確認</summary>
+<p class="merge-legend"><span class="merge-legend-swatch" aria-hidden="true"></span>緑のセル＝直接塗り。枠線は各セルの直接罫線。結合セルは実際の範囲で表示。</p>
+<table class="sheet-grid"><caption class="sr-only">08_単行_上だけ横結合 の入力セル</caption>
+<thead><tr><th class="sheet-axis"></th><th scope="col" class="sheet-axis">A</th><th scope="col" class="sheet-axis">B</th><th scope="col" class="sheet-axis">C</th></tr></thead><tbody>
+<tr><th scope="row" class="sheet-axis">1</th><td class="sheet-filled" colspan="2" rowspan="1" title="A1; 明示結合 A1:B1">連絡先</td><td class="sheet-filled" title="C1">状態</td></tr>
+<tr><th scope="row" class="sheet-axis">2</th><td title="A2">03-1234</td><td title="B2">a@example.com</td><td title="C2">有効</td></tr>
+<tr><th scope="row" class="sheet-axis">3</th><td title="A3">06-5678</td><td title="B3">b@example.com</td><td title="C3">保留</td></tr>
+</tbody></table>
+</details>
+</div></div>
+<div class="merge-panel"><h3>実変換のMarkdown（該当シート）</h3><div class="merge-panel-body">
+<pre><code class="language-markdown">| **連絡先**（A列） | **連絡先**（B列） | **状態** |
+| --- | --- | --- |
+| 03\-1234 | a@example.com | 有効 |
+| 06\-5678 | b@example.com | 保留 |</code></pre>
+</div></div>
+</div>
+<div class="merge-facts">
+<span>入力範囲: <code>A1:C3</code></span>
+<span>明示結合: <code>A1:B1</code></span>
+<span>非表示行: <code>なし</code></span>
+<span>ヘッダー判定・元行: <code>fill-color：1</code></span>
+<span>出力列→元列: <code>1列目=A; 2列目=B; 3列目=C</code></span>
+</div>
+</section>
+<section class="merge-case" aria-labelledby="case-c09">
+<h2 id="case-c09"><span class="merge-case-id">C09</span>1行ヘッダーが全列横結合</h2>
+<p class="merge-note">見出しのみA1:C1を結合。明細は3列に分かれる。</p>
+<nav class="merge-pair-links" aria-label="このケースのファイル">
+<a href="examples/excel-merge-matrix/screenshots/C09.png" download>入力スクショ（PNG）</a>
+<a href="examples/excel-merge-matrix/pairs/C09/document.md" download>変換後Markdown</a>
+</nav>
+<div class="merge-comparison">
+<div class="merge-panel"><h3>入力表のスクリーンショット</h3><div class="merge-panel-body">
+<figure class="merge-screenshot">
+<a href="examples/excel-merge-matrix/screenshots/C09.png"><img src="examples/excel-merge-matrix/screenshots/C09.png" alt="C09 1行ヘッダーが全列横結合 の入力セル表" loading="lazy"></a>
+<figcaption>入力ブックのセル・色・結合をHTMLで表した画面です。Excelアプリの画面ではありません。</figcaption>
+</figure>
+<details class="merge-source-details"><summary>セル・結合をHTML表で確認</summary>
+<p class="merge-legend"><span class="merge-legend-swatch" aria-hidden="true"></span>緑のセル＝直接塗り。枠線は各セルの直接罫線。結合セルは実際の範囲で表示。</p>
+<table class="sheet-grid"><caption class="sr-only">09_単行_全幅横結合 の入力セル</caption>
+<thead><tr><th class="sheet-axis"></th><th scope="col" class="sheet-axis">A</th><th scope="col" class="sheet-axis">B</th><th scope="col" class="sheet-axis">C</th></tr></thead><tbody>
+<tr><th scope="row" class="sheet-axis">1</th><td class="sheet-filled" colspan="3" rowspan="1" title="A1; 明示結合 A1:C1">2025年度販売実績</td></tr>
+<tr><th scope="row" class="sheet-axis">2</th><td title="A2">東日本</td><td title="B2">100</td><td title="C2">20</td></tr>
+<tr><th scope="row" class="sheet-axis">3</th><td title="A3">西日本</td><td title="B3">80</td><td title="C3">15</td></tr>
+</tbody></table>
+</details>
+</div></div>
+<div class="merge-panel"><h3>実変換のMarkdown（該当シート）</h3><div class="merge-panel-body">
+<pre><code class="language-markdown">| **2025年度販売実績**（A列） | **2025年度販売実績**（B列） | **2025年度販売実績**（C列） |
+| --- | --- | --- |
+| 東日本 | 100 | 20 |
+| 西日本 | 80 | 15 |</code></pre>
+</div></div>
+</div>
+<div class="merge-facts">
+<span>入力範囲: <code>A1:C3</code></span>
+<span>明示結合: <code>A1:C1</code></span>
+<span>非表示行: <code>なし</code></span>
+<span>ヘッダー判定・元行: <code>fill-color：1</code></span>
+<span>出力列→元列: <code>1列目=A; 2列目=B; 3列目=C</code></span>
+</div>
+</section>
+<section class="merge-case" aria-labelledby="case-c10">
+<h2 id="case-c10"><span class="merge-case-id">C10</span>2行ヘッダー・上段だけ横結合</h2>
+<p class="merge-note">上段A1:B1の共有見出しと下段の個別見出しを合成する。</p>
+<nav class="merge-pair-links" aria-label="このケースのファイル">
+<a href="examples/excel-merge-matrix/screenshots/C10.png" download>入力スクショ（PNG）</a>
+<a href="examples/excel-merge-matrix/pairs/C10/document.md" download>変換後Markdown</a>
+</nav>
+<div class="merge-comparison">
+<div class="merge-panel"><h3>入力表のスクリーンショット</h3><div class="merge-panel-body">
+<figure class="merge-screenshot">
+<a href="examples/excel-merge-matrix/screenshots/C10.png"><img src="examples/excel-merge-matrix/screenshots/C10.png" alt="C10 2行ヘッダー・上段だけ横結合 の入力セル表" loading="lazy"></a>
+<figcaption>入力ブックのセル・色・結合をHTMLで表した画面です。Excelアプリの画面ではありません。</figcaption>
+</figure>
+<details class="merge-source-details"><summary>セル・結合をHTML表で確認</summary>
+<p class="merge-legend"><span class="merge-legend-swatch" aria-hidden="true"></span>緑のセル＝直接塗り。枠線は各セルの直接罫線。結合セルは実際の範囲で表示。</p>
+<table class="sheet-grid"><caption class="sr-only">10_複行_上段横結合 の入力セル</caption>
+<thead><tr><th class="sheet-axis"></th><th scope="col" class="sheet-axis">A</th><th scope="col" class="sheet-axis">B</th><th scope="col" class="sheet-axis">C</th></tr></thead><tbody>
+<tr><th scope="row" class="sheet-axis">1</th><td class="sheet-filled" colspan="2" rowspan="1" title="A1; 明示結合 A1:B1">連絡先</td><td class="sheet-filled" title="C1">状態</td></tr>
+<tr><th scope="row" class="sheet-axis">2</th><td class="sheet-filled" title="A2">電話</td><td class="sheet-filled" title="B2">メール</td><td class="sheet-filled" title="C2">区分</td></tr>
+<tr><th scope="row" class="sheet-axis">3</th><td title="A3">03-1234</td><td title="B3">a@example.com</td><td title="C3">有効</td></tr>
+</tbody></table>
+</details>
+</div></div>
+<div class="merge-panel"><h3>実変換のMarkdown（該当シート）</h3><div class="merge-panel-body">
+<pre><code class="language-markdown">| **連絡先** / **電話** | **連絡先** / **メール** | **状態** / **区分** |
+| --- | --- | --- |
+| 03\-1234 | a@example.com | 有効 |</code></pre>
+</div></div>
+</div>
+<div class="merge-facts">
+<span>入力範囲: <code>A1:C3</code></span>
+<span>明示結合: <code>A1:B1</code></span>
+<span>非表示行: <code>なし</code></span>
+<span>ヘッダー判定・元行: <code>fill-color：1, 2</code></span>
+<span>出力列→元列: <code>1列目=A; 2列目=B; 3列目=C</code></span>
+</div>
+</section>
+<section class="merge-case" aria-labelledby="case-c11">
+<h2 id="case-c11"><span class="merge-case-id">C11</span>2行ヘッダー・縦結合と横結合</h2>
+<p class="merge-note">A1:A2の縦結合とB1:C1の横結合を同じ見出し内で扱う。</p>
+<nav class="merge-pair-links" aria-label="このケースのファイル">
+<a href="examples/excel-merge-matrix/screenshots/C11.png" download>入力スクショ（PNG）</a>
+<a href="examples/excel-merge-matrix/pairs/C11/document.md" download>変換後Markdown</a>
+</nav>
+<div class="merge-comparison">
+<div class="merge-panel"><h3>入力表のスクリーンショット</h3><div class="merge-panel-body">
+<figure class="merge-screenshot">
+<a href="examples/excel-merge-matrix/screenshots/C11.png"><img src="examples/excel-merge-matrix/screenshots/C11.png" alt="C11 2行ヘッダー・縦結合と横結合 の入力セル表" loading="lazy"></a>
+<figcaption>入力ブックのセル・色・結合をHTMLで表した画面です。Excelアプリの画面ではありません。</figcaption>
+</figure>
+<details class="merge-source-details"><summary>セル・結合をHTML表で確認</summary>
+<p class="merge-legend"><span class="merge-legend-swatch" aria-hidden="true"></span>緑のセル＝直接塗り。枠線は各セルの直接罫線。結合セルは実際の範囲で表示。</p>
+<table class="sheet-grid"><caption class="sr-only">11_複行_縦横結合 の入力セル</caption>
+<thead><tr><th class="sheet-axis"></th><th scope="col" class="sheet-axis">A</th><th scope="col" class="sheet-axis">B</th><th scope="col" class="sheet-axis">C</th></tr></thead><tbody>
+<tr><th scope="row" class="sheet-axis">1</th><td class="sheet-filled" colspan="1" rowspan="2" title="A1; 明示結合 A1:A2">部門</td><td class="sheet-filled" colspan="2" rowspan="1" title="B1; 明示結合 B1:C1">売上</td></tr>
+<tr><th scope="row" class="sheet-axis">2</th><td class="sheet-filled" title="B2">2025年</td><td class="sheet-filled" title="C2">2024年</td></tr>
+<tr><th scope="row" class="sheet-axis">3</th><td title="A3">営業</td><td title="B3">120</td><td title="C3">95</td></tr>
+</tbody></table>
+</details>
+</div></div>
+<div class="merge-panel"><h3>実変換のMarkdown（該当シート）</h3><div class="merge-panel-body">
+<pre><code class="language-markdown">| **部門** | **売上** / **2025年** | **売上** / **2024年** |
+| --- | --- | --- |
+| 営業 | 120 | 95 |</code></pre>
+</div></div>
+</div>
+<div class="merge-facts">
+<span>入力範囲: <code>A1:C3</code></span>
+<span>明示結合: <code>A1:A2, B1:C1</code></span>
+<span>非表示行: <code>なし</code></span>
+<span>ヘッダー判定・元行: <code>fill-color：1, 2</code></span>
+<span>出力列→元列: <code>1列目=A; 2列目=B; 3列目=C</code></span>
+</div>
+</section>
+<section class="merge-case" aria-labelledby="case-c12">
+<h2 id="case-c12"><span class="merge-case-id">C12</span>全行で同じ幅の横結合・1行ヘッダー</h2>
+<p class="merge-note">A:Bを毎行同じ幅で結合し、論理的な1列として扱う。</p>
+<nav class="merge-pair-links" aria-label="このケースのファイル">
+<a href="examples/excel-merge-matrix/screenshots/C12.png" download>入力スクショ（PNG）</a>
+<a href="examples/excel-merge-matrix/pairs/C12/document.md" download>変換後Markdown</a>
+</nav>
+<div class="merge-comparison">
+<div class="merge-panel"><h3>入力表のスクリーンショット</h3><div class="merge-panel-body">
+<figure class="merge-screenshot">
+<a href="examples/excel-merge-matrix/screenshots/C12.png"><img src="examples/excel-merge-matrix/screenshots/C12.png" alt="C12 全行で同じ幅の横結合・1行ヘッダー の入力セル表" loading="lazy"></a>
+<figcaption>入力ブックのセル・色・結合をHTMLで表した画面です。Excelアプリの画面ではありません。</figcaption>
+</figure>
+<details class="merge-source-details"><summary>セル・結合をHTML表で確認</summary>
+<p class="merge-legend"><span class="merge-legend-swatch" aria-hidden="true"></span>緑のセル＝直接塗り。枠線は各セルの直接罫線。結合セルは実際の範囲で表示。</p>
+<table class="sheet-grid"><caption class="sr-only">12_全行同幅_単行見出し の入力セル</caption>
+<thead><tr><th class="sheet-axis"></th><th scope="col" class="sheet-axis">A</th><th scope="col" class="sheet-axis">B</th><th scope="col" class="sheet-axis">C</th></tr></thead><tbody>
+<tr><th scope="row" class="sheet-axis">1</th><td class="sheet-filled" colspan="2" rowspan="1" title="A1; 明示結合 A1:B1">項目</td><td class="sheet-filled" title="C1">状態</td></tr>
+<tr><th scope="row" class="sheet-axis">2</th><td colspan="2" rowspan="1" title="A2; 明示結合 A2:B2">申請</td><td title="C2">完了</td></tr>
+<tr><th scope="row" class="sheet-axis">3</th><td colspan="2" rowspan="1" title="A3; 明示結合 A3:B3">確認</td><td title="C3">進行中</td></tr>
+</tbody></table>
+</details>
+</div></div>
+<div class="merge-panel"><h3>実変換のMarkdown（該当シート）</h3><div class="merge-panel-body">
+<pre><code class="language-markdown">| **項目** | **状態** |
+| --- | --- |
+| 申請 | 完了 |
+| 確認 | 進行中 |</code></pre>
+</div></div>
+</div>
+<div class="merge-facts">
+<span>入力範囲: <code>A1:C3</code></span>
+<span>明示結合: <code>A1:B1, A2:B2, A3:B3</code></span>
+<span>非表示行: <code>なし</code></span>
+<span>ヘッダー判定・元行: <code>fill-color：1</code></span>
+<span>出力列→元列: <code>1列目=A:B; 2列目=C</code></span>
+</div>
+</section>
+<section class="merge-case" aria-labelledby="case-c13">
+<h2 id="case-c13"><span class="merge-case-id">C13</span>全行で同じ幅の横結合・2行ヘッダー</h2>
+<p class="merge-note">A:Bを毎行結合し、2行の見出しを1列に集約する。</p>
+<nav class="merge-pair-links" aria-label="このケースのファイル">
+<a href="examples/excel-merge-matrix/screenshots/C13.png" download>入力スクショ（PNG）</a>
+<a href="examples/excel-merge-matrix/pairs/C13/document.md" download>変換後Markdown</a>
+</nav>
+<div class="merge-comparison">
+<div class="merge-panel"><h3>入力表のスクリーンショット</h3><div class="merge-panel-body">
+<figure class="merge-screenshot">
+<a href="examples/excel-merge-matrix/screenshots/C13.png"><img src="examples/excel-merge-matrix/screenshots/C13.png" alt="C13 全行で同じ幅の横結合・2行ヘッダー の入力セル表" loading="lazy"></a>
+<figcaption>入力ブックのセル・色・結合をHTMLで表した画面です。Excelアプリの画面ではありません。</figcaption>
+</figure>
+<details class="merge-source-details"><summary>セル・結合をHTML表で確認</summary>
+<p class="merge-legend"><span class="merge-legend-swatch" aria-hidden="true"></span>緑のセル＝直接塗り。枠線は各セルの直接罫線。結合セルは実際の範囲で表示。</p>
+<table class="sheet-grid"><caption class="sr-only">13_全行同幅_複行見出し の入力セル</caption>
+<thead><tr><th class="sheet-axis"></th><th scope="col" class="sheet-axis">A</th><th scope="col" class="sheet-axis">B</th><th scope="col" class="sheet-axis">C</th></tr></thead><tbody>
+<tr><th scope="row" class="sheet-axis">1</th><td class="sheet-filled" colspan="2" rowspan="1" title="A1; 明示結合 A1:B1">申請</td><td class="sheet-filled" title="C1">処理</td></tr>
+<tr><th scope="row" class="sheet-axis">2</th><td class="sheet-filled" colspan="2" rowspan="1" title="A2; 明示結合 A2:B2">項目</td><td class="sheet-filled" title="C2">状態</td></tr>
+<tr><th scope="row" class="sheet-axis">3</th><td colspan="2" rowspan="1" title="A3; 明示結合 A3:B3">購入</td><td title="C3">完了</td></tr>
+</tbody></table>
+</details>
+</div></div>
+<div class="merge-panel"><h3>実変換のMarkdown（該当シート）</h3><div class="merge-panel-body">
+<pre><code class="language-markdown">| **申請** / **項目** | **処理** / **状態** |
+| --- | --- |
+| 購入 | 完了 |</code></pre>
+</div></div>
+</div>
+<div class="merge-facts">
+<span>入力範囲: <code>A1:C3</code></span>
+<span>明示結合: <code>A1:B1, A2:B2, A3:B3</code></span>
+<span>非表示行: <code>なし</code></span>
+<span>ヘッダー判定・元行: <code>fill-color：1, 2</code></span>
+<span>出力列→元列: <code>1列目=A:B; 2列目=C</code></span>
+</div>
+</section>
+<section class="merge-case" aria-labelledby="case-c14">
+<h2 id="case-c14"><span class="merge-case-id">C14</span>明細の一部だけ横結合</h2>
+<p class="merge-note">先頭ヘッダーは独立列。2行目のA:Bだけ結合しても列数を維持する。</p>
+<nav class="merge-pair-links" aria-label="このケースのファイル">
+<a href="examples/excel-merge-matrix/screenshots/C14.png" download>入力スクショ（PNG）</a>
+<a href="examples/excel-merge-matrix/pairs/C14/document.md" download>変換後Markdown</a>
+</nav>
+<div class="merge-comparison">
+<div class="merge-panel"><h3>入力表のスクリーンショット</h3><div class="merge-panel-body">
+<figure class="merge-screenshot">
+<a href="examples/excel-merge-matrix/screenshots/C14.png"><img src="examples/excel-merge-matrix/screenshots/C14.png" alt="C14 明細の一部だけ横結合 の入力セル表" loading="lazy"></a>
+<figcaption>入力ブックのセル・色・結合をHTMLで表した画面です。Excelアプリの画面ではありません。</figcaption>
+</figure>
+<details class="merge-source-details"><summary>セル・結合をHTML表で確認</summary>
+<p class="merge-legend"><span class="merge-legend-swatch" aria-hidden="true"></span>緑のセル＝直接塗り。枠線は各セルの直接罫線。結合セルは実際の範囲で表示。</p>
+<table class="sheet-grid"><caption class="sr-only">14_明細だけ横結合 の入力セル</caption>
+<thead><tr><th class="sheet-axis"></th><th scope="col" class="sheet-axis">A</th><th scope="col" class="sheet-axis">B</th><th scope="col" class="sheet-axis">C</th></tr></thead><tbody>
+<tr><th scope="row" class="sheet-axis">1</th><td class="sheet-filled" title="A1">項目</td><td class="sheet-filled" title="B1">値</td><td class="sheet-filled" title="C1">状態</td></tr>
+<tr><th scope="row" class="sheet-axis">2</th><td colspan="2" rowspan="1" title="A2; 明示結合 A2:B2">共通説明</td><td title="C2">完了</td></tr>
+<tr><th scope="row" class="sheet-axis">3</th><td title="A3">個別</td><td title="B3">20</td><td title="C3">進行中</td></tr>
+</tbody></table>
+</details>
+</div></div>
+<div class="merge-panel"><h3>実変換のMarkdown（該当シート）</h3><div class="merge-panel-body">
+<pre><code class="language-markdown">結合セル A2:B2「共通説明」は明細行の複数列に共通です。
+
+| **項目** | **値** | **状態** |
+| --- | --- | --- |
+| 共通説明 |  | 完了 |
+| 個別 | 20 | 進行中 |</code></pre>
+</div></div>
+</div>
+<div class="merge-facts">
+<span>入力範囲: <code>A1:C3</code></span>
+<span>明示結合: <code>A2:B2</code></span>
+<span>非表示行: <code>なし</code></span>
+<span>ヘッダー判定・元行: <code>fill-color：1</code></span>
+<span>出力列→元列: <code>1列目=A; 2列目=B; 3列目=C</code></span>
+</div>
+</section>
+<section class="merge-case" aria-labelledby="case-c15">
+<h2 id="case-c15"><span class="merge-case-id">C15</span>明細の縦結合</h2>
+<p class="merge-note">A2:A3の値は2行分にまたがる。後続行の扱いを変換結果で確認する。</p>
+<nav class="merge-pair-links" aria-label="このケースのファイル">
+<a href="examples/excel-merge-matrix/screenshots/C15.png" download>入力スクショ（PNG）</a>
+<a href="examples/excel-merge-matrix/pairs/C15/document.md" download>変換後Markdown</a>
+</nav>
+<div class="merge-comparison">
+<div class="merge-panel"><h3>入力表のスクリーンショット</h3><div class="merge-panel-body">
+<figure class="merge-screenshot">
+<a href="examples/excel-merge-matrix/screenshots/C15.png"><img src="examples/excel-merge-matrix/screenshots/C15.png" alt="C15 明細の縦結合 の入力セル表" loading="lazy"></a>
+<figcaption>入力ブックのセル・色・結合をHTMLで表した画面です。Excelアプリの画面ではありません。</figcaption>
+</figure>
+<details class="merge-source-details"><summary>セル・結合をHTML表で確認</summary>
+<p class="merge-legend"><span class="merge-legend-swatch" aria-hidden="true"></span>緑のセル＝直接塗り。枠線は各セルの直接罫線。結合セルは実際の範囲で表示。</p>
+<table class="sheet-grid"><caption class="sr-only">15_明細だけ縦結合 の入力セル</caption>
+<thead><tr><th class="sheet-axis"></th><th scope="col" class="sheet-axis">A</th><th scope="col" class="sheet-axis">B</th><th scope="col" class="sheet-axis">C</th></tr></thead><tbody>
+<tr><th scope="row" class="sheet-axis">1</th><td class="sheet-filled" title="A1">部門</td><td class="sheet-filled" title="B1">担当</td><td class="sheet-filled" title="C1">状態</td></tr>
+<tr><th scope="row" class="sheet-axis">2</th><td colspan="1" rowspan="2" title="A2; 明示結合 A2:A3">営業</td><td title="B2">佐藤</td><td title="C2">進行中</td></tr>
+<tr><th scope="row" class="sheet-axis">3</th><td title="B3">鈴木</td><td title="C3">完了</td></tr>
+</tbody></table>
+</details>
+</div></div>
+<div class="merge-panel"><h3>実変換のMarkdown（該当シート）</h3><div class="merge-panel-body">
+<pre><code class="language-markdown">結合セル A2:A3「営業」は複数の明細行に共通です。
+
+| **部門** | **担当** | **状態** |
+| --- | --- | --- |
+| 営業 | 佐藤 | 進行中 |
+|  | 鈴木 | 完了 |</code></pre>
+</div></div>
+</div>
+<div class="merge-facts">
+<span>入力範囲: <code>A1:C3</code></span>
+<span>明示結合: <code>A2:A3</code></span>
+<span>非表示行: <code>なし</code></span>
+<span>ヘッダー判定・元行: <code>fill-color：1</code></span>
+<span>出力列→元列: <code>1列目=A; 2列目=B; 3列目=C</code></span>
+</div>
+</section>
+<section class="merge-case" aria-labelledby="case-c16">
+<h2 id="case-c16"><span class="merge-case-id">C16</span>複数行ヘッダーで横結合位置がずれる</h2>
+<p class="merge-note">1行目A:BとC:D、2行目B:Cが横結合。推測で見出しを増やさない。</p>
+<nav class="merge-pair-links" aria-label="このケースのファイル">
+<a href="examples/excel-merge-matrix/screenshots/C16.png" download>入力スクショ（PNG）</a>
+<a href="examples/excel-merge-matrix/pairs/C16/document.md" download>変換後Markdown</a>
+</nav>
+<div class="merge-comparison">
+<div class="merge-panel"><h3>入力表のスクリーンショット</h3><div class="merge-panel-body">
+<figure class="merge-screenshot">
+<a href="examples/excel-merge-matrix/screenshots/C16.png"><img src="examples/excel-merge-matrix/screenshots/C16.png" alt="C16 複数行ヘッダーで横結合位置がずれる の入力セル表" loading="lazy"></a>
+<figcaption>入力ブックのセル・色・結合をHTMLで表した画面です。Excelアプリの画面ではありません。</figcaption>
+</figure>
+<details class="merge-source-details"><summary>セル・結合をHTML表で確認</summary>
+<p class="merge-legend"><span class="merge-legend-swatch" aria-hidden="true"></span>緑のセル＝直接塗り。枠線は各セルの直接罫線。結合セルは実際の範囲で表示。</p>
+<table class="sheet-grid"><caption class="sr-only">16_複行_ずれた横結合 の入力セル</caption>
+<thead><tr><th class="sheet-axis"></th><th scope="col" class="sheet-axis">A</th><th scope="col" class="sheet-axis">B</th><th scope="col" class="sheet-axis">C</th><th scope="col" class="sheet-axis">D</th></tr></thead><tbody>
+<tr><th scope="row" class="sheet-axis">1</th><td class="sheet-filled" colspan="2" rowspan="1" title="A1; 明示結合 A1:B1">顧客</td><td class="sheet-filled" colspan="2" rowspan="1" title="C1; 明示結合 C1:D1">処理</td></tr>
+<tr><th scope="row" class="sheet-axis">2</th><td class="sheet-filled" title="A2">個人</td><td class="sheet-filled" colspan="2" rowspan="1" title="B2; 明示結合 B2:C2">共通項目</td><td class="sheet-filled" title="D2">状態</td></tr>
+<tr><th scope="row" class="sheet-axis">3</th><td title="A3">田中</td><td title="B3">有効</td><td title="C3">確認済み</td><td title="D3">完了</td></tr>
+</tbody></table>
+</details>
+</div></div>
+<div class="merge-panel"><h3>実変換のMarkdown（該当シート）</h3><div class="merge-panel-body">
+<pre><code class="language-markdown">| **顧客** / **個人** | **顧客** / **共通項目** | **処理** / **共通項目** | **処理** / **状態** |
+| --- | --- | --- | --- |
+| 田中 | 有効 | 確認済み | 完了 |</code></pre>
+</div></div>
+</div>
+<div class="merge-facts">
+<span>入力範囲: <code>A1:D3</code></span>
+<span>明示結合: <code>A1:B1, C1:D1, B2:C2</code></span>
+<span>非表示行: <code>なし</code></span>
+<span>ヘッダー判定・元行: <code>fill-color：1, 2</code></span>
+<span>出力列→元列: <code>1列目=A; 2列目=B; 3列目=C; 4列目=D</code></span>
+</div>
+</section>
+<section class="merge-case" aria-labelledby="case-c17">
+<h2 id="case-c17"><span class="merge-case-id">C17</span>全行に直接塗りがある</h2>
+<p class="merge-note">全行が連続した色付き見出しと判定され、明細は残らない。</p>
+<nav class="merge-pair-links" aria-label="このケースのファイル">
+<a href="examples/excel-merge-matrix/screenshots/C17.png" download>入力スクショ（PNG）</a>
+<a href="examples/excel-merge-matrix/pairs/C17/document.md" download>変換後Markdown</a>
+</nav>
+<div class="merge-comparison">
+<div class="merge-panel"><h3>入力表のスクリーンショット</h3><div class="merge-panel-body">
+<figure class="merge-screenshot">
+<a href="examples/excel-merge-matrix/screenshots/C17.png"><img src="examples/excel-merge-matrix/screenshots/C17.png" alt="C17 全行に直接塗りがある の入力セル表" loading="lazy"></a>
+<figcaption>入力ブックのセル・色・結合をHTMLで表した画面です。Excelアプリの画面ではありません。</figcaption>
+</figure>
+<details class="merge-source-details"><summary>セル・結合をHTML表で確認</summary>
+<p class="merge-legend"><span class="merge-legend-swatch" aria-hidden="true"></span>緑のセル＝直接塗り。枠線は各セルの直接罫線。結合セルは実際の範囲で表示。</p>
+<table class="sheet-grid"><caption class="sr-only">17_全行色付き の入力セル</caption>
+<thead><tr><th class="sheet-axis"></th><th scope="col" class="sheet-axis">A</th><th scope="col" class="sheet-axis">B</th><th scope="col" class="sheet-axis">C</th></tr></thead><tbody>
+<tr><th scope="row" class="sheet-axis">1</th><td class="sheet-filled" title="A1">商品</td><td class="sheet-filled" title="B1">数量</td><td class="sheet-filled" title="C1">単価</td></tr>
+<tr><th scope="row" class="sheet-axis">2</th><td class="sheet-filled" title="A2">りんご</td><td class="sheet-filled" title="B2">2</td><td class="sheet-filled" title="C2">100</td></tr>
+<tr><th scope="row" class="sheet-axis">3</th><td class="sheet-filled" title="A3">みかん</td><td class="sheet-filled" title="B3">3</td><td class="sheet-filled" title="C3">80</td></tr>
+</tbody></table>
+</details>
+</div></div>
+<div class="merge-panel"><h3>実変換のMarkdown（該当シート）</h3><div class="merge-panel-body">
+<pre><code class="language-markdown">| **商品** / **りんご** / **みかん** | **数量** / **2** / **3** | **単価** / **100** / **80** |
+| --- | --- | --- |</code></pre>
+</div></div>
+</div>
+<div class="merge-facts">
+<span>入力範囲: <code>A1:C3</code></span>
+<span>明示結合: <code>なし</code></span>
+<span>非表示行: <code>なし</code></span>
+<span>ヘッダー判定・元行: <code>fill-color：1, 2, 3</code></span>
+<span>出力列→元列: <code>1列目=A; 2列目=B; 3列目=C</code></span>
+</div>
+</section>
+<section class="merge-case" aria-labelledby="case-c18">
+<h2 id="case-c18"><span class="merge-case-id">C18</span>無色の先頭行・全行で同じ幅の横結合</h2>
+<p class="merge-note">ヘッダーは空のまま、A:Bの論理列は全行で同じ幅なのでまとめる。</p>
+<nav class="merge-pair-links" aria-label="このケースのファイル">
+<a href="examples/excel-merge-matrix/screenshots/C18.png" download>入力スクショ（PNG）</a>
+<a href="examples/excel-merge-matrix/pairs/C18/document.md" download>変換後Markdown</a>
+</nav>
+<div class="merge-comparison">
+<div class="merge-panel"><h3>入力表のスクリーンショット</h3><div class="merge-panel-body">
+<figure class="merge-screenshot">
+<a href="examples/excel-merge-matrix/screenshots/C18.png"><img src="examples/excel-merge-matrix/screenshots/C18.png" alt="C18 無色の先頭行・全行で同じ幅の横結合 の入力セル表" loading="lazy"></a>
+<figcaption>入力ブックのセル・色・結合をHTMLで表した画面です。Excelアプリの画面ではありません。</figcaption>
+</figure>
+<details class="merge-source-details"><summary>セル・結合をHTML表で確認</summary>
+<p class="merge-legend"><span class="merge-legend-swatch" aria-hidden="true"></span>緑のセル＝直接塗り。枠線は各セルの直接罫線。結合セルは実際の範囲で表示。</p>
+<table class="sheet-grid"><caption class="sr-only">18_無色_全行同幅横結合 の入力セル</caption>
+<thead><tr><th class="sheet-axis"></th><th scope="col" class="sheet-axis">A</th><th scope="col" class="sheet-axis">B</th><th scope="col" class="sheet-axis">C</th></tr></thead><tbody>
+<tr><th scope="row" class="sheet-axis">1</th><td colspan="2" rowspan="1" title="A1; 明示結合 A1:B1">項目</td><td title="C1">状態</td></tr>
+<tr><th scope="row" class="sheet-axis">2</th><td colspan="2" rowspan="1" title="A2; 明示結合 A2:B2">申請</td><td title="C2">完了</td></tr>
+<tr><th scope="row" class="sheet-axis">3</th><td colspan="2" rowspan="1" title="A3; 明示結合 A3:B3">確認</td><td title="C3">進行中</td></tr>
+</tbody></table>
+</details>
+</div></div>
+<div class="merge-panel"><h3>実変換のMarkdown（該当シート）</h3><div class="merge-panel-body">
+<pre><code class="language-markdown">|  |  |
+| --- | --- |
+| 項目 | 状態 |
+| 申請 | 完了 |
+| 確認 | 進行中 |</code></pre>
+</div></div>
+</div>
+<div class="merge-facts">
+<span>入力範囲: <code>A1:C3</code></span>
+<span>明示結合: <code>A1:B1, A2:B2, A3:B3</code></span>
+<span>非表示行: <code>なし</code></span>
+<span>ヘッダー判定・元行: <code>empty-generated：なし</code></span>
+<span>出力列→元列: <code>1列目=A:B; 2列目=C</code></span>
+</div>
+</section>
+<section class="merge-case" aria-labelledby="case-c19">
+<h2 id="case-c19"><span class="merge-case-id">C19</span>非表示の分割行を挟む同幅結合</h2>
+<p class="merge-note">2行目だけA/Bが分かれるが非表示。表示行ではA:Bの結合が揃う。</p>
+<nav class="merge-pair-links" aria-label="このケースのファイル">
+<a href="examples/excel-merge-matrix/screenshots/C19.png" download>入力スクショ（PNG）</a>
+<a href="examples/excel-merge-matrix/pairs/C19/document.md" download>変換後Markdown</a>
+</nav>
+<div class="merge-comparison">
+<div class="merge-panel"><h3>入力表のスクリーンショット</h3><div class="merge-panel-body">
+<figure class="merge-screenshot">
+<a href="examples/excel-merge-matrix/screenshots/C19.png"><img src="examples/excel-merge-matrix/screenshots/C19.png" alt="C19 非表示の分割行を挟む同幅結合 の入力セル表" loading="lazy"></a>
+<figcaption>入力ブックのセル・色・結合をHTMLで表した画面です。Excelアプリの画面ではありません。</figcaption>
+</figure>
+<details class="merge-source-details"><summary>セル・結合をHTML表で確認</summary>
+<p class="merge-legend"><span class="merge-legend-swatch" aria-hidden="true"></span>緑のセル＝直接塗り。枠線は各セルの直接罫線。結合セルは実際の範囲で表示。</p>
+<table class="sheet-grid"><caption class="sr-only">19_隠れた分割行 の入力セル</caption>
+<thead><tr><th class="sheet-axis"></th><th scope="col" class="sheet-axis">A</th><th scope="col" class="sheet-axis">B</th><th scope="col" class="sheet-axis">C</th></tr></thead><tbody>
+<tr><th scope="row" class="sheet-axis">1</th><td class="sheet-filled" colspan="2" rowspan="1" title="A1; 明示結合 A1:B1">項目</td><td class="sheet-filled" title="C1">状態</td></tr>
+<tr class="sheet-hidden"><th scope="row" class="sheet-axis">2 <small>非表示</small></th><td class="sheet-filled" title="A2">非表示A</td><td class="sheet-filled" title="B2">非表示B</td><td class="sheet-filled" title="C2">非表示</td></tr>
+<tr><th scope="row" class="sheet-axis">3</th><td colspan="2" rowspan="1" title="A3; 明示結合 A3:B3">申請</td><td title="C3">完了</td></tr>
+<tr><th scope="row" class="sheet-axis">4</th><td colspan="2" rowspan="1" title="A4; 明示結合 A4:B4">確認</td><td title="C4">進行中</td></tr>
+</tbody></table>
+</details>
+</div></div>
+<div class="merge-panel"><h3>実変換のMarkdown（該当シート）</h3><div class="merge-panel-body">
+<pre><code class="language-markdown">| **項目** | **状態** |
+| --- | --- |
+| 申請 | 完了 |
+| 確認 | 進行中 |</code></pre>
+</div></div>
+</div>
+<div class="merge-facts">
+<span>入力範囲: <code>A1:C4</code></span>
+<span>明示結合: <code>A1:B1, A3:B3, A4:B4</code></span>
+<span>非表示行: <code>2</code></span>
+<span>ヘッダー判定・元行: <code>fill-color：1</code></span>
+<span>出力列→元列: <code>1列目=A:B; 2列目=C</code></span>
+</div>
+</section>
+<section class="merge-case" aria-labelledby="case-c20">
+<h2 id="case-c20"><span class="merge-case-id">C20</span>隣り合う2組の同幅結合</h2>
+<p class="merge-note">毎行A:BとC:Dが結合されるので、2つの論理列にまとめる。</p>
+<nav class="merge-pair-links" aria-label="このケースのファイル">
+<a href="examples/excel-merge-matrix/screenshots/C20.png" download>入力スクショ（PNG）</a>
+<a href="examples/excel-merge-matrix/pairs/C20/document.md" download>変換後Markdown</a>
+</nav>
+<div class="merge-comparison">
+<div class="merge-panel"><h3>入力表のスクリーンショット</h3><div class="merge-panel-body">
+<figure class="merge-screenshot">
+<a href="examples/excel-merge-matrix/screenshots/C20.png"><img src="examples/excel-merge-matrix/screenshots/C20.png" alt="C20 隣り合う2組の同幅結合 の入力セル表" loading="lazy"></a>
+<figcaption>入力ブックのセル・色・結合をHTMLで表した画面です。Excelアプリの画面ではありません。</figcaption>
+</figure>
+<details class="merge-source-details"><summary>セル・結合をHTML表で確認</summary>
+<p class="merge-legend"><span class="merge-legend-swatch" aria-hidden="true"></span>緑のセル＝直接塗り。枠線は各セルの直接罫線。結合セルは実際の範囲で表示。</p>
+<table class="sheet-grid"><caption class="sr-only">20_隣接する同幅結合 の入力セル</caption>
+<thead><tr><th class="sheet-axis"></th><th scope="col" class="sheet-axis">A</th><th scope="col" class="sheet-axis">B</th><th scope="col" class="sheet-axis">C</th><th scope="col" class="sheet-axis">D</th></tr></thead><tbody>
+<tr><th scope="row" class="sheet-axis">1</th><td class="sheet-filled" colspan="2" rowspan="1" title="A1; 明示結合 A1:B1">項目</td><td class="sheet-filled" colspan="2" rowspan="1" title="C1; 明示結合 C1:D1">状態</td></tr>
+<tr><th scope="row" class="sheet-axis">2</th><td colspan="2" rowspan="1" title="A2; 明示結合 A2:B2">申請</td><td colspan="2" rowspan="1" title="C2; 明示結合 C2:D2">完了</td></tr>
+<tr><th scope="row" class="sheet-axis">3</th><td colspan="2" rowspan="1" title="A3; 明示結合 A3:B3">確認</td><td colspan="2" rowspan="1" title="C3; 明示結合 C3:D3">進行中</td></tr>
+</tbody></table>
+</details>
+</div></div>
+<div class="merge-panel"><h3>実変換のMarkdown（該当シート）</h3><div class="merge-panel-body">
+<pre><code class="language-markdown">| **項目** | **状態** |
+| --- | --- |
+| 申請 | 完了 |
+| 確認 | 進行中 |</code></pre>
+</div></div>
+</div>
+<div class="merge-facts">
+<span>入力範囲: <code>A1:D3</code></span>
+<span>明示結合: <code>A1:B1, C1:D1, A2:B2, C2:D2, A3:B3, C3:D3</code></span>
+<span>非表示行: <code>なし</code></span>
+<span>ヘッダー判定・元行: <code>fill-color：1</code></span>
+<span>出力列→元列: <code>1列目=A:B; 2列目=C:D</code></span>
+</div>
+</section>
+<section class="merge-case" aria-labelledby="case-c21">
+<h2 id="case-c21"><span class="merge-case-id">C21</span>左上だけ罫線のないマトリックス</h2>
+<p class="merge-note">A1は空欄でセル自体に罫線がない。罫線付きの1月・2月を塗りなしでも1段の見出しにする。</p>
+<nav class="merge-pair-links" aria-label="このケースのファイル">
+<a href="examples/excel-merge-matrix/screenshots/C21.png" download>入力スクショ（PNG）</a>
+<a href="examples/excel-merge-matrix/pairs/C21/document.md" download>変換後Markdown</a>
+</nav>
+<div class="merge-comparison">
+<div class="merge-panel"><h3>入力表のスクリーンショット</h3><div class="merge-panel-body">
+<figure class="merge-screenshot">
+<a href="examples/excel-merge-matrix/screenshots/C21.png"><img src="examples/excel-merge-matrix/screenshots/C21.png" alt="C21 左上だけ罫線のないマトリックス の入力セル表" loading="lazy"></a>
+<figcaption>入力ブックのセル・色・結合をHTMLで表した画面です。Excelアプリの画面ではありません。</figcaption>
+</figure>
+<details class="merge-source-details"><summary>セル・結合をHTML表で確認</summary>
+<p class="merge-legend"><span class="merge-legend-swatch" aria-hidden="true"></span>緑のセル＝直接塗り。枠線は各セルの直接罫線。結合セルは実際の範囲で表示。</p>
+<table class="sheet-grid"><caption class="sr-only">21_左上無罫線のマトリックス の入力セル</caption>
+<thead><tr><th class="sheet-axis"></th><th scope="col" class="sheet-axis">A</th><th scope="col" class="sheet-axis">B</th><th scope="col" class="sheet-axis">C</th></tr></thead><tbody>
+<tr><th scope="row" class="sheet-axis">1</th><td style="border-top:0;border-bottom:0;border-left:0;border-right:0" title="A1; 直接罫線なし: top, bottom, left, right">&nbsp;</td><td title="B1">1月</td><td title="C1">2月</td></tr>
+<tr><th scope="row" class="sheet-axis">2</th><td title="A2">東京</td><td title="B2">10</td><td title="C2">12</td></tr>
+<tr><th scope="row" class="sheet-axis">3</th><td title="A3">大阪</td><td title="B3">8</td><td title="C3">9</td></tr>
+</tbody></table>
+</details>
+</div></div>
+<div class="merge-panel"><h3>実変換のMarkdown（該当シート）</h3><div class="merge-panel-body">
+<pre><code class="language-markdown">|  | 1月 | 2月 |
+| --- | --- | --- |
+| 東京 | 10 | 12 |
+| 大阪 | 8 | 9 |</code></pre>
+</div></div>
+</div>
+<div class="merge-facts">
+<span>入力範囲: <code>A1:C3</code></span>
+<span>明示結合: <code>なし</code></span>
+<span>非表示行: <code>なし</code></span>
+<span>ヘッダー判定・元行: <code>matrix-grid：1</code></span>
+<span>出力列→元列: <code>1列目=A; 2列目=B; 3列目=C</code></span>
+<span>表検出: <code>TABLE_OPEN_TOP_CELL</code> / セル <code>A1</code></span>
+</div>
+</section>
+<section class="merge-case" aria-labelledby="case-c22">
+<h2 id="case-c22"><span class="merge-case-id">C22</span>通常表に続く、角だけ罫線のないマトリックス</h2>
+<p class="merge-note">A:Cの通常列とD:Fのマトリックスが横につながる。D1は空欄でセル自体に罫線がなく、全体を1表として扱う。</p>
+<nav class="merge-pair-links" aria-label="このケースのファイル">
+<a href="examples/excel-merge-matrix/screenshots/C22.png" download>入力スクショ（PNG）</a>
+<a href="examples/excel-merge-matrix/pairs/C22/document.md" download>変換後Markdown</a>
+</nav>
+<div class="merge-comparison">
+<div class="merge-panel"><h3>入力表のスクリーンショット</h3><div class="merge-panel-body">
+<figure class="merge-screenshot">
+<a href="examples/excel-merge-matrix/screenshots/C22.png"><img src="examples/excel-merge-matrix/screenshots/C22.png" alt="C22 通常表に続く、角だけ罫線のないマトリックス の入力セル表" loading="lazy"></a>
+<figcaption>入力ブックのセル・色・結合をHTMLで表した画面です。Excelアプリの画面ではありません。</figcaption>
+</figure>
+<details class="merge-source-details"><summary>セル・結合をHTML表で確認</summary>
+<p class="merge-legend"><span class="merge-legend-swatch" aria-hidden="true"></span>緑のセル＝直接塗り。枠線は各セルの直接罫線。結合セルは実際の範囲で表示。</p>
+<table class="sheet-grid"><caption class="sr-only">22_通常表に続くマトリックス の入力セル</caption>
+<thead><tr><th class="sheet-axis"></th><th scope="col" class="sheet-axis">A</th><th scope="col" class="sheet-axis">B</th><th scope="col" class="sheet-axis">C</th><th scope="col" class="sheet-axis">D</th><th scope="col" class="sheet-axis">E</th><th scope="col" class="sheet-axis">F</th></tr></thead><tbody>
+<tr><th scope="row" class="sheet-axis">1</th><td class="sheet-filled" title="A1">ID</td><td class="sheet-filled" title="B1">担当</td><td class="sheet-filled" title="C1">状態</td><td class="sheet-filled" style="border-top:0;border-bottom:0;border-left:0;border-right:0" title="D1; 直接罫線なし: top, bottom, left, right">&nbsp;</td><td class="sheet-filled" title="E1">1月</td><td class="sheet-filled" title="F1">2月</td></tr>
+<tr><th scope="row" class="sheet-axis">2</th><td title="A2">1001</td><td title="B2">田中</td><td title="C2">完了</td><td title="D2">東京</td><td title="E2">10</td><td title="F2">12</td></tr>
+<tr><th scope="row" class="sheet-axis">3</th><td title="A3">1002</td><td title="B3">佐藤</td><td title="C3">進行中</td><td title="D3">大阪</td><td title="E3">8</td><td title="F3">9</td></tr>
+</tbody></table>
+</details>
+</div></div>
+<div class="merge-panel"><h3>実変換のMarkdown（該当シート）</h3><div class="merge-panel-body">
+<pre><code class="language-markdown">| **ID** | **担当** | **状態** |  | **1月** | **2月** |
+| --- | --- | --- | --- | --- | --- |
+| 1001 | 田中 | 完了 | 東京 | 10 | 12 |
+| 1002 | 佐藤 | 進行中 | 大阪 | 8 | 9 |</code></pre>
+</div></div>
+</div>
+<div class="merge-facts">
+<span>入力範囲: <code>A1:F3</code></span>
+<span>明示結合: <code>なし</code></span>
+<span>非表示行: <code>なし</code></span>
+<span>ヘッダー判定・元行: <code>fill-color：1</code></span>
+<span>出力列→元列: <code>1列目=A; 2列目=B; 3列目=C; 4列目=D; 5列目=E; 6列目=F</code></span>
+<span>表検出: <code>TABLE_OPEN_TOP_CELL</code> / セル <code>D1</code></span>
+</div>
+</section>
+<section class="merge-case" aria-labelledby="case-c23">
+<h2 id="case-c23"><span class="merge-case-id">C23</span>無罫線の注記と3列幅の結合見出し</h2>
+<p class="merge-note">A1・B1の文字は無罫線の注記。C1:E1の売上見出しは3列幅の明示結合で、下段の個別見出しと合わせる。</p>
+<nav class="merge-pair-links" aria-label="このケースのファイル">
+<a href="examples/excel-merge-matrix/screenshots/C23.png" download>入力スクショ（PNG）</a>
+<a href="examples/excel-merge-matrix/pairs/C23/document.md" download>変換後Markdown</a>
+</nav>
+<div class="merge-comparison">
+<div class="merge-panel"><h3>入力表のスクリーンショット</h3><div class="merge-panel-body">
+<figure class="merge-screenshot">
+<a href="examples/excel-merge-matrix/screenshots/C23.png"><img src="examples/excel-merge-matrix/screenshots/C23.png" alt="C23 無罫線の注記と3列幅の結合見出し の入力セル表" loading="lazy"></a>
+<figcaption>入力ブックのセル・色・結合をHTMLで表した画面です。Excelアプリの画面ではありません。</figcaption>
+</figure>
+<details class="merge-source-details"><summary>セル・結合をHTML表で確認</summary>
+<p class="merge-legend"><span class="merge-legend-swatch" aria-hidden="true"></span>緑のセル＝直接塗り。枠線は各セルの直接罫線。結合セルは実際の範囲で表示。</p>
+<table class="sheet-grid"><caption class="sr-only">23_注記と3列結合の見出し の入力セル</caption>
+<thead><tr><th class="sheet-axis"></th><th scope="col" class="sheet-axis">A</th><th scope="col" class="sheet-axis">B</th><th scope="col" class="sheet-axis">C</th><th scope="col" class="sheet-axis">D</th><th scope="col" class="sheet-axis">E</th></tr></thead><tbody>
+<tr><th scope="row" class="sheet-axis">1</th><td style="border-top:0;border-bottom:0;border-left:0;border-right:0" title="A1; 直接罫線なし: top, bottom, left, right">集計対象: 店舗</td><td style="border-top:0;border-bottom:0;border-left:0;border-right:0" title="B1; 直接罫線なし: top, bottom, left, right">単位: 千円</td><td colspan="3" rowspan="1" title="C1; 明示結合 C1:E1">売上</td></tr>
+<tr><th scope="row" class="sheet-axis">2</th><td title="A2">ID</td><td title="B2">場所</td><td title="C2">1月</td><td title="D2">2月</td><td title="E2">3月</td></tr>
+<tr><th scope="row" class="sheet-axis">3</th><td title="A3">001</td><td title="B3">東京</td><td title="C3">10</td><td title="D3">12</td><td title="E3">14</td></tr>
+<tr><th scope="row" class="sheet-axis">4</th><td title="A4">002</td><td title="B4">大阪</td><td title="C4">8</td><td title="D4">9</td><td title="E4">11</td></tr>
+</tbody></table>
+</details>
+</div></div>
+<div class="merge-panel"><h3>実変換のMarkdown（該当シート）</h3><div class="merge-panel-body">
+<pre><code class="language-markdown">集計対象: 店舗　単位: 千円
+
+| ID | 場所 | 売上 / 1月 | 売上 / 2月 | 売上 / 3月 |
+| --- | --- | --- | --- | --- |
+| 001 | 東京 | 10 | 12 | 14 |
+| 002 | 大阪 | 8 | 9 | 11 |</code></pre>
+</div></div>
+</div>
+<div class="merge-facts">
+<span>入力範囲: <code>A1:E4</code></span>
+<span>明示結合: <code>C1:E1</code></span>
+<span>非表示行: <code>なし</code></span>
+<span>ヘッダー判定・元行: <code>matrix-grid：1, 2</code></span>
+<span>出力列→元列: <code>1列目=A; 2列目=B; 3列目=C; 4列目=D; 5列目=E</code></span>
+<span>表検出: <code>TABLE_OPEN_TOP_NOTE</code> / セル <code>A1</code></span>
+<span>表検出: <code>TABLE_OPEN_TOP_NOTE</code> / セル <code>B1</code></span>
+</div>
+</section>
+<section class="merge-case" aria-labelledby="case-c24">
+<h2 id="case-c24"><span class="merge-case-id">C24</span>無罫線の注記と縦横結合を含む3段見出し</h2>
+<p class="merge-note">A1・B1の文字は無罫線の注記。売上はC1:D1だけの結合で、E1・F1は無罫線。A2:A3・B2:B3の縦結合と、月の横結合で3段を表す。上段結合の幅は固定規則ではなく入力の結合範囲に従う。</p>
+<nav class="merge-pair-links" aria-label="このケースのファイル">
+<a href="examples/excel-merge-matrix/screenshots/C24.png" download>入力スクショ（PNG）</a>
+<a href="examples/excel-merge-matrix/pairs/C24/document.md" download>変換後Markdown</a>
+</nav>
+<div class="merge-comparison">
+<div class="merge-panel"><h3>入力表のスクリーンショット</h3><div class="merge-panel-body">
+<figure class="merge-screenshot">
+<a href="examples/excel-merge-matrix/screenshots/C24.png"><img src="examples/excel-merge-matrix/screenshots/C24.png" alt="C24 無罫線の注記と縦横結合を含む3段見出し の入力セル表" loading="lazy"></a>
+<figcaption>入力ブックのセル・色・結合をHTMLで表した画面です。Excelアプリの画面ではありません。</figcaption>
+</figure>
+<details class="merge-source-details"><summary>セル・結合をHTML表で確認</summary>
+<p class="merge-legend"><span class="merge-legend-swatch" aria-hidden="true"></span>緑のセル＝直接塗り。枠線は各セルの直接罫線。結合セルは実際の範囲で表示。</p>
+<table class="sheet-grid"><caption class="sr-only">24_注記と縦横結合の3段見出し の入力セル</caption>
+<thead><tr><th class="sheet-axis"></th><th scope="col" class="sheet-axis">A</th><th scope="col" class="sheet-axis">B</th><th scope="col" class="sheet-axis">C</th><th scope="col" class="sheet-axis">D</th><th scope="col" class="sheet-axis">E</th><th scope="col" class="sheet-axis">F</th></tr></thead><tbody>
+<tr><th scope="row" class="sheet-axis">1</th><td style="border-top:0;border-bottom:0;border-left:0;border-right:0" title="A1; 直接罫線なし: top, bottom, left, right">集計対象: 店舗</td><td style="border-top:0;border-bottom:0;border-left:0;border-right:0" title="B1; 直接罫線なし: top, bottom, left, right">単位: 千円</td><td colspan="2" rowspan="1" title="C1; 明示結合 C1:D1">売上</td><td style="border-top:0;border-bottom:0;border-left:0;border-right:0" title="E1; 直接罫線なし: top, bottom, left, right">&nbsp;</td><td style="border-top:0;border-bottom:0;border-left:0;border-right:0" title="F1; 直接罫線なし: top, bottom, left, right">&nbsp;</td></tr>
+<tr><th scope="row" class="sheet-axis">2</th><td colspan="1" rowspan="2" title="A2; 明示結合 A2:A3">ID</td><td colspan="1" rowspan="2" title="B2; 明示結合 B2:B3">場所</td><td title="C2">前半</td><td title="D2">後半</td><td title="E2">前半</td><td title="F2">後半</td></tr>
+<tr><th scope="row" class="sheet-axis">3</th><td colspan="2" rowspan="1" title="C3; 明示結合 C3:D3">1月</td><td colspan="2" rowspan="1" title="E3; 明示結合 E3:F3">2月</td></tr>
+<tr><th scope="row" class="sheet-axis">4</th><td title="A4">001</td><td title="B4">東京</td><td title="C4">10</td><td title="D4">12</td><td title="E4">10</td><td title="F4">12</td></tr>
+<tr><th scope="row" class="sheet-axis">5</th><td title="A5">002</td><td title="B5">大阪</td><td title="C5">8</td><td title="D5">9</td><td title="E5">8</td><td title="F5">9</td></tr>
+</tbody></table>
+</details>
+</div></div>
+<div class="merge-panel"><h3>実変換のMarkdown（該当シート）</h3><div class="merge-panel-body">
+<pre><code class="language-markdown">集計対象: 店舗　単位: 千円
+
+| ID | 場所 | 売上 / 前半 / 1月 | 売上 / 後半 / 1月 | 前半 / 2月 | 後半 / 2月 |
+| --- | --- | --- | --- | --- | --- |
+| 001 | 東京 | 10 | 12 | 10 | 12 |
+| 002 | 大阪 | 8 | 9 | 8 | 9 |</code></pre>
+</div></div>
+</div>
+<div class="merge-facts">
+<span>入力範囲: <code>A1:F5</code></span>
+<span>明示結合: <code>C1:D1, A2:A3, B2:B3, C3:D3, E3:F3</code></span>
+<span>非表示行: <code>なし</code></span>
+<span>ヘッダー判定・元行: <code>matrix-grid：1, 2, 3</code></span>
+<span>出力列→元列: <code>1列目=A; 2列目=B; 3列目=C; 4列目=D; 5列目=E; 6列目=F</code></span>
+<span>表検出: <code>TABLE_OPEN_TOP_NOTE</code> / セル <code>A1</code></span>
+<span>表検出: <code>TABLE_OPEN_TOP_NOTE</code> / セル <code>B1</code></span>
+<span>表検出: <code>TABLE_OPEN_TOP_CELL</code> / セル <code>E1</code></span>
+<span>表検出: <code>TABLE_OPEN_TOP_CELL</code> / セル <code>F1</code></span>
+</div>
+</section>
+<!-- CASES:END -->
+<h2 id="files">元データと再現</h2>
+<p><a href="examples/excel-merge-matrix/cases.json">cases.json</a> は入力セル・結合範囲・直接塗りの定義、<a href="examples/excel-merge-matrix/output/report.json">report.json</a> は表検出と出力列の対応、<a href="examples/excel-merge-matrix/run.json">run.json</a> は実行結果です。右側のMarkdownは手で補正していません。入力・変換結果の再取得手順は<a href="examples/excel-merge-matrix/README.md">ケースの説明</a>、この静的ページの再生成は<a href="examples/excel-merge-matrix/render.py">render.py</a>を参照してください。</p>
+<p><a href="examples.html#excel">Excelの包括例へ戻る</a> · <a href="index.html#text-tables">表の変換ルール</a> · <a href="http.html#convert">同期HTTP API</a></p>
+<footer class="page-footer"><p>各表の入力セルと実変換出力を比較できます。表示は生成済みのHTMLに埋め込まれており、ブラウザーから追加の読み込みを行いません。</p></footer>
+</article>
+<aside class="toc" aria-label="このページの目次"><p class="toc-title">このページの内容</p><nav id="page-toc"></nav></aside>
+</div></main></body></html>

@@ -1,0 +1,47 @@
+{
+  "capturedAt": "2026-10-04T05:36:04.535545+00:00",
+  "mode": "actual local Functions HTTP",
+  "sourceCommit": "7f1641d1632f629f1d21a417ba3c9a81cb491421",
+  "sourceWorkingTreeDirty": true,
+  "input": {
+    "path": "input.xlsx",
+    "sizeBytes": 18719,
+    "sha256": "3850e053914aa7ec0fdd66682c61aae46db342c225597ed15a6b91c34d7163e4"
+  },
+  "caseManifest": {
+    "path": "cases.json",
+    "sizeBytes": 81831,
+    "sha256": "83eaf4defedae6469529ff470db6ef8bf55bf65eb3bd60c0e290addf66b08da9"
+  },
+  "request": {
+    "method": "POST",
+    "path": "/api/convert?filename=merge-matrix.xlsx",
+    "contentType": "application/octet-stream"
+  },
+  "response": {
+    "status": 200,
+    "contentType": "application/zip",
+    "elapsedMs": 280
+  },
+  "sectionCount": 24,
+  "tableCount": 24,
+  "assetCount": 0,
+  "warningCount": 9,
+  "files": [
+    {
+      "path": "result.zip",
+      "sizeBytes": 3905,
+      "sha256": "96cffb48c6bd20c78ebec1b5a7e5470817b796f5aa7a8ae2cb366191e08eebe2"
+    },
+    {
+      "path": "output/document.md",
+      "sizeBytes": 4402,
+      "sha256": "9354b154f2e1dc12803f00081ee339503338d2d9fe8ffea4a19b02fff388bb55"
+    },
+    {
+      "path": "output/report.json",
+      "sizeBytes": 28520,
+      "sha256": "89dda311feafc5f801130e2e1122e2a6f69fb7aebbaa6ab23aae19c3ba12a109"
+    }
+  ]
+}

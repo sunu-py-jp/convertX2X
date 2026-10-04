@@ -12,6 +12,7 @@ import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.poifs.filesystem.*;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
+import org.apache.poi.ss.util.CellReference;
 import org.apache.poi.xssf.usermodel.*;
 
 /** Shared synchronous conversion core; at most one workbook is rendered per Java process. */
@@ -77,16 +78,21 @@ public class ExcelMarkdownService {
                     BorderTables borders = new BorderTables(sheet, merges, workspace);
                     List<CellRangeAddress> detected = borders.detect();
                     NavigableMap<Long, String> values = readCells(sheet, merges, cells, workspace);
-                    List<TableExpansion.Table> tables = TableExpansion.expand(sheet, detected, borders, merges, values);
-                    for (TableExpansion.Table table : tables) {
+                    NavigableMap<Long, String> tableCandidates = new TreeMap<>(values);
+                    for (long openCell : borders.openTopCells()) tableCandidates.remove(openCell);
+                    List<TableExpansion.Table> tables = TableExpansion.expand(sheet, detected, borders, merges, tableCandidates);
+                    List<NamedTableRanges.Part> tableParts = NamedTableRanges.apply(sheet, tables, merges, workspace);
+                    for (NamedTableRanges.Part part : tableParts) {
+                        TableExpansion.Table table = part.table();
                         tableCells += (table.range().getLastRow() - (long) table.range().getFirstRow() + 1) * table.columns().size();
                         limits.checkTableCells(tableCells);
                     }
-                    List<Block> blocks = blocks(sheet, tables, merges, values, workspace);
+                    List<Block> blocks = blocks(sheet, tableParts, merges, borders, values, workspace);
                     List<DrawingBlock> drawings = new DrawingExtractor().extract(sheet, workspace);
                     for (DrawingBlock drawing : drawings) {
                         int row = drawing.firstRow(), column = drawing.firstColumn();
-                        for (TableExpansion.Table table : tables) if (overlaps(table.range(), drawing)) {
+                        for (NamedTableRanges.Part part : tableParts) if (overlaps(part.table().range(), drawing)) {
+                            TableExpansion.Table table = part.table();
                             // Tables are sorted. Pin an overlapping image immediately after
                             // the last such table, regardless of its original anchor row.
                             row = table.range().getFirstRow(); column = table.range().getFirstColumn();
@@ -164,11 +170,13 @@ public class ExcelMarkdownService {
         return values;
     }
 
-    private static List<Block> blocks(Sheet sheet, List<TableExpansion.Table> tables, MergedRanges merges,
+    private static List<Block> blocks(Sheet sheet, List<NamedTableRanges.Part> tables, MergedRanges merges, BorderTables borders,
             Map<Long, String> values, ConversionWorkspace workspace) {
         List<Block> blocks = new ArrayList<>();
-        Set<Long> tablePositions = new HashSet<>();
-        for (TableExpansion.Table expanded : tables) {
+        Set<Long> tablePositions = new HashSet<>(), handledOpenNotes = new HashSet<>();
+        Set<Long> openTopCells = borders.openTopCells();
+        for (NamedTableRanges.Part part : tables) {
+            TableExpansion.Table expanded = part.table();
             CellRangeAddress table = expanded.range();
             List<Integer> rows = new ArrayList<>(), columns = expanded.columns();
             for (int row = table.getFirstRow(); row <= table.getLastRow(); row++) {
@@ -188,31 +196,93 @@ public class ExcelMarkdownService {
                 }
                 tableValues.put(BorderTables.key(span.getFirstRow(), span.getFirstColumn()), String.join("　", pieces));
             }
-            boolean nativeHeader = expanded.seeds().stream().allMatch(seed -> nativeHeader(sheet, seed)) && rows.getFirst() == table.getFirstRow();
-            StringBuilder markdown = new StringBuilder();
-            if (nativeHeader) appendTableRow(markdown, rows.getFirst(), columns, tableValues);
-            else appendTableRow(markdown, -1, columns, tableValues);
-            markdown.append('\n').append('|');
-            for (int ignored : columns) markdown.append(" --- |");
+            List<Integer> headerRows = new ArrayList<>();
             for (int row : rows) {
-                if (nativeHeader && row == rows.getFirst()) continue;
-                markdown.append('\n'); appendTableRow(markdown, row, columns, tableValues);
+                if (!coloredHeaderRow(sheet, row, part.headerSeeds(), merges)) break;
+                headerRows.add(row);
+            }
+            int matrixHeaderDepth = matrixGroupHeaderDepth(table, rows, columns, tableValues, merges, borders, openTopCells);
+            boolean matrixHeader = matrixHeaderDepth > headerRows.size();
+            if (matrixHeader) {
+                headerRows.clear();
+                headerRows.addAll(rows.subList(0, matrixHeaderDepth));
+                workspace.info("MATRIX_HEADER_INFERRED", sheet.getSheetName(), table.formatAsString(),
+                        "上段の罫線付き結合見出しと、結合で階層が確認できる下段を見出しとして扱いました。");
+            }
+            List<ColumnSpan> outputColumns = outputColumns(rows, columns, merges);
+            StringBuilder markdown = new StringBuilder();
+            appendTableHeader(markdown, headerRows, outputColumns, tableValues, merges, new MergedRanges(expanded.inferredMerges()));
+            markdown.append('\n').append('|');
+            for (ColumnSpan ignored : outputColumns) markdown.append(" --- |");
+            if (markdown.length() > workspace.limits().maxMarkdownBytes()) throw ConversionWorkspace.limit("MARKDOWN_BYTES_LIMIT", "Markdownのサイズが上限を超えました。");
+            for (int index = headerRows.size(); index < rows.size(); index++) {
+                int row = rows.get(index);
+                markdown.append('\n'); appendTableRow(markdown, row, outputColumns, tableValues);
                 if (markdown.length() > workspace.limits().maxMarkdownBytes()) throw ConversionWorkspace.limit("MARKDOWN_BYTES_LIMIT", "Markdownのサイズが上限を超えました。");
             }
-            List<String> merged = merges.all().stream().filter(table::intersects).map(CellRangeAddress::formatAsString).toList();
-            if (!merged.isEmpty()) workspace.warning("TABLE_MERGE_FLATTENED", sheet.getSheetName(), table.formatAsString(), "Markdown表はセル結合を再現できないため、結合の続きは空欄です。");
+            List<CellRangeAddress> mergedRanges = merges.all().stream().filter(table::intersects).toList();
+            List<String> merged = mergedRanges.stream().map(CellRangeAddress::formatAsString).toList();
+            List<Map.Entry<Long, String>> openNotes = values.entrySet().stream()
+                    .filter(entry -> openTopCells.contains(entry.getKey()) && table.isInRange(
+                            BorderTables.row(entry.getKey()), BorderTables.col(entry.getKey())))
+                    .sorted(Map.Entry.comparingByKey()).toList();
+            if (!openNotes.isEmpty()) {
+                int first = BorderTables.col(openNotes.getFirst().getKey());
+                int last = BorderTables.col(openNotes.getLast().getKey());
+                blocks.add(new Block("text", new CellRangeAddress(table.getFirstRow(), table.getFirstRow(), first, last),
+                        String.join("　", openNotes.stream().map(Map.Entry::getValue).toList()),
+                        table.getFirstRow(), table.getFirstColumn(), 0, Map.of("noteKind", "unbordered-top-note")));
+                for (var entry : openNotes) handledOpenNotes.add(entry.getKey());
+            }
+            List<CellRangeAddress> bodyMerges = new ArrayList<>();
+            int firstBodyRow = headerRows.size() < rows.size() ? rows.get(headerRows.size()) : Integer.MAX_VALUE;
+            for (CellRangeAddress merge : mergedRanges) {
+                if (collapsedMerge(merge, outputColumns) || merge.getFirstRow() < firstBodyRow
+                        || merge.getFirstRow() < table.getFirstRow() || merge.getLastRow() > table.getLastRow()
+                        || merge.getFirstColumn() < table.getFirstColumn() || merge.getLastColumn() > table.getLastColumn()) continue;
+                String value = tableValues.getOrDefault(BorderTables.key(merge.getFirstRow(), merge.getFirstColumn()), "");
+                if (!value.isBlank()) bodyMerges.add(merge);
+            }
+            if (!bodyMerges.isEmpty()) {
+                List<String> notes = new ArrayList<>();
+                for (CellRangeAddress merge : bodyMerges) {
+                    String value = tableValues.get(BorderTables.key(merge.getFirstRow(), merge.getFirstColumn())).replace('\n', ' ');
+                    String extent = merge.getFirstRow() == merge.getLastRow() ? "明細行の複数列" :
+                            merge.getFirstColumn() == merge.getLastColumn() ? "複数の明細行" : "複数の明細行・列";
+                    notes.add("結合セル " + merge.formatAsString() + "「" + value + "」は" + extent + "に共通です。");
+                }
+                blocks.add(new Block("text", table, String.join("\n", notes), table.getFirstRow(), table.getFirstColumn(), 0,
+                        Map.of("noteKind", "body-merge", "mergedRanges", bodyMerges.stream().map(CellRangeAddress::formatAsString).toList())));
+            }
+            if (outputColumns.stream().anyMatch(span -> span.first() != span.last()))
+                workspace.info("TABLE_MERGED_COLUMNS_COLLAPSED", sheet.getSheetName(), table.formatAsString(),
+                        "全表示行で同じ幅に横結合された列を、Markdownの1列にまとめました。");
+            if (mergedRanges.stream().anyMatch(merge -> !collapsedMerge(merge, outputColumns)))
+                workspace.warning("TABLE_MERGE_FLATTENED", sheet.getSheetName(), table.formatAsString(),
+                        "Markdown表はセル結合を直接表せないため、共有見出しは各列へ継承し、明細の結合範囲は表の直前に記して続きのセルは空欄にします。");
             if (!expanded.inferredMerges().isEmpty()) workspace.warning("TABLE_VISUAL_MERGE_FLATTENED", sheet.getSheetName(), table.formatAsString(),
                     "仕切り線のない横並びの区画を見た目上の1セルとして扱い、値を左側にまとめました。");
-            if (expanded.seeds().size() > 1 || !expanded.seeds().getFirst().formatAsString().equals(table.formatAsString()))
+            if (!part.split() && (expanded.seeds().size() > 1 || !expanded.seeds().getFirst().formatAsString().equals(table.formatAsString())))
                 workspace.info("TABLE_EXPANDED", sheet.getSheetName(), table.formatAsString(), "検出した表と同じ行の左右の値・表を取り込みました。");
-            blocks.add(new Block("table", table, markdown.toString(), table.getFirstRow(), table.getFirstColumn(), 1,
-                    Map.of("sourceRows", rows.stream().map(r -> r + 1).toList(), "sourceColumns", columns.stream().map(c -> c + 1).toList(),
-                            "header", nativeHeader ? "excel-table" : "empty-generated", "mergedRanges", merged,
-                            "detectedRanges", expanded.seeds().stream().map(CellRangeAddress::formatAsString).toList(),
-                            "inferredMergedRanges", expanded.inferredMerges().stream().map(CellRangeAddress::formatAsString).toList())));
+            for (NamedTableRanges.Defined name : part.names())
+                blocks.add(new Block("table-name", name.range(), "**" + Markdown.escape(name.name()) + "**",
+                        table.getFirstRow(), table.getFirstColumn(), 1, Map.of("definedName", name.name())));
+            Map<String, Object> metadata = new LinkedHashMap<>();
+            metadata.put("sourceRows", rows.stream().map(r -> r + 1).toList());
+            metadata.put("sourceColumns", columns.stream().map(c -> c + 1).toList());
+            metadata.put("sourceColumnSpans", outputColumns.stream().map(span -> Map.of("first", span.first() + 1, "last", span.last() + 1)).toList());
+            metadata.put("header", matrixHeader ? "matrix-grid" : headerRows.isEmpty() ? "empty-generated" : "fill-color");
+            metadata.put("headerSourceRows", headerRows.stream().map(r -> r + 1).toList());
+            metadata.put("mergedRanges", merged);
+            metadata.put("detectedRanges", expanded.seeds().stream().map(CellRangeAddress::formatAsString).toList());
+            metadata.put("inferredMergedRanges", expanded.inferredMerges().stream().map(CellRangeAddress::formatAsString).toList());
+            if (!part.names().isEmpty()) metadata.put("definedNames", part.names().stream().map(NamedTableRanges.Defined::name).toList());
+            if (part.split()) metadata.put("sourceTableRange", part.sourceRange().formatAsString());
+            blocks.add(new Block("table", table, markdown.toString(), table.getFirstRow(), table.getFirstColumn(),
+                    part.names().isEmpty() ? 1 : 2, metadata));
         }
         Map<Integer, List<Map.Entry<Long, String>>> textRows = new TreeMap<>();
-        for (var entry : values.entrySet()) if (!tablePositions.contains(entry.getKey()))
+        for (var entry : values.entrySet()) if (!tablePositions.contains(entry.getKey()) && !handledOpenNotes.contains(entry.getKey()))
             textRows.computeIfAbsent(BorderTables.row(entry.getKey()), ignored -> new ArrayList<>()).add(entry);
         for (var row : textRows.entrySet()) {
             String joined = String.join("　", row.getValue().stream().map(Map.Entry::getValue).toList());
@@ -222,14 +292,159 @@ public class ExcelMarkdownService {
         }
         return blocks;
     }
-    private static void appendTableRow(StringBuilder output, int row, List<Integer> columns, Map<Long, String> values) {
-        output.append('|');
-        for (int column : columns) output.append(' ').append(row < 0 ? "" : values.getOrDefault(BorderTables.key(row, column), "").replace("\n", "<br>")).append(" |");
+    private static List<ColumnSpan> outputColumns(List<Integer> rows, List<Integer> columns, MergedRanges merges) {
+        List<ColumnSpan> result = new ArrayList<>();
+        for (int index = 0; index < columns.size();) {
+            int first = columns.get(index);
+            CellRangeAddress initial = merges.at(rows.getFirst(), first);
+            if (initial != null && initial.getFirstRow() == rows.getFirst() && initial.getLastRow() == rows.getFirst()
+                    && initial.getFirstColumn() == first && initial.getLastColumn() > first) {
+                int last = initial.getLastColumn(), width = last - first + 1;
+                boolean complete = index + width <= columns.size();
+                for (int offset = 0; complete && offset < width; offset++)
+                    complete = columns.get(index + offset) == first + offset;
+                for (int row : rows) {
+                    if (!complete) break;
+                    CellRangeAddress merge = merges.at(row, first);
+                    complete = merge != null && merge.getFirstRow() == row && merge.getLastRow() == row
+                            && merge.getFirstColumn() == first && merge.getLastColumn() == last;
+                }
+                if (complete) {
+                    result.add(new ColumnSpan(first, last));
+                    index += width;
+                    continue;
+                }
+            }
+            result.add(new ColumnSpan(first, first));
+            index++;
+        }
+        return result;
     }
-    private static boolean nativeHeader(Sheet sheet, CellRangeAddress range) {
-        if (sheet instanceof XSSFSheet x) for (XSSFTable table : x.getTables())
-            if (table.getHeaderRowCount() > 0 && table.getStartRowIndex() == range.getFirstRow() && table.getEndRowIndex() == range.getLastRow()
-                    && table.getStartColIndex() == range.getFirstColumn() && table.getEndColIndex() == range.getLastColumn()) return true;
+    private static boolean collapsedMerge(CellRangeAddress merge, List<ColumnSpan> columns) {
+        if (merge.getFirstRow() != merge.getLastRow()) return false;
+        return columns.stream().anyMatch(span -> span.first() == merge.getFirstColumn()
+                && span.last() == merge.getLastColumn() && span.first() != span.last());
+    }
+    private static void appendTableRow(StringBuilder output, int row, List<ColumnSpan> columns, Map<Long, String> values) {
+        output.append('|');
+        for (ColumnSpan column : columns) output.append(' ').append(values.getOrDefault(BorderTables.key(row, column.first()), "").replace("\n", "<br>")).append(" |");
+    }
+    private static void appendTableHeader(StringBuilder output, List<Integer> headerRows, List<ColumnSpan> columns,
+            Map<Long, String> values, MergedRanges merges, MergedRanges inferredMerges) {
+        List<HeaderLabel> labels = new ArrayList<>();
+        for (ColumnSpan column : columns) {
+            List<String> parts = new ArrayList<>();
+            boolean shared = false;
+            for (int row : headerRows) {
+                CellRangeAddress merge = headerMerge(row, column.first(), merges, inferredMerges);
+                if (merge != null && merge.getFirstColumn() != merge.getLastColumn()) shared = true;
+                String value = headerValue(row, column.first(), values, merges, inferredMerges).replace("\n", "<br>").strip();
+                if (!value.isEmpty() && (parts.isEmpty() || !parts.getLast().equals(value))) parts.add(value);
+            }
+            labels.add(new HeaderLabel(String.join(" / ", parts), shared));
+        }
+        Map<String, Integer> counts = new HashMap<>();
+        for (HeaderLabel label : labels) if (!label.text().isBlank()) counts.merge(label.text(), 1, Integer::sum);
+        output.append('|');
+        for (int index = 0; index < columns.size(); index++) {
+            HeaderLabel label = labels.get(index);
+            String text = label.text();
+            if (label.shared() && counts.getOrDefault(text, 0) > 1) {
+                ColumnSpan span = columns.get(index);
+                String first = CellReference.convertNumToColString(span.first());
+                String source = span.first() == span.last() ? first : first + ":" + CellReference.convertNumToColString(span.last());
+                text += "（" + source + "列）";
+            }
+            output.append(' ').append(text).append(" |");
+        }
+    }
+    private static String headerValue(int row, int column, Map<Long, String> values, MergedRanges merges, MergedRanges inferredMerges) {
+        CellRangeAddress merge = headerMerge(row, column, merges, inferredMerges);
+        if (merge != null) return values.getOrDefault(BorderTables.key(merge.getFirstRow(), merge.getFirstColumn()), "");
+        return values.getOrDefault(BorderTables.key(row, column), "");
+    }
+    private static CellRangeAddress headerMerge(int row, int column, MergedRanges merges, MergedRanges inferredMerges) {
+        CellRangeAddress merge = merges.at(row, column);
+        return merge != null ? merge : inferredMerges.at(row, column);
+    }
+    /** Infer only header levels backed by the matrix grid and explicit group/row-span geometry. */
+    private static int matrixGroupHeaderDepth(CellRangeAddress table, List<Integer> rows, List<Integer> columns,
+                                              Map<Long, String> values, MergedRanges merges, BorderTables borders,
+                                              Set<Long> openTopCells) {
+        if (rows.size() < 2 || rows.getFirst() != table.getFirstRow() || rows.get(1) != table.getFirstRow() + 1)
+            return 0;
+        int top = table.getFirstRow(), next = rows.get(1);
+        boolean hasOpenCorner = false;
+        for (int column = table.getFirstColumn(); column <= table.getLastColumn(); column++)
+            if (openTopCells.contains(BorderTables.key(top, column))) {
+                hasOpenCorner = true;
+                break;
+            }
+        if (!hasOpenCorner) return 0;
+        boolean hasBorderedTopLabel = false;
+        for (int column : columns) {
+            if (openTopCells.contains(BorderTables.key(top, column))
+                    || !borders.hasHorizontal(top, column) || !borders.hasHorizontal(top + 1, column)) continue;
+            CellRangeAddress merge = merges.at(top, column);
+            int anchorColumn = merge == null ? column : merge.getFirstColumn();
+            if (!values.getOrDefault(BorderTables.key(top, anchorColumn), "").isBlank()) {
+                hasBorderedTopLabel = true;
+                break;
+            }
+        }
+        if (!hasBorderedTopLabel) return 0;
+        boolean hasMergedCaption = merges.all().stream().anyMatch(merge -> merge.getFirstRow() == top
+                && merge.getLastRow() == top && merge.getLastColumn() > merge.getFirstColumn()
+                && merge.getFirstColumn() >= table.getFirstColumn() && merge.getLastColumn() <= table.getLastColumn()
+                && !values.getOrDefault(BorderTables.key(top, merge.getFirstColumn()), "").isBlank());
+        if (!hasMergedCaption) return 1;
+        for (int column : columns)
+            if (!borders.hasHorizontal(next, column)) return 1;
+        // When a matrix is attached after ordinary top-row columns, the next row
+        // might already be data. Promote it only if a leading open corner or a
+        // deeper row-span/group level establishes the header hierarchy.
+        boolean leadingOpenCorner = openTopCells.contains(BorderTables.key(top, table.getFirstColumn()));
+        boolean deeperGroup = rows.size() > 2 && rows.get(2) == next + 1
+                && hasHeaderRowSpan(table, next, rows.get(2), values, merges)
+                && hasHeaderGroupAt(table, rows.get(2), values, merges);
+        if (!leadingOpenCorner && !deeperGroup) return 1;
+        int depth = 2;
+        while (depth < rows.size() - 1) {
+            int candidate = rows.get(depth), previous = rows.get(depth - 1);
+            if (candidate != previous + 1 || !hasHeaderRowSpan(table, next, candidate, values, merges)
+                    || !hasHeaderGroupAt(table, candidate, values, merges)) break;
+            depth++;
+        }
+        return depth;
+    }
+    private static boolean hasHeaderRowSpan(CellRangeAddress table, int firstHeaderRow, int candidate,
+                                            Map<Long, String> values, MergedRanges merges) {
+        return merges.all().stream().anyMatch(merge -> merge.getFirstRow() >= firstHeaderRow
+                && merge.getFirstRow() < candidate && merge.getLastRow() >= candidate
+                && merge.getFirstColumn() >= table.getFirstColumn() && merge.getLastColumn() <= table.getLastColumn()
+                && !values.getOrDefault(BorderTables.key(merge.getFirstRow(), merge.getFirstColumn()), "").isBlank());
+    }
+    private static boolean hasHeaderGroupAt(CellRangeAddress table, int row,
+                                            Map<Long, String> values, MergedRanges merges) {
+        return merges.all().stream().anyMatch(merge -> merge.getFirstRow() == row && merge.getLastRow() == row
+                && merge.getLastColumn() > merge.getFirstColumn()
+                && merge.getFirstColumn() >= table.getFirstColumn() && merge.getLastColumn() <= table.getLastColumn()
+                && !values.getOrDefault(BorderTables.key(row, merge.getFirstColumn()), "").isBlank());
+    }
+    /** A direct fill in any detected grid cell marks the row; expanded side notes do not. */
+    private static boolean coloredHeaderRow(Sheet sheet, int row, List<CellRangeAddress> seeds, MergedRanges merges) {
+        Row physical = sheet.getRow(row);
+        if (physical == null) return false;
+        for (CellRangeAddress seed : seeds) {
+            for (int column = seed.getFirstColumn(); column <= seed.getLastColumn(); column++) {
+                if (sheet.isColumnHidden(column)) continue;
+                Cell cell = physical.getCell(column);
+                CellRangeAddress merge = merges.at(row, column);
+                if (merge != null && merge.getFirstRow() == row && merge.getFirstColumn() != column)
+                    cell = physical.getCell(merge.getFirstColumn());
+                if (cell != null && cell.getCellStyle().getFillPattern() != FillPatternType.NO_FILL) return true;
+            }
+        }
         return false;
     }
     private static boolean overlaps(CellRangeAddress range, DrawingBlock drawing) {
@@ -252,4 +467,6 @@ public class ExcelMarkdownService {
         if (workspace != null) try { workspace.close(); } catch (RuntimeException cleanup) { failure.addSuppressed(cleanup); }
     }
     private record Block(String type, CellRangeAddress range, String markdown, int row, int column, int order, Map<String, Object> metadata) { }
+    private record ColumnSpan(int first, int last) { }
+    private record HeaderLabel(String text, boolean shared) { }
 }

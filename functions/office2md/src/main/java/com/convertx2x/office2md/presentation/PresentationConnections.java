@@ -14,7 +14,7 @@ import org.openxmlformats.schemas.drawingml.x2006.main.CTLineEndProperties;
 import org.openxmlformats.schemas.presentationml.x2006.main.CTConnector;
 import org.w3c.dom.Element;
 
-/** Extracts only saved connector relationships; geometry and nearby labels never imply an edge. */
+/** Extracts saved connector relationships. A caller may conservatively fill absent endpoints. */
 final class PresentationConnections {
     private static final Set<String> ARROWS = Set.of("triangle", "stealth", "arrow");
     private static final Set<String> NON_DIRECTIONAL_MARKERS = Set.of("none", "oval", "diamond");
@@ -96,9 +96,10 @@ final class PresentationConnections {
             if (endId != null) metadata.put("endId", endId);
             metadata.put("startArrow", startArrow);
             metadata.put("endArrow", endArrow);
-            metadata.put("direction", direction);
-            metadata.put("status", status);
-            metadata.put("reason", reason);
+            metadata.put("arrowheadDirectionAlongLine", direction);
+            metadata.put("connectionResolutionStatus", status);
+            metadata.put("connectionResolutionReason", reason);
+            metadata.put("connectionResolutionExplanation", status.equals("resolved") ? "" : reasonExplanation(reason));
             if (status.equals("resolved") && direction.equals("start-to-end")) {
                 metadata.put("fromId", startId);
                 metadata.put("toId", endId);
@@ -108,5 +109,15 @@ final class PresentationConnections {
             }
             return metadata;
         }
+    }
+
+    static String reasonExplanation(String reason) {
+        return switch (reason) {
+            case "MISSING_ENDPOINT" -> "接続先IDが保存されていません";
+            case "TARGET_UNAVAILABLE" -> "接続先が出力対象にありません";
+            case "AMBIGUOUS_TARGET" -> "接続先IDが重複しています";
+            case "UNKNOWN_ARROWHEAD" -> "矢印の向きを確定できません";
+            default -> "保存情報が不足しています";
+        };
     }
 }

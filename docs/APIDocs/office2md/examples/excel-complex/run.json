@@ -1,7 +1,7 @@
 {
-  "capturedAt": "2026-09-22T10:41:29.375Z",
+  "capturedAt": "2026-10-03T15:01:08.719Z",
   "mode": "actual local Functions HTTP through unmodified Playground",
-  "sourceCommit": "38d991e0c5bc7c1ca412a54f6a6e946470f7755b",
+  "sourceCommit": "7f1641d1632f629f1d21a417ba3c9a81cb491421",
   "sourceWorkingTreeDirty": true,
   "runtime": {
     "platform": "darwin",
@@ -9,12 +9,12 @@
     "node": "v24.2.0",
     "java": "openjdk version \"21\" 2023-09-19 LTS\nOpenJDK Runtime Environment Temurin-21+35 (build 21+35-LTS)\nOpenJDK 64-Bit Server VM Temurin-21+35 (build 21+35-LTS, mixed mode)",
     "coreTools": "4.9.0",
-    "browser": "153.0.8010.53"
+    "browser": "154.0.8037.93"
   },
   "input": {
     "path": "input.xlsx",
-    "sizeBytes": 151200,
-    "sha256": "75833b82b8fdff3b7deb7e1df26c89496beea38996426c965a9ecc97714e3805"
+    "sizeBytes": 152173,
+    "sha256": "f3413b479078eec557e01839ccd798edf64bd77bace63053826196a966b39f35"
   },
   "request": {
     "method": "POST",
@@ -25,7 +25,7 @@
   "response": {
     "status": 200,
     "contentType": "application/zip",
-    "elapsedMs": 618
+    "elapsedMs": 2226
   },
   "timingNote": "Local macOS measurement from submit click to completed Playground result (HTTP response, unzip and preview construction included). Not an Azure latency or throughput benchmark.",
   "sectionCount": 8,
@@ -39,7 +39,7 @@
     "[07_未対応と加工] シート",
     "[08_画像だけ] シート"
   ],
-  "assetCount": 32,
+  "assetCount": 33,
   "warningCount": 20,
   "warningCodes": [
     "LINK_UNSUPPORTED",
@@ -57,22 +57,22 @@
     "IMAGE_EFFECTS_IGNORED",
     "IMAGE_FORMAT_ATTACHMENT"
   ],
-  "informationCount": 66,
+  "informationCount": 67,
   "files": [
     {
       "path": "result.zip",
-      "sizeBytes": 406939,
-      "sha256": "34681bcdf2d449d305aa1b09c0d5a65fd7be8ce2239074f388ba5a49dcf473dc"
+      "sizeBytes": 423175,
+      "sha256": "9f74c0c9043c2f73c246d5a51f4d7a6a57c2f31e8e09a97ff4241cf700d1a1b7"
     },
     {
       "path": "output/document.md",
-      "sizeBytes": 13503,
-      "sha256": "af9c9dc7ce0555430e7380742d0bddb5514e3c06a5313c77aa8e0c8d73f85055"
+      "sizeBytes": 13883,
+      "sha256": "23cd77170405c971a2897378f46fcc8c412525c79a48b2a5a02fbb306a5d1fbb"
     },
     {
       "path": "output/report.json",
-      "sizeBytes": 60555,
-      "sha256": "fac7d57900f56d98abab3b37d2e6e92033cec15bce032790eb6cf82b66c0e6fb"
+      "sizeBytes": 65434,
+      "sha256": "390cb956eac7bb46c69983e6571c322feef006e72e449604b82194de7e2a0a18"
     },
     {
       "path": "output/images/diagram-0001.png",
@@ -211,16 +211,21 @@
     },
     {
       "path": "output/images/diagram-0028.png",
+      "sizeBytes": 22202,
+      "sha256": "9f25ee5804c3aea4eadb11a53109be0724eda5429b106995a51ab36f7883427a"
+    },
+    {
+      "path": "output/images/diagram-0029.png",
       "sizeBytes": 7208,
       "sha256": "0cb9b7746f89b9fcece174f78a76b434a5c0969c982f31310d46069824368ff6"
     },
     {
-      "path": "output/images/diagram-0029.png",
+      "path": "output/images/diagram-0030.png",
       "sizeBytes": 6803,
       "sha256": "11fc2b1be070585b319661396385de36744b78f389874f5e8fd5610eb9313fea"
     },
     {
-      "path": "output/images/diagram-0030.png",
+      "path": "output/images/diagram-0031.png",
       "sizeBytes": 37744,
       "sha256": "7e3e985399c6d46d28d311e2b4dbe22c7f34ce2776caa10b1eae450c021094f4"
     },
@@ -230,14 +235,14 @@
       "sha256": "f259c4c60577e261310dcbf8dbbd4c55457b48c0f0786f33a51dfa2048c01505"
     },
     {
-      "path": "output/images/diagram-0031.png",
+      "path": "output/images/diagram-0032.png",
       "sizeBytes": 57324,
       "sha256": "426bede3a1787ab4c6343ac0aa8647ba217c568c042424fa786f6159d4fbcbfd"
     },
     {
       "path": "screenshots/overview.png",
-      "sizeBytes": 244270,
-      "sha256": "108dee094848dfddf331890eae88cf03abfe572e3cbadc117d72a3395d709440"
+      "sizeBytes": 246654,
+      "sha256": "72851ec9330973aaf1ae898a2d17296f14f5a93ba16610ed991e8489d5608532"
     },
     {
       "path": "screenshots/section-01.png",
@@ -246,13 +251,13 @@
     },
     {
       "path": "screenshots/section-02.png",
-      "sizeBytes": 105282,
-      "sha256": "935b1e4b4b414086e33f2ed8fe6c055b948d9617d3b2b5a5f989d77f77af958c"
+      "sizeBytes": 109895,
+      "sha256": "0848d02389d60151ecb3c67fb32277f37ab8c3df60b1611fe7c1e99095fee74e"
     },
     {
       "path": "screenshots/section-06.png",
-      "sizeBytes": 241287,
-      "sha256": "8336df095390cea5e04cea0b5aabe62d9a45c546d802620ff3dfccb78e3e9edf"
+      "sizeBytes": 281186,
+      "sha256": "afff2bde26878af38295cfedc40f49f79bfe73edb617b9d5eccd4586263e452d"
     },
     {
       "path": "screenshots/section-07.png",
@@ -261,23 +266,23 @@
     },
     {
       "path": "screenshots/tables-detail.png",
-      "sizeBytes": 54651,
-      "sha256": "894da28a4660dba22bdd5876770246317d30504dd94aea934dde0377e511158f"
+      "sizeBytes": 63339,
+      "sha256": "703b44a1120f574c7bf3bfcdf5b453aab0d288bc8aa4b9a3b6f76b2f8b2dc2a1"
     },
     {
       "path": "screenshots/group-detail.png",
-      "sizeBytes": 126196,
-      "sha256": "f2a2c6374a1fe0e30c06db7c37bc9c162cb714edbe92a046b963e49046124b5c"
+      "sizeBytes": 124665,
+      "sha256": "95bd881fd19ac59eb26dfe02e6d250ba48607a37978e47340b306ff2332d69f0"
     },
     {
       "path": "screenshots/markdown-source.png",
-      "sizeBytes": 160235,
-      "sha256": "8ff4ce16a00d89f1932e5f56a64a0fd0181de033dfcd038690d600bdd0b0b76c"
+      "sizeBytes": 162416,
+      "sha256": "7c9a2b36d07194ff2d0fdbdd70be9feb928cae7ba8064747679c10ebcd3a9427"
     },
     {
       "path": "screenshots/warnings.png",
-      "sizeBytes": 177470,
-      "sha256": "0c65fcfd142782fffa7d11684e034bd505b90354f19ff20c5009abc802384601"
+      "sizeBytes": 187486,
+      "sha256": "906905636505b269ffe921711ab3094afa065e8aa0342738eb61c40aefbf682b"
     }
   ],
   "screenshotLayout": "Overview/source use normal Playground. Section screenshots expand the preview scroll region and image maximum height, and hide other sections. Excel tables-detail and group-detail crop the top 790 and 1000 CSS pixels; full sections are also included. Warnings expand the warning list. No original text, images or outputs are changed.",

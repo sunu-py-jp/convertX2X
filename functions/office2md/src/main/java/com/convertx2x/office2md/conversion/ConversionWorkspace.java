@@ -109,7 +109,7 @@ public final class ConversionWorkspace implements AutoCloseable {
 
     public void finishReport(String filename, String sourceHash) {
         Map<String, Object> report = new LinkedHashMap<>();
-        report.put("specVersion", 2);
+        report.put("specVersion", 1);
         String format = filename.toLowerCase(Locale.ROOT).replaceFirst("^.*\\.", "");
         report.put("source", Map.of("filename", filename, "sha256", sourceHash, "format", format));
         report.put("sectionKind", switch (format) { case "docx" -> "document"; case "pptx" -> "slide"; default -> "sheet"; });

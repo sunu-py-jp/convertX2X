@@ -1,7 +1,7 @@
 {
-  "capturedAt": "2026-09-22T10:40:17.921Z",
+  "capturedAt": "2026-09-23T08:02:35.119Z",
   "mode": "actual local Functions HTTP through unmodified Playground",
-  "sourceCommit": "38d991e0c5bc7c1ca412a54f6a6e946470f7755b",
+  "sourceCommit": "8b4ee428d920ae052a0de374df30098d791d4fa3",
   "sourceWorkingTreeDirty": true,
   "runtime": {
     "platform": "darwin",
@@ -25,7 +25,7 @@
   "response": {
     "status": 200,
     "contentType": "application/zip",
-    "elapsedMs": 1895
+    "elapsedMs": 100
   },
   "timingNote": "Local macOS measurement from submit click to completed Playground result (HTTP response, unzip and preview construction included). Not an Azure latency or throughput benchmark.",
   "sectionCount": 1,
@@ -42,8 +42,8 @@
   "files": [
     {
       "path": "result.zip",
-      "sizeBytes": 22017,
-      "sha256": "46014e601ba5a9fac94bbc67d715ae030907367630263d96ce7d0dc21c02c227"
+      "sizeBytes": 22068,
+      "sha256": "8b914618aeabe16cf5417d505a5de75cac9c3a411cb625a478be868b55d89d58"
     },
     {
       "path": "output/document.md",
@@ -52,8 +52,8 @@
     },
     {
       "path": "output/report.json",
-      "sizeBytes": 6162,
-      "sha256": "413224a00a80e9725fcb4dd70758b908f498a636c37d296a535079c508ffd2a1"
+      "sizeBytes": 6724,
+      "sha256": "c131f888e931f164673c565bda741affcbb89756627ff4725ae35a768378ee9f"
     },
     {
       "path": "output/images/diagram-0001.png",
@@ -62,8 +62,8 @@
     },
     {
       "path": "screenshots/overview.png",
-      "sizeBytes": 235928,
-      "sha256": "69ed5e14ee6afc080ed0c4732ac4f4f5ca1315eab5de3f07b94724b45c29c9f1"
+      "sizeBytes": 235991,
+      "sha256": "673d579a9c5775af1eecfe5f796eea60d743043425ed20430e667ff791390196"
     },
     {
       "path": "screenshots/section-01.png",
@@ -72,8 +72,8 @@
     },
     {
       "path": "screenshots/markdown-source.png",
-      "sizeBytes": 152363,
-      "sha256": "1bc946b4493ff2d658e877766f3491e211979825ffe170ea8f79c69b26fc9b0d"
+      "sizeBytes": 152423,
+      "sha256": "20c6820325a0074ea6f850b72daf65fb2f6e50653f20d56cc7951eb14f09c454"
     },
     {
       "path": "screenshots/warnings.png",

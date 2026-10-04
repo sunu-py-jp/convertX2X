@@ -40,11 +40,13 @@ class ExcelDiagramGraphTest {
                 assertEquals(1, block.size()); assertEquals(2, block.getFirst().size());
                 var edges = report.get("blocks").findValues("edges").getFirst();
                 assertEquals(List.of("start-to-end", "end-to-start", "bidirectional", "undirected"),
-                        java.util.stream.StreamSupport.stream(edges.spliterator(), false).map(edge -> edge.get("direction").asText()).toList());
+                        java.util.stream.StreamSupport.stream(edges.spliterator(), false).map(edge -> edge.get("arrowheadDirectionAlongLine").asText()).toList());
                 assertEquals("shape-" + start.getShapeId(), edges.get(0).get("fromId").asText());
                 assertEquals("shape-" + start.getShapeId(), edges.get(1).get("toId").asText());
                 for (var edge : edges) {
-                    assertEquals("resolved", edge.path("status").asText()); assertEquals("", edge.path("reason").asText());
+                    assertEquals("resolved", edge.path("connectionResolutionStatus").asText());
+                    assertEquals("", edge.path("connectionResolutionReason").asText());
+                    assertEquals("", edge.path("connectionResolutionExplanation").asText());
                 }
                 assertEquals("oval", edges.get(0).path("startArrow").asText());
                 assertEquals("diamond", edges.get(1).path("endArrow").asText());
@@ -61,21 +63,23 @@ class ExcelDiagramGraphTest {
         }
     }
 
-    @Test void looseConnectorDoesNotInferEndpointsOrConsumeNearbyLabel() throws Exception {
+    @Test void endpointContactGroupsShapesWhenSavedConnectorIdsAreMissing() throws Exception {
         try (var book = new XSSFWorkbook(); var workspace = workspace()) {
             var drawing = book.createSheet("不明").createDrawingPatriarch();
             shape(drawing, 1, 3, "受付"); shape(drawing, 7, 3, "承認");
             connector(drawing, null, null, "oval", "diamond");
             var blocks = extractor.extract(book.getSheetAt(0), workspace);
-            assertEquals(3, blocks.size()); assertEquals(3, workspace.files().size());
+            assertEquals(1, blocks.size()); assertEquals(1, workspace.files().size());
             var connector = blocks.stream().filter(block -> !edges(block).isEmpty()).findFirst().orElseThrow();
             var edge = edges(connector).getFirst();
-            assertEquals("unresolved", edge.get("status")); assertEquals("MISSING_ENDPOINT", edge.get("reason"));
-            assertEquals("undirected", edge.get("direction"));
+            assertEquals("resolved", edge.get("connectionResolutionStatus"));
+            assertEquals("", edge.get("connectionResolutionReason"));
+            assertEquals("", edge.get("connectionResolutionExplanation"));
+            assertEquals("undirected", edge.get("arrowheadDirectionAlongLine"));
             assertEquals("oval", edge.get("startArrow")); assertEquals("diamond", edge.get("endArrow"));
-            assertFalse(edge.containsKey("startId")); assertFalse(edge.containsKey("endId"));
-            assertTrue(connector.markdown().contains("接続関係不明"));
-            assertFalse(connector.markdown().contains("受付")); assertFalse(connector.markdown().contains("承認"));
+            assertTrue(edge.containsKey("startId")); assertTrue(edge.containsKey("endId"));
+            assertFalse(connector.markdown().contains("接続関係不明"));
+            assertTrue(connector.markdown().contains("受付")); assertTrue(connector.markdown().contains("承認"));
         }
     }
 
@@ -91,7 +95,8 @@ class ExcelDiagramGraphTest {
             var nodes = blocks.stream().flatMap(block -> nodes(block).stream()).toList();
             assertEquals(2, nodes.stream().map(node -> node.get("id")).distinct().count());
             var edge = blocks.stream().flatMap(block -> edges(block).stream()).findFirst().orElseThrow();
-            assertEquals("AMBIGUOUS_TARGET", edge.get("reason"));
+            assertEquals("AMBIGUOUS_TARGET", edge.get("connectionResolutionReason"));
+            assertEquals("接続先IDが重複しています", edge.get("connectionResolutionExplanation"));
             assertFalse(edge.containsKey("startId")); assertFalse(edge.containsKey("endId"));
             assertFalse(blocks.toString().contains("HIDDEN_GRAPH_SECRET"));
         }
@@ -145,7 +150,7 @@ class ExcelDiagramGraphTest {
             assertTrue(block.markdown().contains("の文字：**条件付き承認**"));
             var edge = edges(block).getFirst();
             assertEquals("条件付き承認", edge.get("text")); assertNotNull(edge.get("x"));
-            assertEquals("unresolved", edge.get("status"));
+            assertEquals("unresolved", edge.get("connectionResolutionStatus"));
             assertFalse(block.toString().contains("REMOVED_CONNECTOR_TEXT"));
         }
     }
@@ -156,7 +161,7 @@ class ExcelDiagramGraphTest {
             var line = drawing.createSimpleShape(new HSSFClientAnchor(0, 0, 0, 0, (short) 1, 3, (short) 7, 3));
             line.setShapeType(HSSFShapeTypes.Line);
             var block = extractor.extract(book.getSheetAt(0), workspace).getFirst();
-            assertEquals("unresolved", edges(block).getFirst().get("status"));
+            assertEquals("unresolved", edges(block).getFirst().get("connectionResolutionStatus"));
             assertTrue(block.markdown().contains("接続関係不明"));
             workspace.finishReport("legacy.xls", "hash");
             assertTrue(Files.readString(workspace.files().get("report.json")).contains("XLS_CONNECTION_UNSUPPORTED"));

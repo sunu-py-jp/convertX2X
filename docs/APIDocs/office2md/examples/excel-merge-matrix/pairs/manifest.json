@@ -1,0 +1,1339 @@
+{
+  "version": 1,
+  "description": "24 paired HTML input-grid screenshots and exact captured Markdown sheet excerpts",
+  "capture": {
+    "capturedAt": "2026-10-04T05:36:04.535545+00:00",
+    "mode": "actual local Functions HTTP",
+    "httpStatus": 200,
+    "sourceCommit": "7f1641d1632f629f1d21a417ba3c9a81cb491421",
+    "sourceWorkbook": "input.xlsx",
+    "sourceWorkbookSha256": "3850e053914aa7ec0fdd66682c61aae46db342c225597ed15a6b91c34d7163e4",
+    "document": "output/document.md",
+    "documentSha256": "9354b154f2e1dc12803f00081ee339503338d2d9fe8ffea4a19b02fff388bb55",
+    "report": "output/report.json",
+    "reportSha256": "89dda311feafc5f801130e2e1122e2a6f69fb7aebbaa6ab23aae19c3ba12a109"
+  },
+  "cases": [
+    {
+      "id": "C01",
+      "title": "色付き1行ヘッダー・結合なし",
+      "sheet": "01_単行_色あり_結合なし",
+      "category": "single-colored",
+      "inputRange": "A1:C3",
+      "mergedRanges": [],
+      "hiddenRows": [],
+      "sourceWorkbook": "input.xlsx",
+      "screenshot": "screenshots/C01.png",
+      "screenshotInBundle": "C01/screenshot.png",
+      "screenshotKind": "HTML rendering of source workbook cells, fill, and merges",
+      "screenshotSha256": "255c0a531672f8b4541d9accc47110d3a51afb95b9e541315f764737139a592d",
+      "markdown": "pairs/C01/document.md",
+      "markdownInBundle": "C01/document.md",
+      "markdownSha256": "57a75b4a2e937564dc3c5b21db525c8eee1031d626e33df274890176a81774a1",
+      "report": {
+        "section": "01_単行_色あり_結合なし",
+        "range": "A1:C3",
+        "header": "fill-color",
+        "headerSourceRows": [
+          1
+        ],
+        "sourceColumnSpans": [
+          {
+            "last": 1,
+            "first": 1
+          },
+          {
+            "last": 2,
+            "first": 2
+          },
+          {
+            "last": 3,
+            "first": 3
+          }
+        ],
+        "warnings": [],
+        "information": []
+      }
+    },
+    {
+      "id": "C02",
+      "title": "色付き2行ヘッダー・結合なし",
+      "sheet": "02_複行_色あり_結合なし",
+      "category": "multi-colored",
+      "inputRange": "A1:C3",
+      "mergedRanges": [],
+      "hiddenRows": [],
+      "sourceWorkbook": "input.xlsx",
+      "screenshot": "screenshots/C02.png",
+      "screenshotInBundle": "C02/screenshot.png",
+      "screenshotKind": "HTML rendering of source workbook cells, fill, and merges",
+      "screenshotSha256": "9e23148a812a60c0fcfc501c4118d4c6a3e6521689618d8c7f15329a858c6a5d",
+      "markdown": "pairs/C02/document.md",
+      "markdownInBundle": "C02/document.md",
+      "markdownSha256": "eff31fe9cb6a40c8201a9f31f3a745c7715891f3f15634afcdd6c8929e3671b6",
+      "report": {
+        "section": "02_複行_色あり_結合なし",
+        "range": "A1:C3",
+        "header": "fill-color",
+        "headerSourceRows": [
+          1,
+          2
+        ],
+        "sourceColumnSpans": [
+          {
+            "last": 1,
+            "first": 1
+          },
+          {
+            "last": 2,
+            "first": 2
+          },
+          {
+            "last": 3,
+            "first": 3
+          }
+        ],
+        "warnings": [],
+        "information": []
+      }
+    },
+    {
+      "id": "C03",
+      "title": "色付き3行ヘッダー",
+      "sheet": "03_複行3段_色あり",
+      "category": "multi-colored",
+      "inputRange": "A1:C4",
+      "mergedRanges": [],
+      "hiddenRows": [],
+      "sourceWorkbook": "input.xlsx",
+      "screenshot": "screenshots/C03.png",
+      "screenshotInBundle": "C03/screenshot.png",
+      "screenshotKind": "HTML rendering of source workbook cells, fill, and merges",
+      "screenshotSha256": "1b4539a6aa783627db3b28f00416567e57d21bb360ff9d2fc87f63f407e15fdb",
+      "markdown": "pairs/C03/document.md",
+      "markdownInBundle": "C03/document.md",
+      "markdownSha256": "505b16bdac6df92b203c51e0b50b80520a73c0b0d646e5c8ebd5f3bc76e8f239",
+      "report": {
+        "section": "03_複行3段_色あり",
+        "range": "A1:C4",
+        "header": "fill-color",
+        "headerSourceRows": [
+          1,
+          2,
+          3
+        ],
+        "sourceColumnSpans": [
+          {
+            "last": 1,
+            "first": 1
+          },
+          {
+            "last": 2,
+            "first": 2
+          },
+          {
+            "last": 3,
+            "first": 3
+          }
+        ],
+        "warnings": [],
+        "information": []
+      }
+    },
+    {
+      "id": "C04",
+      "title": "色なし・結合なし",
+      "sheet": "04_全行_色なし",
+      "category": "no-colored-header",
+      "inputRange": "A1:C3",
+      "mergedRanges": [],
+      "hiddenRows": [],
+      "sourceWorkbook": "input.xlsx",
+      "screenshot": "screenshots/C04.png",
+      "screenshotInBundle": "C04/screenshot.png",
+      "screenshotKind": "HTML rendering of source workbook cells, fill, and merges",
+      "screenshotSha256": "e7f1e6417bddb821c4604895ea321451f8f27edf19e57e4fef7783579fd6c992",
+      "markdown": "pairs/C04/document.md",
+      "markdownInBundle": "C04/document.md",
+      "markdownSha256": "a0cfd886f3a2e122b1b53dfadcb3de6a33a1246ebbf4440b6e8bcd28ac3e43f3",
+      "report": {
+        "section": "04_全行_色なし",
+        "range": "A1:C3",
+        "header": "empty-generated",
+        "headerSourceRows": [],
+        "sourceColumnSpans": [
+          {
+            "last": 1,
+            "first": 1
+          },
+          {
+            "last": 2,
+            "first": 2
+          },
+          {
+            "last": 3,
+            "first": 3
+          }
+        ],
+        "warnings": [],
+        "information": []
+      }
+    },
+    {
+      "id": "C05",
+      "title": "先頭無色・次行だけ色付き",
+      "sheet": "05_先頭無色_次行色あり",
+      "category": "no-colored-header",
+      "inputRange": "A1:C3",
+      "mergedRanges": [],
+      "hiddenRows": [],
+      "sourceWorkbook": "input.xlsx",
+      "screenshot": "screenshots/C05.png",
+      "screenshotInBundle": "C05/screenshot.png",
+      "screenshotKind": "HTML rendering of source workbook cells, fill, and merges",
+      "screenshotSha256": "ca6ab303eb241d2f67daf88a0213de01793ab21f86ca017b9b4ae7b7499c383c",
+      "markdown": "pairs/C05/document.md",
+      "markdownInBundle": "C05/document.md",
+      "markdownSha256": "4d70d8b193d9a8705231acf812b87d257337896b24908932cd07e5834313a9aa",
+      "report": {
+        "section": "05_先頭無色_次行色あり",
+        "range": "A1:C3",
+        "header": "empty-generated",
+        "headerSourceRows": [],
+        "sourceColumnSpans": [
+          {
+            "last": 1,
+            "first": 1
+          },
+          {
+            "last": 2,
+            "first": 2
+          },
+          {
+            "last": 3,
+            "first": 3
+          }
+        ],
+        "warnings": [],
+        "information": []
+      }
+    },
+    {
+      "id": "C06",
+      "title": "色付き→無色→色付き",
+      "sheet": "06_色_無色_色",
+      "category": "header-run-stops",
+      "inputRange": "A1:C3",
+      "mergedRanges": [],
+      "hiddenRows": [],
+      "sourceWorkbook": "input.xlsx",
+      "screenshot": "screenshots/C06.png",
+      "screenshotInBundle": "C06/screenshot.png",
+      "screenshotKind": "HTML rendering of source workbook cells, fill, and merges",
+      "screenshotSha256": "ca07f138483ec931097bc20660cec13db7ceea81da09c42b2e744ca23da5e92d",
+      "markdown": "pairs/C06/document.md",
+      "markdownInBundle": "C06/document.md",
+      "markdownSha256": "35845f1bd125687133f369df934406cf837fd3da55e97f1a9cfb7482a8457d73",
+      "report": {
+        "section": "06_色_無色_色",
+        "range": "A1:C3",
+        "header": "fill-color",
+        "headerSourceRows": [
+          1
+        ],
+        "sourceColumnSpans": [
+          {
+            "last": 1,
+            "first": 1
+          },
+          {
+            "last": 2,
+            "first": 2
+          },
+          {
+            "last": 3,
+            "first": 3
+          }
+        ],
+        "warnings": [],
+        "information": []
+      }
+    },
+    {
+      "id": "C07",
+      "title": "先頭の1セルだけ色付き",
+      "sheet": "07_先頭1セルだけ色あり",
+      "category": "single-cell-fill",
+      "inputRange": "A1:C2",
+      "mergedRanges": [],
+      "hiddenRows": [],
+      "sourceWorkbook": "input.xlsx",
+      "screenshot": "screenshots/C07.png",
+      "screenshotInBundle": "C07/screenshot.png",
+      "screenshotKind": "HTML rendering of source workbook cells, fill, and merges",
+      "screenshotSha256": "23dc92720bad01eb09c46bb302e708d3b82f902acbdbbc602d6e05721a5f9be8",
+      "markdown": "pairs/C07/document.md",
+      "markdownInBundle": "C07/document.md",
+      "markdownSha256": "deac6c797e348f9fead2626245214c137ede9c5d5fd7f9aaab1de71e96165756",
+      "report": {
+        "section": "07_先頭1セルだけ色あり",
+        "range": "A1:C2",
+        "header": "fill-color",
+        "headerSourceRows": [
+          1
+        ],
+        "sourceColumnSpans": [
+          {
+            "last": 1,
+            "first": 1
+          },
+          {
+            "last": 2,
+            "first": 2
+          },
+          {
+            "last": 3,
+            "first": 3
+          }
+        ],
+        "warnings": [],
+        "information": []
+      }
+    },
+    {
+      "id": "C08",
+      "title": "1行ヘッダーだけ横結合",
+      "sheet": "08_単行_上だけ横結合",
+      "category": "shared-header",
+      "inputRange": "A1:C3",
+      "mergedRanges": [
+        "A1:B1"
+      ],
+      "hiddenRows": [],
+      "sourceWorkbook": "input.xlsx",
+      "screenshot": "screenshots/C08.png",
+      "screenshotInBundle": "C08/screenshot.png",
+      "screenshotKind": "HTML rendering of source workbook cells, fill, and merges",
+      "screenshotSha256": "b7c8640e1eb12aa0aa312890098135f20ab3d4b5b469e275a864ef2b6cb51140",
+      "markdown": "pairs/C08/document.md",
+      "markdownInBundle": "C08/document.md",
+      "markdownSha256": "7607ae7ca357994a6e816426bef8b658687a5f5be87b683c2dfc94198a892500",
+      "report": {
+        "section": "08_単行_上だけ横結合",
+        "range": "A1:C3",
+        "header": "fill-color",
+        "headerSourceRows": [
+          1
+        ],
+        "sourceColumnSpans": [
+          {
+            "last": 1,
+            "first": 1
+          },
+          {
+            "last": 2,
+            "first": 2
+          },
+          {
+            "last": 3,
+            "first": 3
+          }
+        ],
+        "warnings": [
+          {
+            "code": "TABLE_MERGE_FLATTENED",
+            "range": "A1:C3"
+          }
+        ],
+        "information": [
+          {
+            "code": "MERGED_CELLS",
+            "range": "A1:B1"
+          }
+        ]
+      }
+    },
+    {
+      "id": "C09",
+      "title": "1行ヘッダーが全列横結合",
+      "sheet": "09_単行_全幅横結合",
+      "category": "full-width-header",
+      "inputRange": "A1:C3",
+      "mergedRanges": [
+        "A1:C1"
+      ],
+      "hiddenRows": [],
+      "sourceWorkbook": "input.xlsx",
+      "screenshot": "screenshots/C09.png",
+      "screenshotInBundle": "C09/screenshot.png",
+      "screenshotKind": "HTML rendering of source workbook cells, fill, and merges",
+      "screenshotSha256": "51ff71ab243d87680cb3d193e77c828299aee57233acc7a50eacb438c57be9a7",
+      "markdown": "pairs/C09/document.md",
+      "markdownInBundle": "C09/document.md",
+      "markdownSha256": "4656e7eb95f0697aa42cff55304a74d1d4e504d15ebcc9e8fc2b66ae8aa002cd",
+      "report": {
+        "section": "09_単行_全幅横結合",
+        "range": "A1:C3",
+        "header": "fill-color",
+        "headerSourceRows": [
+          1
+        ],
+        "sourceColumnSpans": [
+          {
+            "last": 1,
+            "first": 1
+          },
+          {
+            "last": 2,
+            "first": 2
+          },
+          {
+            "last": 3,
+            "first": 3
+          }
+        ],
+        "warnings": [
+          {
+            "code": "TABLE_MERGE_FLATTENED",
+            "range": "A1:C3"
+          }
+        ],
+        "information": [
+          {
+            "code": "MERGED_CELLS",
+            "range": "A1:C1"
+          }
+        ]
+      }
+    },
+    {
+      "id": "C10",
+      "title": "2行ヘッダー・上段だけ横結合",
+      "sheet": "10_複行_上段横結合",
+      "category": "multi-shared-header",
+      "inputRange": "A1:C3",
+      "mergedRanges": [
+        "A1:B1"
+      ],
+      "hiddenRows": [],
+      "sourceWorkbook": "input.xlsx",
+      "screenshot": "screenshots/C10.png",
+      "screenshotInBundle": "C10/screenshot.png",
+      "screenshotKind": "HTML rendering of source workbook cells, fill, and merges",
+      "screenshotSha256": "1398bfaa602b4831a8da91c26b87e93126159dcff6e0308fac0d9247373f5433",
+      "markdown": "pairs/C10/document.md",
+      "markdownInBundle": "C10/document.md",
+      "markdownSha256": "50fc2aed670f01eeb724dcb829ff3d3a39185762f11489ecce3cc5ce45f7317f",
+      "report": {
+        "section": "10_複行_上段横結合",
+        "range": "A1:C3",
+        "header": "fill-color",
+        "headerSourceRows": [
+          1,
+          2
+        ],
+        "sourceColumnSpans": [
+          {
+            "last": 1,
+            "first": 1
+          },
+          {
+            "last": 2,
+            "first": 2
+          },
+          {
+            "last": 3,
+            "first": 3
+          }
+        ],
+        "warnings": [
+          {
+            "code": "TABLE_MERGE_FLATTENED",
+            "range": "A1:C3"
+          }
+        ],
+        "information": [
+          {
+            "code": "MERGED_CELLS",
+            "range": "A1:B1"
+          }
+        ]
+      }
+    },
+    {
+      "id": "C11",
+      "title": "2行ヘッダー・縦結合と横結合",
+      "sheet": "11_複行_縦横結合",
+      "category": "vertical-header",
+      "inputRange": "A1:C3",
+      "mergedRanges": [
+        "A1:A2",
+        "B1:C1"
+      ],
+      "hiddenRows": [],
+      "sourceWorkbook": "input.xlsx",
+      "screenshot": "screenshots/C11.png",
+      "screenshotInBundle": "C11/screenshot.png",
+      "screenshotKind": "HTML rendering of source workbook cells, fill, and merges",
+      "screenshotSha256": "985b28f5bc95b0df0ef09db5080a4e1f23e0d846deb042300faedd0552b89592",
+      "markdown": "pairs/C11/document.md",
+      "markdownInBundle": "C11/document.md",
+      "markdownSha256": "971c02e93c128ffe2b3acf843e36b1d7bec74c077dd9674c692979c477b1a01b",
+      "report": {
+        "section": "11_複行_縦横結合",
+        "range": "A1:C3",
+        "header": "fill-color",
+        "headerSourceRows": [
+          1,
+          2
+        ],
+        "sourceColumnSpans": [
+          {
+            "last": 1,
+            "first": 1
+          },
+          {
+            "last": 2,
+            "first": 2
+          },
+          {
+            "last": 3,
+            "first": 3
+          }
+        ],
+        "warnings": [
+          {
+            "code": "TABLE_MERGE_FLATTENED",
+            "range": "A1:C3"
+          }
+        ],
+        "information": [
+          {
+            "code": "MERGED_CELLS",
+            "range": "A1:A2"
+          },
+          {
+            "code": "MERGED_CELLS",
+            "range": "B1:C1"
+          }
+        ]
+      }
+    },
+    {
+      "id": "C12",
+      "title": "全行で同じ幅の横結合・1行ヘッダー",
+      "sheet": "12_全行同幅_単行見出し",
+      "category": "collapsed-logical-column",
+      "inputRange": "A1:C3",
+      "mergedRanges": [
+        "A1:B1",
+        "A2:B2",
+        "A3:B3"
+      ],
+      "hiddenRows": [],
+      "sourceWorkbook": "input.xlsx",
+      "screenshot": "screenshots/C12.png",
+      "screenshotInBundle": "C12/screenshot.png",
+      "screenshotKind": "HTML rendering of source workbook cells, fill, and merges",
+      "screenshotSha256": "be8b33fb80a880430f5607b79542df9957f5085c24a0b3904133b4c90779eb34",
+      "markdown": "pairs/C12/document.md",
+      "markdownInBundle": "C12/document.md",
+      "markdownSha256": "40948fbb0b5206c8466fce569e27dfea9fc68e0f6fcd5159d8ac6cf5c50bb2e2",
+      "report": {
+        "section": "12_全行同幅_単行見出し",
+        "range": "A1:C3",
+        "header": "fill-color",
+        "headerSourceRows": [
+          1
+        ],
+        "sourceColumnSpans": [
+          {
+            "last": 2,
+            "first": 1
+          },
+          {
+            "last": 3,
+            "first": 3
+          }
+        ],
+        "warnings": [],
+        "information": [
+          {
+            "code": "MERGED_CELLS",
+            "range": "A1:B1"
+          },
+          {
+            "code": "MERGED_CELLS",
+            "range": "A2:B2"
+          },
+          {
+            "code": "MERGED_CELLS",
+            "range": "A3:B3"
+          },
+          {
+            "code": "TABLE_MERGED_COLUMNS_COLLAPSED",
+            "range": "A1:C3"
+          }
+        ]
+      }
+    },
+    {
+      "id": "C13",
+      "title": "全行で同じ幅の横結合・2行ヘッダー",
+      "sheet": "13_全行同幅_複行見出し",
+      "category": "collapsed-logical-column",
+      "inputRange": "A1:C3",
+      "mergedRanges": [
+        "A1:B1",
+        "A2:B2",
+        "A3:B3"
+      ],
+      "hiddenRows": [],
+      "sourceWorkbook": "input.xlsx",
+      "screenshot": "screenshots/C13.png",
+      "screenshotInBundle": "C13/screenshot.png",
+      "screenshotKind": "HTML rendering of source workbook cells, fill, and merges",
+      "screenshotSha256": "58ea877d9b018030526c775d7cc194a009e5fdbb8ef2a24dd5d7fffded74ee55",
+      "markdown": "pairs/C13/document.md",
+      "markdownInBundle": "C13/document.md",
+      "markdownSha256": "82b53559df8c5fb847a0ac84ba2fd6cd1a076765e5fd8e5d6bfbb79d054bb8f5",
+      "report": {
+        "section": "13_全行同幅_複行見出し",
+        "range": "A1:C3",
+        "header": "fill-color",
+        "headerSourceRows": [
+          1,
+          2
+        ],
+        "sourceColumnSpans": [
+          {
+            "last": 2,
+            "first": 1
+          },
+          {
+            "last": 3,
+            "first": 3
+          }
+        ],
+        "warnings": [],
+        "information": [
+          {
+            "code": "MERGED_CELLS",
+            "range": "A1:B1"
+          },
+          {
+            "code": "MERGED_CELLS",
+            "range": "A2:B2"
+          },
+          {
+            "code": "MERGED_CELLS",
+            "range": "A3:B3"
+          },
+          {
+            "code": "TABLE_MERGED_COLUMNS_COLLAPSED",
+            "range": "A1:C3"
+          }
+        ]
+      }
+    },
+    {
+      "id": "C14",
+      "title": "明細の一部だけ横結合",
+      "sheet": "14_明細だけ横結合",
+      "category": "body-horizontal-merge",
+      "inputRange": "A1:C3",
+      "mergedRanges": [
+        "A2:B2"
+      ],
+      "hiddenRows": [],
+      "sourceWorkbook": "input.xlsx",
+      "screenshot": "screenshots/C14.png",
+      "screenshotInBundle": "C14/screenshot.png",
+      "screenshotKind": "HTML rendering of source workbook cells, fill, and merges",
+      "screenshotSha256": "a01a5e4f33bf8e3fb962bc3c5828b913da9000c2c557d66bcdf56cb3ea852250",
+      "markdown": "pairs/C14/document.md",
+      "markdownInBundle": "C14/document.md",
+      "markdownSha256": "5019b4a04c66f8a08cce8e5e5cda029a3ca975c5f598f11458cc6acd75349b77",
+      "report": {
+        "section": "14_明細だけ横結合",
+        "range": "A1:C3",
+        "header": "fill-color",
+        "headerSourceRows": [
+          1
+        ],
+        "sourceColumnSpans": [
+          {
+            "last": 1,
+            "first": 1
+          },
+          {
+            "last": 2,
+            "first": 2
+          },
+          {
+            "last": 3,
+            "first": 3
+          }
+        ],
+        "warnings": [
+          {
+            "code": "TABLE_MERGE_FLATTENED",
+            "range": "A1:C3"
+          }
+        ],
+        "information": [
+          {
+            "code": "MERGED_CELLS",
+            "range": "A2:B2"
+          }
+        ]
+      }
+    },
+    {
+      "id": "C15",
+      "title": "明細の縦結合",
+      "sheet": "15_明細だけ縦結合",
+      "category": "body-vertical-merge",
+      "inputRange": "A1:C3",
+      "mergedRanges": [
+        "A2:A3"
+      ],
+      "hiddenRows": [],
+      "sourceWorkbook": "input.xlsx",
+      "screenshot": "screenshots/C15.png",
+      "screenshotInBundle": "C15/screenshot.png",
+      "screenshotKind": "HTML rendering of source workbook cells, fill, and merges",
+      "screenshotSha256": "06d875fa5e98401bd3bcac8550ce6e63319c2b43080f2832a080cd5c6745084f",
+      "markdown": "pairs/C15/document.md",
+      "markdownInBundle": "C15/document.md",
+      "markdownSha256": "7e3d9f68a3a4f8f48881bd6e78b9c47cb7aea844f2c1946d50dd3612a1a20e88",
+      "report": {
+        "section": "15_明細だけ縦結合",
+        "range": "A1:C3",
+        "header": "fill-color",
+        "headerSourceRows": [
+          1
+        ],
+        "sourceColumnSpans": [
+          {
+            "last": 1,
+            "first": 1
+          },
+          {
+            "last": 2,
+            "first": 2
+          },
+          {
+            "last": 3,
+            "first": 3
+          }
+        ],
+        "warnings": [
+          {
+            "code": "TABLE_MERGE_FLATTENED",
+            "range": "A1:C3"
+          }
+        ],
+        "information": [
+          {
+            "code": "MERGED_CELLS",
+            "range": "A2:A3"
+          }
+        ]
+      }
+    },
+    {
+      "id": "C16",
+      "title": "複数行ヘッダーで横結合位置がずれる",
+      "sheet": "16_複行_ずれた横結合",
+      "category": "offset-header-merges",
+      "inputRange": "A1:D3",
+      "mergedRanges": [
+        "A1:B1",
+        "C1:D1",
+        "B2:C2"
+      ],
+      "hiddenRows": [],
+      "sourceWorkbook": "input.xlsx",
+      "screenshot": "screenshots/C16.png",
+      "screenshotInBundle": "C16/screenshot.png",
+      "screenshotKind": "HTML rendering of source workbook cells, fill, and merges",
+      "screenshotSha256": "2abc3fe209a00d9fb006f86c346819dc4295d1f2441816c39d24f44f3f479f9d",
+      "markdown": "pairs/C16/document.md",
+      "markdownInBundle": "C16/document.md",
+      "markdownSha256": "f8410494b864c2a61ea817e0805be35b83615e7c5f71d6f6ce50ee90fc957e96",
+      "report": {
+        "section": "16_複行_ずれた横結合",
+        "range": "A1:D3",
+        "header": "fill-color",
+        "headerSourceRows": [
+          1,
+          2
+        ],
+        "sourceColumnSpans": [
+          {
+            "last": 1,
+            "first": 1
+          },
+          {
+            "last": 2,
+            "first": 2
+          },
+          {
+            "last": 3,
+            "first": 3
+          },
+          {
+            "last": 4,
+            "first": 4
+          }
+        ],
+        "warnings": [
+          {
+            "code": "TABLE_MERGE_FLATTENED",
+            "range": "A1:D3"
+          }
+        ],
+        "information": [
+          {
+            "code": "MERGED_CELLS",
+            "range": "A1:B1"
+          },
+          {
+            "code": "MERGED_CELLS",
+            "range": "C1:D1"
+          },
+          {
+            "code": "MERGED_CELLS",
+            "range": "B2:C2"
+          }
+        ]
+      }
+    },
+    {
+      "id": "C17",
+      "title": "全行に直接塗りがある",
+      "sheet": "17_全行色付き",
+      "category": "all-colored",
+      "inputRange": "A1:C3",
+      "mergedRanges": [],
+      "hiddenRows": [],
+      "sourceWorkbook": "input.xlsx",
+      "screenshot": "screenshots/C17.png",
+      "screenshotInBundle": "C17/screenshot.png",
+      "screenshotKind": "HTML rendering of source workbook cells, fill, and merges",
+      "screenshotSha256": "b07e9af9f1da28051907a1209b1d9b2cf60c016f3991b9c6ed217553313c303f",
+      "markdown": "pairs/C17/document.md",
+      "markdownInBundle": "C17/document.md",
+      "markdownSha256": "3a880d48df016a445cda7e2803673d14d325605bfb28fe2af9d53f2d2cf68288",
+      "report": {
+        "section": "17_全行色付き",
+        "range": "A1:C3",
+        "header": "fill-color",
+        "headerSourceRows": [
+          1,
+          2,
+          3
+        ],
+        "sourceColumnSpans": [
+          {
+            "last": 1,
+            "first": 1
+          },
+          {
+            "last": 2,
+            "first": 2
+          },
+          {
+            "last": 3,
+            "first": 3
+          }
+        ],
+        "warnings": [],
+        "information": []
+      }
+    },
+    {
+      "id": "C18",
+      "title": "無色の先頭行・全行で同じ幅の横結合",
+      "sheet": "18_無色_全行同幅横結合",
+      "category": "no-header-collapsed-column",
+      "inputRange": "A1:C3",
+      "mergedRanges": [
+        "A1:B1",
+        "A2:B2",
+        "A3:B3"
+      ],
+      "hiddenRows": [],
+      "sourceWorkbook": "input.xlsx",
+      "screenshot": "screenshots/C18.png",
+      "screenshotInBundle": "C18/screenshot.png",
+      "screenshotKind": "HTML rendering of source workbook cells, fill, and merges",
+      "screenshotSha256": "cc0515800a68840b067dde3245d54c4432a483ebee3dd5f30570e8c3b2c7fab4",
+      "markdown": "pairs/C18/document.md",
+      "markdownInBundle": "C18/document.md",
+      "markdownSha256": "3f6bc25b10cb0f256b607f0b21a39da865e61f48ebb7ff6cfdf62c8bfb272db9",
+      "report": {
+        "section": "18_無色_全行同幅横結合",
+        "range": "A1:C3",
+        "header": "empty-generated",
+        "headerSourceRows": [],
+        "sourceColumnSpans": [
+          {
+            "last": 2,
+            "first": 1
+          },
+          {
+            "last": 3,
+            "first": 3
+          }
+        ],
+        "warnings": [],
+        "information": [
+          {
+            "code": "MERGED_CELLS",
+            "range": "A1:B1"
+          },
+          {
+            "code": "MERGED_CELLS",
+            "range": "A2:B2"
+          },
+          {
+            "code": "MERGED_CELLS",
+            "range": "A3:B3"
+          },
+          {
+            "code": "TABLE_MERGED_COLUMNS_COLLAPSED",
+            "range": "A1:C3"
+          }
+        ]
+      }
+    },
+    {
+      "id": "C19",
+      "title": "非表示の分割行を挟む同幅結合",
+      "sheet": "19_隠れた分割行",
+      "category": "hidden-row-collapsed-column",
+      "inputRange": "A1:C4",
+      "mergedRanges": [
+        "A1:B1",
+        "A3:B3",
+        "A4:B4"
+      ],
+      "hiddenRows": [
+        2
+      ],
+      "sourceWorkbook": "input.xlsx",
+      "screenshot": "screenshots/C19.png",
+      "screenshotInBundle": "C19/screenshot.png",
+      "screenshotKind": "HTML rendering of source workbook cells, fill, and merges",
+      "screenshotSha256": "8802667a3915c34eddf63d06e86366481dd7d9e2ffdbc7f388c994862bf454de",
+      "markdown": "pairs/C19/document.md",
+      "markdownInBundle": "C19/document.md",
+      "markdownSha256": "66df6062ae2090f91017220437d900ed8df5b0fc17179ec6473a1dc4a9af3a14",
+      "report": {
+        "section": "19_隠れた分割行",
+        "range": "A1:C4",
+        "header": "fill-color",
+        "headerSourceRows": [
+          1
+        ],
+        "sourceColumnSpans": [
+          {
+            "last": 2,
+            "first": 1
+          },
+          {
+            "last": 3,
+            "first": 3
+          }
+        ],
+        "warnings": [],
+        "information": [
+          {
+            "code": "HIDDEN_ROW_OMITTED",
+            "range": "2:2"
+          },
+          {
+            "code": "MERGED_CELLS",
+            "range": "A1:B1"
+          },
+          {
+            "code": "MERGED_CELLS",
+            "range": "A3:B3"
+          },
+          {
+            "code": "MERGED_CELLS",
+            "range": "A4:B4"
+          },
+          {
+            "code": "TABLE_MERGED_COLUMNS_COLLAPSED",
+            "range": "A1:C4"
+          }
+        ]
+      }
+    },
+    {
+      "id": "C20",
+      "title": "隣り合う2組の同幅結合",
+      "sheet": "20_隣接する同幅結合",
+      "category": "adjacent-collapsed-columns",
+      "inputRange": "A1:D3",
+      "mergedRanges": [
+        "A1:B1",
+        "C1:D1",
+        "A2:B2",
+        "C2:D2",
+        "A3:B3",
+        "C3:D3"
+      ],
+      "hiddenRows": [],
+      "sourceWorkbook": "input.xlsx",
+      "screenshot": "screenshots/C20.png",
+      "screenshotInBundle": "C20/screenshot.png",
+      "screenshotKind": "HTML rendering of source workbook cells, fill, and merges",
+      "screenshotSha256": "26528b0f320ff3208a0759a22b84d9279dc192cc1abf6a38a93d6a162f0d8e5f",
+      "markdown": "pairs/C20/document.md",
+      "markdownInBundle": "C20/document.md",
+      "markdownSha256": "7bb365ab63e82e638f55ed62847b7b34de949c06cf8996c24bc25db0cf27b964",
+      "report": {
+        "section": "20_隣接する同幅結合",
+        "range": "A1:D3",
+        "header": "fill-color",
+        "headerSourceRows": [
+          1
+        ],
+        "sourceColumnSpans": [
+          {
+            "last": 2,
+            "first": 1
+          },
+          {
+            "last": 4,
+            "first": 3
+          }
+        ],
+        "warnings": [],
+        "information": [
+          {
+            "code": "MERGED_CELLS",
+            "range": "A1:B1"
+          },
+          {
+            "code": "MERGED_CELLS",
+            "range": "C1:D1"
+          },
+          {
+            "code": "MERGED_CELLS",
+            "range": "A2:B2"
+          },
+          {
+            "code": "MERGED_CELLS",
+            "range": "C2:D2"
+          },
+          {
+            "code": "MERGED_CELLS",
+            "range": "A3:B3"
+          },
+          {
+            "code": "MERGED_CELLS",
+            "range": "C3:D3"
+          },
+          {
+            "code": "TABLE_MERGED_COLUMNS_COLLAPSED",
+            "range": "A1:D3"
+          }
+        ]
+      }
+    },
+    {
+      "id": "C21",
+      "title": "左上だけ罫線のないマトリックス",
+      "sheet": "21_左上無罫線のマトリックス",
+      "category": "borderless-matrix-corner",
+      "inputRange": "A1:C3",
+      "mergedRanges": [],
+      "hiddenRows": [],
+      "sourceWorkbook": "input.xlsx",
+      "screenshot": "screenshots/C21.png",
+      "screenshotInBundle": "C21/screenshot.png",
+      "screenshotKind": "HTML rendering of source workbook cells, fill, and merges",
+      "screenshotSha256": "f008d7122d63fcabcca8e33eb156c5c21853414ff2058761256abf116c652c30",
+      "markdown": "pairs/C21/document.md",
+      "markdownInBundle": "C21/document.md",
+      "markdownSha256": "f7725723ab4c39ddd0425edba804d274bf48a23b499fe6304eb843060d995c61",
+      "report": {
+        "section": "21_左上無罫線のマトリックス",
+        "range": "A1:C3",
+        "header": "matrix-grid",
+        "headerSourceRows": [
+          1
+        ],
+        "sourceColumnSpans": [
+          {
+            "last": 1,
+            "first": 1
+          },
+          {
+            "last": 2,
+            "first": 2
+          },
+          {
+            "last": 3,
+            "first": 3
+          }
+        ],
+        "warnings": [],
+        "information": [
+          {
+            "code": "TABLE_OPEN_TOP_CELL",
+            "range": "A1"
+          },
+          {
+            "code": "MATRIX_HEADER_INFERRED",
+            "range": "A1:C3"
+          }
+        ]
+      }
+    },
+    {
+      "id": "C22",
+      "title": "通常表に続く、角だけ罫線のないマトリックス",
+      "sheet": "22_通常表に続くマトリックス",
+      "category": "attached-borderless-matrix",
+      "inputRange": "A1:F3",
+      "mergedRanges": [],
+      "hiddenRows": [],
+      "sourceWorkbook": "input.xlsx",
+      "screenshot": "screenshots/C22.png",
+      "screenshotInBundle": "C22/screenshot.png",
+      "screenshotKind": "HTML rendering of source workbook cells, fill, and merges",
+      "screenshotSha256": "b082bc43c27eb07d69464e2d2edc2db4561516353801179e45416a1b5daaa9c9",
+      "markdown": "pairs/C22/document.md",
+      "markdownInBundle": "C22/document.md",
+      "markdownSha256": "0198bbe2ce641e1b7f88c3c32cc28634c6100c28c1faa6fd232455b4f882bb94",
+      "report": {
+        "section": "22_通常表に続くマトリックス",
+        "range": "A1:F3",
+        "header": "fill-color",
+        "headerSourceRows": [
+          1
+        ],
+        "sourceColumnSpans": [
+          {
+            "last": 1,
+            "first": 1
+          },
+          {
+            "last": 2,
+            "first": 2
+          },
+          {
+            "last": 3,
+            "first": 3
+          },
+          {
+            "last": 4,
+            "first": 4
+          },
+          {
+            "last": 5,
+            "first": 5
+          },
+          {
+            "last": 6,
+            "first": 6
+          }
+        ],
+        "warnings": [],
+        "information": [
+          {
+            "code": "TABLE_OPEN_TOP_CELL",
+            "range": "D1"
+          }
+        ]
+      }
+    },
+    {
+      "id": "C23",
+      "title": "無罫線の注記と3列幅の結合見出し",
+      "sheet": "23_注記と3列結合の見出し",
+      "category": "borderless-notes-group-header",
+      "inputRange": "A1:E4",
+      "mergedRanges": [
+        "C1:E1"
+      ],
+      "hiddenRows": [],
+      "sourceWorkbook": "input.xlsx",
+      "screenshot": "screenshots/C23.png",
+      "screenshotInBundle": "C23/screenshot.png",
+      "screenshotKind": "HTML rendering of source workbook cells, fill, and merges",
+      "screenshotSha256": "b94f52346d911374bef97039de88f89405e03277e4130a3fbcd0060cc7d6e92d",
+      "markdown": "pairs/C23/document.md",
+      "markdownInBundle": "C23/document.md",
+      "markdownSha256": "eb3b53183c0d8fdc47dbbe3f5e66df2c725ed8562c20b85ba83e1735cd466d76",
+      "report": {
+        "section": "23_注記と3列結合の見出し",
+        "range": "A1:E4",
+        "header": "matrix-grid",
+        "headerSourceRows": [
+          1,
+          2
+        ],
+        "sourceColumnSpans": [
+          {
+            "last": 1,
+            "first": 1
+          },
+          {
+            "last": 2,
+            "first": 2
+          },
+          {
+            "last": 3,
+            "first": 3
+          },
+          {
+            "last": 4,
+            "first": 4
+          },
+          {
+            "last": 5,
+            "first": 5
+          }
+        ],
+        "warnings": [
+          {
+            "code": "TABLE_MERGE_FLATTENED",
+            "range": "A1:E4"
+          }
+        ],
+        "information": [
+          {
+            "code": "TABLE_OPEN_TOP_NOTE",
+            "range": "A1"
+          },
+          {
+            "code": "TABLE_OPEN_TOP_NOTE",
+            "range": "B1"
+          },
+          {
+            "code": "MERGED_CELLS",
+            "range": "C1:E1"
+          },
+          {
+            "code": "MATRIX_HEADER_INFERRED",
+            "range": "A1:E4"
+          }
+        ]
+      }
+    },
+    {
+      "id": "C24",
+      "title": "無罫線の注記と縦横結合を含む3段見出し",
+      "sheet": "24_注記と縦横結合の3段見出し",
+      "category": "borderless-notes-multi-level-matrix",
+      "inputRange": "A1:F5",
+      "mergedRanges": [
+        "C1:D1",
+        "A2:A3",
+        "B2:B3",
+        "C3:D3",
+        "E3:F3"
+      ],
+      "hiddenRows": [],
+      "sourceWorkbook": "input.xlsx",
+      "screenshot": "screenshots/C24.png",
+      "screenshotInBundle": "C24/screenshot.png",
+      "screenshotKind": "HTML rendering of source workbook cells, fill, and merges",
+      "screenshotSha256": "50cd9d360037ce889d66d7069ea8e6ad357f7861bd0447a9e1f7e1a55dba8b81",
+      "markdown": "pairs/C24/document.md",
+      "markdownInBundle": "C24/document.md",
+      "markdownSha256": "c9bf2e6a2cb40dbf3ed5a42a44ff4657fa55a368885b1672a124549bc218aa14",
+      "report": {
+        "section": "24_注記と縦横結合の3段見出し",
+        "range": "A1:F5",
+        "header": "matrix-grid",
+        "headerSourceRows": [
+          1,
+          2,
+          3
+        ],
+        "sourceColumnSpans": [
+          {
+            "last": 1,
+            "first": 1
+          },
+          {
+            "last": 2,
+            "first": 2
+          },
+          {
+            "last": 3,
+            "first": 3
+          },
+          {
+            "last": 4,
+            "first": 4
+          },
+          {
+            "last": 5,
+            "first": 5
+          },
+          {
+            "last": 6,
+            "first": 6
+          }
+        ],
+        "warnings": [
+          {
+            "code": "TABLE_MERGE_FLATTENED",
+            "range": "A1:F5"
+          }
+        ],
+        "information": [
+          {
+            "code": "TABLE_OPEN_TOP_NOTE",
+            "range": "A1"
+          },
+          {
+            "code": "TABLE_OPEN_TOP_NOTE",
+            "range": "B1"
+          },
+          {
+            "code": "TABLE_OPEN_TOP_CELL",
+            "range": "E1"
+          },
+          {
+            "code": "TABLE_OPEN_TOP_CELL",
+            "range": "F1"
+          },
+          {
+            "code": "MERGED_CELLS",
+            "range": "C1:D1"
+          },
+          {
+            "code": "MERGED_CELLS",
+            "range": "A2:A3"
+          },
+          {
+            "code": "MERGED_CELLS",
+            "range": "B2:B3"
+          },
+          {
+            "code": "MERGED_CELLS",
+            "range": "C3:D3"
+          },
+          {
+            "code": "MERGED_CELLS",
+            "range": "E3:F3"
+          },
+          {
+            "code": "MATRIX_HEADER_INFERRED",
+            "range": "A1:F5"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,9 +1,9 @@
 {
-  "specVersion" : 2,
+  "specVersion" : 1,
   "source" : {
-    "filename" : "input.docx",
+    "format" : "docx",
     "sha256" : "e0f36ead555898d2d937169e782eab54cf0359fd00816dbede9139fb7e24fb0f",
-    "format" : "docx"
+    "filename" : "input.docx"
   },
   "sectionKind" : "document",
   "sectionCount" : 1,
@@ -30,70 +30,70 @@
     "message" : "Wordの図形・保存された接続を文字として保持し、同じ描画領域を確認用画像にまとめました。ページ全体の配置は再現しません。"
   } ],
   "blocks" : [ {
-    "markdownEndLine" : 3,
-    "section" : "document",
-    "markdownStartLine" : 3,
     "range" : "paragraph:1",
+    "markdownStartLine" : 3,
+    "section" : "document",
+    "markdownEndLine" : 3,
     "type" : "paragraph"
   }, {
-    "markdownEndLine" : 5,
-    "section" : "document",
-    "markdownStartLine" : 5,
     "range" : "paragraph:2",
+    "markdownStartLine" : 5,
+    "section" : "document",
+    "markdownEndLine" : 5,
     "type" : "paragraph"
   }, {
-    "markdownEndLine" : 7,
-    "section" : "document",
-    "markdownStartLine" : 7,
     "range" : "paragraph:3",
+    "markdownStartLine" : 7,
+    "section" : "document",
+    "markdownEndLine" : 7,
     "type" : "paragraph"
   }, {
-    "markdownEndLine" : 9,
-    "section" : "document",
-    "markdownStartLine" : 9,
     "range" : "paragraph:4",
+    "markdownStartLine" : 9,
+    "section" : "document",
+    "markdownEndLine" : 9,
     "type" : "paragraph"
   }, {
-    "markdownEndLine" : 11,
-    "section" : "document",
-    "markdownStartLine" : 11,
     "range" : "paragraph:5",
+    "markdownStartLine" : 11,
+    "section" : "document",
+    "markdownEndLine" : 11,
     "type" : "paragraph"
   }, {
-    "markdownEndLine" : 13,
-    "section" : "document",
-    "markdownStartLine" : 13,
     "range" : "paragraph:6",
+    "markdownStartLine" : 13,
+    "section" : "document",
+    "markdownEndLine" : 13,
     "type" : "paragraph"
   }, {
-    "markdownEndLine" : 18,
-    "section" : "document",
-    "markdownStartLine" : 15,
     "range" : "table:1",
+    "markdownStartLine" : 15,
+    "section" : "document",
+    "markdownEndLine" : 18,
     "type" : "table"
   }, {
-    "markdownEndLine" : 20,
-    "section" : "document",
-    "markdownStartLine" : 20,
     "range" : "paragraph:7",
+    "markdownStartLine" : 20,
+    "section" : "document",
+    "markdownEndLine" : 20,
     "type" : "paragraph"
   }, {
-    "markdownEndLine" : 22,
-    "section" : "document",
-    "markdownStartLine" : 22,
     "range" : "paragraph:8",
+    "markdownStartLine" : 22,
+    "section" : "document",
+    "markdownEndLine" : 22,
     "type" : "paragraph"
   }, {
-    "markdownEndLine" : 24,
-    "section" : "document",
-    "markdownStartLine" : 24,
     "range" : "paragraph:9",
+    "markdownStartLine" : 24,
+    "section" : "document",
+    "markdownEndLine" : 24,
     "type" : "paragraph"
   }, {
-    "markdownEndLine" : 26,
-    "section" : "document",
-    "markdownStartLine" : 26,
     "range" : "paragraph:10",
+    "markdownStartLine" : 26,
+    "section" : "document",
+    "markdownEndLine" : 26,
     "type" : "paragraph"
   }, {
     "type" : "diagram",
@@ -120,16 +120,16 @@
       "height" : null
     }
   }, {
-    "markdownEndLine" : 36,
-    "section" : "document",
-    "markdownStartLine" : 28,
     "range" : "paragraph:11",
+    "markdownStartLine" : 28,
+    "section" : "document",
+    "markdownEndLine" : 36,
     "type" : "paragraph"
   }, {
-    "markdownEndLine" : 38,
-    "section" : "document",
-    "markdownStartLine" : 38,
     "range" : "paragraph:12",
+    "markdownStartLine" : 38,
+    "section" : "document",
+    "markdownEndLine" : 38,
     "type" : "paragraph"
   }, {
     "type" : "diagram",
@@ -156,21 +156,21 @@
       "height" : 120
     }
   }, {
-    "markdownEndLine" : 48,
-    "section" : "document",
-    "markdownStartLine" : 40,
     "range" : "paragraph:13",
+    "markdownStartLine" : 40,
+    "section" : "document",
+    "markdownEndLine" : 48,
     "type" : "paragraph"
   } ],
   "assets" : [ {
-    "sizeBytes" : 16637,
-    "contentType" : "image/png",
     "path" : "images/diagram-0001.png",
+    "contentType" : "image/png",
+    "sizeBytes" : 16637,
     "sha256" : "8734d06539cb11fc728ae7e9ed296f23f75891a6313d0cf2cf9e832e1f1fe74d"
   }, {
-    "sizeBytes" : 9816,
-    "contentType" : "image/png",
     "path" : "images/diagram-0002.png",
+    "contentType" : "image/png",
+    "sizeBytes" : 9816,
     "sha256" : "23d6b7b88699dabcd097078ecf232742f426068496d3a40abe78bf86ebf99a69"
   } ]
 }

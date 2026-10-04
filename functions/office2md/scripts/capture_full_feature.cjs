@@ -99,7 +99,7 @@ async function main() {
     assert.equal(archive.subarray(0, 4).toString('hex'), '504b0304', 'Downloaded archive is not a ZIP.');
     const markdown = markdownBytes.toString('utf8'), conversionReport = JSON.parse(reportBytes);
     assert(markdown.startsWith('# '), 'Downloaded Markdown has no sheet heading.');
-    assert.equal(conversionReport.specVersion, 2);
+    assert.equal(conversionReport.specVersion, 1);
     assert(Array.isArray(conversionReport.assets) && Array.isArray(conversionReport.warnings));
     assert(conversionReport.assets.every(asset => /^images\/(?:image|diagram)-\d+\.[a-z0-9]+$/.test(asset.path)),
       'Result contains an unexpected output image path.');

@@ -19,66 +19,51 @@
 <h1>実際の変換例</h1>
 <p class="lead">複数シートのExcel、変更履歴を含むWord、グループ図形を含むPowerPointを、実際のAPIとPlaygroundで変換しました。入力・変換結果・警告をまとめて確認できます。</p>
 <p>すべてこのリポジトリで作成したオリジナル資料です。掲載画像は実行後のPlaygroundを撮影したもので、変換結果の文章や図を補正していません。出力ZIPには <code>document.md</code>・<code>report.json</code>・<code>images/</code> が入っています。</p>
-<div class="cards example-index"><a class="card" href="#excel"><h3>Excel：13シートの包括例</h3><p>文章、7個の表、数式キャッシュ、図形・画像、非表示・未対応要素を一度に確認。</p></a><a class="card" href="#word"><h3>Word：変更履歴と脚注</h3><p>見出し、罫線なしの結合表、番号、脚注、回転図形と画像。</p></a><a class="card" href="#powerpoint"><h3>PowerPoint：表と図形の本文抽出</h3><p>4表示＋1非表示スライド。グループの図形・接続線・リンク・日本語を抽出。</p></a></div>
-<p>RAG向け業務フローのデモ：<a href="#word-rag">Word</a> · <a href="#powerpoint-rag">PowerPoint</a>。入力・実変換Markdown・JSON・スクリーンショットを掲載しています。</p>
-<div class="callout"><p>このページは<strong>同期HTTP</strong>の実行例です。非同期HTTP・直接Queueも同じ変換コアを使いますが、ここでQueue経由の動作やAzure上の性能を測定したものではありません。PowerPointは図中の文字・保存された接続関係を本文にし、配置はJSON、見た目はスライド全体の参考画像へ残します。Word・Excelも図形の文字と保存済み接続を本文に残します。Wordは描画グループ・キャンバス、Excelは明示グループまたは解決した接続を確認用画像にまとめます。</p></div>
+<div class="cards example-index"><a class="card" href="#excel"><h3>Excel：13シートの包括例</h3><p>文章、6個の表、数式キャッシュ、図形・画像、非表示・未対応要素を一度に確認。</p></a><a class="card" href="#word"><h3>Word：変更履歴と脚注</h3><p>見出し、罫線なしの結合表、番号、脚注、回転図形と画像。</p></a><a class="card" href="#powerpoint"><h3>PowerPoint：表と図形の本文抽出</h3><p>4表示＋1非表示スライド。グループの図形・接続線・リンク・日本語を抽出。</p></a></div>
+<p>Excelの見出し行とセル結合の扱いを詳しく比較する場合は、<a href="merge-cases.html">Excel結合・見出しの実例</a>をご覧ください。入力ブックの各ケースと実変換したMarkdown・reportを並べています。RAG向け業務フローのデモ：<a href="#word-rag">Word</a> · <a href="#powerpoint-rag">PowerPoint</a>。入力・実変換Markdown・JSON・スクリーンショットを掲載しています。</p>
+<div class="callout"><p>このページは<strong>同期HTTP</strong>の実行例です。非同期HTTP・直接Queueも同じ変換コアを使いますが、ここでQueue経由の動作やAzure上の性能を測定したものではありません。PowerPointは図中の文字・保存された接続関係・スライド上の大まかな位置を本文にし、位置と未接続の矢印が向く方向をJSONにも残します。見た目はスライド全体の参考画像で確認できます。Word・Excelも図形の文字と保存済み接続を本文に残します。Wordは描画グループ・キャンバス、Excelは明示グループまたは解決した接続を確認用画像にまとめます。</p></div>
 <section class="sample-case" aria-labelledby="excel">
 <h2 id="excel">Excel：文章・表・図形・未対応要素を含む13シート</h2>
-<p>13シートから、出力内容のある8シートを残します。非表示2シートと空・取消線のみ・罫線のみの3シートは除外されます。7個の罫線表、部分太字・リンク・取消線、結合セル、保存済みの数式結果、画像の重複、入れ子グループ・回転・接続線・未対応グラフを同じファイルに含めています。</p>
-<p class="sample-meta">HTTP 200 · 入力 151,200 bytes · ZIP 406,939 bytes · 8 出力セクション · 32 アセット · 警告 20 件</p>
+<p>13シートから、出力内容のある8シートを残します。非表示2シートと空・取消線のみ・罫線のみの3シートは除外されます。6個の罫線表、部分太字・リンク・取消線、結合セル、保存済みの数式結果、画像の重複、入れ子グループ・回転・接続線・未対応グラフを同じファイルに含めています。直接塗りつぶしが設定されたセルを1つ以上含む先頭の表示行が連続すれば各列の見出しを連結し、色のない先頭行は明細として残します。採用した元行は <code>report.json</code> の <code>headerSourceRows</code> で確認できます。全行が直接塗りなら全行が見出しに入り、明細はなくなります。この例の「04_画像」にも該当する表があります。全表示行で同じ明示的な横結合が続く列範囲は1列に畳み、元の列範囲を <code>sourceColumnSpans</code> に記録します。</p>
+<p class="sample-meta">HTTP 200 · 入力 152,173 bytes · ZIP 423,175 bytes · 8 出力セクション · 33 アセット · 警告 20 件</p>
 <div class="sample-links"><a href="examples/excel-complex/input.xlsx" download>入力 XLSX</a><a href="examples/excel-complex/result.zip" download>実際の出力 ZIP</a><a href="examples/excel-complex/output/document.md" download>document.md</a><a href="examples/excel-complex/output/report.json">report.json</a><a href="examples/excel-complex/run.json">実行記録・SHA-256</a></div>
 <div class="screenshot-grid">
 <figure class="example-figure"><a href="examples/excel-complex/screenshots/section-01.png"><img src="examples/excel-complex/screenshots/section-01.png" alt="Excelの文章・部分太字・リンク・取消線除去後の実際のMarkdownプレビュー" loading="lazy"></a><figcaption>文章シートの実出力。シート名がH1になり、部分太字・リンクが残り、取消線の文字は除外されています。 画像をクリックすると原寸で表示します。</figcaption></figure>
-<figure class="example-figure"><a href="examples/excel-complex/screenshots/tables-detail.png"><img src="examples/excel-complex/screenshots/tables-detail.png" alt="Excelの閉じた罫線が複数のMarkdown表になった実際の結果" loading="lazy"></a><figcaption>表シートの先頭790pxを撮影。横並びだった表も文書の順序で並び、結合セルの続きは空欄です。<a href="examples/excel-complex/screenshots/section-02.png">シート全体</a>。 画像をクリックすると原寸で表示します。</figcaption></figure>
+<figure class="example-figure"><a href="examples/excel-complex/screenshots/tables-detail.png"><img src="examples/excel-complex/screenshots/tables-detail.png" alt="Excelの閉じた罫線が複数のMarkdown表になった実際の結果" loading="lazy"></a><figcaption>表シートの先頭790pxを撮影。先頭から色付き行が続く表では見出しを列ごとに連結し、色のない先頭行は明細に残します。全行で結合幅が揃わない範囲は元の列数を保ちます。<a href="examples/excel-complex/screenshots/section-02.png">シート全体</a>。画像をクリックすると原寸で表示します。</figcaption></figure>
 <figure class="example-figure"><a href="examples/excel-complex/screenshots/group-detail.png"><img src="examples/excel-complex/screenshots/group-detail.png" alt="グループの図形文字を本文にし、角丸図形・楕円・画像を一つの確認用画像にまとめた結果" loading="lazy"></a><figcaption>グループシートの先頭1000px。文字と接続関係は本文にし、同じグループの図形・線・画像を確認用にまとめます。<a href="examples/excel-complex/screenshots/section-06.png">入れ子・重なりを含むシート全体</a>。 画像をクリックすると原寸で表示します。</figcaption></figure>
 <figure class="example-figure"><a href="examples/excel-complex/screenshots/section-07.png"><img src="examples/excel-complex/screenshots/section-07.png" alt="Excelのグラフや未対応図形の代替表示、縦書きの近似、加工画像の実変換結果" loading="lazy"></a><figcaption>未対応要素も含む出力。グラフは描画されず、星形の代替文、縦書きの横書き近似、切り抜き前の原本画像が見えます。 画像をクリックすると原寸で表示します。</figcaption></figure>
 </div>
-<p>数式は再計算しません。<code>1+2</code> に意図的に保存したキャッシュ <code>999</code> は、出力も <code>999</code> です。<code>IMAGE</code> 関数の画像は取得せず未対応表示になります。32アセットには確認用PNGとBMP添付を含みます。PNG/JPEGの回転・反転は確認用画像に反映し、同じ描画結果の画像ファイルは共有します。画像の切り抜きは未対応です。</p>
-<details class="sample-details"><summary>実際のMarkdown抜粋：表</summary><pre><code>|  |  |  |  |
+<p>数式は再計算しません。<code>1+2</code> に意図的に保存したキャッシュ <code>999</code> は、出力も <code>999</code> です。<code>IMAGE</code> 関数の画像は取得せず未対応表示になります。33アセットには確認用PNGとBMP添付を含みます。PNG/JPEGの回転・反転は確認用画像に反映し、同じ描画結果の画像ファイルは共有します。画像の切り抜きは未対応です。</p>
+<details class="sample-details"><summary>実際のMarkdown抜粋：表</summary><pre><code>| **項目** | **数量** |  | **備考** |
 | --- | --- | --- | --- |
-| **項目** | **数量** |  | **備考** |
 | 売上 | 12 |  | 通常と**重要**の混在 |
 |  |  |  |  |
 | 予算 | 0 |  | 上限 \| 下限 |
 | 取消線 |  |  | 残る説明 |
 | リンク |  |  | [表のリンク&lt;br&gt;2行目](https://example.com/table) |
 
-|  |  |  |
-| --- | --- | --- |
 | **別の表** | **値** | **状態** |
+| --- | --- | --- |
 | 東日本 | 100 | OK |
 | 西日本 | 200 | OK |
 | 合計 | 300 | 完了 |
 
-|  |  |  |
-| --- | --- | --- |
-| **片側罫線** | **値** | **備考** |
-| 中段 | 2 |  |
-| 最終行 | 3 | 閉じた格子 |
+| **片側罫線** | **値** | **備考** | **可視の項目** | **値** |
+| --- | --- | --- | --- | --- |
+| 中段 | 2 |  | 表示される行 | 42 |
+| 最終行 | 3 | 閉じた格子 | 末尾 | 43 |
 
-|  |  |
-| --- | --- |
-| **可視の項目** | **値** |
-| 表示される行 | 42 |
-| 末尾 | 43 |
-
-|  |  |  |
+| **結合した見出し**（A列） | **結合した見出し**（B列） | **結合した見出し**（C列） |
 | --- | --- | --- |
-| **結合した見出し** |  |  |
 | A項目 | 10 | 完了 |
 | B項目 | 20 | 確認中 |
 | C項目 | 30 | 完了 |
 
-| **商品名** | **個数** | **単位** |
-| --- | --- | --- |
-| りんご | 3 | 個 |
-| みかん | 5 | 個 |
-| バナナ | 2 | 本 |
-
-スタイルだけの表　値　備考  
-データA　10　直接罫線なし  
-データB　20　文章として出力  
-データC　30
+| **商品名** | **個数** | **単位** | スタイルだけの表 | 値 | 備考 |
+| --- | --- | --- | --- | --- | --- |
+| りんご | 3 | 個 | データA | 10 | 直接罫線なし |
+| みかん | 5 | 個 | データB | 20 | 文章として出力 |
+| バナナ | 2 | 本 | データC | 30 |  |
 
 **単一セルの囲みは文章**　**閉じていない罫線**　**値**　**備考**  
 途中の行　10　文章として保持  
@@ -134,7 +119,7 @@ IMAGE関数は取得しない　\[セル内画像: 未対応\]
     &quot;code&quot;: &quot;TABLE_MERGE_FLATTENED&quot;,
     &quot;section&quot;: &quot;02_罫線の表&quot;,
     &quot;range&quot;: &quot;A20:C23&quot;,
-    &quot;message&quot;: &quot;Markdown表はセル結合を再現できないため、結合の続きは空欄です。&quot;
+    &quot;message&quot;: &quot;Markdown表はセル結合を直接表せないため、共有見出しは各列へ継承し、それ以外の結合の続きは空欄です。&quot;
   },
   {
     &quot;code&quot;: &quot;FORMULA_CACHE_MISSING&quot;,
@@ -170,19 +155,19 @@ IMAGE関数は取得しない　\[セル内画像: 未対応\]
     &quot;code&quot;: &quot;DIAGRAM_CONNECTION_UNRESOLVED&quot;,
     &quot;section&quot;: &quot;05_基本図形&quot;,
     &quot;range&quot;: &quot;A25:E25&quot;,
-    &quot;message&quot;: &quot;図形の接続関係を確定できません。接続先の保存情報がありません。配置からは推測しません。図形ID: shape-8&quot;
+    &quot;message&quot;: &quot;図形の接続関係を確定できません。接続先の保存情報がありません。保存情報と線端の境界接触のどちらでも確定できません。図形ID: shape-8&quot;
   },
   {
     &quot;code&quot;: &quot;DIAGRAM_CONNECTION_UNRESOLVED&quot;,
     &quot;section&quot;: &quot;05_基本図形&quot;,
     &quot;range&quot;: &quot;G25:K25&quot;,
-    &quot;message&quot;: &quot;図形の接続関係を確定できません。接続先の保存情報がありません。配置からは推測しません。図形ID: shape-1-9&quot;
+    &quot;message&quot;: &quot;図形の接続関係を確定できません。接続先の保存情報がありません。保存情報と線端の境界接触のどちらでも確定できません。図形ID: shape-1-9&quot;
   },
   {
     &quot;code&quot;: &quot;DIAGRAM_CONNECTION_UNRESOLVED&quot;,
     &quot;section&quot;: &quot;06_グループと接続&quot;,
     &quot;range&quot;: &quot;A5:M11&quot;,
-    &quot;message&quot;: &quot;図形の接続関係を確定できません。接続先の保存情報がありません。配置からは推測しません。図形ID: shape-1-3&quot;
+    &quot;message&quot;: &quot;図形の接続関係を確定できません。接続先の保存情報がありません。保存情報と線端の境界接触のどちらでも確定できません。図形ID: shape-1-3&quot;
   },
   {
     &quot;code&quot;: &quot;GRAPHIC_FRAME_UNSUPPORTED&quot;,
@@ -222,8 +207,8 @@ IMAGE関数は取得しない　\[セル内画像: 未対応\]
   }
 ]</code></pre></details>
 <figure class="example-figure"><a href="examples/excel-complex/screenshots/warnings.png"><img src="examples/excel-complex/screenshots/warnings.png" alt="Excel変換が返した20件の警告を展開したPlaygroundの実際の表示" loading="lazy"></a><figcaption>20件の警告を展開して撮影。条件付き書式・動的リンク・グラフ・加工画像など、変換で省略または近似した内容を記録しています。 画像をクリックすると原寸で表示します。</figcaption></figure>
-<p><a href="examples/excel-complex/screenshots/overview.png">Playground全体</a> · <a href="examples/excel-complex/screenshots/markdown-source.png">Markdownタブの画面</a>。入力の3か所の説明ラベルは、現在の「文字・接続を本文、グループ・接続単位を確認用画像とする出力」に合わせています。数式・図形・書式等の構造は元の包括サンプルと同じです。</p>
-<p>接続線は4件あり、保存された接続先から1件を確定しました。ほかの3件は接続先情報がないため不明とし、位置から補いません。図形の文字は通常の本文に、図形ID・位置・接続はJSONに残ります。セルの文章・表はMarkdownのままで、図の画像には含めません。</p>
+<p><a href="examples/excel-complex/screenshots/overview.png">Playground全体</a> · <a href="examples/excel-complex/screenshots/markdown-source.png">Markdownタブの画面</a>。入力には明示グループ、保存済み接続ID、保存IDのない横・斜めコネクターの線端接触、重なりだけでは統合しない例を収録しています。</p>
+<p>接続線は6件あり、保存された接続先から1件、線端と図形境界の接触から2件を確定しました。線端接触の2本は「申請 → 確認 → 保管」を連鎖させ、1つの確認用画像にまとめます。ほかの3件は接続先を確定できないため不明のままです。図形の文字は通常の本文に、図形ID・位置・接続はJSONに残ります。セルの文章・表はMarkdownのままで、図の画像には含めません。</p>
 <details class="sample-details"><summary>実際のMarkdown抜粋：グループ・接続・座標JSON</summary><pre><code># [06\_グループと接続] シート
 
 **06  グループ・接続・重なり**
@@ -236,7 +221,7 @@ IMAGE関数は取得しない　\[セル内画像: 未対応\]
 - shape-1-2（楕円）：確認&lt;br&gt;完了
 - shape-1-4（画像）：明示グループに含まれるPNG
 
-接続関係（保存情報）：
+接続関係：
 
 - shape-1-3：接続関係不明（接続先の保存情報がありません）
 
@@ -264,7 +249,7 @@ IMAGE関数は取得しない　\[セル内画像: 未対応\]
 - shape-3（角丸長方形）：**受付**
 - shape-4（角丸長方形）：**完了**
 
-接続関係（保存情報）：
+接続関係：
 
 - shape-1-9：shape-3「受付」 → shape-4「完了」
 
@@ -305,7 +290,7 @@ IMAGE関数は取得しない　\[セル内画像: 未対応\]
 <section class="sample-case" aria-labelledby="word">
 <h2 id="word">Word：変更履歴・結合表・脚注・回転図形</h2>
 <p>明示的な見出し、太字とリンク、取消線、変更履歴、罫線なしの結合表、番号、脚注、15度回転した日本語図形、埋め込みPNGを含みます。図形内の文字も本文に残します。</p>
-<p class="sample-meta">HTTP 200 · 入力 10,457 bytes · ZIP 27,676 bytes · 1 出力セクション · 2 アセット · 警告 1 件</p>
+<p class="sample-meta">HTTP 200 · 入力 10,457 bytes · ZIP 27,683 bytes · 1 出力セクション · 2 アセット · 警告 1 件</p>
 <div class="sample-links">
 <a href="examples/word-complex/input.docx" download>入力 DOCX</a>
 <a href="examples/word-complex/result.zip" download>実際の出力 ZIP</a>
@@ -378,7 +363,7 @@ IMAGE関数は取得しない　\[セル内画像: 未対応\]
 <section class="sample-case" aria-labelledby="word-rag">
 <h2 id="word-rag">Word：RAG向けの購入申請フロー</h2>
 <p>編集可能なDrawingMLグループに、申請・確認・完了・修正再申請を配置したデモです。図の前後には通常の段落、末尾には表があり、本文との位置関係も確認できます。</p>
-<p class="sample-meta">HTTP 200 · 入力 3,812 bytes · ZIP 22,017 bytes · 1 出力セクション · 1 アセット · 警告 5 件</p>
+<p class="sample-meta">HTTP 200 · 入力 3,812 bytes · ZIP 22,073 bytes · 1 出力セクション · 1 アセット · 警告 5 件</p>
 <div class="sample-links">
 <a href="examples/word-rag-flow/input.docx" download>入力 DOCX</a>
 <a href="examples/word-rag-flow/result.zip" download>実際の出力 ZIP</a>
@@ -459,7 +444,7 @@ IMAGE関数は取得しない　\[セル内画像: 未対応\]
 <section class="sample-case" aria-labelledby="powerpoint">
 <h2 id="powerpoint">PowerPoint：本文・表・図形の文字を抽出</h2>
 <p>4表示＋1非表示スライド。通常本文・番号・リンク・結合表を保持し、図形内の文字も本文へ出します。この入力の線には接続先IDがないため関係は不明として残します。</p>
-<p class="sample-meta">HTTP 200 · 入力 37,307 bytes · ZIP 61,175 bytes · 4 表示スライド · 2 プレビュー · 警告 2 件</p>
+<p class="sample-meta">HTTP 200 · 入力 37,307 bytes · ZIP 61,292 bytes · 4 表示スライド · 2 プレビュー · 警告 2 件</p>
 <div class="sample-links">
 <a href="examples/powerpoint-complex/input.pptx" download>入力 PPTX</a>
 <a href="examples/powerpoint-complex/result.zip" download>実際の出力 ZIP</a>
@@ -471,7 +456,7 @@ IMAGE関数は取得しない　\[セル内画像: 未対応\]
 <figure class="example-figure"><a href="examples/powerpoint-complex/screenshots/section-02.png"><img src="examples/powerpoint-complex/screenshots/section-02.png" alt="罫線のない結合表をMarkdown表として保持。" loading="lazy"></a><figcaption>罫線のない結合表をMarkdown表として保持。 画像をクリックすると原寸で表示します。</figcaption></figure>
 <figure class="example-figure"><a href="examples/powerpoint-complex/screenshots/section-03.png"><img src="examples/powerpoint-complex/screenshots/section-03.png" alt="図中の文字とリンクを本文に保持し、接続先不明を明記。確認用画像はスライド全体です。" loading="lazy"></a><figcaption>図中の文字とリンクを本文に保持し、接続先不明を明記。確認用画像はスライド全体です。 画像をクリックすると原寸で表示します。</figcaption></figure>
 </div>
-<p>1接続中0件を保存データから解決しました。文字・関係は通常の本文にあり、画像のaltやOCRを使わず検索対象にできます。JSONのnodesに図形、edgesに接続、参考画像のmetadataにスライド範囲を保存します。</p>
+<p>1接続中0件を保存データから解決しました。図形の文字とスライド上の位置、線の位置・接続が不明な理由は通常の本文にもあります。JSONのnodesに図形、edgesに接続、参考画像のmetadataにスライド範囲を保存します。この線には矢印の先端がないため、見た目の方向は出力しません。</p>
 <details class="sample-details"><summary>実際のMarkdown全文：文字と接続関係、確認用画像</summary><pre><code>[page 1]
 
 # PowerPointからMarkdownへ
@@ -503,12 +488,12 @@ IMAGE関数は取得しない　\[セル内画像: 未対応\]
 
 図中の項目：
 
-- shape-4（角丸長方形）：[入力ファイル](https://example.com/input)
-- shape-5（楕円）：Markdownと画像
+- shape-4（角丸長方形、スライド左中央）：[入力ファイル](https://example.com/input)
+- shape-5（楕円、スライド右中央）：Markdownと画像
 
 接続関係（保存情報）：
 
-- shape-6：接続関係不明（接続先IDが保存されていません）
+- shape-6：接続関係不明（接続先IDが保存されていません）。スライド中央。
 
 参考画像（スライド全体）：
 
@@ -520,7 +505,7 @@ IMAGE関数は取得しない　\[セル内画像: 未対応\]
 
 図中の項目：
 
-- shape-3（画像）：紺色背景と紫色の円
+- shape-3（画像、スライド中央）：紺色背景と紫色の円
 
 参考画像（スライド全体）：
 
@@ -544,7 +529,7 @@ IMAGE関数は取得しない　\[セル内画像: 未対応\]
 <section class="sample-case" aria-labelledby="powerpoint-rag">
 <h2 id="powerpoint-rag">PowerPoint：RAG向け業務フローのデモ</h2>
 <p>購入申請の条件分岐・差戻しループ、グループ内外の接続、双方向と始点の矢印、接続情報がないケースを含む3枚の編集可能な資料です。独立した「承認」「至急」を近くの矢印へ関連付けません。</p>
-<p class="sample-meta">HTTP 200 · 入力 31,772 bytes · ZIP 257,126 bytes · 3 表示スライド · 3 プレビュー · 警告 1 件</p>
+<p class="sample-meta">HTTP 200 · 入力 31,772 bytes · ZIP 257,407 bytes · 3 表示スライド · 3 プレビュー · 警告 1 件</p>
 <div class="sample-links">
 <a href="examples/powerpoint-rag-flow/input.pptx" download>入力 PPTX</a>
 <a href="examples/powerpoint-rag-flow/result.zip" download>実際の出力 ZIP</a>
@@ -557,7 +542,7 @@ IMAGE関数は取得しない　\[セル内画像: 未対応\]
 <figure class="example-figure"><a href="examples/powerpoint-rag-flow/screenshots/section-02.png"><img src="examples/powerpoint-rag-flow/screenshots/section-02.png" alt="双方向・グループ外接続・始点矢印による逆方向を区別。" loading="lazy"></a><figcaption>双方向・グループ外接続・始点矢印による逆方向を区別。 画像をクリックすると原寸で表示します。</figcaption></figure>
 <figure class="example-figure"><a href="examples/powerpoint-rag-flow/screenshots/section-03.png"><img src="examples/powerpoint-rag-flow/screenshots/section-03.png" alt="接続先IDのない線は不明。表・独立ラベルを残し、非表示と取消線の文字は除外。" loading="lazy"></a><figcaption>接続先IDのない線は不明。表・独立ラベルを残し、非表示と取消線の文字は除外。 画像をクリックすると原寸で表示します。</figcaption></figure>
 </div>
-<p>14接続中13件を保存データから解決しました。文字・関係は通常の本文にあり、画像のaltやOCRを使わず検索対象にできます。JSONのnodesに図形、edgesに接続、参考画像のmetadataにスライド範囲を保存します。</p>
+<p>14接続中13件を保存データから解決しました。図形の文字・接続関係・スライド上の位置は本文にあり、画像のaltやOCRを使わず検索対象にできます。3枚目の <code>shape-9</code> は接続先IDが保存されていませんが、スライド左中央にある線で、矢印の先端が右を向くことは読み取れます。JSONの <code>positionOnSlide</code> と <code>arrowheadPointsToward</code> にも残し、接続相手は推測しません。</p>
 <details class="sample-details"><summary>実際のMarkdown全文：文字と接続関係、確認用画像</summary><pre><code>[page 1]
 
 # 購入申請：分岐と差戻し
@@ -570,26 +555,26 @@ RAGで検索したいこと：少額購入の承認経路／高額購入の追�
 
 図中の項目：
 
-- shape-8（角丸長方形）：**承認**&lt;br&gt;10万円以下
-- shape-6（角丸長方形）：**申請者**&lt;br&gt;購入申請を作成
-- shape-7（角丸長方形）：**上長**&lt;br&gt;申請内容を確認
-- shape-9（角丸長方形）：**購買担当**&lt;br&gt;発注を確定
-- shape-11（角丸長方形）：**申請者**&lt;br&gt;修正して再申請
-- shape-10（角丸長方形）：**差戻し**&lt;br&gt;記載に不備あり
-- shape-12（角丸長方形）：**部長確認へ**&lt;br&gt;10万円超
-- shape-13（角丸長方形）：**部長**&lt;br&gt;追加承認を記録
+- shape-8（角丸長方形、スライド中央）：**承認**&lt;br&gt;10万円以下
+- shape-6（角丸長方形、スライド左中央）：**申請者**&lt;br&gt;購入申請を作成
+- shape-7（角丸長方形、スライド中央）：**上長**&lt;br&gt;申請内容を確認
+- shape-9（角丸長方形、スライド右中央）：**購買担当**&lt;br&gt;発注を確定
+- shape-11（角丸長方形、スライド左下）：**申請者**&lt;br&gt;修正して再申請
+- shape-10（角丸長方形、スライド下中央）：**差戻し**&lt;br&gt;記載に不備あり
+- shape-12（角丸長方形、スライド下中央）：**部長確認へ**&lt;br&gt;10万円超
+- shape-13（角丸長方形、スライド右下）：**部長**&lt;br&gt;追加承認を記録
 
 接続関係（保存情報）：
 
-- shape-14：shape-6「申請者 購入申請を作成」 → shape-7「上長 申請内容を確認」
-- shape-15：shape-7「上長 申請内容を確認」 → shape-8「承認 10万円以下」
-- shape-16：shape-8「承認 10万円以下」 → shape-9「購買担当 発注を確定」
-- shape-17：shape-7「上長 申請内容を確認」 → shape-10「差戻し 記載に不備あり」
-- shape-18：shape-10「差戻し 記載に不備あり」 → shape-11「申請者 修正して再申請」
-- shape-19：shape-11「申請者 修正して再申請」 → shape-6「申請者 購入申請を作成」
-- shape-20：shape-7「上長 申請内容を確認」 → shape-12「部長確認へ 10万円超」
-- shape-21：shape-12「部長確認へ 10万円超」 → shape-13「部長 追加承認を記録」
-- shape-22：shape-13「部長 追加承認を記録」 → shape-9「購買担当 発注を確定」
+- shape-14：shape-6「申請者 購入申請を作成」 → shape-7「上長 申請内容を確認」。スライド左中央。
+- shape-15：shape-7「上長 申請内容を確認」 → shape-8「承認 10万円以下」。スライド中央。
+- shape-16：shape-8「承認 10万円以下」 → shape-9「購買担当 発注を確定」。スライド右中央。
+- shape-17：shape-7「上長 申請内容を確認」 → shape-10「差戻し 記載に不備あり」。スライド中央。
+- shape-18：shape-10「差戻し 記載に不備あり」 → shape-11「申請者 修正して再申請」。スライド左下。
+- shape-19：shape-11「申請者 修正して再申請」 → shape-6「申請者 購入申請を作成」。スライド左中央。
+- shape-20：shape-7「上長 申請内容を確認」 → shape-12「部長確認へ 10万円超」。スライド中央。
+- shape-21：shape-12「部長確認へ 10万円超」 → shape-13「部長 追加承認を記録」。スライド右下。
+- shape-22：shape-13「部長 追加承認を記録」 → shape-9「購買担当 発注を確定」。スライド右中央。
 
 参考画像（スライド全体）：
 
@@ -611,17 +596,17 @@ RAGで検索したいこと：少額購入の承認経路／高額購入の追�
 
 図中の項目：
 
-- shape-9（角丸長方形）：**開発**&lt;br&gt;連携データを作成
-- shape-10（角丸長方形）：**審査**&lt;br&gt;内容を確認
-- shape-13（角丸長方形）：**受信**&lt;br&gt;連携結果を受領
-- shape-12（テキストボックス）：補足：双方向の確認。担当者との連絡は別途行います。
-- shape-14（角丸長方形）：**再送**&lt;br&gt;保留データを送信
+- shape-9（角丸長方形、スライド左中央）：**開発**&lt;br&gt;連携データを作成
+- shape-10（角丸長方形、スライド中央）：**審査**&lt;br&gt;内容を確認
+- shape-13（角丸長方形、スライド右中央）：**受信**&lt;br&gt;連携結果を受領
+- shape-12（テキストボックス、スライド下中央）：補足：双方向の確認。担当者との連絡は別途行います。
+- shape-14（角丸長方形、スライド右下）：**再送**&lt;br&gt;保留データを送信
 
 接続関係（保存情報）：
 
-- shape-11：shape-9「開発 連携データを作成」 ↔ shape-10「審査 内容を確認」
-- shape-15：shape-10「審査 内容を確認」 → shape-13「受信 連携結果を受領」
-- shape-16：shape-14「再送 保留データを送信」 → shape-13「受信 連携結果を受領」
+- shape-11：shape-9「開発 連携データを作成」 ↔ shape-10「審査 内容を確認」。スライド左中央。
+- shape-15：shape-10「審査 内容を確認」 → shape-13「受信 連携結果を受領」。スライド右中央。
+- shape-16：shape-14「再送 保留データを送信」 → shape-13「受信 連携結果を受領」。スライド右中央。
 
 参考画像（スライド全体）：
 
@@ -655,18 +640,29 @@ RAGで検索したいこと：少額購入の承認経路／高額購入の追�
 
 図中の項目：
 
-- shape-6（角丸長方形）：**受付**&lt;br&gt;申請を受領
-- shape-7（角丸長方形）：**担当者**&lt;br&gt;内容を確認
-- shape-8（角丸長方形）：**処理完了**&lt;br&gt;記録を保存
+- shape-6（角丸長方形、スライド左中央）：**受付**&lt;br&gt;申請を受領
+- shape-7（角丸長方形、スライド中央）：**担当者**&lt;br&gt;内容を確認
+- shape-8（角丸長方形、スライド右中央）：**処理完了**&lt;br&gt;記録を保存
 
 接続関係（保存情報）：
 
-- shape-9：接続関係不明（接続先IDが保存されていません）
-- shape-10：shape-7「担当者 内容を確認」 → shape-8「処理完了 記録を保存」
+- shape-9：接続関係不明（接続先IDが保存されていません）。スライド左中央。矢印の先端は右を向く。
+- shape-10：shape-7「担当者 内容を確認」 → shape-8「処理完了 記録を保存」。スライド右中央。
 
 参考画像（スライド全体）：
 
 ![{&quot;type&quot;:&quot;図&quot;,&quot;text&quot;:&quot;&quot;,&quot;x&quot;:0,&quot;y&quot;:0,&quot;width&quot;:960,&quot;height&quot;:540}](images/diagram-0003.png)</code></pre></details>
+<details class="sample-details"><summary>実際のreport.json：接続先不明でも分かる位置と矢印の向き</summary><pre><code>{
+  &quot;id&quot;: &quot;shape-9&quot;,
+  &quot;startArrow&quot;: &quot;none&quot;,
+  &quot;endArrow&quot;: &quot;triangle&quot;,
+  &quot;arrowheadDirectionAlongLine&quot;: &quot;start-to-end&quot;,
+  &quot;connectionResolutionStatus&quot;: &quot;unresolved&quot;,
+  &quot;connectionResolutionReason&quot;: &quot;MISSING_ENDPOINT&quot;,
+  &quot;connectionResolutionExplanation&quot;: &quot;接続先IDが保存されていません&quot;,
+  &quot;positionOnSlide&quot;: &quot;left-middle&quot;,
+  &quot;arrowheadPointsToward&quot;: &quot;right-middle&quot;
+}</code></pre></details>
 <details class="sample-details"><summary>実際のreport.json：警告</summary><pre><code>[
   {
     &quot;code&quot;: &quot;DIAGRAM_CONNECTION_UNRESOLVED&quot;,
@@ -678,7 +674,7 @@ RAGで検索したいこと：少額購入の承認経路／高額購入の追�
 <p><a href="examples/powerpoint-rag-flow/output/images/diagram-0001.png">参考画像PNG</a> · <a href="examples/powerpoint-rag-flow/screenshots/overview.png">Playground全体</a> · <a href="examples/powerpoint-rag-flow/screenshots/markdown-source.png">Markdownタブの画面</a></p>
 </section>
 <h2 id="reproduce">再現方法と記録の読み方</h2>
-<p>Excel・Wordは2026年9月16日、PowerPointは2026年9月22日に、macOS arm64 / Java 21 / Azure Functions Core Tools のローカルホストで実行しました。<code>POST /api/convert?filename=input.xlsx</code> 等へファイル全体を送信し、HTTP 200のZIPを保存しています。オプションは既定値です。認証キーや外部Storageの設定は実行記録に含めていません。</p>
+<p>2026年9月23日に、macOS arm64 / Java 21 / Azure Functions Core Tools のローカルホストで全5例を再実行しました。<code>POST /api/convert?filename=input.xlsx</code> 等へファイル全体を送信し、HTTP 200のZIPを保存しています。オプションは既定値です。認証キーや外部Storageの設定は実行記録に含めていません。</p>
 <pre><code>curl --fail-with-body \
   -H 'Content-Type: application/octet-stream' \
   --data-binary @docs/APIDocs/office2md/examples/excel-complex/input.xlsx \
@@ -687,7 +683,7 @@ RAGで検索したいこと：少額購入の承認経路／高額購入の追�
 <p>各 <code>run.json</code> に入力・出力ZIP・展開ファイル・スクリーンショットのSHA-256、HTTP結果、実行環境を保存しています。記録された時間はローカルの送信からZIP展開・プレビュー生成までで、Azureの起動時間・ネットワーク・同時処理性能の目安にはなりません。</p>
 <p>セクション別のスクリーンショットは、実際のプレビューのスクロール領域と画像の高さ上限を広げ、ほかのセクションを一時的に非表示にして撮影しました。Excelの表・グループの詳細画像は、それぞれ先頭790px・1000pxの切り出しです。本文・画像・成果物は変更していません。通常の画面も各ケースの「Playground全体」で確認できます。</p>
 <p><a href="examples/README.md">再現・検証手順</a> · <a href="examples/capture.cjs">実行と撮影のスクリプト</a> · <a href="examples/prepare_inputs.py">入力コピーの作成手順</a> · <a href="index.html#drawings">図形の変換ルール</a> · <a href="http.html#convert">HTTP API仕様</a></p>
-<footer class="page-footer"><p>実測確認：Excel・Word・PowerPoint 2026-09-22。成功した例でも、未対応・近似の情報はreport.jsonに残ります。</p></footer>
+<footer class="page-footer"><p>実測確認：Excel・Word・PowerPoint 2026-09-23。成功した例でも、未対応・近似の情報はreport.jsonに残ります。</p></footer>
 </article>
 <aside class="toc" aria-label="このページの目次"><p class="toc-title">このページの内容</p><nav id="page-toc"></nav></aside>
 </div></main></body></html>

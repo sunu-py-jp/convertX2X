@@ -1,9 +1,9 @@
 {
-  "specVersion" : 2,
+  "specVersion" : 1,
   "source" : {
-    "filename" : "input.docx",
+    "format" : "docx",
     "sha256" : "77bbbe893b44471a906a70b7163da80df7b50d71536f93fb57fec5a37114f45c",
-    "format" : "docx"
+    "filename" : "input.docx"
   },
   "sectionKind" : "document",
   "sectionCount" : 1,
@@ -45,16 +45,16 @@
     "message" : "Wordの図形・保存された接続を文字として保持し、同じ描画領域を確認用画像にまとめました。ページ全体の配置は再現しません。"
   } ],
   "blocks" : [ {
-    "markdownEndLine" : 3,
-    "section" : "document",
-    "markdownStartLine" : 3,
     "range" : "paragraph:1",
+    "markdownStartLine" : 3,
+    "section" : "document",
+    "markdownEndLine" : 3,
     "type" : "paragraph"
   }, {
-    "markdownEndLine" : 5,
-    "section" : "document",
-    "markdownStartLine" : 5,
     "range" : "paragraph:2",
+    "markdownStartLine" : 5,
+    "section" : "document",
+    "markdownEndLine" : 5,
     "type" : "paragraph"
   }, {
     "type" : "diagram",
@@ -100,9 +100,10 @@
       "endId" : "shape-2",
       "startArrow" : "none",
       "endArrow" : "triangle",
-      "direction" : "start-to-end",
-      "status" : "resolved",
-      "reason" : "",
+      "arrowheadDirectionAlongLine" : "start-to-end",
+      "connectionResolutionStatus" : "resolved",
+      "connectionResolutionReason" : "",
+      "connectionResolutionExplanation" : "",
       "fromId" : "shape-1",
       "toId" : "shape-2",
       "type" : "直線",
@@ -117,9 +118,10 @@
       "endId" : "shape-3",
       "startArrow" : "none",
       "endArrow" : "triangle",
-      "direction" : "start-to-end",
-      "status" : "resolved",
-      "reason" : "",
+      "arrowheadDirectionAlongLine" : "start-to-end",
+      "connectionResolutionStatus" : "resolved",
+      "connectionResolutionReason" : "",
+      "connectionResolutionExplanation" : "",
       "fromId" : "shape-2",
       "toId" : "shape-3",
       "type" : "直線",
@@ -134,9 +136,10 @@
       "endId" : "shape-4",
       "startArrow" : "none",
       "endArrow" : "triangle",
-      "direction" : "start-to-end",
-      "status" : "resolved",
-      "reason" : "",
+      "arrowheadDirectionAlongLine" : "start-to-end",
+      "connectionResolutionStatus" : "resolved",
+      "connectionResolutionReason" : "",
+      "connectionResolutionExplanation" : "",
       "fromId" : "shape-2",
       "toId" : "shape-4",
       "type" : "直線",
@@ -151,9 +154,10 @@
       "endId" : "shape-1",
       "startArrow" : "none",
       "endArrow" : "triangle",
-      "direction" : "start-to-end",
-      "status" : "resolved",
-      "reason" : "",
+      "arrowheadDirectionAlongLine" : "start-to-end",
+      "connectionResolutionStatus" : "resolved",
+      "connectionResolutionReason" : "",
+      "connectionResolutionExplanation" : "",
       "fromId" : "shape-4",
       "toId" : "shape-1",
       "type" : "直線",
@@ -166,9 +170,10 @@
       "id" : "shape-9",
       "startArrow" : "none",
       "endArrow" : "triangle",
-      "direction" : "start-to-end",
-      "status" : "unresolved",
-      "reason" : "MISSING_ENDPOINT",
+      "arrowheadDirectionAlongLine" : "start-to-end",
+      "connectionResolutionStatus" : "unresolved",
+      "connectionResolutionReason" : "MISSING_ENDPOINT",
+      "connectionResolutionExplanation" : "接続先の保存情報がありません",
       "type" : "直線",
       "text" : "",
       "x" : 40,
@@ -186,28 +191,28 @@
       "height" : 250
     }
   }, {
-    "markdownEndLine" : 26,
-    "section" : "document",
-    "markdownStartLine" : 7,
     "range" : "paragraph:3",
+    "markdownStartLine" : 7,
+    "section" : "document",
+    "markdownEndLine" : 26,
     "type" : "paragraph"
   }, {
-    "markdownEndLine" : 28,
-    "section" : "document",
-    "markdownStartLine" : 28,
     "range" : "paragraph:4",
+    "markdownStartLine" : 28,
+    "section" : "document",
+    "markdownEndLine" : 28,
     "type" : "paragraph"
   }, {
-    "markdownEndLine" : 33,
-    "section" : "document",
-    "markdownStartLine" : 30,
     "range" : "table:1",
+    "markdownStartLine" : 30,
+    "section" : "document",
+    "markdownEndLine" : 33,
     "type" : "table"
   } ],
   "assets" : [ {
-    "sizeBytes" : 21064,
-    "contentType" : "image/png",
     "path" : "images/diagram-0001.png",
+    "contentType" : "image/png",
+    "sizeBytes" : 21064,
     "sha256" : "8a6d40441b5bc2271ee1754217006bf0081a564aa971e15d3585a671a92d257c"
   } ]
 }

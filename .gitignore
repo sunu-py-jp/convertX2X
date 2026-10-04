@@ -9,3 +9,5 @@
 *.log
 .DS_Store
 __pycache__/
+# Local browser captures can include account chrome and document URLs.
+docs/APIDocs/office2md/examples/powerpoint-rag-flow/google-slides-import/screenshots/

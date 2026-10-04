@@ -26,7 +26,7 @@ class OfficeMarkdownServiceTest {
             assertTrue(md.contains("保存した日本語"));
             assertEquals(1, result.sectionCount());
             var report = new ObjectMapper().readTree(result.files().get("report.json").toFile());
-            assertEquals(2, report.path("specVersion").asInt());
+            assertEquals(1, report.path("specVersion").asInt());
             assertEquals(extension, report.path("source").path("format").asText());
             assertEquals(ConversionWorkspace.sha256(input), report.path("source").path("sha256").asText());
             assertEquals(switch(extension) {case "xlsx" -> "sheet"; case "pptx" -> "slide"; default -> "document";}, report.path("sectionKind").asText());

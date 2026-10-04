@@ -1,0 +1,3374 @@
+{
+  "version" : 1,
+  "description" : "Excelの結合セル・直接塗り・複数行ヘッダーの入力例。変換後Markdownは実際のOffice2MD出力を参照してください。",
+  "input" : "input.xlsx",
+  "cases" : [ {
+    "id" : "C01",
+    "sheet" : "01_単行_色あり_結合なし",
+    "title" : "色付き1行ヘッダー・結合なし",
+    "category" : "single-colored",
+    "note" : "先頭行の直接塗りをヘッダーとする基本形。",
+    "tableRange" : "A1:C3",
+    "mergedRanges" : [ ],
+    "hiddenRows" : [ ],
+    "hiddenColumns" : [ ],
+    "rows" : [ {
+      "number" : 1,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A1",
+        "value" : "商品",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "B1",
+        "value" : "数量",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "C1",
+        "value" : "単価",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    }, {
+      "number" : 2,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A2",
+        "value" : "りんご",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "B2",
+        "value" : "2",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "C2",
+        "value" : "100",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    }, {
+      "number" : 3,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A3",
+        "value" : "みかん",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "B3",
+        "value" : "3",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "C3",
+        "value" : "80",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    } ]
+  }, {
+    "id" : "C02",
+    "sheet" : "02_複行_色あり_結合なし",
+    "title" : "色付き2行ヘッダー・結合なし",
+    "category" : "multi-colored",
+    "note" : "連続する2行の見出しを列ごとに階層化する。",
+    "tableRange" : "A1:C3",
+    "mergedRanges" : [ ],
+    "hiddenRows" : [ ],
+    "hiddenColumns" : [ ],
+    "rows" : [ {
+      "number" : 1,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A1",
+        "value" : "分類",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "B1",
+        "value" : "数量",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "C1",
+        "value" : "売上",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    }, {
+      "number" : 2,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A2",
+        "value" : "商品",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "B2",
+        "value" : "2025年",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "C2",
+        "value" : "2025年",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    }, {
+      "number" : 3,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A3",
+        "value" : "りんご",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "B3",
+        "value" : "2",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "C3",
+        "value" : "200",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    } ]
+  }, {
+    "id" : "C03",
+    "sheet" : "03_複行3段_色あり",
+    "title" : "色付き3行ヘッダー",
+    "category" : "multi-colored",
+    "note" : "先頭から3行連続して直接塗りがある。",
+    "tableRange" : "A1:C4",
+    "mergedRanges" : [ ],
+    "hiddenRows" : [ ],
+    "hiddenColumns" : [ ],
+    "rows" : [ {
+      "number" : 1,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A1",
+        "value" : "地域",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "B1",
+        "value" : "販売",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "C1",
+        "value" : "販売",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    }, {
+      "number" : 2,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A2",
+        "value" : "都道府県",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "B2",
+        "value" : "2025年",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "C2",
+        "value" : "2024年",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    }, {
+      "number" : 3,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A3",
+        "value" : "名称",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "B3",
+        "value" : "数量",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "C3",
+        "value" : "数量",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    }, {
+      "number" : 4,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A4",
+        "value" : "東京",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "B4",
+        "value" : "12",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "C4",
+        "value" : "10",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    } ]
+  }, {
+    "id" : "C04",
+    "sheet" : "04_全行_色なし",
+    "title" : "色なし・結合なし",
+    "category" : "no-colored-header",
+    "note" : "先頭行が無色なら空ヘッダーを生成し、元の先頭行も明細として残す。",
+    "tableRange" : "A1:C3",
+    "mergedRanges" : [ ],
+    "hiddenRows" : [ ],
+    "hiddenColumns" : [ ],
+    "rows" : [ {
+      "number" : 1,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A1",
+        "value" : "商品",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "B1",
+        "value" : "数量",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "C1",
+        "value" : "単価",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    }, {
+      "number" : 2,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A2",
+        "value" : "りんご",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "B2",
+        "value" : "2",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "C2",
+        "value" : "100",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    }, {
+      "number" : 3,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A3",
+        "value" : "みかん",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "B3",
+        "value" : "3",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "C3",
+        "value" : "80",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    } ]
+  }, {
+    "id" : "C05",
+    "sheet" : "05_先頭無色_次行色あり",
+    "title" : "先頭無色・次行だけ色付き",
+    "category" : "no-colored-header",
+    "note" : "途中から色が付いてもヘッダー判定を再開しない。",
+    "tableRange" : "A1:C3",
+    "mergedRanges" : [ ],
+    "hiddenRows" : [ ],
+    "hiddenColumns" : [ ],
+    "rows" : [ {
+      "number" : 1,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A1",
+        "value" : "先頭明細",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "B1",
+        "value" : "A",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "C1",
+        "value" : "1",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    }, {
+      "number" : 2,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A2",
+        "value" : "色付き明細",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "B2",
+        "value" : "B",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "C2",
+        "value" : "2",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    }, {
+      "number" : 3,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A3",
+        "value" : "末尾明細",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "B3",
+        "value" : "C",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "C3",
+        "value" : "3",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    } ]
+  }, {
+    "id" : "C06",
+    "sheet" : "06_色_無色_色",
+    "title" : "色付き→無色→色付き",
+    "category" : "header-run-stops",
+    "note" : "先頭からの連続色付き行だけがヘッダー。3行目の色は明細扱い。",
+    "tableRange" : "A1:C3",
+    "mergedRanges" : [ ],
+    "hiddenRows" : [ ],
+    "hiddenColumns" : [ ],
+    "rows" : [ {
+      "number" : 1,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A1",
+        "value" : "商品",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "B1",
+        "value" : "数量",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "C1",
+        "value" : "単価",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    }, {
+      "number" : 2,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A2",
+        "value" : "りんご",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "B2",
+        "value" : "2",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "C2",
+        "value" : "100",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    }, {
+      "number" : 3,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A3",
+        "value" : "色付き明細",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "B3",
+        "value" : "3",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "C3",
+        "value" : "80",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    } ]
+  }, {
+    "id" : "C07",
+    "sheet" : "07_先頭1セルだけ色あり",
+    "title" : "先頭の1セルだけ色付き",
+    "category" : "single-cell-fill",
+    "note" : "表の先頭行の検出範囲内に直接塗りが1セルでもあればヘッダー。",
+    "tableRange" : "A1:C2",
+    "mergedRanges" : [ ],
+    "hiddenRows" : [ ],
+    "hiddenColumns" : [ ],
+    "rows" : [ {
+      "number" : 1,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A1",
+        "value" : "商品",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "B1",
+        "value" : "数量",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "C1",
+        "value" : "単価",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    }, {
+      "number" : 2,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A2",
+        "value" : "りんご",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "B2",
+        "value" : "2",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "C2",
+        "value" : "100",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    } ]
+  }, {
+    "id" : "C08",
+    "sheet" : "08_単行_上だけ横結合",
+    "title" : "1行ヘッダーだけ横結合",
+    "category" : "shared-header",
+    "note" : "A1:B1の共有見出しを分かれた明細列へ引き継ぐ。",
+    "tableRange" : "A1:C3",
+    "mergedRanges" : [ "A1:B1" ],
+    "hiddenRows" : [ ],
+    "hiddenColumns" : [ ],
+    "rows" : [ {
+      "number" : 1,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A1",
+        "value" : "連絡先",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "A1:B1",
+        "mergeAnchor" : true
+      }, {
+        "address" : "B1",
+        "value" : "",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "A1:B1",
+        "mergeAnchor" : false
+      }, {
+        "address" : "C1",
+        "value" : "状態",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    }, {
+      "number" : 2,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A2",
+        "value" : "03-1234",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "B2",
+        "value" : "a@example.com",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "C2",
+        "value" : "有効",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    }, {
+      "number" : 3,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A3",
+        "value" : "06-5678",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "B3",
+        "value" : "b@example.com",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "C3",
+        "value" : "保留",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    } ]
+  }, {
+    "id" : "C09",
+    "sheet" : "09_単行_全幅横結合",
+    "title" : "1行ヘッダーが全列横結合",
+    "category" : "full-width-header",
+    "note" : "見出しのみA1:C1を結合。明細は3列に分かれる。",
+    "tableRange" : "A1:C3",
+    "mergedRanges" : [ "A1:C1" ],
+    "hiddenRows" : [ ],
+    "hiddenColumns" : [ ],
+    "rows" : [ {
+      "number" : 1,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A1",
+        "value" : "2025年度販売実績",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "A1:C1",
+        "mergeAnchor" : true
+      }, {
+        "address" : "B1",
+        "value" : "",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "A1:C1",
+        "mergeAnchor" : false
+      }, {
+        "address" : "C1",
+        "value" : "",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "A1:C1",
+        "mergeAnchor" : false
+      } ]
+    }, {
+      "number" : 2,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A2",
+        "value" : "東日本",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "B2",
+        "value" : "100",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "C2",
+        "value" : "20",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    }, {
+      "number" : 3,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A3",
+        "value" : "西日本",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "B3",
+        "value" : "80",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "C3",
+        "value" : "15",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    } ]
+  }, {
+    "id" : "C10",
+    "sheet" : "10_複行_上段横結合",
+    "title" : "2行ヘッダー・上段だけ横結合",
+    "category" : "multi-shared-header",
+    "note" : "上段A1:B1の共有見出しと下段の個別見出しを合成する。",
+    "tableRange" : "A1:C3",
+    "mergedRanges" : [ "A1:B1" ],
+    "hiddenRows" : [ ],
+    "hiddenColumns" : [ ],
+    "rows" : [ {
+      "number" : 1,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A1",
+        "value" : "連絡先",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "A1:B1",
+        "mergeAnchor" : true
+      }, {
+        "address" : "B1",
+        "value" : "",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "A1:B1",
+        "mergeAnchor" : false
+      }, {
+        "address" : "C1",
+        "value" : "状態",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    }, {
+      "number" : 2,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A2",
+        "value" : "電話",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "B2",
+        "value" : "メール",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "C2",
+        "value" : "区分",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    }, {
+      "number" : 3,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A3",
+        "value" : "03-1234",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "B3",
+        "value" : "a@example.com",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "C3",
+        "value" : "有効",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    } ]
+  }, {
+    "id" : "C11",
+    "sheet" : "11_複行_縦横結合",
+    "title" : "2行ヘッダー・縦結合と横結合",
+    "category" : "vertical-header",
+    "note" : "A1:A2の縦結合とB1:C1の横結合を同じ見出し内で扱う。",
+    "tableRange" : "A1:C3",
+    "mergedRanges" : [ "A1:A2", "B1:C1" ],
+    "hiddenRows" : [ ],
+    "hiddenColumns" : [ ],
+    "rows" : [ {
+      "number" : 1,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A1",
+        "value" : "部門",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "A1:A2",
+        "mergeAnchor" : true
+      }, {
+        "address" : "B1",
+        "value" : "売上",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "B1:C1",
+        "mergeAnchor" : true
+      }, {
+        "address" : "C1",
+        "value" : "",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "B1:C1",
+        "mergeAnchor" : false
+      } ]
+    }, {
+      "number" : 2,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A2",
+        "value" : "",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "A1:A2",
+        "mergeAnchor" : false
+      }, {
+        "address" : "B2",
+        "value" : "2025年",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "C2",
+        "value" : "2024年",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    }, {
+      "number" : 3,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A3",
+        "value" : "営業",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "B3",
+        "value" : "120",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "C3",
+        "value" : "95",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    } ]
+  }, {
+    "id" : "C12",
+    "sheet" : "12_全行同幅_単行見出し",
+    "title" : "全行で同じ幅の横結合・1行ヘッダー",
+    "category" : "collapsed-logical-column",
+    "note" : "A:Bを毎行同じ幅で結合し、論理的な1列として扱う。",
+    "tableRange" : "A1:C3",
+    "mergedRanges" : [ "A1:B1", "A2:B2", "A3:B3" ],
+    "hiddenRows" : [ ],
+    "hiddenColumns" : [ ],
+    "rows" : [ {
+      "number" : 1,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A1",
+        "value" : "項目",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "A1:B1",
+        "mergeAnchor" : true
+      }, {
+        "address" : "B1",
+        "value" : "",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "A1:B1",
+        "mergeAnchor" : false
+      }, {
+        "address" : "C1",
+        "value" : "状態",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    }, {
+      "number" : 2,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A2",
+        "value" : "申請",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "A2:B2",
+        "mergeAnchor" : true
+      }, {
+        "address" : "B2",
+        "value" : "",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "A2:B2",
+        "mergeAnchor" : false
+      }, {
+        "address" : "C2",
+        "value" : "完了",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    }, {
+      "number" : 3,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A3",
+        "value" : "確認",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "A3:B3",
+        "mergeAnchor" : true
+      }, {
+        "address" : "B3",
+        "value" : "",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "A3:B3",
+        "mergeAnchor" : false
+      }, {
+        "address" : "C3",
+        "value" : "進行中",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    } ]
+  }, {
+    "id" : "C13",
+    "sheet" : "13_全行同幅_複行見出し",
+    "title" : "全行で同じ幅の横結合・2行ヘッダー",
+    "category" : "collapsed-logical-column",
+    "note" : "A:Bを毎行結合し、2行の見出しを1列に集約する。",
+    "tableRange" : "A1:C3",
+    "mergedRanges" : [ "A1:B1", "A2:B2", "A3:B3" ],
+    "hiddenRows" : [ ],
+    "hiddenColumns" : [ ],
+    "rows" : [ {
+      "number" : 1,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A1",
+        "value" : "申請",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "A1:B1",
+        "mergeAnchor" : true
+      }, {
+        "address" : "B1",
+        "value" : "",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "A1:B1",
+        "mergeAnchor" : false
+      }, {
+        "address" : "C1",
+        "value" : "処理",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    }, {
+      "number" : 2,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A2",
+        "value" : "項目",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "A2:B2",
+        "mergeAnchor" : true
+      }, {
+        "address" : "B2",
+        "value" : "",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "A2:B2",
+        "mergeAnchor" : false
+      }, {
+        "address" : "C2",
+        "value" : "状態",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    }, {
+      "number" : 3,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A3",
+        "value" : "購入",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "A3:B3",
+        "mergeAnchor" : true
+      }, {
+        "address" : "B3",
+        "value" : "",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "A3:B3",
+        "mergeAnchor" : false
+      }, {
+        "address" : "C3",
+        "value" : "完了",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    } ]
+  }, {
+    "id" : "C14",
+    "sheet" : "14_明細だけ横結合",
+    "title" : "明細の一部だけ横結合",
+    "category" : "body-horizontal-merge",
+    "note" : "先頭ヘッダーは独立列。2行目のA:Bだけ結合しても列数を維持する。",
+    "tableRange" : "A1:C3",
+    "mergedRanges" : [ "A2:B2" ],
+    "hiddenRows" : [ ],
+    "hiddenColumns" : [ ],
+    "rows" : [ {
+      "number" : 1,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A1",
+        "value" : "項目",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "B1",
+        "value" : "値",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "C1",
+        "value" : "状態",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    }, {
+      "number" : 2,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A2",
+        "value" : "共通説明",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "A2:B2",
+        "mergeAnchor" : true
+      }, {
+        "address" : "B2",
+        "value" : "",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "A2:B2",
+        "mergeAnchor" : false
+      }, {
+        "address" : "C2",
+        "value" : "完了",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    }, {
+      "number" : 3,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A3",
+        "value" : "個別",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "B3",
+        "value" : "20",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "C3",
+        "value" : "進行中",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    } ]
+  }, {
+    "id" : "C15",
+    "sheet" : "15_明細だけ縦結合",
+    "title" : "明細の縦結合",
+    "category" : "body-vertical-merge",
+    "note" : "A2:A3の値は2行分にまたがる。後続行の扱いを変換結果で確認する。",
+    "tableRange" : "A1:C3",
+    "mergedRanges" : [ "A2:A3" ],
+    "hiddenRows" : [ ],
+    "hiddenColumns" : [ ],
+    "rows" : [ {
+      "number" : 1,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A1",
+        "value" : "部門",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "B1",
+        "value" : "担当",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "C1",
+        "value" : "状態",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    }, {
+      "number" : 2,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A2",
+        "value" : "営業",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "A2:A3",
+        "mergeAnchor" : true
+      }, {
+        "address" : "B2",
+        "value" : "佐藤",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "C2",
+        "value" : "進行中",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    }, {
+      "number" : 3,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A3",
+        "value" : "",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "A2:A3",
+        "mergeAnchor" : false
+      }, {
+        "address" : "B3",
+        "value" : "鈴木",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "C3",
+        "value" : "完了",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    } ]
+  }, {
+    "id" : "C16",
+    "sheet" : "16_複行_ずれた横結合",
+    "title" : "複数行ヘッダーで横結合位置がずれる",
+    "category" : "offset-header-merges",
+    "note" : "1行目A:BとC:D、2行目B:Cが横結合。推測で見出しを増やさない。",
+    "tableRange" : "A1:D3",
+    "mergedRanges" : [ "A1:B1", "C1:D1", "B2:C2" ],
+    "hiddenRows" : [ ],
+    "hiddenColumns" : [ ],
+    "rows" : [ {
+      "number" : 1,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A1",
+        "value" : "顧客",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "A1:B1",
+        "mergeAnchor" : true
+      }, {
+        "address" : "B1",
+        "value" : "",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "A1:B1",
+        "mergeAnchor" : false
+      }, {
+        "address" : "C1",
+        "value" : "処理",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "C1:D1",
+        "mergeAnchor" : true
+      }, {
+        "address" : "D1",
+        "value" : "",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "C1:D1",
+        "mergeAnchor" : false
+      } ]
+    }, {
+      "number" : 2,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A2",
+        "value" : "個人",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "B2",
+        "value" : "共通項目",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "B2:C2",
+        "mergeAnchor" : true
+      }, {
+        "address" : "C2",
+        "value" : "",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "B2:C2",
+        "mergeAnchor" : false
+      }, {
+        "address" : "D2",
+        "value" : "状態",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    }, {
+      "number" : 3,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A3",
+        "value" : "田中",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "B3",
+        "value" : "有効",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "C3",
+        "value" : "確認済み",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "D3",
+        "value" : "完了",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    } ]
+  }, {
+    "id" : "C17",
+    "sheet" : "17_全行色付き",
+    "title" : "全行に直接塗りがある",
+    "category" : "all-colored",
+    "note" : "全行が連続した色付き見出しと判定され、明細は残らない。",
+    "tableRange" : "A1:C3",
+    "mergedRanges" : [ ],
+    "hiddenRows" : [ ],
+    "hiddenColumns" : [ ],
+    "rows" : [ {
+      "number" : 1,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A1",
+        "value" : "商品",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "B1",
+        "value" : "数量",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "C1",
+        "value" : "単価",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    }, {
+      "number" : 2,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A2",
+        "value" : "りんご",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "B2",
+        "value" : "2",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "C2",
+        "value" : "100",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    }, {
+      "number" : 3,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A3",
+        "value" : "みかん",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "B3",
+        "value" : "3",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "C3",
+        "value" : "80",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    } ]
+  }, {
+    "id" : "C18",
+    "sheet" : "18_無色_全行同幅横結合",
+    "title" : "無色の先頭行・全行で同じ幅の横結合",
+    "category" : "no-header-collapsed-column",
+    "note" : "ヘッダーは空のまま、A:Bの論理列は全行で同じ幅なのでまとめる。",
+    "tableRange" : "A1:C3",
+    "mergedRanges" : [ "A1:B1", "A2:B2", "A3:B3" ],
+    "hiddenRows" : [ ],
+    "hiddenColumns" : [ ],
+    "rows" : [ {
+      "number" : 1,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A1",
+        "value" : "項目",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "A1:B1",
+        "mergeAnchor" : true
+      }, {
+        "address" : "B1",
+        "value" : "",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "A1:B1",
+        "mergeAnchor" : false
+      }, {
+        "address" : "C1",
+        "value" : "状態",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    }, {
+      "number" : 2,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A2",
+        "value" : "申請",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "A2:B2",
+        "mergeAnchor" : true
+      }, {
+        "address" : "B2",
+        "value" : "",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "A2:B2",
+        "mergeAnchor" : false
+      }, {
+        "address" : "C2",
+        "value" : "完了",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    }, {
+      "number" : 3,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A3",
+        "value" : "確認",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "A3:B3",
+        "mergeAnchor" : true
+      }, {
+        "address" : "B3",
+        "value" : "",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "A3:B3",
+        "mergeAnchor" : false
+      }, {
+        "address" : "C3",
+        "value" : "進行中",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    } ]
+  }, {
+    "id" : "C19",
+    "sheet" : "19_隠れた分割行",
+    "title" : "非表示の分割行を挟む同幅結合",
+    "category" : "hidden-row-collapsed-column",
+    "note" : "2行目だけA/Bが分かれるが非表示。表示行ではA:Bの結合が揃う。",
+    "tableRange" : "A1:C4",
+    "mergedRanges" : [ "A1:B1", "A3:B3", "A4:B4" ],
+    "hiddenRows" : [ 2 ],
+    "hiddenColumns" : [ ],
+    "rows" : [ {
+      "number" : 1,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A1",
+        "value" : "項目",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "A1:B1",
+        "mergeAnchor" : true
+      }, {
+        "address" : "B1",
+        "value" : "",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "A1:B1",
+        "mergeAnchor" : false
+      }, {
+        "address" : "C1",
+        "value" : "状態",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    }, {
+      "number" : 2,
+      "hidden" : true,
+      "cells" : [ {
+        "address" : "A2",
+        "value" : "非表示A",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "B2",
+        "value" : "非表示B",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "C2",
+        "value" : "非表示",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    }, {
+      "number" : 3,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A3",
+        "value" : "申請",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "A3:B3",
+        "mergeAnchor" : true
+      }, {
+        "address" : "B3",
+        "value" : "",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "A3:B3",
+        "mergeAnchor" : false
+      }, {
+        "address" : "C3",
+        "value" : "完了",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    }, {
+      "number" : 4,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A4",
+        "value" : "確認",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "A4:B4",
+        "mergeAnchor" : true
+      }, {
+        "address" : "B4",
+        "value" : "",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "A4:B4",
+        "mergeAnchor" : false
+      }, {
+        "address" : "C4",
+        "value" : "進行中",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    } ]
+  }, {
+    "id" : "C20",
+    "sheet" : "20_隣接する同幅結合",
+    "title" : "隣り合う2組の同幅結合",
+    "category" : "adjacent-collapsed-columns",
+    "note" : "毎行A:BとC:Dが結合されるので、2つの論理列にまとめる。",
+    "tableRange" : "A1:D3",
+    "mergedRanges" : [ "A1:B1", "C1:D1", "A2:B2", "C2:D2", "A3:B3", "C3:D3" ],
+    "hiddenRows" : [ ],
+    "hiddenColumns" : [ ],
+    "rows" : [ {
+      "number" : 1,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A1",
+        "value" : "項目",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "A1:B1",
+        "mergeAnchor" : true
+      }, {
+        "address" : "B1",
+        "value" : "",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "A1:B1",
+        "mergeAnchor" : false
+      }, {
+        "address" : "C1",
+        "value" : "状態",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "C1:D1",
+        "mergeAnchor" : true
+      }, {
+        "address" : "D1",
+        "value" : "",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "C1:D1",
+        "mergeAnchor" : false
+      } ]
+    }, {
+      "number" : 2,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A2",
+        "value" : "申請",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "A2:B2",
+        "mergeAnchor" : true
+      }, {
+        "address" : "B2",
+        "value" : "",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "A2:B2",
+        "mergeAnchor" : false
+      }, {
+        "address" : "C2",
+        "value" : "完了",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "C2:D2",
+        "mergeAnchor" : true
+      }, {
+        "address" : "D2",
+        "value" : "",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "C2:D2",
+        "mergeAnchor" : false
+      } ]
+    }, {
+      "number" : 3,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A3",
+        "value" : "確認",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "A3:B3",
+        "mergeAnchor" : true
+      }, {
+        "address" : "B3",
+        "value" : "",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "A3:B3",
+        "mergeAnchor" : false
+      }, {
+        "address" : "C3",
+        "value" : "進行中",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "C3:D3",
+        "mergeAnchor" : true
+      }, {
+        "address" : "D3",
+        "value" : "",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "C3:D3",
+        "mergeAnchor" : false
+      } ]
+    } ]
+  }, {
+    "id" : "C21",
+    "sheet" : "21_左上無罫線のマトリックス",
+    "title" : "左上だけ罫線のないマトリックス",
+    "category" : "borderless-matrix-corner",
+    "note" : "A1は空欄でセル自体に罫線がない。罫線付きの1月・2月を塗りなしでも1段の見出しにする。",
+    "tableRange" : "A1:C3",
+    "mergedRanges" : [ ],
+    "hiddenRows" : [ ],
+    "hiddenColumns" : [ ],
+    "rows" : [ {
+      "number" : 1,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A1",
+        "value" : "",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : false,
+          "bottom" : false,
+          "left" : false,
+          "right" : false
+        }
+      }, {
+        "address" : "B1",
+        "value" : "1月",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "C1",
+        "value" : "2月",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    }, {
+      "number" : 2,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A2",
+        "value" : "東京",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "B2",
+        "value" : "10",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "C2",
+        "value" : "12",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    }, {
+      "number" : 3,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A3",
+        "value" : "大阪",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "B3",
+        "value" : "8",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "C3",
+        "value" : "9",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    } ]
+  }, {
+    "id" : "C22",
+    "sheet" : "22_通常表に続くマトリックス",
+    "title" : "通常表に続く、角だけ罫線のないマトリックス",
+    "category" : "attached-borderless-matrix",
+    "note" : "A:Cの通常列とD:Fのマトリックスが横につながる。D1は空欄でセル自体に罫線がなく、全体を1表として扱う。",
+    "tableRange" : "A1:F3",
+    "mergedRanges" : [ ],
+    "hiddenRows" : [ ],
+    "hiddenColumns" : [ ],
+    "rows" : [ {
+      "number" : 1,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A1",
+        "value" : "ID",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "B1",
+        "value" : "担当",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "C1",
+        "value" : "状態",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "D1",
+        "value" : "",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : false,
+          "bottom" : false,
+          "left" : false,
+          "right" : false
+        }
+      }, {
+        "address" : "E1",
+        "value" : "1月",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "F1",
+        "value" : "2月",
+        "directFill" : true,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    }, {
+      "number" : 2,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A2",
+        "value" : "1001",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "B2",
+        "value" : "田中",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "C2",
+        "value" : "完了",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "D2",
+        "value" : "東京",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "E2",
+        "value" : "10",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "F2",
+        "value" : "12",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    }, {
+      "number" : 3,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A3",
+        "value" : "1002",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "B3",
+        "value" : "佐藤",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "C3",
+        "value" : "進行中",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "D3",
+        "value" : "大阪",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "E3",
+        "value" : "8",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "F3",
+        "value" : "9",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    } ]
+  }, {
+    "id" : "C23",
+    "sheet" : "23_注記と3列結合の見出し",
+    "title" : "無罫線の注記と3列幅の結合見出し",
+    "category" : "borderless-notes-group-header",
+    "note" : "A1・B1の文字は無罫線の注記。C1:E1の売上見出しは3列幅の明示結合で、下段の個別見出しと合わせる。",
+    "tableRange" : "A1:E4",
+    "mergedRanges" : [ "C1:E1" ],
+    "hiddenRows" : [ ],
+    "hiddenColumns" : [ ],
+    "rows" : [ {
+      "number" : 1,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A1",
+        "value" : "集計対象: 店舗",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : false,
+          "bottom" : false,
+          "left" : false,
+          "right" : false
+        }
+      }, {
+        "address" : "B1",
+        "value" : "単位: 千円",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : false,
+          "bottom" : false,
+          "left" : false,
+          "right" : false
+        }
+      }, {
+        "address" : "C1",
+        "value" : "売上",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "C1:E1",
+        "mergeAnchor" : true
+      }, {
+        "address" : "D1",
+        "value" : "",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "C1:E1",
+        "mergeAnchor" : false
+      }, {
+        "address" : "E1",
+        "value" : "",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "C1:E1",
+        "mergeAnchor" : false
+      } ]
+    }, {
+      "number" : 2,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A2",
+        "value" : "ID",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "B2",
+        "value" : "場所",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "C2",
+        "value" : "1月",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "D2",
+        "value" : "2月",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "E2",
+        "value" : "3月",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    }, {
+      "number" : 3,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A3",
+        "value" : "001",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "B3",
+        "value" : "東京",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "C3",
+        "value" : "10",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "D3",
+        "value" : "12",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "E3",
+        "value" : "14",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    }, {
+      "number" : 4,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A4",
+        "value" : "002",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "B4",
+        "value" : "大阪",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "C4",
+        "value" : "8",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "D4",
+        "value" : "9",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "E4",
+        "value" : "11",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    } ]
+  }, {
+    "id" : "C24",
+    "sheet" : "24_注記と縦横結合の3段見出し",
+    "title" : "無罫線の注記と縦横結合を含む3段見出し",
+    "category" : "borderless-notes-multi-level-matrix",
+    "note" : "A1・B1の文字は無罫線の注記。売上はC1:D1だけの結合で、E1・F1は無罫線。A2:A3・B2:B3の縦結合と、月の横結合で3段を表す。上段結合の幅は固定規則ではなく入力の結合範囲に従う。",
+    "tableRange" : "A1:F5",
+    "mergedRanges" : [ "C1:D1", "A2:A3", "B2:B3", "C3:D3", "E3:F3" ],
+    "hiddenRows" : [ ],
+    "hiddenColumns" : [ ],
+    "rows" : [ {
+      "number" : 1,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A1",
+        "value" : "集計対象: 店舗",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : false,
+          "bottom" : false,
+          "left" : false,
+          "right" : false
+        }
+      }, {
+        "address" : "B1",
+        "value" : "単位: 千円",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : false,
+          "bottom" : false,
+          "left" : false,
+          "right" : false
+        }
+      }, {
+        "address" : "C1",
+        "value" : "売上",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "C1:D1",
+        "mergeAnchor" : true
+      }, {
+        "address" : "D1",
+        "value" : "",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "C1:D1",
+        "mergeAnchor" : false
+      }, {
+        "address" : "E1",
+        "value" : "",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : false,
+          "bottom" : false,
+          "left" : false,
+          "right" : false
+        }
+      }, {
+        "address" : "F1",
+        "value" : "",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : false,
+          "bottom" : false,
+          "left" : false,
+          "right" : false
+        }
+      } ]
+    }, {
+      "number" : 2,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A2",
+        "value" : "ID",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "A2:A3",
+        "mergeAnchor" : true
+      }, {
+        "address" : "B2",
+        "value" : "場所",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "B2:B3",
+        "mergeAnchor" : true
+      }, {
+        "address" : "C2",
+        "value" : "前半",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "D2",
+        "value" : "後半",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "E2",
+        "value" : "前半",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "F2",
+        "value" : "後半",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    }, {
+      "number" : 3,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A3",
+        "value" : "",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "A2:A3",
+        "mergeAnchor" : false
+      }, {
+        "address" : "B3",
+        "value" : "",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "B2:B3",
+        "mergeAnchor" : false
+      }, {
+        "address" : "C3",
+        "value" : "1月",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "C3:D3",
+        "mergeAnchor" : true
+      }, {
+        "address" : "D3",
+        "value" : "",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "C3:D3",
+        "mergeAnchor" : false
+      }, {
+        "address" : "E3",
+        "value" : "2月",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "E3:F3",
+        "mergeAnchor" : true
+      }, {
+        "address" : "F3",
+        "value" : "",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        },
+        "mergedRange" : "E3:F3",
+        "mergeAnchor" : false
+      } ]
+    }, {
+      "number" : 4,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A4",
+        "value" : "001",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "B4",
+        "value" : "東京",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "C4",
+        "value" : "10",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "D4",
+        "value" : "12",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "E4",
+        "value" : "10",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "F4",
+        "value" : "12",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    }, {
+      "number" : 5,
+      "hidden" : false,
+      "cells" : [ {
+        "address" : "A5",
+        "value" : "002",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "B5",
+        "value" : "大阪",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "C5",
+        "value" : "8",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "D5",
+        "value" : "9",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "E5",
+        "value" : "8",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      }, {
+        "address" : "F5",
+        "value" : "9",
+        "directFill" : false,
+        "directBorders" : {
+          "top" : true,
+          "bottom" : true,
+          "left" : true,
+          "right" : true
+        }
+      } ]
+    } ]
+  } ]
+}

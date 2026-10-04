@@ -1,0 +1,908 @@
+{
+  "specVersion" : 1,
+  "source" : {
+    "format" : "xlsx",
+    "filename" : "merge-matrix.xlsx",
+    "sha256" : "3850e053914aa7ec0fdd66682c61aae46db342c225597ed15a6b91c34d7163e4"
+  },
+  "sectionKind" : "sheet",
+  "sectionCount" : 24,
+  "warnings" : [ {
+    "code" : "TABLE_MERGE_FLATTENED",
+    "section" : "08_単行_上だけ横結合",
+    "range" : "A1:C3",
+    "message" : "Markdown表はセル結合を直接表せないため、共有見出しは各列へ継承し、明細の結合範囲は表の直前に記して続きのセルは空欄にします。"
+  }, {
+    "code" : "TABLE_MERGE_FLATTENED",
+    "section" : "09_単行_全幅横結合",
+    "range" : "A1:C3",
+    "message" : "Markdown表はセル結合を直接表せないため、共有見出しは各列へ継承し、明細の結合範囲は表の直前に記して続きのセルは空欄にします。"
+  }, {
+    "code" : "TABLE_MERGE_FLATTENED",
+    "section" : "10_複行_上段横結合",
+    "range" : "A1:C3",
+    "message" : "Markdown表はセル結合を直接表せないため、共有見出しは各列へ継承し、明細の結合範囲は表の直前に記して続きのセルは空欄にします。"
+  }, {
+    "code" : "TABLE_MERGE_FLATTENED",
+    "section" : "11_複行_縦横結合",
+    "range" : "A1:C3",
+    "message" : "Markdown表はセル結合を直接表せないため、共有見出しは各列へ継承し、明細の結合範囲は表の直前に記して続きのセルは空欄にします。"
+  }, {
+    "code" : "TABLE_MERGE_FLATTENED",
+    "section" : "14_明細だけ横結合",
+    "range" : "A1:C3",
+    "message" : "Markdown表はセル結合を直接表せないため、共有見出しは各列へ継承し、明細の結合範囲は表の直前に記して続きのセルは空欄にします。"
+  }, {
+    "code" : "TABLE_MERGE_FLATTENED",
+    "section" : "15_明細だけ縦結合",
+    "range" : "A1:C3",
+    "message" : "Markdown表はセル結合を直接表せないため、共有見出しは各列へ継承し、明細の結合範囲は表の直前に記して続きのセルは空欄にします。"
+  }, {
+    "code" : "TABLE_MERGE_FLATTENED",
+    "section" : "16_複行_ずれた横結合",
+    "range" : "A1:D3",
+    "message" : "Markdown表はセル結合を直接表せないため、共有見出しは各列へ継承し、明細の結合範囲は表の直前に記して続きのセルは空欄にします。"
+  }, {
+    "code" : "TABLE_MERGE_FLATTENED",
+    "section" : "23_注記と3列結合の見出し",
+    "range" : "A1:E4",
+    "message" : "Markdown表はセル結合を直接表せないため、共有見出しは各列へ継承し、明細の結合範囲は表の直前に記して続きのセルは空欄にします。"
+  }, {
+    "code" : "TABLE_MERGE_FLATTENED",
+    "section" : "24_注記と縦横結合の3段見出し",
+    "range" : "A1:F5",
+    "message" : "Markdown表はセル結合を直接表せないため、共有見出しは各列へ継承し、明細の結合範囲は表の直前に記して続きのセルは空欄にします。"
+  } ],
+  "information" : [ {
+    "code" : "MERGED_CELLS",
+    "section" : "08_単行_上だけ横結合",
+    "range" : "A1:B1",
+    "message" : "結合セルは表示中の左上セルの値だけを出力します。"
+  }, {
+    "code" : "MERGED_CELLS",
+    "section" : "09_単行_全幅横結合",
+    "range" : "A1:C1",
+    "message" : "結合セルは表示中の左上セルの値だけを出力します。"
+  }, {
+    "code" : "MERGED_CELLS",
+    "section" : "10_複行_上段横結合",
+    "range" : "A1:B1",
+    "message" : "結合セルは表示中の左上セルの値だけを出力します。"
+  }, {
+    "code" : "MERGED_CELLS",
+    "section" : "11_複行_縦横結合",
+    "range" : "A1:A2",
+    "message" : "結合セルは表示中の左上セルの値だけを出力します。"
+  }, {
+    "code" : "MERGED_CELLS",
+    "section" : "11_複行_縦横結合",
+    "range" : "B1:C1",
+    "message" : "結合セルは表示中の左上セルの値だけを出力します。"
+  }, {
+    "code" : "MERGED_CELLS",
+    "section" : "12_全行同幅_単行見出し",
+    "range" : "A1:B1",
+    "message" : "結合セルは表示中の左上セルの値だけを出力します。"
+  }, {
+    "code" : "MERGED_CELLS",
+    "section" : "12_全行同幅_単行見出し",
+    "range" : "A2:B2",
+    "message" : "結合セルは表示中の左上セルの値だけを出力します。"
+  }, {
+    "code" : "MERGED_CELLS",
+    "section" : "12_全行同幅_単行見出し",
+    "range" : "A3:B3",
+    "message" : "結合セルは表示中の左上セルの値だけを出力します。"
+  }, {
+    "code" : "TABLE_MERGED_COLUMNS_COLLAPSED",
+    "section" : "12_全行同幅_単行見出し",
+    "range" : "A1:C3",
+    "message" : "全表示行で同じ幅に横結合された列を、Markdownの1列にまとめました。"
+  }, {
+    "code" : "MERGED_CELLS",
+    "section" : "13_全行同幅_複行見出し",
+    "range" : "A1:B1",
+    "message" : "結合セルは表示中の左上セルの値だけを出力します。"
+  }, {
+    "code" : "MERGED_CELLS",
+    "section" : "13_全行同幅_複行見出し",
+    "range" : "A2:B2",
+    "message" : "結合セルは表示中の左上セルの値だけを出力します。"
+  }, {
+    "code" : "MERGED_CELLS",
+    "section" : "13_全行同幅_複行見出し",
+    "range" : "A3:B3",
+    "message" : "結合セルは表示中の左上セルの値だけを出力します。"
+  }, {
+    "code" : "TABLE_MERGED_COLUMNS_COLLAPSED",
+    "section" : "13_全行同幅_複行見出し",
+    "range" : "A1:C3",
+    "message" : "全表示行で同じ幅に横結合された列を、Markdownの1列にまとめました。"
+  }, {
+    "code" : "MERGED_CELLS",
+    "section" : "14_明細だけ横結合",
+    "range" : "A2:B2",
+    "message" : "結合セルは表示中の左上セルの値だけを出力します。"
+  }, {
+    "code" : "MERGED_CELLS",
+    "section" : "15_明細だけ縦結合",
+    "range" : "A2:A3",
+    "message" : "結合セルは表示中の左上セルの値だけを出力します。"
+  }, {
+    "code" : "MERGED_CELLS",
+    "section" : "16_複行_ずれた横結合",
+    "range" : "A1:B1",
+    "message" : "結合セルは表示中の左上セルの値だけを出力します。"
+  }, {
+    "code" : "MERGED_CELLS",
+    "section" : "16_複行_ずれた横結合",
+    "range" : "C1:D1",
+    "message" : "結合セルは表示中の左上セルの値だけを出力します。"
+  }, {
+    "code" : "MERGED_CELLS",
+    "section" : "16_複行_ずれた横結合",
+    "range" : "B2:C2",
+    "message" : "結合セルは表示中の左上セルの値だけを出力します。"
+  }, {
+    "code" : "MERGED_CELLS",
+    "section" : "18_無色_全行同幅横結合",
+    "range" : "A1:B1",
+    "message" : "結合セルは表示中の左上セルの値だけを出力します。"
+  }, {
+    "code" : "MERGED_CELLS",
+    "section" : "18_無色_全行同幅横結合",
+    "range" : "A2:B2",
+    "message" : "結合セルは表示中の左上セルの値だけを出力します。"
+  }, {
+    "code" : "MERGED_CELLS",
+    "section" : "18_無色_全行同幅横結合",
+    "range" : "A3:B3",
+    "message" : "結合セルは表示中の左上セルの値だけを出力します。"
+  }, {
+    "code" : "TABLE_MERGED_COLUMNS_COLLAPSED",
+    "section" : "18_無色_全行同幅横結合",
+    "range" : "A1:C3",
+    "message" : "全表示行で同じ幅に横結合された列を、Markdownの1列にまとめました。"
+  }, {
+    "code" : "HIDDEN_ROW_OMITTED",
+    "section" : "19_隠れた分割行",
+    "range" : "2:2",
+    "message" : "非表示行を除外しました。"
+  }, {
+    "code" : "MERGED_CELLS",
+    "section" : "19_隠れた分割行",
+    "range" : "A1:B1",
+    "message" : "結合セルは表示中の左上セルの値だけを出力します。"
+  }, {
+    "code" : "MERGED_CELLS",
+    "section" : "19_隠れた分割行",
+    "range" : "A3:B3",
+    "message" : "結合セルは表示中の左上セルの値だけを出力します。"
+  }, {
+    "code" : "MERGED_CELLS",
+    "section" : "19_隠れた分割行",
+    "range" : "A4:B4",
+    "message" : "結合セルは表示中の左上セルの値だけを出力します。"
+  }, {
+    "code" : "TABLE_MERGED_COLUMNS_COLLAPSED",
+    "section" : "19_隠れた分割行",
+    "range" : "A1:C4",
+    "message" : "全表示行で同じ幅に横結合された列を、Markdownの1列にまとめました。"
+  }, {
+    "code" : "MERGED_CELLS",
+    "section" : "20_隣接する同幅結合",
+    "range" : "A1:B1",
+    "message" : "結合セルは表示中の左上セルの値だけを出力します。"
+  }, {
+    "code" : "MERGED_CELLS",
+    "section" : "20_隣接する同幅結合",
+    "range" : "C1:D1",
+    "message" : "結合セルは表示中の左上セルの値だけを出力します。"
+  }, {
+    "code" : "MERGED_CELLS",
+    "section" : "20_隣接する同幅結合",
+    "range" : "A2:B2",
+    "message" : "結合セルは表示中の左上セルの値だけを出力します。"
+  }, {
+    "code" : "MERGED_CELLS",
+    "section" : "20_隣接する同幅結合",
+    "range" : "C2:D2",
+    "message" : "結合セルは表示中の左上セルの値だけを出力します。"
+  }, {
+    "code" : "MERGED_CELLS",
+    "section" : "20_隣接する同幅結合",
+    "range" : "A3:B3",
+    "message" : "結合セルは表示中の左上セルの値だけを出力します。"
+  }, {
+    "code" : "MERGED_CELLS",
+    "section" : "20_隣接する同幅結合",
+    "range" : "C3:D3",
+    "message" : "結合セルは表示中の左上セルの値だけを出力します。"
+  }, {
+    "code" : "TABLE_MERGED_COLUMNS_COLLAPSED",
+    "section" : "20_隣接する同幅結合",
+    "range" : "A1:D3",
+    "message" : "全表示行で同じ幅に横結合された列を、Markdownの1列にまとめました。"
+  }, {
+    "code" : "TABLE_OPEN_TOP_CELL",
+    "section" : "21_左上無罫線のマトリックス",
+    "range" : "A1",
+    "message" : "罫線のない上段の空欄を、外周が閉じ横に分割された下段に基づいて表へ含めました。"
+  }, {
+    "code" : "MATRIX_HEADER_INFERRED",
+    "section" : "21_左上無罫線のマトリックス",
+    "range" : "A1:C3",
+    "message" : "上段の罫線付き結合見出しと、結合で階層が確認できる下段を見出しとして扱いました。"
+  }, {
+    "code" : "TABLE_OPEN_TOP_CELL",
+    "section" : "22_通常表に続くマトリックス",
+    "range" : "D1",
+    "message" : "罫線のない上段の空欄を、外周が閉じ横に分割された下段に基づいて表へ含めました。"
+  }, {
+    "code" : "TABLE_OPEN_TOP_NOTE",
+    "section" : "23_注記と3列結合の見出し",
+    "range" : "A1",
+    "message" : "罫線のない上段の文字列を表外の注記として保持しました。"
+  }, {
+    "code" : "TABLE_OPEN_TOP_NOTE",
+    "section" : "23_注記と3列結合の見出し",
+    "range" : "B1",
+    "message" : "罫線のない上段の文字列を表外の注記として保持しました。"
+  }, {
+    "code" : "MERGED_CELLS",
+    "section" : "23_注記と3列結合の見出し",
+    "range" : "C1:E1",
+    "message" : "結合セルは表示中の左上セルの値だけを出力します。"
+  }, {
+    "code" : "MATRIX_HEADER_INFERRED",
+    "section" : "23_注記と3列結合の見出し",
+    "range" : "A1:E4",
+    "message" : "上段の罫線付き結合見出しと、結合で階層が確認できる下段を見出しとして扱いました。"
+  }, {
+    "code" : "TABLE_OPEN_TOP_NOTE",
+    "section" : "24_注記と縦横結合の3段見出し",
+    "range" : "A1",
+    "message" : "罫線のない上段の文字列を表外の注記として保持しました。"
+  }, {
+    "code" : "TABLE_OPEN_TOP_NOTE",
+    "section" : "24_注記と縦横結合の3段見出し",
+    "range" : "B1",
+    "message" : "罫線のない上段の文字列を表外の注記として保持しました。"
+  }, {
+    "code" : "TABLE_OPEN_TOP_CELL",
+    "section" : "24_注記と縦横結合の3段見出し",
+    "range" : "E1",
+    "message" : "罫線のない上段の空欄を、外周が閉じ横に分割された下段に基づいて表へ含めました。"
+  }, {
+    "code" : "TABLE_OPEN_TOP_CELL",
+    "section" : "24_注記と縦横結合の3段見出し",
+    "range" : "F1",
+    "message" : "罫線のない上段の空欄を、外周が閉じ横に分割された下段に基づいて表へ含めました。"
+  }, {
+    "code" : "MERGED_CELLS",
+    "section" : "24_注記と縦横結合の3段見出し",
+    "range" : "C1:D1",
+    "message" : "結合セルは表示中の左上セルの値だけを出力します。"
+  }, {
+    "code" : "MERGED_CELLS",
+    "section" : "24_注記と縦横結合の3段見出し",
+    "range" : "A2:A3",
+    "message" : "結合セルは表示中の左上セルの値だけを出力します。"
+  }, {
+    "code" : "MERGED_CELLS",
+    "section" : "24_注記と縦横結合の3段見出し",
+    "range" : "B2:B3",
+    "message" : "結合セルは表示中の左上セルの値だけを出力します。"
+  }, {
+    "code" : "MERGED_CELLS",
+    "section" : "24_注記と縦横結合の3段見出し",
+    "range" : "C3:D3",
+    "message" : "結合セルは表示中の左上セルの値だけを出力します。"
+  }, {
+    "code" : "MERGED_CELLS",
+    "section" : "24_注記と縦横結合の3段見出し",
+    "range" : "E3:F3",
+    "message" : "結合セルは表示中の左上セルの値だけを出力します。"
+  }, {
+    "code" : "MATRIX_HEADER_INFERRED",
+    "section" : "24_注記と縦横結合の3段見出し",
+    "range" : "A1:F5",
+    "message" : "上段の罫線付き結合見出しと、結合で階層が確認できる下段を見出しとして扱いました。"
+  } ],
+  "blocks" : [ {
+    "sourceRows" : [ 1, 2, 3 ],
+    "sourceColumns" : [ 1, 2, 3 ],
+    "sourceColumnSpans" : [ {
+      "last" : 1,
+      "first" : 1
+    }, {
+      "last" : 2,
+      "first" : 2
+    }, {
+      "last" : 3,
+      "first" : 3
+    } ],
+    "header" : "fill-color",
+    "headerSourceRows" : [ 1 ],
+    "mergedRanges" : [ ],
+    "detectedRanges" : [ "A1:C3" ],
+    "inferredMergedRanges" : [ ],
+    "type" : "table",
+    "section" : "01_単行_色あり_結合なし",
+    "range" : "A1:C3",
+    "markdownStartLine" : 3,
+    "markdownEndLine" : 6
+  }, {
+    "sourceRows" : [ 1, 2, 3 ],
+    "sourceColumns" : [ 1, 2, 3 ],
+    "sourceColumnSpans" : [ {
+      "last" : 1,
+      "first" : 1
+    }, {
+      "last" : 2,
+      "first" : 2
+    }, {
+      "last" : 3,
+      "first" : 3
+    } ],
+    "header" : "fill-color",
+    "headerSourceRows" : [ 1, 2 ],
+    "mergedRanges" : [ ],
+    "detectedRanges" : [ "A1:C3" ],
+    "inferredMergedRanges" : [ ],
+    "type" : "table",
+    "section" : "02_複行_色あり_結合なし",
+    "range" : "A1:C3",
+    "markdownStartLine" : 10,
+    "markdownEndLine" : 12
+  }, {
+    "sourceRows" : [ 1, 2, 3, 4 ],
+    "sourceColumns" : [ 1, 2, 3 ],
+    "sourceColumnSpans" : [ {
+      "last" : 1,
+      "first" : 1
+    }, {
+      "last" : 2,
+      "first" : 2
+    }, {
+      "last" : 3,
+      "first" : 3
+    } ],
+    "header" : "fill-color",
+    "headerSourceRows" : [ 1, 2, 3 ],
+    "mergedRanges" : [ ],
+    "detectedRanges" : [ "A1:C4" ],
+    "inferredMergedRanges" : [ ],
+    "type" : "table",
+    "section" : "03_複行3段_色あり",
+    "range" : "A1:C4",
+    "markdownStartLine" : 16,
+    "markdownEndLine" : 18
+  }, {
+    "sourceRows" : [ 1, 2, 3 ],
+    "sourceColumns" : [ 1, 2, 3 ],
+    "sourceColumnSpans" : [ {
+      "last" : 1,
+      "first" : 1
+    }, {
+      "last" : 2,
+      "first" : 2
+    }, {
+      "last" : 3,
+      "first" : 3
+    } ],
+    "header" : "empty-generated",
+    "headerSourceRows" : [ ],
+    "mergedRanges" : [ ],
+    "detectedRanges" : [ "A1:C3" ],
+    "inferredMergedRanges" : [ ],
+    "type" : "table",
+    "section" : "04_全行_色なし",
+    "range" : "A1:C3",
+    "markdownStartLine" : 22,
+    "markdownEndLine" : 26
+  }, {
+    "sourceRows" : [ 1, 2, 3 ],
+    "sourceColumns" : [ 1, 2, 3 ],
+    "sourceColumnSpans" : [ {
+      "last" : 1,
+      "first" : 1
+    }, {
+      "last" : 2,
+      "first" : 2
+    }, {
+      "last" : 3,
+      "first" : 3
+    } ],
+    "header" : "empty-generated",
+    "headerSourceRows" : [ ],
+    "mergedRanges" : [ ],
+    "detectedRanges" : [ "A1:C3" ],
+    "inferredMergedRanges" : [ ],
+    "type" : "table",
+    "section" : "05_先頭無色_次行色あり",
+    "range" : "A1:C3",
+    "markdownStartLine" : 30,
+    "markdownEndLine" : 34
+  }, {
+    "sourceRows" : [ 1, 2, 3 ],
+    "sourceColumns" : [ 1, 2, 3 ],
+    "sourceColumnSpans" : [ {
+      "last" : 1,
+      "first" : 1
+    }, {
+      "last" : 2,
+      "first" : 2
+    }, {
+      "last" : 3,
+      "first" : 3
+    } ],
+    "header" : "fill-color",
+    "headerSourceRows" : [ 1 ],
+    "mergedRanges" : [ ],
+    "detectedRanges" : [ "A1:C3" ],
+    "inferredMergedRanges" : [ ],
+    "type" : "table",
+    "section" : "06_色_無色_色",
+    "range" : "A1:C3",
+    "markdownStartLine" : 38,
+    "markdownEndLine" : 41
+  }, {
+    "sourceRows" : [ 1, 2 ],
+    "sourceColumns" : [ 1, 2, 3 ],
+    "sourceColumnSpans" : [ {
+      "last" : 1,
+      "first" : 1
+    }, {
+      "last" : 2,
+      "first" : 2
+    }, {
+      "last" : 3,
+      "first" : 3
+    } ],
+    "header" : "fill-color",
+    "headerSourceRows" : [ 1 ],
+    "mergedRanges" : [ ],
+    "detectedRanges" : [ "A1:C2" ],
+    "inferredMergedRanges" : [ ],
+    "type" : "table",
+    "section" : "07_先頭1セルだけ色あり",
+    "range" : "A1:C2",
+    "markdownStartLine" : 45,
+    "markdownEndLine" : 47
+  }, {
+    "sourceRows" : [ 1, 2, 3 ],
+    "sourceColumns" : [ 1, 2, 3 ],
+    "sourceColumnSpans" : [ {
+      "last" : 1,
+      "first" : 1
+    }, {
+      "last" : 2,
+      "first" : 2
+    }, {
+      "last" : 3,
+      "first" : 3
+    } ],
+    "header" : "fill-color",
+    "headerSourceRows" : [ 1 ],
+    "mergedRanges" : [ "A1:B1" ],
+    "detectedRanges" : [ "A1:C3" ],
+    "inferredMergedRanges" : [ ],
+    "type" : "table",
+    "section" : "08_単行_上だけ横結合",
+    "range" : "A1:C3",
+    "markdownStartLine" : 51,
+    "markdownEndLine" : 54
+  }, {
+    "sourceRows" : [ 1, 2, 3 ],
+    "sourceColumns" : [ 1, 2, 3 ],
+    "sourceColumnSpans" : [ {
+      "last" : 1,
+      "first" : 1
+    }, {
+      "last" : 2,
+      "first" : 2
+    }, {
+      "last" : 3,
+      "first" : 3
+    } ],
+    "header" : "fill-color",
+    "headerSourceRows" : [ 1 ],
+    "mergedRanges" : [ "A1:C1" ],
+    "detectedRanges" : [ "A1:C3" ],
+    "inferredMergedRanges" : [ ],
+    "type" : "table",
+    "section" : "09_単行_全幅横結合",
+    "range" : "A1:C3",
+    "markdownStartLine" : 58,
+    "markdownEndLine" : 61
+  }, {
+    "sourceRows" : [ 1, 2, 3 ],
+    "sourceColumns" : [ 1, 2, 3 ],
+    "sourceColumnSpans" : [ {
+      "last" : 1,
+      "first" : 1
+    }, {
+      "last" : 2,
+      "first" : 2
+    }, {
+      "last" : 3,
+      "first" : 3
+    } ],
+    "header" : "fill-color",
+    "headerSourceRows" : [ 1, 2 ],
+    "mergedRanges" : [ "A1:B1" ],
+    "detectedRanges" : [ "A1:C3" ],
+    "inferredMergedRanges" : [ ],
+    "type" : "table",
+    "section" : "10_複行_上段横結合",
+    "range" : "A1:C3",
+    "markdownStartLine" : 65,
+    "markdownEndLine" : 67
+  }, {
+    "sourceRows" : [ 1, 2, 3 ],
+    "sourceColumns" : [ 1, 2, 3 ],
+    "sourceColumnSpans" : [ {
+      "last" : 1,
+      "first" : 1
+    }, {
+      "last" : 2,
+      "first" : 2
+    }, {
+      "last" : 3,
+      "first" : 3
+    } ],
+    "header" : "fill-color",
+    "headerSourceRows" : [ 1, 2 ],
+    "mergedRanges" : [ "A1:A2", "B1:C1" ],
+    "detectedRanges" : [ "A1:C3" ],
+    "inferredMergedRanges" : [ ],
+    "type" : "table",
+    "section" : "11_複行_縦横結合",
+    "range" : "A1:C3",
+    "markdownStartLine" : 71,
+    "markdownEndLine" : 73
+  }, {
+    "sourceRows" : [ 1, 2, 3 ],
+    "sourceColumns" : [ 1, 2, 3 ],
+    "sourceColumnSpans" : [ {
+      "last" : 2,
+      "first" : 1
+    }, {
+      "last" : 3,
+      "first" : 3
+    } ],
+    "header" : "fill-color",
+    "headerSourceRows" : [ 1 ],
+    "mergedRanges" : [ "A1:B1", "A2:B2", "A3:B3" ],
+    "detectedRanges" : [ "A1:C3" ],
+    "inferredMergedRanges" : [ ],
+    "type" : "table",
+    "section" : "12_全行同幅_単行見出し",
+    "range" : "A1:C3",
+    "markdownStartLine" : 77,
+    "markdownEndLine" : 80
+  }, {
+    "sourceRows" : [ 1, 2, 3 ],
+    "sourceColumns" : [ 1, 2, 3 ],
+    "sourceColumnSpans" : [ {
+      "last" : 2,
+      "first" : 1
+    }, {
+      "last" : 3,
+      "first" : 3
+    } ],
+    "header" : "fill-color",
+    "headerSourceRows" : [ 1, 2 ],
+    "mergedRanges" : [ "A1:B1", "A2:B2", "A3:B3" ],
+    "detectedRanges" : [ "A1:C3" ],
+    "inferredMergedRanges" : [ ],
+    "type" : "table",
+    "section" : "13_全行同幅_複行見出し",
+    "range" : "A1:C3",
+    "markdownStartLine" : 84,
+    "markdownEndLine" : 86
+  }, {
+    "noteKind" : "body-merge",
+    "mergedRanges" : [ "A2:B2" ],
+    "type" : "text",
+    "section" : "14_明細だけ横結合",
+    "range" : "A1:C3",
+    "markdownStartLine" : 90,
+    "markdownEndLine" : 90
+  }, {
+    "sourceRows" : [ 1, 2, 3 ],
+    "sourceColumns" : [ 1, 2, 3 ],
+    "sourceColumnSpans" : [ {
+      "last" : 1,
+      "first" : 1
+    }, {
+      "last" : 2,
+      "first" : 2
+    }, {
+      "last" : 3,
+      "first" : 3
+    } ],
+    "header" : "fill-color",
+    "headerSourceRows" : [ 1 ],
+    "mergedRanges" : [ "A2:B2" ],
+    "detectedRanges" : [ "A1:C3" ],
+    "inferredMergedRanges" : [ ],
+    "type" : "table",
+    "section" : "14_明細だけ横結合",
+    "range" : "A1:C3",
+    "markdownStartLine" : 92,
+    "markdownEndLine" : 95
+  }, {
+    "noteKind" : "body-merge",
+    "mergedRanges" : [ "A2:A3" ],
+    "type" : "text",
+    "section" : "15_明細だけ縦結合",
+    "range" : "A1:C3",
+    "markdownStartLine" : 99,
+    "markdownEndLine" : 99
+  }, {
+    "sourceRows" : [ 1, 2, 3 ],
+    "sourceColumns" : [ 1, 2, 3 ],
+    "sourceColumnSpans" : [ {
+      "last" : 1,
+      "first" : 1
+    }, {
+      "last" : 2,
+      "first" : 2
+    }, {
+      "last" : 3,
+      "first" : 3
+    } ],
+    "header" : "fill-color",
+    "headerSourceRows" : [ 1 ],
+    "mergedRanges" : [ "A2:A3" ],
+    "detectedRanges" : [ "A1:C3" ],
+    "inferredMergedRanges" : [ ],
+    "type" : "table",
+    "section" : "15_明細だけ縦結合",
+    "range" : "A1:C3",
+    "markdownStartLine" : 101,
+    "markdownEndLine" : 104
+  }, {
+    "sourceRows" : [ 1, 2, 3 ],
+    "sourceColumns" : [ 1, 2, 3, 4 ],
+    "sourceColumnSpans" : [ {
+      "last" : 1,
+      "first" : 1
+    }, {
+      "last" : 2,
+      "first" : 2
+    }, {
+      "last" : 3,
+      "first" : 3
+    }, {
+      "last" : 4,
+      "first" : 4
+    } ],
+    "header" : "fill-color",
+    "headerSourceRows" : [ 1, 2 ],
+    "mergedRanges" : [ "A1:B1", "C1:D1", "B2:C2" ],
+    "detectedRanges" : [ "A1:D3" ],
+    "inferredMergedRanges" : [ ],
+    "type" : "table",
+    "section" : "16_複行_ずれた横結合",
+    "range" : "A1:D3",
+    "markdownStartLine" : 108,
+    "markdownEndLine" : 110
+  }, {
+    "sourceRows" : [ 1, 2, 3 ],
+    "sourceColumns" : [ 1, 2, 3 ],
+    "sourceColumnSpans" : [ {
+      "last" : 1,
+      "first" : 1
+    }, {
+      "last" : 2,
+      "first" : 2
+    }, {
+      "last" : 3,
+      "first" : 3
+    } ],
+    "header" : "fill-color",
+    "headerSourceRows" : [ 1, 2, 3 ],
+    "mergedRanges" : [ ],
+    "detectedRanges" : [ "A1:C3" ],
+    "inferredMergedRanges" : [ ],
+    "type" : "table",
+    "section" : "17_全行色付き",
+    "range" : "A1:C3",
+    "markdownStartLine" : 114,
+    "markdownEndLine" : 115
+  }, {
+    "sourceRows" : [ 1, 2, 3 ],
+    "sourceColumns" : [ 1, 2, 3 ],
+    "sourceColumnSpans" : [ {
+      "last" : 2,
+      "first" : 1
+    }, {
+      "last" : 3,
+      "first" : 3
+    } ],
+    "header" : "empty-generated",
+    "headerSourceRows" : [ ],
+    "mergedRanges" : [ "A1:B1", "A2:B2", "A3:B3" ],
+    "detectedRanges" : [ "A1:C3" ],
+    "inferredMergedRanges" : [ ],
+    "type" : "table",
+    "section" : "18_無色_全行同幅横結合",
+    "range" : "A1:C3",
+    "markdownStartLine" : 119,
+    "markdownEndLine" : 123
+  }, {
+    "sourceRows" : [ 1, 3, 4 ],
+    "sourceColumns" : [ 1, 2, 3 ],
+    "sourceColumnSpans" : [ {
+      "last" : 2,
+      "first" : 1
+    }, {
+      "last" : 3,
+      "first" : 3
+    } ],
+    "header" : "fill-color",
+    "headerSourceRows" : [ 1 ],
+    "mergedRanges" : [ "A1:B1", "A3:B3", "A4:B4" ],
+    "detectedRanges" : [ "A1:C4" ],
+    "inferredMergedRanges" : [ ],
+    "type" : "table",
+    "section" : "19_隠れた分割行",
+    "range" : "A1:C4",
+    "markdownStartLine" : 127,
+    "markdownEndLine" : 130
+  }, {
+    "sourceRows" : [ 1, 2, 3 ],
+    "sourceColumns" : [ 1, 2, 3, 4 ],
+    "sourceColumnSpans" : [ {
+      "last" : 2,
+      "first" : 1
+    }, {
+      "last" : 4,
+      "first" : 3
+    } ],
+    "header" : "fill-color",
+    "headerSourceRows" : [ 1 ],
+    "mergedRanges" : [ "A1:B1", "C1:D1", "A2:B2", "C2:D2", "A3:B3", "C3:D3" ],
+    "detectedRanges" : [ "A1:D3" ],
+    "inferredMergedRanges" : [ ],
+    "type" : "table",
+    "section" : "20_隣接する同幅結合",
+    "range" : "A1:D3",
+    "markdownStartLine" : 134,
+    "markdownEndLine" : 137
+  }, {
+    "sourceRows" : [ 1, 2, 3 ],
+    "sourceColumns" : [ 1, 2, 3 ],
+    "sourceColumnSpans" : [ {
+      "last" : 1,
+      "first" : 1
+    }, {
+      "last" : 2,
+      "first" : 2
+    }, {
+      "last" : 3,
+      "first" : 3
+    } ],
+    "header" : "matrix-grid",
+    "headerSourceRows" : [ 1 ],
+    "mergedRanges" : [ ],
+    "detectedRanges" : [ "A1:C3" ],
+    "inferredMergedRanges" : [ ],
+    "type" : "table",
+    "section" : "21_左上無罫線のマトリックス",
+    "range" : "A1:C3",
+    "markdownStartLine" : 141,
+    "markdownEndLine" : 144
+  }, {
+    "sourceRows" : [ 1, 2, 3 ],
+    "sourceColumns" : [ 1, 2, 3, 4, 5, 6 ],
+    "sourceColumnSpans" : [ {
+      "last" : 1,
+      "first" : 1
+    }, {
+      "last" : 2,
+      "first" : 2
+    }, {
+      "last" : 3,
+      "first" : 3
+    }, {
+      "last" : 4,
+      "first" : 4
+    }, {
+      "last" : 5,
+      "first" : 5
+    }, {
+      "last" : 6,
+      "first" : 6
+    } ],
+    "header" : "fill-color",
+    "headerSourceRows" : [ 1 ],
+    "mergedRanges" : [ ],
+    "detectedRanges" : [ "A1:F3" ],
+    "inferredMergedRanges" : [ ],
+    "type" : "table",
+    "section" : "22_通常表に続くマトリックス",
+    "range" : "A1:F3",
+    "markdownStartLine" : 148,
+    "markdownEndLine" : 151
+  }, {
+    "noteKind" : "unbordered-top-note",
+    "type" : "text",
+    "section" : "23_注記と3列結合の見出し",
+    "range" : "A1:B1",
+    "markdownStartLine" : 155,
+    "markdownEndLine" : 155
+  }, {
+    "sourceRows" : [ 1, 2, 3, 4 ],
+    "sourceColumns" : [ 1, 2, 3, 4, 5 ],
+    "sourceColumnSpans" : [ {
+      "last" : 1,
+      "first" : 1
+    }, {
+      "last" : 2,
+      "first" : 2
+    }, {
+      "last" : 3,
+      "first" : 3
+    }, {
+      "last" : 4,
+      "first" : 4
+    }, {
+      "last" : 5,
+      "first" : 5
+    } ],
+    "header" : "matrix-grid",
+    "headerSourceRows" : [ 1, 2 ],
+    "mergedRanges" : [ "C1:E1" ],
+    "detectedRanges" : [ "A1:E4" ],
+    "inferredMergedRanges" : [ ],
+    "type" : "table",
+    "section" : "23_注記と3列結合の見出し",
+    "range" : "A1:E4",
+    "markdownStartLine" : 157,
+    "markdownEndLine" : 160
+  }, {
+    "noteKind" : "unbordered-top-note",
+    "type" : "text",
+    "section" : "24_注記と縦横結合の3段見出し",
+    "range" : "A1:B1",
+    "markdownStartLine" : 164,
+    "markdownEndLine" : 164
+  }, {
+    "sourceRows" : [ 1, 2, 3, 4, 5 ],
+    "sourceColumns" : [ 1, 2, 3, 4, 5, 6 ],
+    "sourceColumnSpans" : [ {
+      "last" : 1,
+      "first" : 1
+    }, {
+      "last" : 2,
+      "first" : 2
+    }, {
+      "last" : 3,
+      "first" : 3
+    }, {
+      "last" : 4,
+      "first" : 4
+    }, {
+      "last" : 5,
+      "first" : 5
+    }, {
+      "last" : 6,
+      "first" : 6
+    } ],
+    "header" : "matrix-grid",
+    "headerSourceRows" : [ 1, 2, 3 ],
+    "mergedRanges" : [ "C1:D1", "A2:A3", "B2:B3", "C3:D3", "E3:F3" ],
+    "detectedRanges" : [ "A1:F5" ],
+    "inferredMergedRanges" : [ ],
+    "type" : "table",
+    "section" : "24_注記と縦横結合の3段見出し",
+    "range" : "A1:F5",
+    "markdownStartLine" : 166,
+    "markdownEndLine" : 169
+  } ],
+  "assets" : [ ]
+}

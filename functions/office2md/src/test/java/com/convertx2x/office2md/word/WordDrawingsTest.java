@@ -90,13 +90,15 @@ class WordDrawingsTest {
             var block = report.path("blocks").get(0);
             assertEquals(3, block.path("nodes").size());
             assertEquals(4, block.path("edges").size());
-            assertEquals("start-to-end", block.path("edges").get(0).path("direction").asText());
-            assertEquals("bidirectional", block.path("edges").get(1).path("direction").asText());
-            assertEquals("end-to-start", block.path("edges").get(2).path("direction").asText());
-            assertEquals("undirected", block.path("edges").get(3).path("direction").asText());
+            assertEquals("start-to-end", block.path("edges").get(0).path("arrowheadDirectionAlongLine").asText());
+            assertEquals("bidirectional", block.path("edges").get(1).path("arrowheadDirectionAlongLine").asText());
+            assertEquals("end-to-start", block.path("edges").get(2).path("arrowheadDirectionAlongLine").asText());
+            assertEquals("undirected", block.path("edges").get(3).path("arrowheadDirectionAlongLine").asText());
             var edges = block.path("edges");
             for (var edge : edges) {
-                assertEquals("resolved", edge.path("status").asText()); assertEquals("", edge.path("reason").asText());
+                assertEquals("resolved", edge.path("connectionResolutionStatus").asText());
+                assertEquals("", edge.path("connectionResolutionReason").asText());
+                assertEquals("", edge.path("connectionResolutionExplanation").asText());
             }
             assertEquals("oval", edges.get(0).path("startArrow").asText());
             assertEquals("diamond", edges.get(2).path("endArrow").asText());
@@ -126,15 +128,19 @@ class WordDrawingsTest {
             var report = report(workspace);
             var edges = report.path("blocks").get(0).path("edges");
             assertEquals(4, edges.size());
-            for (var edge : edges) assertEquals("unresolved", edge.path("status").asText());
-            assertEquals("TARGET_UNAVAILABLE", edges.get(0).path("reason").asText());
-            assertEquals("AMBIGUOUS_TARGET", edges.get(1).path("reason").asText());
-            assertEquals("MISSING_ENDPOINT", edges.get(2).path("reason").asText());
-            assertEquals("undirected", edges.get(2).path("direction").asText());
+            for (var edge : edges) assertEquals("unresolved", edge.path("connectionResolutionStatus").asText());
+            assertEquals("TARGET_UNAVAILABLE", edges.get(0).path("connectionResolutionReason").asText());
+            assertEquals("接続先が出力対象にありません", edges.get(0).path("connectionResolutionExplanation").asText());
+            assertEquals("AMBIGUOUS_TARGET", edges.get(1).path("connectionResolutionReason").asText());
+            assertEquals("接続先IDが重複しています", edges.get(1).path("connectionResolutionExplanation").asText());
+            assertEquals("MISSING_ENDPOINT", edges.get(2).path("connectionResolutionReason").asText());
+            assertEquals("接続先の保存情報がありません", edges.get(2).path("connectionResolutionExplanation").asText());
+            assertEquals("undirected", edges.get(2).path("arrowheadDirectionAlongLine").asText());
             assertEquals("oval", edges.get(2).path("startArrow").asText());
             assertEquals("diamond", edges.get(2).path("endArrow").asText());
-            assertEquals("UNKNOWN_ARROWHEAD", edges.get(3).path("reason").asText());
-            assertEquals("unknown", edges.get(3).path("direction").asText());
+            assertEquals("UNKNOWN_ARROWHEAD", edges.get(3).path("connectionResolutionReason").asText());
+            assertEquals("矢印の向きを確定できません", edges.get(3).path("connectionResolutionExplanation").asText());
+            assertEquals("unknown", edges.get(3).path("arrowheadDirectionAlongLine").asText());
             assertEquals("future-decoration", edges.get(3).path("endArrow").asText());
             assertFalse((markdown + report).contains("HIDDEN_SECRET"));
         }
@@ -149,7 +155,7 @@ class WordDrawingsTest {
             var blocks = report(workspace).path("blocks");
             assertEquals(2, blocks.size());
             assertNotEquals(blocks.get(0).path("range"), blocks.get(1).path("range"));
-            assertEquals("unresolved", blocks.get(1).path("edges").get(0).path("status").asText());
+            assertEquals("unresolved", blocks.get(1).path("edges").get(0).path("connectionResolutionStatus").asText());
         }
     }
 
@@ -238,7 +244,7 @@ class WordDrawingsTest {
         try (var document = new XWPFDocument(); var workspace = workspace()) {
             String markdown = render(workspace, document, "<v:line from='100pt,0pt' to='0pt,100pt'><v:stroke endarrow='block'/></v:line>", n -> "");
             assertTrue(markdown.contains("接続関係不明"));
-            assertEquals("MISSING_ENDPOINT", report(workspace).path("blocks").get(0).path("edges").get(0).path("reason").asText());
+            assertEquals("MISSING_ENDPOINT", report(workspace).path("blocks").get(0).path("edges").get(0).path("connectionResolutionReason").asText());
             assertPng(workspace, "images/diagram-0001.png");
         }
     }
@@ -335,7 +341,7 @@ class WordDrawingsTest {
             assertTrue(markdown.contains("承認済")); assertTrue(markdown.contains("→"));
             var report = report(workspace);
             var edge = report.path("blocks").get(0).path("edges").get(0);
-            assertEquals("resolved", edge.path("status").asText());
+            assertEquals("resolved", edge.path("connectionResolutionStatus").asText());
             assertEquals("承認済", edge.path("text").asText());
             assertTrue(report.path("warnings").toString().contains("直線で近似"));
         }
@@ -351,7 +357,7 @@ class WordDrawingsTest {
             var block = report.path("blocks").get(0);
             assertEquals(2, block.path("nodes").size());
             assertEquals("金額を確認", block.path("nodes").get(1).path("text").asText());
-            assertEquals("resolved", block.path("edges").get(0).path("status").asText());
+            assertEquals("resolved", block.path("edges").get(0).path("connectionResolutionStatus").asText());
             assertTrue(report.path("warnings").toString().contains("SHAPE_UNSUPPORTED"));
         }
         try (var document = new XWPFDocument(); var workspace = workspace()) {

@@ -1,0 +1,483 @@
+{
+  "specVersion" : 1,
+  "source" : {
+    "filename" : "exported.pptx",
+    "sha256" : "df970dbc7ff6e2b43238340138695f1f5f50c7e377509f6243a03174ed4592b3",
+    "format" : "pptx"
+  },
+  "sectionKind" : "slide",
+  "sectionCount" : 3,
+  "warnings" : [ {
+    "code" : "DIAGRAM_CONNECTION_UNRESOLVED",
+    "section" : "スライド3",
+    "range" : "shape-137",
+    "message" : "図形の接続関係を確定できません。接続先IDが保存されていません。配置からは推測しません。"
+  } ],
+  "information" : [ ],
+  "blocks" : [ {
+    "range" : "slide-1",
+    "type" : "heading",
+    "level" : 1,
+    "section" : "スライド1"
+  }, {
+    "type" : "paragraph",
+    "section" : "スライド1",
+    "range" : "shape-84"
+  }, {
+    "type" : "paragraph",
+    "section" : "スライド1",
+    "range" : "shape-87"
+  }, {
+    "type" : "paragraph",
+    "section" : "スライド1",
+    "range" : "shape-105"
+  }, {
+    "type" : "diagram",
+    "section" : "スライド1",
+    "range" : "slide-1-diagram",
+    "nodes" : [ {
+      "type" : "角丸長方形",
+      "text" : "承認\n10万円以下",
+      "x" : 472,
+      "y" : 142,
+      "width" : 180,
+      "height" : 80,
+      "positionOnSlide" : "center-middle",
+      "id" : "shape-90"
+    }, {
+      "type" : "角丸長方形",
+      "text" : "申請者\n購入申請を作成",
+      "x" : 48,
+      "y" : 182,
+      "width" : 154,
+      "height" : 80,
+      "positionOnSlide" : "left-middle",
+      "id" : "shape-88"
+    }, {
+      "type" : "角丸長方形",
+      "text" : "上長\n申請内容を確認",
+      "x" : 260,
+      "y" : 182,
+      "width" : 154,
+      "height" : 80,
+      "positionOnSlide" : "center-middle",
+      "id" : "shape-89"
+    }, {
+      "type" : "角丸長方形",
+      "text" : "購買担当\n発注を確定",
+      "x" : 734,
+      "y" : 182,
+      "width" : 176,
+      "height" : 80,
+      "positionOnSlide" : "right-middle",
+      "id" : "shape-91"
+    }, {
+      "type" : "角丸長方形",
+      "text" : "申請者\n修正して再申請",
+      "x" : 48,
+      "y" : 340,
+      "width" : 154,
+      "height" : 80,
+      "positionOnSlide" : "left-bottom",
+      "id" : "shape-93"
+    }, {
+      "type" : "角丸長方形",
+      "text" : "差戻し\n記載に不備あり",
+      "x" : 260,
+      "y" : 340,
+      "width" : 180,
+      "height" : 80,
+      "positionOnSlide" : "center-bottom",
+      "id" : "shape-92"
+    }, {
+      "type" : "角丸長方形",
+      "text" : "部長確認へ\n10万円超",
+      "x" : 472,
+      "y" : 340,
+      "width" : 180,
+      "height" : 80,
+      "positionOnSlide" : "center-bottom",
+      "id" : "shape-94"
+    }, {
+      "type" : "角丸長方形",
+      "text" : "部長\n追加承認を記録",
+      "x" : 734,
+      "y" : 340,
+      "width" : 176,
+      "height" : 80,
+      "positionOnSlide" : "right-bottom",
+      "id" : "shape-95"
+    } ],
+    "edges" : [ {
+      "id" : "shape-96",
+      "startId" : "shape-88",
+      "endId" : "shape-89",
+      "startArrow" : "none",
+      "endArrow" : "triangle",
+      "arrowheadDirectionAlongLine" : "start-to-end",
+      "connectionResolutionStatus" : "resolved",
+      "connectionResolutionReason" : "",
+      "connectionResolutionExplanation" : "",
+      "fromId" : "shape-88",
+      "toId" : "shape-89",
+      "positionOnSlide" : "left-middle"
+    }, {
+      "id" : "shape-97",
+      "startId" : "shape-89",
+      "endId" : "shape-90",
+      "startArrow" : "none",
+      "endArrow" : "triangle",
+      "arrowheadDirectionAlongLine" : "start-to-end",
+      "connectionResolutionStatus" : "resolved",
+      "connectionResolutionReason" : "",
+      "connectionResolutionExplanation" : "",
+      "fromId" : "shape-89",
+      "toId" : "shape-90",
+      "positionOnSlide" : "center-middle"
+    }, {
+      "id" : "shape-98",
+      "startId" : "shape-90",
+      "endId" : "shape-91",
+      "startArrow" : "none",
+      "endArrow" : "triangle",
+      "arrowheadDirectionAlongLine" : "start-to-end",
+      "connectionResolutionStatus" : "resolved",
+      "connectionResolutionReason" : "",
+      "connectionResolutionExplanation" : "",
+      "fromId" : "shape-90",
+      "toId" : "shape-91",
+      "positionOnSlide" : "right-middle"
+    }, {
+      "id" : "shape-99",
+      "startId" : "shape-89",
+      "endId" : "shape-92",
+      "startArrow" : "none",
+      "endArrow" : "triangle",
+      "arrowheadDirectionAlongLine" : "start-to-end",
+      "connectionResolutionStatus" : "resolved",
+      "connectionResolutionReason" : "",
+      "connectionResolutionExplanation" : "",
+      "fromId" : "shape-89",
+      "toId" : "shape-92",
+      "positionOnSlide" : "center-middle"
+    }, {
+      "id" : "shape-100",
+      "startId" : "shape-92",
+      "endId" : "shape-93",
+      "startArrow" : "none",
+      "endArrow" : "triangle",
+      "arrowheadDirectionAlongLine" : "start-to-end",
+      "connectionResolutionStatus" : "resolved",
+      "connectionResolutionReason" : "",
+      "connectionResolutionExplanation" : "",
+      "fromId" : "shape-92",
+      "toId" : "shape-93",
+      "positionOnSlide" : "left-bottom"
+    }, {
+      "id" : "shape-101",
+      "startId" : "shape-93",
+      "endId" : "shape-88",
+      "startArrow" : "none",
+      "endArrow" : "triangle",
+      "arrowheadDirectionAlongLine" : "start-to-end",
+      "connectionResolutionStatus" : "resolved",
+      "connectionResolutionReason" : "",
+      "connectionResolutionExplanation" : "",
+      "fromId" : "shape-93",
+      "toId" : "shape-88",
+      "positionOnSlide" : "left-middle"
+    }, {
+      "id" : "shape-102",
+      "startId" : "shape-89",
+      "endId" : "shape-94",
+      "startArrow" : "none",
+      "endArrow" : "triangle",
+      "arrowheadDirectionAlongLine" : "start-to-end",
+      "connectionResolutionStatus" : "resolved",
+      "connectionResolutionReason" : "",
+      "connectionResolutionExplanation" : "",
+      "fromId" : "shape-89",
+      "toId" : "shape-94",
+      "positionOnSlide" : "center-middle"
+    }, {
+      "id" : "shape-103",
+      "startId" : "shape-94",
+      "endId" : "shape-95",
+      "startArrow" : "none",
+      "endArrow" : "triangle",
+      "arrowheadDirectionAlongLine" : "start-to-end",
+      "connectionResolutionStatus" : "resolved",
+      "connectionResolutionReason" : "",
+      "connectionResolutionExplanation" : "",
+      "fromId" : "shape-94",
+      "toId" : "shape-95",
+      "positionOnSlide" : "right-bottom"
+    }, {
+      "id" : "shape-104",
+      "startId" : "shape-95",
+      "endId" : "shape-91",
+      "startArrow" : "none",
+      "endArrow" : "triangle",
+      "arrowheadDirectionAlongLine" : "start-to-end",
+      "connectionResolutionStatus" : "resolved",
+      "connectionResolutionReason" : "",
+      "connectionResolutionExplanation" : "",
+      "fromId" : "shape-95",
+      "toId" : "shape-91",
+      "positionOnSlide" : "right-middle"
+    } ],
+    "path" : "images/diagram-0001.png",
+    "metadata" : {
+      "type" : "図",
+      "text" : "",
+      "x" : 0,
+      "y" : 0,
+      "width" : 960,
+      "height" : 540
+    }
+  }, {
+    "range" : "slide-2",
+    "type" : "heading",
+    "level" : 1,
+    "section" : "スライド2"
+  }, {
+    "type" : "paragraph",
+    "section" : "スライド2",
+    "range" : "shape-110"
+  }, {
+    "type" : "paragraph",
+    "section" : "スライド2",
+    "range" : "shape-113"
+  }, {
+    "type" : "paragraph",
+    "section" : "スライド2",
+    "range" : "shape-114"
+  }, {
+    "type" : "paragraph",
+    "section" : "スライド2",
+    "range" : "shape-115"
+  }, {
+    "type" : "paragraph",
+    "section" : "スライド2",
+    "range" : "shape-125"
+  }, {
+    "type" : "diagram",
+    "section" : "スライド2",
+    "range" : "slide-2-diagram",
+    "nodes" : [ {
+      "type" : "角丸長方形",
+      "text" : "開発\n連携データを作成",
+      "x" : 48,
+      "y" : 225,
+      "width" : 190,
+      "height" : 88,
+      "positionOnSlide" : "left-middle",
+      "id" : "shape-117"
+    }, {
+      "type" : "角丸長方形",
+      "text" : "審査\n内容を確認",
+      "x" : 393,
+      "y" : 225,
+      "width" : 190,
+      "height" : 88,
+      "positionOnSlide" : "center-middle",
+      "id" : "shape-118"
+    }, {
+      "type" : "角丸長方形",
+      "text" : "受信\n連携結果を受領",
+      "x" : 706,
+      "y" : 225,
+      "width" : 204,
+      "height" : 88,
+      "positionOnSlide" : "right-middle",
+      "id" : "shape-121"
+    }, {
+      "type" : "テキストボックス",
+      "text" : "補足：双方向の確認。担当者との連絡は別途行います。",
+      "x" : 48,
+      "y" : 364,
+      "width" : 558,
+      "height" : 54,
+      "positionOnSlide" : "center-bottom",
+      "id" : "shape-120"
+    }, {
+      "type" : "角丸長方形",
+      "text" : "再送\n保留データを送信",
+      "x" : 706,
+      "y" : 366,
+      "width" : 204,
+      "height" : 72,
+      "positionOnSlide" : "right-bottom",
+      "id" : "shape-122"
+    } ],
+    "edges" : [ {
+      "id" : "shape-119",
+      "startId" : "shape-117",
+      "endId" : "shape-118",
+      "startArrow" : "triangle",
+      "endArrow" : "triangle",
+      "arrowheadDirectionAlongLine" : "bidirectional",
+      "connectionResolutionStatus" : "resolved",
+      "connectionResolutionReason" : "",
+      "connectionResolutionExplanation" : "",
+      "positionOnSlide" : "left-middle"
+    }, {
+      "id" : "shape-123",
+      "startId" : "shape-118",
+      "endId" : "shape-121",
+      "startArrow" : "none",
+      "endArrow" : "triangle",
+      "arrowheadDirectionAlongLine" : "start-to-end",
+      "connectionResolutionStatus" : "resolved",
+      "connectionResolutionReason" : "",
+      "connectionResolutionExplanation" : "",
+      "fromId" : "shape-118",
+      "toId" : "shape-121",
+      "positionOnSlide" : "right-middle"
+    }, {
+      "id" : "shape-124",
+      "startId" : "shape-121",
+      "endId" : "shape-122",
+      "startArrow" : "triangle",
+      "endArrow" : "none",
+      "arrowheadDirectionAlongLine" : "end-to-start",
+      "connectionResolutionStatus" : "resolved",
+      "connectionResolutionReason" : "",
+      "connectionResolutionExplanation" : "",
+      "fromId" : "shape-122",
+      "toId" : "shape-121",
+      "positionOnSlide" : "right-middle"
+    } ],
+    "path" : "images/diagram-0002.png",
+    "metadata" : {
+      "type" : "図",
+      "text" : "",
+      "x" : 0,
+      "y" : 0,
+      "width" : 960,
+      "height" : 540
+    }
+  }, {
+    "range" : "slide-3",
+    "type" : "heading",
+    "level" : 1,
+    "section" : "スライド3"
+  }, {
+    "type" : "paragraph",
+    "section" : "スライド3",
+    "range" : "shape-130"
+  }, {
+    "type" : "paragraph",
+    "section" : "スライド3",
+    "range" : "shape-133"
+  }, {
+    "type" : "paragraph",
+    "section" : "スライド3",
+    "range" : "shape-139"
+  }, {
+    "type" : "paragraph",
+    "section" : "スライド3",
+    "range" : "shape-140"
+  }, {
+    "type" : "paragraph",
+    "section" : "スライド3",
+    "range" : "shape-141"
+  }, {
+    "type" : "paragraph",
+    "section" : "スライド3",
+    "range" : "shape-142"
+  }, {
+    "type" : "table",
+    "section" : "スライド3",
+    "range" : "shape-143"
+  }, {
+    "type" : "paragraph",
+    "section" : "スライド3",
+    "range" : "shape-144"
+  }, {
+    "type" : "paragraph",
+    "section" : "スライド3",
+    "range" : "shape-145"
+  }, {
+    "type" : "diagram",
+    "section" : "スライド3",
+    "range" : "slide-3-diagram",
+    "nodes" : [ {
+      "type" : "角丸長方形",
+      "text" : "受付\n申請を受領",
+      "x" : 65,
+      "y" : 198,
+      "width" : 180,
+      "height" : 80,
+      "positionOnSlide" : "left-middle",
+      "id" : "shape-134"
+    }, {
+      "type" : "角丸長方形",
+      "text" : "担当者\n内容を確認",
+      "x" : 390,
+      "y" : 198,
+      "width" : 180,
+      "height" : 80,
+      "positionOnSlide" : "center-middle",
+      "id" : "shape-135"
+    }, {
+      "type" : "角丸長方形",
+      "text" : "処理完了\n記録を保存",
+      "x" : 715,
+      "y" : 198,
+      "width" : 180,
+      "height" : 80,
+      "positionOnSlide" : "right-middle",
+      "id" : "shape-136"
+    } ],
+    "edges" : [ {
+      "id" : "shape-137",
+      "startArrow" : "none",
+      "endArrow" : "triangle",
+      "arrowheadDirectionAlongLine" : "start-to-end",
+      "connectionResolutionStatus" : "unresolved",
+      "connectionResolutionReason" : "MISSING_ENDPOINT",
+      "connectionResolutionExplanation" : "接続先IDが保存されていません",
+      "positionOnSlide" : "left-middle",
+      "arrowheadPointsToward" : "right-middle"
+    }, {
+      "id" : "shape-138",
+      "startId" : "shape-135",
+      "endId" : "shape-136",
+      "startArrow" : "none",
+      "endArrow" : "triangle",
+      "arrowheadDirectionAlongLine" : "start-to-end",
+      "connectionResolutionStatus" : "resolved",
+      "connectionResolutionReason" : "",
+      "connectionResolutionExplanation" : "",
+      "fromId" : "shape-135",
+      "toId" : "shape-136",
+      "positionOnSlide" : "right-middle"
+    } ],
+    "path" : "images/diagram-0003.png",
+    "metadata" : {
+      "type" : "図",
+      "text" : "",
+      "x" : 0,
+      "y" : 0,
+      "width" : 960,
+      "height" : 540
+    }
+  } ],
+  "assets" : [ {
+    "sha256" : "86c3916380fba455dca2319a5ceec8dd5c404dcd95fdcdd12c32c8270b346c9e",
+    "sizeBytes" : 95542,
+    "contentType" : "image/png",
+    "path" : "images/diagram-0001.png"
+  }, {
+    "sha256" : "0f36b0f3139b10fdec930b1c3f59abd61561c701b59d8d5c8f76b2993db63386",
+    "sizeBytes" : 82221,
+    "contentType" : "image/png",
+    "path" : "images/diagram-0002.png"
+  }, {
+    "sha256" : "26a261f7a6d24430ebffc090c58cb092fed9d287c2f199524825f92d3c6b021c",
+    "sizeBytes" : 94210,
+    "contentType" : "image/png",
+    "path" : "images/diagram-0003.png"
+  } ]
+}
