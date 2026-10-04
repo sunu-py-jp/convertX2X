@@ -197,8 +197,10 @@ public class ExcelMarkdownService {
                 tableValues.put(BorderTables.key(span.getFirstRow(), span.getFirstColumn()), String.join("　", pieces));
             }
             List<Integer> headerRows = new ArrayList<>();
-            for (int row : rows) {
-                if (!coloredHeaderRow(sheet, row, part.headerSeeds(), merges)) break;
+            for (int index = 0; index < rows.size(); index++) {
+                int row = rows.get(index);
+                if (index == 0 ? !coloredHeaderRow(sheet, row, part.headerSeeds(), merges)
+                        : !fullyColoredHeaderRow(sheet, row, part.headerSeeds(), merges)) break;
                 headerRows.add(row);
             }
             int matrixHeaderDepth = matrixGroupHeaderDepth(table, rows, columns, tableValues, merges, borders, openTopCells);
@@ -431,7 +433,7 @@ public class ExcelMarkdownService {
                 && merge.getFirstColumn() >= table.getFirstColumn() && merge.getLastColumn() <= table.getLastColumn()
                 && !values.getOrDefault(BorderTables.key(row, merge.getFirstColumn()), "").isBlank());
     }
-    /** A direct fill in any detected grid cell marks the row; expanded side notes do not. */
+    /** A direct fill in any detected grid cell marks the first row; expanded side notes do not. */
     private static boolean coloredHeaderRow(Sheet sheet, int row, List<CellRangeAddress> seeds, MergedRanges merges) {
         Row physical = sheet.getRow(row);
         if (physical == null) return false;
@@ -442,10 +444,43 @@ public class ExcelMarkdownService {
                 CellRangeAddress merge = merges.at(row, column);
                 if (merge != null && merge.getFirstRow() == row && merge.getFirstColumn() != column)
                     cell = physical.getCell(merge.getFirstColumn());
-                if (cell != null && cell.getCellStyle().getFillPattern() != FillPatternType.NO_FILL) return true;
+                if (hasColoredFill(cell)) return true;
             }
         }
         return false;
+    }
+    /** Later header levels need a colored band, not just a colored category cell in a detail row. */
+    private static boolean fullyColoredHeaderRow(Sheet sheet, int row, List<CellRangeAddress> seeds, MergedRanges merges) {
+        Row physical = sheet.getRow(row);
+        if (physical == null) return false;
+        boolean hasOwnCell = false;
+        for (CellRangeAddress seed : seeds) {
+            if (row < seed.getFirstRow() || row > seed.getLastRow()) continue;
+            for (int column = seed.getFirstColumn(); column <= seed.getLastColumn(); column++) {
+                if (sheet.isColumnHidden(column)) continue;
+                CellRangeAddress merge = merges.at(row, column);
+                // A label merged down from an earlier header row adds no new level to this row.
+                if (merge != null && merge.getFirstRow() < row) continue;
+                int anchor = merge == null ? column : merge.getFirstColumn();
+                Cell cell = physical.getCell(anchor);
+                if (!hasColoredFill(cell)) return false;
+                hasOwnCell = true;
+            }
+        }
+        return hasOwnCell;
+    }
+    private static boolean hasColoredFill(Cell cell) {
+        if (cell == null) return false;
+        CellStyle style = cell.getCellStyle();
+        if (style.getFillPattern() == FillPatternType.NO_FILL
+                || style.getFillForegroundColor() == IndexedColors.WHITE.getIndex()
+                || style.getFillForegroundColor() == IndexedColors.AUTOMATIC.getIndex()) return false;
+        if (style.getFillForegroundColorColor() instanceof XSSFColor color) {
+            byte[] rgb = color.getRGB();
+            if (rgb != null && rgb.length == 3 && (rgb[0] & 0xff) == 255
+                    && (rgb[1] & 0xff) == 255 && (rgb[2] & 0xff) == 255) return false;
+        }
+        return true;
     }
     private static boolean overlaps(CellRangeAddress range, DrawingBlock drawing) {
         return drawing.firstRow() <= range.getLastRow() && drawing.lastRow() >= range.getFirstRow()

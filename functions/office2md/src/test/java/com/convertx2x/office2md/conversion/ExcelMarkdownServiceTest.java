@@ -114,19 +114,37 @@ class ExcelMarkdownServiceTest {
         }
     }
     @ParameterizedTest @ValueSource(booleans={true,false})
-    void consecutiveRowsWithTheSameFillBecomeOneCompositeHeader(boolean xlsx) throws Exception {
+    void partialFillOnTheSecondRowStartsTheDetails(boolean xlsx) throws Exception {
         try (Workbook book = book(xlsx)) {
-            Sheet sheet = book.createSheet("同色"); table(sheet, 0, 2, 0, 1);
+            Sheet sheet = book.createSheet("一部だけ色付きの明細"); table(sheet, 0, 3, 0, 1);
             colorRow(sheet, 0, 0, 1, IndexedColors.GREY_25_PERCENT.getIndex());
             colorRow(sheet, 1, 0, 0, IndexedColors.GREY_25_PERCENT.getIndex());
             cell(sheet,0,0,"列名"); cell(sheet,0,1,"説明");
             cell(sheet,1,0,"ID"); cell(sheet,1,1,"名称");
             cell(sheet,2,0,"A"); cell(sheet,2,1,"値");
+            cell(sheet,3,0,"B"); cell(sheet,3,1,"次の値");
+            colorRow(sheet, 2, 0, 1, IndexedColors.LIGHT_BLUE.getIndex());
             try (ConversionResult result = convert(book)) {
-                assertTrue(markdown(result).contains("| 列名 / ID | 説明 / 名称 |\n| --- | --- |\n| A | 値 |"));
+                assertTrue(markdown(result).contains("| 列名 | 説明 |\n| --- | --- |\n| ID | 名称 |\n| A | 値 |\n| B | 次の値 |"));
                 JsonNode block = report(result).path("blocks").get(0);
                 assertEquals("fill-color", block.path("header").asText());
-                assertEquals(List.of(1, 2), JSON.convertValue(block.path("headerSourceRows"), List.class));
+                assertEquals(List.of(1), JSON.convertValue(block.path("headerSourceRows"), List.class));
+            }
+        }
+    }
+    @ParameterizedTest @ValueSource(booleans={true,false})
+    void whiteFillOnTheRestOfTheSecondRowDoesNotExtendTheHeader(boolean xlsx) throws Exception {
+        try (Workbook book = book(xlsx)) {
+            Sheet sheet = book.createSheet("白い背景の明細"); table(sheet, 0, 2, 0, 2);
+            cell(sheet, 0, 0, "No."); cell(sheet, 0, 1, "種別"); cell(sheet, 0, 2, "項目名");
+            cell(sheet, 1, 0, "1"); cell(sheet, 1, 1, "ヘッダ"); cell(sheet, 1, 2, "伝票番号");
+            cell(sheet, 2, 0, "2"); cell(sheet, 2, 1, "ヘッダ"); cell(sheet, 2, 2, "受注日付");
+            colorRow(sheet, 0, 0, 2, IndexedColors.GREY_25_PERCENT.getIndex());
+            colorRow(sheet, 1, 0, 0, IndexedColors.GREY_25_PERCENT.getIndex());
+            colorRow(sheet, 1, 1, 2, IndexedColors.WHITE.getIndex());
+            try (ConversionResult result = convert(book)) {
+                assertTrue(markdown(result).contains("| No. | 種別 | 項目名 |\n| --- | --- | --- |\n| 1 | ヘッダ | 伝票番号 |\n| 2 | ヘッダ | 受注日付 |"));
+                assertEquals(List.of(1), JSON.convertValue(tableBlocks(result).getFirst().path("headerSourceRows"), List.class));
             }
         }
     }
@@ -666,6 +684,7 @@ class ExcelMarkdownServiceTest {
             for (int row = 0; row <= 3; row++) sheet.addMergedRegion(new CellRangeAddress(row, row, 0, 1));
             colorRow(sheet, 0, 0, 0, IndexedColors.GREY_25_PERCENT.getIndex());
             colorRow(sheet, 1, 0, 0, IndexedColors.LIGHT_BLUE.getIndex());
+            colorRow(sheet, 1, 2, 2, IndexedColors.LIGHT_BLUE.getIndex());
             try (ConversionResult result = convert(book)) {
                 assertTrue(markdown(result).contains("| 基本情報 / 商品 | 分類 / 種類 |\n| --- | --- |\n| りんご | 果物 |\n| みかん | 柑橘 |"));
                 assertEquals(List.of(1, 2), JSON.convertValue(report(result).path("blocks").get(0).path("headerSourceRows"), List.class));

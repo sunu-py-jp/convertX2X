@@ -86,7 +86,7 @@ def main() -> None:
         '<p>入力の直接塗り、横・縦結合、先頭だけ罫線のない表、多段見出しを変えた24シートを、現行の変換APIに送った結果です。代表10ケースを入力の画面表示と実際のMarkdownで並べました。残りも<a href="merge-cases.html">24ケースの比較ページ</a>で確認できます。</p>',
         f'<p class="sample-meta">HTTP {run["response"]["status"]} · {run["sectionCount"]} 出力シート · {run["tableCount"]} 検出表 · 警告 {run["warningCount"]} 件</p>',
         '<div class="sample-links"><a href="examples/excel-merge-matrix/input.xlsx" download>入力 XLSX</a><a href="examples/excel-merge-matrix/result.zip" download>実際の出力 ZIP</a><a href="examples/excel-merge-matrix/output/document.md" download>document.md 全文</a><a href="examples/excel-merge-matrix/output/report.json">report.json</a><a href="examples/excel-merge-matrix/pairs.zip" download>24ケースの画像＋Markdown ZIP</a><a href="examples/excel-merge-matrix/run.json">実行記録・SHA-256</a></div>',
-        '<div class="callout"><p>通常の罫線表は、先頭から直接色付きの行をヘッダーにします。左上だけ罫線がないマトリックスでは、保存された行列の罫線構造から見出しを判定する <code>matrix-grid</code> もあります。無罫線の注記は表の前に文章として出し、元のセルや結合範囲にない見出しは補いません。図は入力セルのブラウザー表示を撮影したもので、右の文章は実際の <code>document.md</code> から一字も変更せずに掲載しています。</p></div>',
+        '<div class="callout"><p>通常の罫線表は、先頭行に直接塗りがあればヘッダーにし、続く行は表示対象セルがすべて直接塗りの間だけ追加します。部分的に色付きの行は明細に残します。左上だけ罫線がないマトリックスでは、保存された行列の罫線構造から見出しを判定する <code>matrix-grid</code> もあります。無罫線の注記は表の前に文章として出し、元のセルや結合範囲にない見出しは補いません。図は入力セルのブラウザー表示を撮影したもので、右の文章は実際の <code>document.md</code> から一字も変更せずに掲載しています。</p></div>',
         *cards,
         '<p><a href="merge-cases.html">全24ケースの比較ページへ</a> · <a href="examples/excel-merge-matrix/README.md">入力生成・HTTP実行・検証方法</a></p>',
         '</section>',

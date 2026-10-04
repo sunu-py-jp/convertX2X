@@ -35,6 +35,23 @@ final class BorderTables {
             if (style.getBorderLeft() != BorderStyle.NONE) vertical(r, c);
             if (style.getBorderRight() != BorderStyle.NONE) vertical(r, c + 1);
         }
+        for (CellRangeAddress merge : merges.all()) {
+            if (ConversionLimits.exceeds(area(merge), workspace.limits().maxTableCells())) continue;
+            Row row = sheet.getRow(merge.getFirstRow());
+            Cell anchor = row == null ? null : row.getCell(merge.getFirstColumn());
+            if (anchor == null) continue;
+            CellStyle style = anchor.getCellStyle();
+            // Excel can draw a merged cell's perimeter from its anchor style even
+            // when covered cells do not store their own border segments.
+            for (int column = merge.getFirstColumn(); column <= merge.getLastColumn(); column++) {
+                if (style.getBorderTop() != BorderStyle.NONE) horizontal(merge.getFirstRow(), column);
+                if (style.getBorderBottom() != BorderStyle.NONE) horizontal(merge.getLastRow() + 1, column);
+            }
+            for (int coveredRow = merge.getFirstRow(); coveredRow <= merge.getLastRow(); coveredRow++) {
+                if (style.getBorderLeft() != BorderStyle.NONE) vertical(coveredRow, merge.getFirstColumn());
+                if (style.getBorderRight() != BorderStyle.NONE) vertical(coveredRow, merge.getLastColumn() + 1);
+            }
+        }
         Map<Long, Integer> occupied = new HashMap<>();
         List<CellRangeAddress> units = new ArrayList<>();
         Set<Long> examined = new HashSet<>();
