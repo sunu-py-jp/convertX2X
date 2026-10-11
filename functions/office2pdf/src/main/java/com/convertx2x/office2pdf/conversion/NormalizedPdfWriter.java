@@ -1,6 +1,8 @@
 package com.convertx2x.office2pdf.conversion;
 
 import java.awt.Color;
+import java.awt.geom.AffineTransform;
+import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -17,6 +19,8 @@ import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.font.PDType0Font;
 import org.apache.pdfbox.pdmodel.graphics.image.LosslessFactory;
 import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
+import org.apache.pdfbox.pdmodel.graphics.state.RenderingMode;
+import org.apache.pdfbox.util.Matrix;
 
 /** Small pure-Java paginator optimized for searchable text and simple table recognition. */
 final class NormalizedPdfWriter implements AutoCloseable {
@@ -187,6 +191,41 @@ final class NormalizedPdfWriter implements AutoCloseable {
         PDImageXObject object = LosslessFactory.createFromImage(document, image);
         stream.drawImage(object, 0, 0, size.getWidth(), size.getHeight());
         y = 0;
+    }
+
+    /** Adds invisible Unicode text at the positions measured during the raster rendering. */
+    boolean slideText(List<SlideTextCapture.Line> lines, int imageWidth, int imageHeight) throws IOException {
+        boolean replacedGlyph = false;
+        AffineTransform pixelsToPdf = new AffineTransform(
+                size.getWidth() / imageWidth, 0, 0, -size.getHeight() / imageHeight, 0, size.getHeight());
+        Rectangle2D pageBounds = new Rectangle2D.Double(0, 0, size.getWidth(), size.getHeight());
+        stream.saveGraphicsState();
+        stream.beginText();
+        stream.setRenderingMode(RenderingMode.NEITHER);
+        for (SlideTextCapture.Line line : lines) {
+            AffineTransform baselineToPdf = new AffineTransform(pixelsToPdf);
+            baselineToPdf.concatenate(line.baselineToPixels());
+            for (SlideTextCapture.Glyph glyph : line.glyphs()) {
+                Rectangle2D bounds = new Rectangle2D.Double(glyph.x(), -glyph.fontSize(),
+                        glyph.width(), glyph.fontSize() * 1.3);
+                if (!baselineToPdf.createTransformedShape(bounds).intersects(pageBounds)) continue;
+                String safe = glyphSafe(regular, glyph.text());
+                replacedGlyph |= !safe.equals(glyph.text());
+                float nativeWidth = textWidth(regular, glyph.fontSize(), safe);
+                if (nativeWidth <= 0) continue;
+                AffineTransform glyphToPdf = new AffineTransform(baselineToPdf);
+                glyphToPdf.translate(glyph.x(), 0);
+                // PDF glyphs point up; Java2D glyphs point down. Fit each grapheme's width
+                // to POI's caret positions so mixed fonts do not displace search highlights.
+                glyphToPdf.scale(glyph.width() / nativeWidth, -1);
+                stream.setFont(regular, glyph.fontSize());
+                stream.setTextMatrix(new Matrix(glyphToPdf));
+                stream.showText(safe);
+            }
+        }
+        stream.endText();
+        stream.restoreGraphicsState();
+        return replacedGlyph;
     }
 
     byte[] finish() throws IOException {

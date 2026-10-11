@@ -13,7 +13,7 @@ import org.apache.poi.sl.usermodel.SlideShow;
 import org.apache.poi.sl.usermodel.SlideShowFactory;
 import org.apache.poi.xslf.usermodel.XSLFSlide;
 
-/** Renders each visible slide as one PDF page using POI's Java2D renderer. */
+/** Renders slides with POI and retains the rendered text as a searchable PDF layer. */
 final class PowerPointPdfConverter {
     void convert(byte[] input, NormalizedPdfWriter pdf, ConversionWorkspace workspace) throws IOException {
         try (SlideShow<?, ?> show = SlideShowFactory.create(new ByteArrayInputStream(input))) {
@@ -31,15 +31,21 @@ final class PowerPointPdfConverter {
                 BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
                 Graphics2D graphics = image.createGraphics();
                 try {
+                    SlideTextCapture text = new SlideTextCapture(graphics);
                     graphics.setColor(Color.WHITE);
                     graphics.fillRect(0, 0, width, height);
                     graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                     graphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
                     graphics.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
                     graphics.setRenderingHint(Drawable.FONT_HANDLER, BundledPptFontManager.instance());
+                    graphics.setRenderingHint(Drawable.DRAW_FACTORY, text);
                     graphics.scale(scale, scale);
                     slide.draw(graphics);
                     pdf.slide(image, (float) page.getWidth(), (float) page.getHeight());
+                    if (pdf.slideText(text.lines(), width, height)) {
+                        workspace.warning("PDF_TEXT_GLYPH_UNSUPPORTED", "slide-" + (show.getSlides().indexOf(slide) + 1),
+                                "同梱フォントにない文字を検索用テキストで□に置き換えました。スライド画像は変更していません。");
+                    }
                     workspace.sectionIncluded();
                     included++;
                 } catch (RuntimeException failure) {

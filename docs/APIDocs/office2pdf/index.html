@@ -12,7 +12,7 @@
 <div class="table-wrap"><table><thead><tr><th>入力</th><th>PDF化の方法</th><th>区切り</th></tr></thead><tbody>
 <tr><td><code>.xlsx / .xls</code></td><td>表示シートの値を検索可能な表へ再配置。空列を挟む左右の関連列も同じ表へ取り込む</td><td>表示シート</td></tr>
 <tr><td><code>.docx</code></td><td>本文・見出し・箇条書き・表・対応画像を本文順に再配置</td><td>1文書</td></tr>
-<tr><td><code>.pptx / .ppt</code></td><td>表示スライドをJava2Dで描画し、1スライドをPDFの1ページへ配置</td><td>表示スライド</td></tr>
+<tr><td><code>.pptx / .ppt</code></td><td>表示スライドをJava2Dで描画し、1スライドをPDFの1ページへ配置。描画した文字を検索用の非表示テキストとして重ねる</td><td>表示スライド</td></tr>
 </tbody></table></div>
 <p>Excel数式は再計算せず保存済み値を使います。外部参照やリンク先は取得しません。暗号化ファイル、Wordの旧形式<code>.doc</code>、マクロ有効形式は対象外です。</p>
 <h2 id="output">出力</h2>
@@ -20,7 +20,9 @@
 report.json</code></pre>
 <p>同期HTTPは<code>document.pdf</code>を直接返します。非同期と直接QueueはPDFとreportをBlobへ保存し、取得用ZIPも提供します。reportには入力・PDFのSHA-256、形式、ページ数、シートまたはスライド数、警告を記録します。</p>
 <h2 id="layout">再現範囲</h2>
-<p>PDFは内容抽出用の中間形式で、Officeの印刷結果と完全には一致しません。ExcelとWordは文字・表が検索可能です。PowerPointはスライド全体が画像になるため、後段のDocument Intelligence OCRで文字を読み取ります。SmartArt、グラフ、複雑な効果、フォント差により見た目が変わる場合があります。</p>
+<p>PDFは内容抽出用の中間形式で、Officeの印刷結果と完全には一致しません。ExcelとWordは文字・表が検索可能です。PowerPointはスライド画像に検索用の非表示テキストを重ねるため、PDFビューアーで日本語も検索できます。対象はPOIが文字として描画するテキストボックス、図形、グループ内の図形、表です。同期HTTP・非同期HTTP・直接Queueで共通の既定動作で、追加オプションは不要です。</p>
+<p>画像内の文字のOCRは行わないため、その文字は検索できません。POIが描画できないSmartArt・グラフなどの文字も検索対象にならない場合があります。SmartArt、グラフ、複雑な効果、フォント差により見た目が変わる場合があります。</p>
+<p>同梱フォントで表せない文字は検索用テキストのみ<code>□</code>に置き換え、reportに<code>PDF_TEXT_GLYPH_UNSUPPORTED</code>を記録します。スライド画像には影響しません。</p>
 <h2 id="limits">固定の内容個数上限はなし</h2>
 <p>シート、行、列、段落、表、スライド、図形の個数に既定の固定上限はありません。入力・出力バイト数、1画像の画素数、任意のPDFページ上限だけを設定します。既定のページ上限は<code>0</code>（無制限）です。詳細は<a href="settings.html">設定・上限</a>を参照してください。</p>
 <h2 id="playground">Playground</h2><p>ローカル既定URLは<code>http://localhost:7074/api/playground</code>です。ファイル選択、同期・非同期変換、PDFプレビューと保存ができます。</p>

@@ -10,7 +10,9 @@ Apache PDFBoxだけで動作し、LibreOfficeやネイティブ実行ファイ�
 | 同上 | 非同期HTTPまたは直接QueueでPDF・reportをBlobへ保存する |
 
 PDFは元のOffice印刷結果の完全な再現ではありません。ExcelとWordは文字・表を
-検索可能なPDFへ再配置し、PowerPointは表示スライドを1ページずつ画像化します。
+検索可能なPDFへ再配置します。PowerPointは表示スライドを1ページずつ画像化し、
+描画した文字を非表示のテキストとして重ねるため、PDFビューアーで日本語も検索できます。
+画像に含まれる文字のOCRは行いません。
 
 ## ドキュメント
 
