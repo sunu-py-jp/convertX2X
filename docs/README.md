@@ -12,6 +12,9 @@ APIの呼び出し方は [HTML APIリファレンス](APIDocs/index.html) を参
 | Markdown → PDF | [利用ガイド](../functions/md2pdf/docs/usage.md) | [依頼形式](../functions/md2pdf/docs/direct-queue.md) | [開発者ガイド](md2pdf.md) |
 | Movie → Audio | [利用ガイド](../functions/movie2audio/docs/usage.md) | [依頼形式](../functions/movie2audio/docs/direct-queue.md) | [開発者ガイド](movie2audio.md) |
 
+Office → PDFの[PowerPoint検索対応の変更記録](office2pdf.md#searchable-powerpoint-change)には、
+変更前後の違い、文字埋め込みの仕組み、対応範囲、ビューアーでの検証結果をまとめています。
+
 ## 共通の資料
 
 - [全体構成](architecture.md)：独立したFunction App、HTTPとQueueの関係、機能ごとの違い
