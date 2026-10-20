@@ -1,0 +1,28 @@
+Movie2Audio
+
+Application code is licensed under the MIT License in LICENSE.
+Third-party components retain their own copyrights and license terms.
+
+Production Node.js dependencies:
+  Original license and notice files are retained in node_modules/.
+  third-party/node/overrides.json records version-specific supplemental
+  license texts, their upstream sources and SHA-256 values.
+  third-party/node/licenses/ contains these unchanged upstream texts.
+  Packaged distributions include THIRD-PARTY-NOTICES.txt with the full texts
+  and third-party/node/inventory.json with every installed production
+  package, version, document path and SHA-256.
+  Generate the distribution with npm run package. From the module directory,
+  verify it offline with node scripts/licenses.mjs dist --check.
+  From inside the distribution, run node scripts/licenses.mjs . --check.
+
+FFmpeg and platform runtimes:
+  Keep third-party/ffmpeg/ and scripts/build_ffmpeg.py with the distribution.
+  third-party/ffmpeg/README.md identifies the corresponding FFmpeg source
+  archive, build instructions and LGPL-2.1-or-later licensing.
+  That directory also preserves musl, GCC runtime exception and MinGW-w64
+  runtime notices. The binaries and their manifests are in resources/ffmpeg/.
+
+Redistribution:
+  Preserve LICENSE, NOTICE, THIRD-PARTY-NOTICES.txt, third-party/ and the
+  original dependency notices in node_modules/. Do not treat the
+  application's MIT license as replacing a dependency's license.

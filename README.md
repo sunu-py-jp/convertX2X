@@ -8,6 +8,7 @@
 | --- | --- | --- |
 | PowerPoint / PDF → 画像 | PPTX・PPT・PDF → PNG・JPEG・ZIP | [API資料](docs/APIDocs/ppt-pdf-to-images/index.html) |
 | Office → Markdown | Excel・Word・PowerPoint → Markdown・画像、任意で埋め込み画像をOCR | [API資料](docs/APIDocs/office2md/index.html) |
+| Excel → 画像・PDF | XLSX・XLSのセル・画像・図形を配置を保ってPNG・PDFへ | [API資料](docs/APIDocs/excel2img/index.html) |
 | Office → PDF | Excel・Word・PowerPoint → Document Intelligence向けPDF | [API資料](docs/APIDocs/office2pdf/index.html) |
 | Markdown → PDF | Markdown・画像入りZIP → 検索可能な日本語PDF | [API資料](docs/APIDocs/md2pdf/index.html) |
 | Movie → Audio | 動画ファイル・URL・Blob → AAC音声をコピーしたM4A | [API資料](docs/APIDocs/movie2audio/index.html) |
@@ -23,7 +24,7 @@
 - [利用・開発ガイド](docs/README.md)：機能別の使い方、構成、起動・設定・検証・デプロイ
 - [開発への参加](CONTRIBUTING.md)：機能追加・変更のルール
 
-実装と配布物は `functions/ppt-pdf-to-images/`、`functions/office2md/`、`functions/office2pdf/`、`functions/md2pdf/`、`functions/movie2audio/` で個別に管理します。
+実装と配布物は `functions/ppt-pdf-to-images/`、`functions/office2md/`、`functions/office2pdf/`、`functions/md2pdf/`、`functions/excel2img/`、`functions/movie2audio/` で個別に管理します。
 
 ## ライセンス
 

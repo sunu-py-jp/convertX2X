@@ -8,6 +8,7 @@ convertX2X/
 ├── functions/
 │   ├── office2md/              独立したビルド・設定・デプロイ単位
 │   ├── office2pdf/             独立した純Java Office→PDFアプリ
+│   ├── excel2img/              独立したExcel配置保持の描画アプリ
 │   ├── md2pdf/                 独立した純Java Markdown→PDFアプリ
 │   ├── ppt-pdf-to-images/        独立したビルド・設定・デプロイ単位
 │   └── movie2audio/             独立したビルド・設定・デプロイ単位
@@ -44,6 +45,8 @@ flowchart LR
 | 同期出力 | Markdown・画像・reportを含むZIP | 正規化PDF | 検索可能なPDF | 選択した1ページの画像、または全ページZIP | M4A。SAS指定先へ保存するAPIは結果JSON |
 | 非同期の保存形式 | Markdown・report・画像を個別Blobに保存 | PDF・reportを個別Blobに保存 | PDF・reportを個別Blobに保存 | ページ指定時の単画像、全ページZIP、または画像・manifestを個別Blobに保存 | M4Aを個別Blobに保存 |
 | 既定の配布ディレクトリ | `target/azure-functions/office2md-local` | `target/azure-functions/office2pdf-local` | `target/azure-functions/md2pdf-local` | `target/azure-functions/slide2image-local` | `dist/` |
+
+Excel → 画像・PDFは `functions/excel2img/` のJava 21 / POI / Java2D / PDFBoxアプリです。既定ポートは `7076`、Queueは `excel2img-jobs`、共通処理は `ExcelImageService`。同期はPNG群またはPDFとreportのZIPを返し、非同期は各ファイルを個別Blobへ保存します。描画できないほど横長の範囲は理由を記録して見送ります。[実装ガイド](excel2img.md)を参照してください。
 
 HTTPのパスが似ていても、QueueのJSONや結果の取得方法は機能ごとの契約です。対象機能の依頼形式に合わせてください。
 

@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "overrides": [
+    {
+      "name": "@nodable/entities",
+      "version": "3.0.0",
+      "license": "MIT",
+      "packageIntegrity": "sha512-8L9xFeTYKhm49xfIypoe2W5wV1m/3Z58kT+7kR9A8OyFxcPduI4VmxaUMQyKYrRjUoLLSXv6EKKID5Tvj9cUVw==",
+      "packageSource": "https://registry.npmjs.org/@nodable/entities/-/entities-3.0.0.tgz",
+      "upstreamCommit": "d2070d76a8ba07e6c7fa142caeb51ffd756e47eb",
+      "source": "https://raw.githubusercontent.com/nodable/val-parsers/d2070d76a8ba07e6c7fa142caeb51ffd756e47eb/LICENSE",
+      "file": "third-party/node/licenses/nodable-entities-3.0.0-LICENSE",
+      "sha256": "750cb3fb6362804957ef52caaf9b5c824015be44d494637330d7cd8834d31d40",
+      "reason": "The published 3.0.0 npm archive omits LICENSE. This is the unchanged license from the upstream repository at the pinned commit."
+    }
+  ]
+}

@@ -92,7 +92,7 @@
             <resource>
                 <directory>${project.basedir}</directory>
                 <targetPath>META-INF</targetPath>
-                <includes><include>LICENSE</include></includes>
+                <includes><include>LICENSE</include><include>NOTICE.md</include></includes>
             </resource>
         </resources>
         <plugins>
@@ -142,6 +142,60 @@
                         <id>package-functions</id>
                         <phase>package</phase>
                         <goals><goal>package</goal></goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>3.7.0</version>
+                <executions>
+                    <execution>
+                        <id>license-runtime-classpath</id>
+                        <phase>generate-resources</phase>
+                        <goals><goal>build-classpath</goal></goals>
+                        <configuration>
+                            <includeScope>runtime</includeScope>
+                            <outputFile>${project.build.directory}/license-runtime-classpath.txt</outputFile>
+                            <regenerateFile>true</regenerateFile>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.6.4</version>
+                <configuration><executable>${java.home}/bin/java</executable></configuration>
+                <executions>
+                    <execution>
+                        <id>embed-third-party-licenses</id>
+                        <phase>prepare-package</phase>
+                        <goals><goal>exec</goal></goals>
+                        <configuration>
+                            <arguments>
+                                <argument>${project.basedir}/scripts/PackageLicenses.java</argument>
+                                <argument>prepare</argument>
+                                <argument>${project.basedir}</argument>
+                                <argument>${project.build.directory}/license-runtime-classpath.txt</argument>
+                                <argument>${project.build.outputDirectory}</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>stage-third-party-licenses</id>
+                        <phase>package</phase>
+                        <goals><goal>exec</goal></goals>
+                        <configuration>
+                            <arguments>
+                                <argument>${project.basedir}/scripts/PackageLicenses.java</argument>
+                                <argument>stage</argument>
+                                <argument>${project.basedir}</argument>
+                                <argument>${project.build.directory}/license-runtime-classpath.txt</argument>
+                                <argument>${project.build.directory}/azure-functions/${functionAppName}</argument>
+                                <argument>${project.build.finalName}.jar</argument>
+                            </arguments>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>

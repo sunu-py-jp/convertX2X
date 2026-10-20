@@ -33,6 +33,14 @@
       ['queue', 'Queueから直接依頼', 'queue.html', 'json blob storage 外部システム'],
       ['settings', '設定・上限・エラー', 'settings.html', '環境変数 制限 認証 capabilities config playground 413 503']
     ]},
+    {id: 'excelimg', title: 'Excel → 画像・PDF', subtitle: 'XLSX · XLS · PNG · PDF', icon: 'image', folder: 'excel2img', items: [
+      ['overview', '概要・描画範囲', 'index.html', 'excel セル 画像 図形 レイアウト 印刷範囲 横長 可読性'],
+      ['examples', '実際の変換例', 'examples.html', 'サンプル PNG PDF 画像 業務フロー 横長 見送り'],
+      ['http', '同期HTTPで変換', 'http.html', 'post convert format png pdf sheet range zip'],
+      ['jobs', '非同期HTTP・成果物取得', 'jobs.html', 'jobs result archive report files status'],
+      ['queue', 'Queueから直接依頼', 'queue.html', 'json blob options storage 外部システム'],
+      ['settings', '設定・上限・エラー', 'settings.html', '環境変数 文字サイズ 画素数 幅 高さ 422 413']
+    ]},
     {id: 'pdf', title: 'Office → PDF', subtitle: 'XLSX · XLS · DOCX · PPTX · PPT', icon: 'office', folder: 'office2pdf', items: [
       ['overview', '機能概要・変換ルール', 'index.html', 'excel word powerpoint pdf document intelligence 正規化'],
       ['examples', '実際の変換例', 'examples.html', 'サンプル 変換結果 excel pdf report ダウンロード'],
@@ -63,7 +71,7 @@
   const activeGroup = groups.find(group => current.startsWith(`${group.id}-`));
   document.getElementById('site-header').innerHTML = `<header class="site-header"><a class="brand" href="${url('index.html')}" aria-label="convertX2X API Docs トップ"><span class="brand-mark">X²</span><span class="brand-name">convertX2X</span></a><div class="header-context"><span>API Docs</span><i class="header-divider" aria-hidden="true"></i><span class="header-current">${activeGroup ? activeGroup.title : 'はじめに'}</span></div><div class="header-right"><span class="live-dot" aria-hidden="true"></span>HTTP &amp; QUEUE</div><button class="menu-toggle" type="button" aria-label="メニューを開く" aria-expanded="false" aria-controls="sidebar">${svg('menu')}</button></header>`;
   const sidebar = document.getElementById('sidebar');
-  sidebar.innerHTML = `<div class="search-box"><label class="sr-only" for="nav-search">API項目を検索</label>${svg('search')}<input id="nav-search" type="search" placeholder="API項目を検索…" autocomplete="off" spellcheck="false"><kbd aria-hidden="true">/</kbd></div><nav aria-label="機能別API"><a class="nav-home" href="${url('index.html')}"${current === 'home' ? ' aria-current="page"' : ''}>${svg('home')}はじめに</a><p class="nav-label">API REFERENCE</p>${groups.map(group => `<details class="nav-group" data-group="${group.id}" open><summary>${svg(group.icon, 'group-icon')}<span>${group.title}<span class="group-subtitle">${group.subtitle}</span></span>${svg('chevron', 'chevron')}</summary><div class="nav-items">${group.items.map(item => `<a class="nav-link" data-search="${group.title} ${group.subtitle} ${item[1]} ${item[3]}" href="${url(`${group.folder}/${item[2]}`)}"${current === `${group.id}-${item[0]}` ? ' aria-current="page"' : ''}>${item[1]}</a>`).join('')}</div></details>`).join('')}<p class="nav-empty" hidden>一致する項目がありません。</p><span id="search-status" class="sr-only" role="status"></span></nav><div class="sidebar-footer"><a href="${url('../README.md')}">開発者マニュアル ↗</a><span>実装済みAPIのリファレンス</span><span>Updated September 16, 2026</span></div>`;
+  sidebar.innerHTML = `<div class="search-box"><label class="sr-only" for="nav-search">API項目を検索</label>${svg('search')}<input id="nav-search" type="search" placeholder="API項目を検索…" autocomplete="off" spellcheck="false"><kbd aria-hidden="true">/</kbd></div><nav aria-label="機能別API"><a class="nav-home" href="${url('index.html')}"${current === 'home' ? ' aria-current="page"' : ''}>${svg('home')}はじめに</a><p class="nav-label">API REFERENCE</p>${groups.map(group => `<details class="nav-group" data-group="${group.id}" open><summary>${svg(group.icon, 'group-icon')}<span>${group.title}<span class="group-subtitle">${group.subtitle}</span></span>${svg('chevron', 'chevron')}</summary><div class="nav-items">${group.items.map(item => `<a class="nav-link" data-search="${group.title} ${group.subtitle} ${item[1]} ${item[3]}" href="${url(`${group.folder}/${item[2]}`)}"${current === `${group.id}-${item[0]}` ? ' aria-current="page"' : ''}>${item[1]}</a>`).join('')}</div></details>`).join('')}<p class="nav-empty" hidden>一致する項目がありません。</p><span id="search-status" class="sr-only" role="status"></span></nav><div class="sidebar-footer"><a href="${url('../README.md')}">開発者マニュアル ↗</a><span>実装済みAPIのリファレンス</span><span>Updated October 20, 2026</span></div>`;
 
   const search = document.getElementById('nav-search');
   const details = [...sidebar.querySelectorAll('.nav-group')];

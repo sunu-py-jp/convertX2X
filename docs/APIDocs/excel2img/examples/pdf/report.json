@@ -1,0 +1,162 @@
+{
+  "specVersion" : 1,
+  "source" : {
+    "filename" : "excel-layout-demo.xlsx",
+    "sha256" : "cd46f9a802094399720560819ad7f49d1ec7f40472d88ece14d68af4f97d04b8",
+    "format" : "xlsx"
+  },
+  "format" : "pdf",
+  "options" : {
+    "format" : "pdf",
+    "sheet" : null,
+    "range" : null
+  },
+  "outcome" : "partial",
+  "pageCount" : 5,
+  "sectionKind" : "sheet",
+  "sectionCount" : 3,
+  "ranges" : [ {
+    "sheet" : "画像付き業務フロー",
+    "range" : "A1:L26",
+    "selection" : "printArea",
+    "status" : "rendered",
+    "pixelsPerPoint" : 2.0,
+    "sourceBoundsPoints" : {
+      "height" : 624.0,
+      "x" : 0.0,
+      "y" : 0.0,
+      "width" : 630.1529846191406
+    },
+    "pages" : [ 1 ]
+  }, {
+    "sheet" : "印刷範囲2つ",
+    "range" : "A1:F12",
+    "selection" : "printArea",
+    "status" : "rendered",
+    "pixelsPerPoint" : 2.0,
+    "sourceBoundsPoints" : {
+      "height" : 288.0,
+      "x" : 0.0,
+      "y" : 0.0,
+      "width" : 409.59946060180664
+    },
+    "pages" : [ 2 ]
+  }, {
+    "sheet" : "印刷範囲2つ",
+    "range" : "A18:F29",
+    "selection" : "printArea",
+    "status" : "rendered",
+    "pixelsPerPoint" : 2.0,
+    "sourceBoundsPoints" : {
+      "height" : 288.0,
+      "x" : 0.0,
+      "y" : 408.0,
+      "width" : 409.59946060180664
+    },
+    "pages" : [ 3 ]
+  }, {
+    "sheet" : "縦長一覧",
+    "range" : "A1:F125",
+    "selection" : "occupied",
+    "status" : "rendered",
+    "pixelsPerPoint" : 2.0,
+    "sourceBoundsPoints" : {
+      "height" : 2500.0,
+      "x" : 0.0,
+      "y" : 0.0,
+      "width" : 467.3634796142578
+    },
+    "pages" : [ 4, 5 ]
+  }, {
+    "sheet" : "横長マトリックス",
+    "range" : "A1:AP12",
+    "selection" : "occupied",
+    "status" : "skipped",
+    "reason" : "WIDTH_UNREADABLE",
+    "message" : "幅を収めると文字が最小可読サイズを下回るため、この範囲をスキップしました。",
+    "pages" : [ ]
+  } ],
+  "pages" : [ {
+    "page" : 1,
+    "sheet" : "画像付き業務フロー",
+    "range" : "A1:L26",
+    "path" : "document.pdf",
+    "widthPixels" : 1261,
+    "heightPixels" : 1248,
+    "sourceBoundsPoints" : {
+      "height" : 624.0,
+      "x" : 0.0,
+      "y" : 0.0,
+      "width" : 630.1529846191406
+    },
+    "firstRow" : 1,
+    "lastRow" : 26
+  }, {
+    "page" : 2,
+    "sheet" : "印刷範囲2つ",
+    "range" : "A1:F12",
+    "path" : "document.pdf",
+    "widthPixels" : 820,
+    "heightPixels" : 576,
+    "sourceBoundsPoints" : {
+      "height" : 288.0,
+      "x" : 0.0,
+      "y" : 0.0,
+      "width" : 409.59946060180664
+    },
+    "firstRow" : 1,
+    "lastRow" : 12
+  }, {
+    "page" : 3,
+    "sheet" : "印刷範囲2つ",
+    "range" : "A18:F29",
+    "path" : "document.pdf",
+    "widthPixels" : 820,
+    "heightPixels" : 576,
+    "sourceBoundsPoints" : {
+      "height" : 288.0,
+      "x" : 0.0,
+      "y" : 408.0,
+      "width" : 409.59946060180664
+    },
+    "firstRow" : 18,
+    "lastRow" : 29
+  }, {
+    "page" : 4,
+    "sheet" : "縦長一覧",
+    "range" : "A1:F125",
+    "path" : "document.pdf",
+    "widthPixels" : 935,
+    "heightPixels" : 2800,
+    "sourceBoundsPoints" : {
+      "height" : 1400.0,
+      "x" : 0.0,
+      "y" : 0.0,
+      "width" : 467.3634796142578
+    },
+    "firstRow" : 1,
+    "lastRow" : 70
+  }, {
+    "page" : 5,
+    "sheet" : "縦長一覧",
+    "range" : "A1:F125",
+    "path" : "document.pdf",
+    "widthPixels" : 935,
+    "heightPixels" : 2200,
+    "sourceBoundsPoints" : {
+      "height" : 1100.0,
+      "x" : 0.0,
+      "y" : 1400.0,
+      "width" : 467.3634796142578
+    },
+    "firstRow" : 71,
+    "lastRow" : 125
+  } ],
+  "warnings" : [ ],
+  "outputs" : [ {
+    "sha256" : "e1bc580a5bfc0a4c491e623cf2fde9f3c471546c243a175e3be235f54b3d7558",
+    "sizeBytes" : 1245456,
+    "contentType" : "application/pdf",
+    "path" : "document.pdf"
+  } ]
+}

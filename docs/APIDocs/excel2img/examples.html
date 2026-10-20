@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>実際の変換例 | excel2img API</title><link rel="stylesheet" href="../assets/styles.css"><script src="../assets/app.js" defer></script></head>
+<body data-page="excelimg-examples"><a class="skip-link" href="#main-content">本文へ移動</a><div id="site-header"></div><aside id="sidebar" class="sidebar" aria-label="APIナビゲーション"></aside><div id="menu-overlay" class="menu-overlay" hidden></div><main id="main-content" class="main-content" tabindex="-1"><div class="page-layout"><article class="article"><p class="eyebrow">Excel → 画像・PDF</p><h1>画像と図形があるExcelを、そのまま描画。</h1>
+<p class="lead">架空の業務資料を実装済みの変換処理でPNG・PDFへ変換しました。入力ファイルと変換結果をダウンロードして比較できます。</p>
+<div class="callout"><strong>横長・画像付きの追加3パターン</strong><br><a href="#additional-wide">横長の表</a>・<a href="#additional-images">画像付きシート</a>・<a href="#additional-both">横長の表と画像</a>を、実際の同期HTTP APIでPNG・PDFへ変換しています。</div>
+<div class="callout"><strong>4シートから5ページを出力。</strong><br>画像付き業務フローが1ページ、2つの印刷範囲が2ページ、縦長一覧が2ページ。42列の横長マトリックスは可読性の閾値を満たさず見送りとなります。</div>
+<h2 id="downloads">入力と結果</h2><div class="cards"><a class="card" href="examples/excel-layout-demo.xlsx"><h3>元のExcel</h3><p>4シート・日本語・結合・画像・図形を含むXLSX。</p></a><a class="card" href="examples/excel-layout-png.zip"><h3>PNGとreportのZIP</h3><p>実際の変換結果。5ページと範囲別の記録。</p></a><a class="card" href="examples/pdf/document.pdf"><h3>変換後のPDF</h3><p>PNGと同じ配置。セル文字には検索用の文字層があります。</p></a></div><p><a href="examples/excel-layout-pdf.zip">PDFとreportのZIP</a> · <a href="examples/png/report.json">PNGのreport.json</a> · <a href="examples/pdf/report.json">PDFのreport.json</a></p>
+<h2 id="flow">セル・画面画像・業務フロー</h2><p>左側の受付一覧と説明はセル、右側の画面は貼り付けPNG、下段はExcelの基本図形です。各要素を同じシート座標から描画しています。Excelそのものによる印刷結果ではなく、このAPIが生成したPNGです。</p><figure><a href="examples/png/pages/page-001.png"><img src="examples/png/pages/page-001.png" alt="日本語の受付一覧、貼り付け画面画像、受付から承認を経て登録完了へ進む図形が同じページに配置された変換結果" style="display:block;width:100%;height:auto;border:1px solid #dbe2e8;border-radius:8px"></a><figcaption>画像付き業務フロー / A1:L26 / 印刷範囲を使用。クリックで元サイズ表示。</figcaption></figure>
+<h2 id="playground">Playgroundからの実行</h2><p>同期HTTPで同じExcelを送信した画面です。5ページのプレビューと、横長マトリックスを見送った理由を表示します。PDF出力では<a href="examples/playground-pdf.jpg">PDF保存リンクとプレビューの案内</a>を表示します。</p><figure><a href="examples/playground.jpg"><img src="examples/playground.jpg" alt="Playgroundで5ページのPNG生成と横長範囲の見送り理由を確認した画面" loading="lazy" style="width:100%;height:auto;border:1px solid #dbe2e8"></a></figure>
+<h2 id="print-areas">2つの印刷範囲</h2><p>同一シートに設定したA1:F12とA18:F29を個別のページにします。間にある空白行をまとめて1ページへ縮小しません。</p><div class="cards"><figure><a href="examples/png/pages/page-002.png"><img src="examples/png/pages/page-002.png" alt="東地区の印刷範囲を描画したページ2" style="width:100%;height:auto"></a><figcaption>東地区 / A1:F12</figcaption></figure><figure><a href="examples/png/pages/page-003.png"><img src="examples/png/pages/page-003.png" alt="西地区の印刷範囲を描画したページ3" style="width:100%;height:auto"></a><figcaption>西地区 / A18:F29</figcaption></figure></div>
+<h2 id="vertical">縦長一覧</h2><p>125行の一覧は縦方向だけを2ページに分割します。1〜70行と71〜125行が連続しており、横方向の列は全て同じページに残します。</p><p><a href="examples/png/pages/page-004.png">前半のPNG</a> · <a href="examples/png/pages/page-005.png">後半のPNG</a></p><figure><a href="examples/png/pages/page-004.png"><img src="examples/png/pages/page-004.png" alt="縦長一覧の前半ページ。列幅を保持したまま縦方向にページが分かれる" loading="lazy" style="display:block;width:100%;max-width:560px;height:auto;border:1px solid #dbe2e8"></a></figure>
+<h2 id="wide">読めないほど横長の範囲</h2><p>42列のマトリックスは、幅2048pxに収めると文字サイズが既定12pxを下回ります。生成対象から外し、次の内容をreportへ記録します。</p><pre><code class="language-json">{
+  "sheet": "横長マトリックス",
+  "range": "A1:AP12",
+  "selection": "occupied",
+  "status": "skipped",
+  "reason": "WIDTH_UNREADABLE",
+  "message": "幅を収めると文字が最小可読サイズを下回るため、この範囲をスキップしました。",
+  "pages": []
+}</code></pre><p>他シートは生成できるため全体は部分成功です。このシートだけを指定した場合は422 <code>NO_RENDERABLE_RANGE</code>になります。<a href="examples/wide-error.json">実際のエラー詳細</a>も掲載しています。</p>
+<h2 id="additional-wide">追加1：横に広い表</h2><p>24列の表を横方向に縮小する例です。複数行の見出しや結合、明細の位置を保って描画します。同じExcelに48列の表も含め、広すぎる範囲の見送りも確認します。</p>
+<table><thead><tr><th>追加サンプル</th><th>実際のPNG出力</th><th>結果</th></tr></thead><tbody>
+<tr><td>横に広い表</td><td>2048 × 787px・1ページ</td><td>24列を描画。48列の比較用シートは見送り</td></tr>
+<tr><td>画像を含むシート</td><td>1733 × 1824px・1ページ</td><td>貼り付け画像3枚とセルを描画</td></tr>
+<tr><td>横長の表と画像</td><td>2048 × 1098px・1ページ</td><td>27列幅の範囲に表と画像2枚を描画。52列の比較用シートは見送り</td></tr>
+</tbody></table><p>PDFもそれぞれ1ページです。PDF内のページ画像がPNGと一致することを確認しています。比較用の過大シートだけを指定した実際のエラー応答：<a href="examples/additional/outputs/wide-table/oversized-error.json">48列</a>・<a href="examples/additional/outputs/wide-with-images/oversized-error.json">52列</a>。</p>
+<p><a href="examples/additional/inputs/wide-table.xlsx">元のExcel</a> · <a href="examples/additional/outputs/wide-table/png/pages/page-001.png">変換後PNG（元サイズ）</a> · <a href="examples/additional/outputs/wide-table/pdf/document.pdf">変換後PDF</a> · <a href="examples/additional/outputs/wide-table/png.zip">PNGとreportのZIP</a> · <a href="examples/additional/outputs/wide-table/png/report.json">変換レポート</a></p>
+<figure><a href="examples/additional/outputs/wide-table/png/pages/page-001.png"><img src="examples/additional/outputs/wide-table/png/pages/page-001.png" alt="追加1：横に広い表の実際のPNG変換結果" loading="lazy" style="display:block;width:100%;height:auto;border:1px solid #dbe2e8;border-radius:8px"></a></figure>
+<h2 id="additional-images">追加2：画像を含むシート</h2><p>文字を含む画面画像、模式図、グラフ画像をセルの説明と一緒に配置しています。グラフはPNGとして貼り付けたもので、Excelのネイティブグラフではありません。</p>
+<p><a href="examples/additional/inputs/embedded-images.xlsx">元のExcel</a> · <a href="examples/additional/outputs/embedded-images/png/pages/page-001.png">変換後PNG（元サイズ）</a> · <a href="examples/additional/outputs/embedded-images/pdf/document.pdf">変換後PDF</a> · <a href="examples/additional/outputs/embedded-images/png.zip">PNGとreportのZIP</a> · <a href="examples/additional/outputs/embedded-images/png/report.json">変換レポート</a></p>
+<figure><a href="examples/additional/outputs/embedded-images/png/pages/page-001.png"><img src="examples/additional/outputs/embedded-images/png/pages/page-001.png" alt="追加2：画像を含むシートの実際のPNG変換結果" loading="lazy" style="display:block;width:100%;height:auto;border:1px solid #dbe2e8;border-radius:8px"></a></figure>
+<h2 id="additional-both">追加3：横長の表と画像</h2><p>横長の表の隣に画面画像とグラフ画像を配置し、表と画像を同じページへ描画します。さらに広いシートは、画像を含む範囲全体を見送ります。</p>
+<p><a href="examples/additional/inputs/wide-with-images.xlsx">元のExcel</a> · <a href="examples/additional/outputs/wide-with-images/png/pages/page-001.png">変換後PNG（元サイズ）</a> · <a href="examples/additional/outputs/wide-with-images/pdf/document.pdf">変換後PDF</a> · <a href="examples/additional/outputs/wide-with-images/png.zip">PNGとreportのZIP</a> · <a href="examples/additional/outputs/wide-with-images/png/report.json">変換レポート</a></p>
+<figure><a href="examples/additional/outputs/wide-with-images/png/pages/page-001.png"><img src="examples/additional/outputs/wide-with-images/png/pages/page-001.png" alt="追加3：横長の表と画像の実際のPNG変換結果" loading="lazy" style="display:block;width:100%;height:auto;border:1px solid #dbe2e8;border-radius:8px"></a></figure>
+<p>追加サンプルは最大横幅2048px・最小セル文字サイズ12pxの既定設定を使用しています。画像内の文字にはこの閾値の検査は適用されません。<a href="examples/additional/run.json">リクエスト・結果・実測時間の記録</a>と<a href="examples/additional/README.md">再実行手順</a>も保存しています。</p>
+<h2 id="reproduce">再現方法と範囲</h2><p>入力は全て架空の内容で、外部画像や実在の業務ファイルは使用していません。最初の4シートのサンプルは<code>functions/excel2img/scripts/CreateRenderDemo.java</code>で作成し、HTTP・Queueと同じ<code>ExcelImageService</code>をPNG／PDFのそれぞれで実行しています。追加3パターンの生成とHTTP変換は、上記の再実行手順を参照してください。</p><pre><code class="language-shell">cd functions/excel2img
+./mvnw package
+java -Djava.awt.headless=true \
+  --class-path "target/classes:$(cat target/license-runtime-classpath.txt)" \
+  scripts/CreateRenderDemo.java ../../docs/APIDocs/excel2img/examples</code></pre><p>実行記録は<a href="examples/run.json">run.json</a>にあります。時間はこのローカルサンプルの実測で、Functionsの起動時間やHTTP・Storageの転送を含みません。文字のサイズ・折り返し・図形の描画はExcelと差が出ます。用途に合うか、元ファイルと出力の両方で確認してください。</p>
+<footer class="page-footer"><span>2026-10-20 · Java 21 / POI / Java2D / PDFBox</span><a href="index.html">機能概要</a></footer></article><aside class="toc"><p class="toc-title">このページの内容</p><nav id="page-toc"></nav></aside></div></main></body></html>

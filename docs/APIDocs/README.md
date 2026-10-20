@@ -6,6 +6,7 @@
 | --- | --- |
 | PowerPoint / PDF → 画像 | [概要・同期HTTP・非同期HTTP・直接Queue](ppt-pdf-to-images/index.html)・[変換例](ppt-pdf-to-images/examples.html) |
 | Office → Markdown | [概要・同期HTTP・非同期HTTP・直接Queue](office2md/index.html)・[変換例](office2md/examples.html) |
+| Excel → 画像・PDF | [概要・HTTP・Queue](excel2img/index.html)・[実際の変換例](excel2img/examples.html) |
 | Office → PDF | [概要・同期HTTP・非同期HTTP・直接Queue](office2pdf/index.html)・[変換例](office2pdf/examples.html) |
 | Markdown → PDF | [概要・同期HTTP・非同期HTTP・直接Queue](md2pdf/index.html)・[変換例](md2pdf/examples.html) |
 | Movie → Audio | [概要](movie2audio/index.html)・[非同期HTTP](movie2audio/jobs.html)・[直接Queue](movie2audio/queue.html)・[SAS保存](movie2audio/storage.html)・[変換例](movie2audio/examples.html) |

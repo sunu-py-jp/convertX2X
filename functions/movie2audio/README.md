@@ -28,6 +28,6 @@ HTTPは入力を一時ディスクへ保存し、抽出を完了したM4Aをス�
 | 外部システムからQueueへ直接依頼 | [接続・Producerガイド](docs/direct-queue.md) · [Queue API](../../docs/APIDocs/movie2audio/queue.html) |
 | 上限・環境変数・エラー | [設定リファレンス](../../docs/APIDocs/movie2audio/settings.html) |
 | 共通処理・実装の保守 | [開発者ガイド](../../docs/movie2audio.md) |
-| ライセンス・同梱FFmpeg | [MIT](LICENSE) · [FFmpegのライセンス・ソース](third-party/ffmpeg/README.md) |
+| ライセンス・第三者の通知 | [MIT](LICENSE) · [NOTICE](NOTICE) · [Node.js依存の通知](third-party/node/README.md) · [FFmpegのライセンス・ソース](third-party/ffmpeg/README.md) |
 
 API資料全体は [Movie → Audio APIリファレンス](../../docs/APIDocs/movie2audio/index.html) から参照できます。

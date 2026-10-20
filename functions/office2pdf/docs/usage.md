@@ -123,3 +123,14 @@ Flex Consumptionなどの従量課金Function Appを作成し、必要ならStor
 
 同梱フォントは公式リポジトリの固定コミットから取得した未改変TTFです。出典、
 ハッシュ、ライセンス本文は `src/main/resources/fonts/bizud/` にあります。
+
+### 単独配布時のライセンス同梱
+
+この機能のディレクトリだけで `./mvnw clean package` を実行できます。
+依存JARの版・SHA-256とライセンス原文を検証し、不足や変更がある場合はビルドを失敗させます。
+生成する `target/azure-functions/<functionAppName>/` には、`LICENSE`、`NOTICE.md`、
+`THIRD-PARTY-NOTICES.txt` と `licenses/` が同梱されます。アプリケーションJARの
+`META-INF/` にも同じ通知を収録しています。配布時はこれらと `lib/` を残してください。
+
+ソースを単独配布するときは、このディレクトリ内の `third-party/` とフォントのライセンスを含めて配布してください。
+依存関係の原文・出典・ハッシュは [third-party/java](../third-party/java/SOURCE.md) にあります。

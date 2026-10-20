@@ -1,0 +1,33 @@
+{
+  "code" : "NO_RENDERABLE_RANGE",
+  "message" : "可読性と描画上限を満たす範囲がありません。sheet / range または描画設定を見直してください。",
+  "details" : {
+    "pageCount" : 0,
+    "ranges" : [ {
+      "sheet" : "横長マトリックス",
+      "range" : "A1:AP12",
+      "selection" : "occupied",
+      "status" : "skipped",
+      "reason" : "WIDTH_UNREADABLE",
+      "message" : "幅を収めると文字が最小可読サイズを下回るため、この範囲をスキップしました。",
+      "pages" : [ ]
+    } ],
+    "source" : {
+      "filename" : "excel-layout-demo.xlsx",
+      "sha256" : "cd46f9a802094399720560819ad7f49d1ec7f40472d88ece14d68af4f97d04b8",
+      "format" : "xlsx"
+    },
+    "outcome" : "partial",
+    "sectionKind" : "sheet",
+    "warnings" : [ ],
+    "sectionCount" : 0,
+    "format" : "png",
+    "pages" : [ ],
+    "options" : {
+      "format" : "png",
+      "sheet" : "横長マトリックス",
+      "range" : null
+    },
+    "specVersion" : 1
+  }
+}

@@ -418,7 +418,11 @@ node scripts/test_async_e2e.mjs
 
 HTTP受付、直接Queue、同梱送信例、実FFmpeg、重複、失敗、poison、M4A取得を検証します。テスト自身が作ったコンテナーとジョブBlobを終了時に削除します。非同期E2Eはローカル限定で、Azuriteを含む単体テストは `MOVIE_TEST_AZURITE=1` がないとスキップします。不正Queueメッセージの短時間テストには専用ホストの再試行設定と `MOVIE_TEST_FAST_RETRY=1` を使います。[起動・実行手順](../../../docs/development.md#movie--aacの実変換)を参照してください。
 
-配布物は `dist/` に作成します。実行用の `src/`、`resources/`、本番用 `node_modules/`、設定、FFmpegのライセンス・ソース・ビルドスクリプトを含み、ローカルの秘密設定やテストは含めません。`npm run package` はAzureへの公開を行いません。
+配布物は `dist/` に作成します。実行用の `src/`、`resources/`、本番用 `node_modules/`、設定、本機能の利用ガイド、FFmpegのライセンス・ソース・ビルドスクリプトを含み、ローカルの秘密設定やテストは含めません。`npm run package` はAzureへの公開を行いません。
+
+作成時には全本番依存のライセンス全文・通知の有無と、補完原文の対象版・SHA-256を検証します。npm配布物に欠ける原文は `third-party/node/` の固定版ファイルで補い、全依存とFFmpeg関連の原文を `dist/THIRD-PARTY-NOTICES.txt` にまとめます。`dist/third-party/node/inventory.json` が依存ごとの版・原文パス・SHA-256の一覧です。`LICENSE`・`NOTICE`・原文・FFmpegソースを配布物に含めるため、第三者の通知は本リポジトリーを参照せず確認できます。
+
+生成済みの配布物は `node scripts/licenses.mjs dist --check`、配布物内からは `node scripts/licenses.mjs . --check` で再検証できます。この検査ではネットワークに接続しません。依存更新で検査が停止した場合の対応は [Node.js依存の通知](../third-party/node/README.md) を参照してください。
 
 非同期機能を配置する場合は制御用Storage接続と、必要な入力・出力接続も設定します。登録した接続情報とQueue投入権限は信頼できるシステムに限定し、Blobの保持期間を決めてください。
 

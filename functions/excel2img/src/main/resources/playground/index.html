@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Excel → Image Playground</title>
+  <link rel="stylesheet" href="playground/assets/style.css">
+</head>
+<body>
+<header><a href="./playground" class="brand"><span>convertX2X</span> Excel → Image</a><span class="muted">読み取りやすさを保った表・画像の出力</span></header>
+<main>
+  <section class="intro"><p class="eyebrow">EXCEL IMAGE CONVERSION</p><h1>Excelの表と画像を、読みやすいページへ</h1><p>シートやセル範囲をPNG・PDFに変換します。結果と変換レポートはZIPでダウンロードできます。</p></section>
+  <div class="grid">
+    <section class="card controls">
+      <h2>変換設定</h2>
+      <form id="form">
+        <label class="drop"><input id="file" type="file" accept=".xlsx,.xls" required><strong id="file-name">Excelファイルを選択</strong><span>XLSX / XLS</span></label>
+        <fieldset><legend>出力形式</legend><label><input type="radio" name="format" value="png" checked> PNG</label><label><input type="radio" name="format" value="pdf"> PDF</label></fieldset>
+        <label class="field">シート名（任意）<input id="sheet" type="text" placeholder="例: 売上" maxlength="31"></label>
+        <label class="field">セル範囲（任意）<input id="range" type="text" placeholder="例: A1:H30" maxlength="30"></label>
+        <p class="small">範囲を指定するときはシート名も入力してください。未指定の場合は対象シートを自動で選びます。</p>
+        <fieldset><legend>実行方法</legend><label><input type="radio" name="mode" value="convert" checked> 同期HTTP</label><label><input id="async" type="radio" name="mode" value="jobs" disabled> 非同期ジョブ</label></fieldset>
+        <details><summary>AzureのFunctionキー</summary><label class="key">x-functions-key<input id="key" type="password" autocomplete="off"></label></details>
+        <button id="submit" type="submit" disabled>変換する</button>
+      </form>
+      <p id="limits" class="small">設定を取得しています…</p>
+      <p id="job" class="small" hidden></p>
+    </section>
+    <section class="card result">
+      <div class="result-head"><div><h2 id="status">ファイルを選択してください</h2><p id="detail" class="small">変換結果をここで確認できます。</p></div><div class="downloads"><a id="zip-download" class="button" hidden>ZIPを保存</a><a id="pdf-download" class="button" hidden>PDFを保存</a><a id="report-download" class="button" hidden>report.json</a></div></div>
+      <div id="error" class="error" role="alert" hidden></div>
+      <div id="warnings" class="warnings" hidden></div>
+      <p id="pdf-hint" class="small" hidden>PDFが表示されない場合は保存して開いてください。</p>
+      <details id="pdf-preview" hidden><summary>PDFプレビュー</summary><iframe id="preview" title="変換したPDF" hidden></iframe></details>
+      <div id="images" hidden></div>
+      <details id="report-detail" hidden><summary>変換レポート</summary><pre id="report-text"></pre></details>
+      <div id="empty" class="empty">PNG / PDF</div>
+    </section>
+  </div>
+</main>
+<footer>読み取りやすさの条件を満たさない範囲は出力を見送り、理由をレポートに記録します。</footer>
+<script src="playground/assets/app.js"></script>
+</body>
+</html>

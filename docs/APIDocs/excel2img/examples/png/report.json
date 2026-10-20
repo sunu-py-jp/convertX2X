@@ -1,0 +1,182 @@
+{
+  "specVersion" : 1,
+  "source" : {
+    "filename" : "excel-layout-demo.xlsx",
+    "sha256" : "cd46f9a802094399720560819ad7f49d1ec7f40472d88ece14d68af4f97d04b8",
+    "format" : "xlsx"
+  },
+  "format" : "png",
+  "options" : {
+    "format" : "png",
+    "sheet" : null,
+    "range" : null
+  },
+  "outcome" : "partial",
+  "pageCount" : 5,
+  "sectionKind" : "sheet",
+  "sectionCount" : 3,
+  "ranges" : [ {
+    "sheet" : "画像付き業務フロー",
+    "range" : "A1:L26",
+    "selection" : "printArea",
+    "status" : "rendered",
+    "pixelsPerPoint" : 2.0,
+    "sourceBoundsPoints" : {
+      "height" : 624.0,
+      "x" : 0.0,
+      "y" : 0.0,
+      "width" : 630.1529846191406
+    },
+    "pages" : [ 1 ]
+  }, {
+    "sheet" : "印刷範囲2つ",
+    "range" : "A1:F12",
+    "selection" : "printArea",
+    "status" : "rendered",
+    "pixelsPerPoint" : 2.0,
+    "sourceBoundsPoints" : {
+      "height" : 288.0,
+      "x" : 0.0,
+      "y" : 0.0,
+      "width" : 409.59946060180664
+    },
+    "pages" : [ 2 ]
+  }, {
+    "sheet" : "印刷範囲2つ",
+    "range" : "A18:F29",
+    "selection" : "printArea",
+    "status" : "rendered",
+    "pixelsPerPoint" : 2.0,
+    "sourceBoundsPoints" : {
+      "height" : 288.0,
+      "x" : 0.0,
+      "y" : 408.0,
+      "width" : 409.59946060180664
+    },
+    "pages" : [ 3 ]
+  }, {
+    "sheet" : "縦長一覧",
+    "range" : "A1:F125",
+    "selection" : "occupied",
+    "status" : "rendered",
+    "pixelsPerPoint" : 2.0,
+    "sourceBoundsPoints" : {
+      "height" : 2500.0,
+      "x" : 0.0,
+      "y" : 0.0,
+      "width" : 467.3634796142578
+    },
+    "pages" : [ 4, 5 ]
+  }, {
+    "sheet" : "横長マトリックス",
+    "range" : "A1:AP12",
+    "selection" : "occupied",
+    "status" : "skipped",
+    "reason" : "WIDTH_UNREADABLE",
+    "message" : "幅を収めると文字が最小可読サイズを下回るため、この範囲をスキップしました。",
+    "pages" : [ ]
+  } ],
+  "pages" : [ {
+    "page" : 1,
+    "sheet" : "画像付き業務フロー",
+    "range" : "A1:L26",
+    "path" : "pages/page-001.png",
+    "widthPixels" : 1261,
+    "heightPixels" : 1248,
+    "sourceBoundsPoints" : {
+      "height" : 624.0,
+      "x" : 0.0,
+      "y" : 0.0,
+      "width" : 630.1529846191406
+    },
+    "firstRow" : 1,
+    "lastRow" : 26
+  }, {
+    "page" : 2,
+    "sheet" : "印刷範囲2つ",
+    "range" : "A1:F12",
+    "path" : "pages/page-002.png",
+    "widthPixels" : 820,
+    "heightPixels" : 576,
+    "sourceBoundsPoints" : {
+      "height" : 288.0,
+      "x" : 0.0,
+      "y" : 0.0,
+      "width" : 409.59946060180664
+    },
+    "firstRow" : 1,
+    "lastRow" : 12
+  }, {
+    "page" : 3,
+    "sheet" : "印刷範囲2つ",
+    "range" : "A18:F29",
+    "path" : "pages/page-003.png",
+    "widthPixels" : 820,
+    "heightPixels" : 576,
+    "sourceBoundsPoints" : {
+      "height" : 288.0,
+      "x" : 0.0,
+      "y" : 408.0,
+      "width" : 409.59946060180664
+    },
+    "firstRow" : 18,
+    "lastRow" : 29
+  }, {
+    "page" : 4,
+    "sheet" : "縦長一覧",
+    "range" : "A1:F125",
+    "path" : "pages/page-004.png",
+    "widthPixels" : 935,
+    "heightPixels" : 2800,
+    "sourceBoundsPoints" : {
+      "height" : 1400.0,
+      "x" : 0.0,
+      "y" : 0.0,
+      "width" : 467.3634796142578
+    },
+    "firstRow" : 1,
+    "lastRow" : 70
+  }, {
+    "page" : 5,
+    "sheet" : "縦長一覧",
+    "range" : "A1:F125",
+    "path" : "pages/page-005.png",
+    "widthPixels" : 935,
+    "heightPixels" : 2200,
+    "sourceBoundsPoints" : {
+      "height" : 1100.0,
+      "x" : 0.0,
+      "y" : 1400.0,
+      "width" : 467.3634796142578
+    },
+    "firstRow" : 71,
+    "lastRow" : 125
+  } ],
+  "warnings" : [ ],
+  "outputs" : [ {
+    "sha256" : "fe3bdc00434e88294d6fd9446c93cf4744afa569b7ad2962c3288052a197936f",
+    "sizeBytes" : 157872,
+    "contentType" : "image/png",
+    "path" : "pages/page-001.png"
+  }, {
+    "sha256" : "7107a1f42e869185d714e7ef1b7a3c19b1b043f5f1810ca4c04717820ef4e5b9",
+    "sizeBytes" : 40754,
+    "contentType" : "image/png",
+    "path" : "pages/page-002.png"
+  }, {
+    "sha256" : "dffab3703140fd2d234a7b7d32c81e9a760552379722234998de5bd716073fe3",
+    "sizeBytes" : 40624,
+    "contentType" : "image/png",
+    "path" : "pages/page-003.png"
+  }, {
+    "sha256" : "ab71712ff2beebade5fbcd6cd5659a1a6692d8bd7a63e73088b8d1df9c3604eb",
+    "sizeBytes" : 453489,
+    "contentType" : "image/png",
+    "path" : "pages/page-004.png"
+  }, {
+    "sha256" : "b718bca5477876be73c1a641afa82057d284b721fc7ed0cfe1a784befb2f5514",
+    "sizeBytes" : 368899,
+    "contentType" : "image/png",
+    "path" : "pages/page-005.png"
+  } ]
+}

@@ -1,0 +1,37 @@
+{
+  "error": {
+    "code": "NO_RENDERABLE_RANGE",
+    "message": "可読性と描画上限を満たす範囲がありません。sheet / range または描画設定を見直してください。",
+    "details": {
+      "format": "png",
+      "sectionCount": 0,
+      "warnings": [],
+      "sectionKind": "sheet",
+      "outcome": "partial",
+      "source": {
+        "sha256": "ecdce76d078a00c3ac8e8003f23c43e4a3c9e74f1a8debe8b653f8fcca32de16",
+        "filename": "wide-table.xlsx",
+        "format": "xlsx"
+      },
+      "ranges": [
+        {
+          "sheet": "48列・可読性不足",
+          "range": "A1:AV29",
+          "selection": "printArea",
+          "status": "skipped",
+          "reason": "WIDTH_UNREADABLE",
+          "message": "幅を収めると文字が最小可読サイズを下回るため、この範囲をスキップしました。",
+          "pages": []
+        }
+      ],
+      "pageCount": 0,
+      "specVersion": 1,
+      "options": {
+        "format": "png",
+        "sheet": "48列・可読性不足",
+        "range": null
+      },
+      "pages": []
+    }
+  }
+}

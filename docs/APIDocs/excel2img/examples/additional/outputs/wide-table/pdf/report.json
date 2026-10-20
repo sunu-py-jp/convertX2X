@@ -1,0 +1,67 @@
+{
+  "specVersion" : 1,
+  "source" : {
+    "sha256" : "ecdce76d078a00c3ac8e8003f23c43e4a3c9e74f1a8debe8b653f8fcca32de16",
+    "filename" : "wide-table.xlsx",
+    "format" : "xlsx"
+  },
+  "format" : "pdf",
+  "options" : {
+    "format" : "pdf",
+    "sheet" : null,
+    "range" : null
+  },
+  "outcome" : "partial",
+  "pageCount" : 1,
+  "sectionKind" : "sheet",
+  "sectionCount" : 1,
+  "ranges" : [ {
+    "sheet" : "24列の横長一覧",
+    "range" : "A1:X29",
+    "selection" : "printArea",
+    "status" : "rendered",
+    "pixelsPerPoint" : 1.1403524493416113,
+    "sourceBoundsPoints" : {
+      "y" : 0.0,
+      "x" : 0.0,
+      "height" : 690.0,
+      "width" : 1795.9359855651855
+    },
+    "pages" : [ 1 ]
+  }, {
+    "sheet" : "48列・可読性不足",
+    "range" : "A1:AV29",
+    "selection" : "printArea",
+    "status" : "skipped",
+    "reason" : "WIDTH_UNREADABLE",
+    "message" : "幅を収めると文字が最小可読サイズを下回るため、この範囲をスキップしました。",
+    "pages" : [ ]
+  } ],
+  "pages" : [ {
+    "page" : 1,
+    "sheet" : "24列の横長一覧",
+    "range" : "A1:X29",
+    "path" : "document.pdf",
+    "widthPixels" : 2048,
+    "heightPixels" : 787,
+    "sourceBoundsPoints" : {
+      "y" : 0.0,
+      "x" : 0.0,
+      "height" : 690.0,
+      "width" : 1795.9359855651855
+    },
+    "firstRow" : 1,
+    "lastRow" : 29
+  } ],
+  "warnings" : [ {
+    "code" : "RANGE_SCALED",
+    "sheet" : "24列の横長一覧",
+    "message" : "横幅を上限に収めるため、文字の最小サイズを維持できる範囲で縮小しました。"
+  } ],
+  "outputs" : [ {
+    "contentType" : "application/pdf",
+    "sizeBytes" : 228761,
+    "sha256" : "45887e4cebe6ea5e1d17b3fd36e5ab913dfb9034ccbda3e54611b2848b790e25",
+    "path" : "document.pdf"
+  } ]
+}

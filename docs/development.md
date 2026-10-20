@@ -1,6 +1,6 @@
 # 開発環境と作業手順
 
-[マニュアルの入口](README.md) · [Office → Markdownの実装](office2md.md) · [Office → PDFの実装](office2pdf.md) · [Markdown → PDFの実装](md2pdf.md) · [PowerPoint / PDFの実装](ppt-pdf-to-images.md) · [Movie → Audioの実装](movie2audio.md)
+[マニュアルの入口](README.md) · [Office → Markdownの実装](office2md.md) · [Office → PDFの実装](office2pdf.md) · [Markdown → PDFの実装](md2pdf.md) · [Excel → 画像・PDFの実装](excel2img.md) · [PowerPoint / PDFの実装](ppt-pdf-to-images.md) · [Movie → Audioの実装](movie2audio.md)
 
 以下のシェルコマンドはmacOS/Linux向けです。変換機能のディレクトリを作業場所にします。リポジトリ直下に共通の `pom.xml` はありません。
 
@@ -42,6 +42,8 @@ cd functions/md2pdf
 python3 scripts/run_local.py
 ```
 
+Excel → 画像・PDFは `functions/excel2img` で `python3 scripts/run_local.py` を実行します。既定ポートは7076です。
+
 PowerPoint / PDFの場合は、別のターミナルでリポジトリ直下から実行します。
 
 ```sh
@@ -61,6 +63,7 @@ npm start
 | --- | --- | --- |
 | PowerPoint / PDF → 画像 | <http://localhost:7071/api/playground> | 同期HTTP・非同期HTTP・直接Queue |
 | Office → Markdown | <http://localhost:7072/api/playground> | 同期HTTP・非同期HTTP・直接Queue |
+| Excel → 画像・PDF | <http://localhost:7076/api/playground> | 同期HTTP・非同期HTTP・直接Queue |
 | Office → PDF | <http://localhost:7074/api/playground> | 同期HTTP・非同期HTTP・直接Queue |
 | Markdown → PDF | <http://localhost:7075/api/playground> | 同期HTTP・非同期HTTP・直接Queue |
 | Movie → Audio | <http://localhost:7073/api/playground> | 同期HTTPのファイル入力・許可済みHTTPS URL入力 |
@@ -222,6 +225,36 @@ python3 scripts/test_playground_e2e.py
 このラッパーはFunctionsの7081/7082とAzuriteの12000/12001/12002を使い、テスト後に自分が起動したプロセスを停止します。
 
 ローカルのHTTP・Queue・ブラウザー検証はAzure実機での検証とは別です。クラウドでの処理時間・メモリー・同時実行数は、配置先と実際の資料で確認します。
+
+<a id="third-party-licenses"></a>
+
+### 依存関係と配布物のライセンス確認
+
+ライセンスの確認も機能ごとのディレクトリで行います。プロジェクト本体の `LICENSE` はMITライセンスで、依存ライブラリ、Maven Wrapper、フォント、FFmpegにはそれぞれの条件が適用されます。機能の `NOTICE` / `NOTICE.md` を入口に、`third-party/` と同梱フォントのライセンス原文を確認してください。
+
+ソース一式を配布したり機能だけを別のリポジトリへ切り出したりする場合は、`third-party/` 全体、`LICENSE` と `NOTICE` / `NOTICE.md`、フォントとそのライセンスを一緒に保持します。Javaの機能では `mvnw`・`mvnw.cmd` に対応する `third-party/maven-wrapper/LICENSE` と `NOTICE` も必要です。ルートリポジトリのライセンス文書だけに依存させないでください。
+
+Javaの4機能では、通常の `./mvnw clean package` または `./mvnw clean verify` で、解決した実行時依存と原文の一覧・SHA-256を検査します。未登録の依存や不一致があればパッケージ作成は失敗します。成功時は、配布ディレクトリ `target/azure-functions/<アプリ名>/` に `LICENSE`・`NOTICE.md`・`THIRD-PARTY-NOTICES.txt`・`licenses/` を配置し、同じ内容をアプリケーションJARの `META-INF/` に収録します。`licenses/` にはJava依存、Maven Wrapper、フォントの原文が入り、同梱フォントと既存の原文もJAR内に保持します。
+
+配布ディレクトリのJAR構成、依存JARのハッシュ、JAR内と外部の通知文書、フォントの収録状態もビルド中に検査します。作成済みの配布物を変更せず再確認する場合は、同じソースとビルド時の依存ファイルを使い、JDK 21で次を実行します。これは `functions/office2md` で既定のアプリ名を使った例です。他の機能やアプリ名では最後の2つの引数をその配布ディレクトリとJAR名に合わせます。
+
+```sh
+java scripts/PackageLicenses.java check . \
+  target/license-runtime-classpath.txt \
+  target/azure-functions/office2md-local office2md-1.0.0-SNAPSHOT.jar
+```
+
+Javaの依存を更新するときは `third-party/java/dependencies.tsv` にあるJARファイル名・SHA-256・原文の対応を更新します。原文の取得元とハッシュは `sources.tsv`、取得元のリリースとの関係は `SOURCE.md` に記録し、原文一式の整合性を `SHA256SUMS` に反映します。原文には依存自体のライセンスだけでなく、その依存に含まれる第三者のNOTICEも保持します。
+
+Movie → Audioは `npm run package` の中で、配布対象のproduction依存のライセンスとNOTICEを確認します。`dist/THIRD-PARTY-NOTICES.txt` と `dist/third-party/node/inventory.json` に依存の一覧を記録し、依存パッケージ内の原文と `third-party/node/` の補完原文を保持します。FFmpegの原文・出典・ビルド情報も `dist/third-party/ffmpeg/` に保持します。作成済みの配布物は次のコマンドで再確認できます。
+
+```sh
+node scripts/licenses.mjs dist --check
+```
+
+Node.js依存の補完原文を更新する場合は、`third-party/node/overrides.json` にあるpackage名・バージョン、取得URL、SHA-256と `third-party/node/licenses/` の原文を揃えます。未登録の不足やバージョン・ハッシュの不一致はパッケージ作成を失敗させるため、原文の確認を済ませてから再実行してください。
+
+依存を更新するときは、実際の配布対象のバージョン、原文の取得元、ハッシュを確認し、機能内の一覧と原文を更新してから再ビルドします。直接依存に変更がなくても、推移依存の追加・削除・更新を確認します。ライセンス名やURLだけを記載して原文を省略したり、古いバージョンの原文をそのまま流用したりしないでください。
 
 ## 5. Azureへ配置する
 

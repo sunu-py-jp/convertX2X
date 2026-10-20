@@ -3,7 +3,7 @@
 convertX2Xは、変換機能ごとに利用できるAzure Functionsプロジェクトのコレクションです。
 変更するときは、対象機能のREADMEからDocsへ進み、利用ガイドと開発者ガイドの手順で動作を確認してください。
 
-初めて作業する場合は [開発者マニュアル](docs/README.md) から進めてください。[共通の作業手順](docs/development.md) と、[Office → Markdown](docs/office2md.md) / [Office → PDF](docs/office2pdf.md) / [Markdown → PDF](docs/md2pdf.md) / [PowerPoint・PDF](docs/ppt-pdf-to-images.md) / [Movie → AAC](docs/movie2audio.md) の実装・変更箇所を案内しています。
+初めて作業する場合は [開発者マニュアル](docs/README.md) から進めてください。[共通の作業手順](docs/development.md) と、[Office → Markdown](docs/office2md.md) / [Office → PDF](docs/office2pdf.md) / [Markdown → PDF](docs/md2pdf.md) / [Excel → 画像・PDF](docs/excel2img.md) / [PowerPoint・PDF](docs/ppt-pdf-to-images.md) / [Movie → AAC](docs/movie2audio.md) の実装・変更箇所を案内しています。
 
 ## 機能の置き場所
 
@@ -15,6 +15,7 @@ convertX2Xは、変換機能ごとに利用できるAzure Functionsプロジェ�
 - 既存の文書画像変換は `functions/ppt-pdf-to-images/` にあります。
 - Excel・Word・PowerPointからMarkdownへの変換は `functions/office2md/` にあり、`OfficeMarkdownService` をHTTP・Queueから共有します。
 - Office文書からDocument Intelligence向けPDFへの変換は `functions/office2pdf/` にあり、純Javaの `OfficePdfService` をHTTP・Queueから共有します。
+- Excelのセル・画像・基本図形を配置を保って描画する機能は `functions/excel2img/` にあり、`ExcelImageService` をHTTP・Queueから共有します。印刷範囲・可読性による見送り・PNG/PDF出力を扱います。
 - Markdownから検索可能なPDFへの変換は `functions/md2pdf/` にあり、純Javaの `MarkdownPdfService` をHTTP・Queueから共有します。
 - 動画からAAC音声の抽出は `functions/movie2audio/` にあり、Node.jsで実装した `src/ffmpeg.js` の抽出処理を同期HTTPとQueueワーカーから共有します。入力・出力はストリームで扱い、完成したM4Aを返すかBlobへ保存します。非同期HTTPは入力をBlobへ保存して同じQueueへ登録します。同梱FFmpegの出典・ライセンス・ビルド方法も機能内で管理します。
 - 各機能で対応する入力形式は、そのプロジェクト内の形式別コンバーターで実装します。
@@ -83,3 +84,7 @@ Docsには以下の内容を記載します。直接Queueの契約は機能内�
 依存ライブラリ、ツール、フォント、サンプル資料には、それぞれのライセンスが適用されます。
 追加・移動・再配布時には提供元の条件を確認し、必要なライセンス・NOTICE・出典表示を保持します。
 外部の資料やテンプレートを、プロジェクトのMITライセンス対象として扱わないでください。
+
+各機能を単独で配布できるよう、必要な原文と依存関係の記録はその機能の `third-party/` に置きます。ソースをアーカイブしたり別のリポジトリへ切り出したりする場合も、このディレクトリ全体、機能の `LICENSE` と `NOTICE` / `NOTICE.md`、フォントのライセンスを保持してください。Maven Wrapperのスクリプトを含める場合は、同じ機能の `third-party/maven-wrapper/` も必要です。
+
+依存の追加・更新時は、直接依存だけでなく配布物に入る推移依存も確認し、実際のバージョン・ファイルに対応するライセンス本文とNOTICEを更新します。配布物の検証で未登録の依存やハッシュの不一致が見つかった場合は、検証を省略せず、取得元と原文を確認して記録を更新してください。ビルド成果物の確認手順は [開発者ガイドのライセンス確認](docs/development.md#third-party-licenses) を参照してください。

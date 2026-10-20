@@ -1,0 +1,11 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>非同期HTTP・成果物取得 | excel2img API</title><link rel="stylesheet" href="../assets/styles.css"><script src="../assets/app.js" defer></script></head>
+<body data-page="excelimg-jobs"><a class="skip-link" href="#main-content">本文へ移動</a><div id="site-header"></div><aside id="sidebar" class="sidebar" aria-label="APIナビゲーション"></aside><div id="menu-overlay" class="menu-overlay" hidden></div><main id="main-content" class="main-content" tabindex="-1"><div class="page-layout"><article class="article"><p class="eyebrow">Excel → 画像・PDF</p><h1>非同期HTTP・成果物取得</h1>
+<p class="lead">ファイルを登録してジョブIDを受け取り、完了後に結果を取得します。Storage設定時だけ有効です。</p>
+<h2 id="submit">登録</h2><pre><code class="language-shell">curl --fail-with-body \
+  -H 'Content-Type: application/octet-stream' \
+  --data-binary @sample.xlsx \
+  'http://localhost:7076/api/jobs?filename=sample.xlsx&amp;format=pdf'</code></pre><p>描画オプションは同期HTTPと共通です。受付応答のjobIdで状態を確認します。</p>
+<h2 id="routes">取得API</h2><table><thead><tr><th>GET</th><th>内容</th></tr></thead><tbody><tr><td><code>/api/jobs/{id}</code></td><td>状態・エラー。失敗時の範囲理由はerrorDetails</td></tr><tr><td><code>/api/jobs/{id}/result</code></td><td>完成結果のZIP</td></tr><tr><td><code>/api/jobs/{id}/archive</code></td><td>同じZIP</td></tr><tr><td><code>/api/jobs/{id}/report</code></td><td>変換レポート</td></tr><tr><td><code>/api/jobs/{id}/files/pages/page-001.png</code></td><td>PNG単体</td></tr><tr><td><code>/api/jobs/{id}/files/document.pdf</code></td><td>PDF単体</td></tr></tbody></table>
+<h2 id="completion">完了と部分変換</h2><p>全成果物を保存してから成功を公開します。ジョブが成功していても、一部の範囲が見送られている場合があります。reportの<code>outcome</code>と範囲ごとの結果を確認してください。全範囲見送りは失敗となります。</p><p>取得できるのは当該ジョブのmanifestに登録された成果物だけです。任意のBlobパスを指定して読むことはできません。</p>
+<footer class="page-footer"><span>2026-10-20 · Java 21 / POI / Java2D / PDFBox</span><a href="index.html">機能概要</a></footer></article><aside class="toc"><p class="toc-title">このページの内容</p><nav id="page-toc"></nav></aside></div></main></body></html>

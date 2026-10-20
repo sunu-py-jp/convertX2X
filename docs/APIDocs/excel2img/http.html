@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>同期HTTPで変換 | excel2img API</title><link rel="stylesheet" href="../assets/styles.css"><script src="../assets/app.js" defer></script></head>
+<body data-page="excelimg-http"><a class="skip-link" href="#main-content">本文へ移動</a><div id="site-header"></div><aside id="sidebar" class="sidebar" aria-label="APIナビゲーション"></aside><div id="menu-overlay" class="menu-overlay" hidden></div><main id="main-content" class="main-content" tabindex="-1"><div class="page-layout"><article class="article"><p class="eyebrow">Excel → 画像・PDF</p><h1>同期HTTPで変換</h1>
+<p class="lead">XLSXまたはXLSの生バイト列を送信し、描画結果のZIPを受け取ります。</p><div class="endpoint"><span class="method post">POST</span><code>/api/convert</code></div>
+<h2 id="params">パラメーター</h2><table><thead><tr><th>クエリ</th><th>値</th></tr></thead><tbody><tr><td><code>filename</code></td><td>拡張子を含む入力名。必須</td></tr><tr><td><code>format</code></td><td><code>png</code>（既定）または<code>pdf</code></td></tr><tr><td><code>sheet</code></td><td>シート名。省略時は表示シート全体</td></tr><tr><td><code>range</code></td><td><code>A1:L30</code>など有限の矩形。指定時はsheet必須</td></tr></tbody></table><p>入力は<code>Content-Type: application/octet-stream</code>。Azureでは<code>x-functions-key</code>を付けます。multipart・Base64ではありません。</p>
+<h2 id="example">呼び出し例</h2><pre><code class="language-shell">curl --fail-with-body \
+  -H 'Content-Type: application/octet-stream' \
+  --data-binary @sample.xlsx \
+  'http://localhost:7076/api/convert?filename=sample.xlsx&amp;format=png' \
+  --output rendered.zip</code></pre><p>PDFは<code>format=pdf</code>に変更します。シート名・セル範囲はURLエンコードしてください。PDFでも応答はZIPです。</p>
+<h2 id="response">結果の確認</h2><p>ZIPには<code>pages/page-001.png</code>などのPNG群、または<code>document.pdf</code>と<code>report.json</code>が入ります。reportの範囲とページ対応、見送り理由、警告を確認してから画像・PDFを利用します。</p><p>部分的に変換できればHTTP 200です。全範囲を見送った場合は422 <code>NO_RENDERABLE_RANGE</code>で、JSONの<code>details</code>に理由が入ります。</p>
+<footer class="page-footer"><span>2026-10-20 · Java 21 / POI / Java2D / PDFBox</span><a href="index.html">機能概要</a></footer></article><aside class="toc"><p class="toc-title">このページの内容</p><nav id="page-toc"></nav></aside></div></main></body></html>

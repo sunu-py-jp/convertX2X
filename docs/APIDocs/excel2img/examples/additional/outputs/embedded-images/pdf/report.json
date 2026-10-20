@@ -1,0 +1,55 @@
+{
+  "specVersion" : 1,
+  "source" : {
+    "sha256" : "e260fd365a9e755f0dd1ebe480b9231a342c425471fe214b4ffac51345fea5f2",
+    "filename" : "embedded-images.xlsx",
+    "format" : "xlsx"
+  },
+  "format" : "pdf",
+  "options" : {
+    "format" : "pdf",
+    "sheet" : null,
+    "range" : null
+  },
+  "outcome" : "complete",
+  "pageCount" : 1,
+  "sectionKind" : "sheet",
+  "sectionCount" : 1,
+  "ranges" : [ {
+    "sheet" : "画像3種と記録",
+    "range" : "A1:O38",
+    "selection" : "occupied",
+    "status" : "rendered",
+    "pixelsPerPoint" : 2.0,
+    "sourceBoundsPoints" : {
+      "y" : 0.0,
+      "x" : 0.0,
+      "height" : 912.0,
+      "width" : 866.460371017456
+    },
+    "pages" : [ 1 ]
+  } ],
+  "pages" : [ {
+    "page" : 1,
+    "sheet" : "画像3種と記録",
+    "range" : "A1:O38",
+    "path" : "document.pdf",
+    "widthPixels" : 1733,
+    "heightPixels" : 1824,
+    "sourceBoundsPoints" : {
+      "y" : 0.0,
+      "x" : 0.0,
+      "height" : 912.0,
+      "width" : 866.460371017456
+    },
+    "firstRow" : 1,
+    "lastRow" : 38
+  } ],
+  "warnings" : [ ],
+  "outputs" : [ {
+    "contentType" : "application/pdf",
+    "sizeBytes" : 437984,
+    "sha256" : "f2a368023ebdbafb51a97900f1f0d897c9ad8283230bb4726fb75b061df366a0",
+    "path" : "document.pdf"
+  } ]
+}

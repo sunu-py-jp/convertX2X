@@ -445,3 +445,14 @@ Apache POI・PDFBoxなどの依存ライブラリ、Maven Wrapper、ダウンロ
 `CONVERSION_RESULT_RETENTION_DAYS`・`CONVERSION_STATE_RETENTION_DAYS` は既定0（自動削除無効）です。状態保持を有効にする場合は、結果保持も有効にし、それより長く設定します。期限切れ結果は清掃後に `410 JOB_RESULT_EXPIRED` になります。未完了のHTTP受付が残った場合も、保持設定に従って期限切れとして処理します。通常のQueue待ち・実行中のジョブを期限切れ成果物として削除しません。
 
 結果通知先または保持を設定すると5分ごとのメンテナンス実行が発生します。未設定では定期処理は無効です。ホスト認証・RBAC・閉域DNS・保持と重複判定の関係・利用側の版照合は[共通の配置・運用手順](../../../docs/development.md#8-managed-identity閉域storage結果通知)、JSONの拡張は[直接Queueのversion 2](direct-queue.md#version-2入力版付加情報結果通知)を参照してください。
+
+### 単独配布時のライセンス同梱
+
+この機能のディレクトリだけで `./mvnw clean package` を実行できます。
+依存JARの版・SHA-256とライセンス原文を検証し、不足や変更がある場合はビルドを失敗させます。
+生成する `target/azure-functions/<functionAppName>/` には、`LICENSE`、`NOTICE.md`、
+`THIRD-PARTY-NOTICES.txt` と `licenses/` が同梱されます。アプリケーションJARの
+`META-INF/` にも同じ通知を収録しています。配布時はこれらと `lib/` を残してください。
+
+ソースを単独配布するときは、このディレクトリ内の `third-party/` とフォントのライセンスを含めて配布してください。
+依存関係の原文・出典・ハッシュは [third-party/java](../third-party/java/SOURCE.md) にあります。

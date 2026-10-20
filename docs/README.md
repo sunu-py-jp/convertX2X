@@ -8,6 +8,7 @@ APIの呼び出し方は [HTML APIリファレンス](APIDocs/index.html) を参
 | --- | --- | --- | --- |
 | PowerPoint / PDF → 画像 | [利用ガイド](../functions/ppt-pdf-to-images/docs/usage.md) | [依頼形式](../functions/ppt-pdf-to-images/docs/direct-queue.md) | [開発者ガイド](ppt-pdf-to-images.md) |
 | Office → Markdown | [利用ガイド](../functions/office2md/docs/usage.md) | [依頼形式](../functions/office2md/docs/direct-queue.md) | [開発者ガイド](office2md.md) |
+| Excel → 画像・PDF | [利用ガイド](../functions/excel2img/docs/usage.md) | [依頼形式](../functions/excel2img/docs/direct-queue.md) | [開発者ガイド](excel2img.md) |
 | Office → PDF | [利用ガイド](../functions/office2pdf/docs/usage.md) | [依頼形式](../functions/office2pdf/docs/direct-queue.md) | [開発者ガイド](office2pdf.md) |
 | Markdown → PDF | [利用ガイド](../functions/md2pdf/docs/usage.md) | [依頼形式](../functions/md2pdf/docs/direct-queue.md) | [開発者ガイド](md2pdf.md) |
 | Movie → Audio | [利用ガイド](../functions/movie2audio/docs/usage.md) | [依頼形式](../functions/movie2audio/docs/direct-queue.md) | [開発者ガイド](movie2audio.md) |
@@ -19,6 +20,7 @@ Office → PDFの[PowerPoint検索対応の変更記録](office2pdf.md#searchabl
 
 - [全体構成](architecture.md)：独立したFunction App、HTTPとQueueの関係、機能ごとの違い
 - [開発環境と作業手順](development.md)：必要なツール、ローカル実行、テスト、Azureへの配置
+- [配布物のライセンス確認](development.md#third-party-licenses)：第三者の原文、依存更新、ソースとビルド成果物の保持・検証
 - [機能追加・変更のルール](../CONTRIBUTING.md)
 - [API資料の表示方法](APIDocs/README.md)と[更新手順](APIDocs/maintenance.md)
 

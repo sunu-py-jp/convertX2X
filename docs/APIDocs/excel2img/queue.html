@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Queueから直接依頼 | excel2img API</title><link rel="stylesheet" href="../assets/styles.css"><script src="../assets/app.js" defer></script></head>
+<body data-page="excelimg-queue"><a class="skip-link" href="#main-content">本文へ移動</a><div id="site-header"></div><aside id="sidebar" class="sidebar" aria-label="APIナビゲーション"></aside><div id="menu-overlay" class="menu-overlay" hidden></div><main id="main-content" class="main-content" tabindex="-1"><div class="page-layout"><article class="article"><p class="eyebrow">Excel → 画像・PDF</p><h1>Queueから直接依頼</h1>
+<p class="lead">入力Blobの参照を<code>excel2img-jobs</code>へ送り、描画結果を個別Blobへ保存します。</p><h2 id="message">メッセージ</h2><pre><code class="language-json">{
+  &quot;version&quot;: 1,
+  &quot;jobId&quot;: &quot;5b179260-9994-4df6-9d34-cf9638c55431&quot;,
+  &quot;input&quot;: {
+    &quot;storage&quot;: &quot;default&quot;,
+    &quot;container&quot;: &quot;incoming&quot;,
+    &quot;blobName&quot;: &quot;excel/sample.xlsx&quot;
+  },
+  &quot;output&quot;: {
+    &quot;storage&quot;: &quot;default&quot;,
+    &quot;container&quot;: &quot;outgoing&quot;,
+    &quot;prefix&quot;: &quot;rendered&quot;
+  },
+  &quot;filename&quot;: &quot;sample.xlsx&quot;,
+  &quot;options&quot;: {
+    &quot;format&quot;: &quot;png&quot;,
+    &quot;sheet&quot;: &quot;業務フロー&quot;,
+    &quot;range&quot;: &quot;A1:L30&quot;
+  }
+}</code></pre><p>UTF-8 JSON、最大48KiB。ファイル本体や資格情報は含めません。optionsを省略するとPNG、全表示シート、印刷範囲優先です。同じjobIdでオプションだけを変えると競合になります。</p>
+<h2 id="output">出力</h2><pre><code>rendered/{jobId}/results/{attemptId}/pages/page-001.png
+rendered/{jobId}/results/{attemptId}/report.json
+rendered/{jobId}/results/{attemptId}/manifest.json</code></pre><p>PDFの場合はPNG群が<code>document.pdf</code>になります。manifestに成果物パス・MIME型・サイズ・ETag・SHA-256を記録します。</p>
+<h2 id="v2">入力版と結果通知</h2><p>version 2では<code>input.expectedETag</code>、最大16件の文字列<code>metadata</code>、登録済みQueueへの<code>notification.queue</code>を追加できます。結果通知は最低1回配送です。</p>
+<h2 id="storage">認証と再試行</h2><p>Storageはアプリで登録した別名だけを指定します。入力は<code>CONVERSION_INPUT_STORAGE_&lt;ALIAS&gt;</code>、出力は<code>CONVERSION_OUTPUT_STORAGE_&lt;ALIAS&gt;</code>、Managed Identityでは<code>__blobServiceUri</code>を使います。接続文字列を依頼JSONへ入れません。</p><p>一時障害は再試行し、確定的なエラーは失敗として記録します。最終的な失敗は<code>excel2img-jobs-poison</code>の処理で確定します。</p>
+<footer class="page-footer"><span>2026-10-20 · Java 21 / POI / Java2D / PDFBox</span><a href="index.html">機能概要</a></footer></article><aside class="toc"><p class="toc-title">このページの内容</p><nav id="page-toc"></nav></aside></div></main></body></html>
