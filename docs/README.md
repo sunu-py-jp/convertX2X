@@ -16,6 +16,9 @@ APIの呼び出し方は [HTML APIリファレンス](APIDocs/index.html) を参
 Office → PDFの[PowerPoint検索対応の変更記録](office2pdf.md#searchable-powerpoint-change)には、
 変更前後の違い、文字埋め込みの仕組み、対応範囲、ビューアーでの検証結果をまとめています。
 
+Office → Markdownの[画像・図形・テキストボックスの合成対応](../functions/office2md/docs/image-shape-composition/README.md)には、
+変更前後の違い、形式ごとの制約、OCR・出力形式への影響、実際の変換例をまとめています。
+
 ## 共通の資料
 
 - [全体構成](architecture.md)：独立したFunction App、HTTPとQueueの関係、機能ごとの違い

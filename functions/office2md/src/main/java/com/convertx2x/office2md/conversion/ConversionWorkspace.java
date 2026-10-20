@@ -104,11 +104,16 @@ public final class ConversionWorkspace implements AutoCloseable {
     }
 
     public String addAsset(String category, byte[] bytes, String extension, String contentType) {
+        return addAsset(category, bytes, extension, contentType,
+                category.equals("image") ? "embeddedImage" : "renderedDiagram");
+    }
+
+    private String addAsset(String category, byte[] bytes, String extension, String contentType, String sourceKind) {
         if (!Set.of("image", "diagram").contains(category) || !extension.matches("[a-z0-9]{1,8}"))
             throw new IllegalArgumentException("Invalid generated asset name");
         if (bytes.length > limits.maxImageBytes()) throw limit("IMAGE_BYTES_LIMIT", "画像1件のサイズが上限を超えました。");
         String hash = sha256(bytes);
-        String existing = assetHashes.get(category + ":" + hash);
+        String existing = assetHashes.get(sourceKind + ":" + hash);
         if (existing != null) {
             try { if (Arrays.equals(bytes, Files.readAllBytes(files.get(existing)))) return existing; }
             catch (IOException e) { throw io(e); }
@@ -116,9 +121,9 @@ public final class ConversionWorkspace implements AutoCloseable {
         int number = sequences.merge(category, 1, Integer::sum);
         String path = "images/" + category + "-" + String.format(Locale.ROOT, "%04d", number) + "." + extension;
         write(path, bytes);
-        assetHashes.put(category + ":" + hash, path);
+        assetHashes.put(sourceKind + ":" + hash, path);
         assets.add(Map.of("path", path, "contentType", contentType, "sizeBytes", bytes.length, "sha256", hash,
-                "sourceKind", category.equals("image") ? "embeddedImage" : "renderedDiagram"));
+                "sourceKind", sourceKind));
         return path;
     }
 
@@ -132,11 +137,77 @@ public final class ConversionWorkspace implements AutoCloseable {
         if (range != null) block.put("range", range);
         block.put("path", path);
         block.put("metadata", new LinkedHashMap<>(metadata));
-        ImageOcr ocr = new ImageOcr("notRequested", "", null);
-        if (imageMode == ImageMode.OCR) {
-            if (!ocrEligible) ocr = new ImageOcr("skipped", "", "OCR_IMAGE_UNSUPPORTED");
-            else ocr = imageOcr.computeIfAbsent(sha256(bytes), key -> recognizeImage(bytes, contentType));
+        ImageOcr ocr = recognizePreparedImage(bytes, contentType, ocrEligible);
+        block.put("ocr", ocrMetadata(ocr, section, range));
+        block(block);
+        // Unsupported attachments remain downloadable without advertising an unsupported inline format.
+        boolean inline = Set.of("png", "jpg", "jpeg", "gif", "webp").contains(extension);
+        String markdown = (inline ? "!" : "") + "[" + DiagramMetadata.imageAlt(metadata) + "](" + path + ")"
+                + ocrMarkdown(ocr);
+        accountImageMarkdown(markdown);
+        return markdown;
+    }
+
+    /** OCR sources remain independent of the single composited display asset. */
+    public record CompositeImageSource(byte[] bytes, String extension, String contentType,
+                                       Map<String, Object> metadata, boolean ocrEligible) {
+        public CompositeImageSource {
+            Objects.requireNonNull(bytes);
+            Objects.requireNonNull(extension);
+            Objects.requireNonNull(contentType);
+            metadata = Collections.unmodifiableMap(new LinkedHashMap<>(metadata));
         }
+    }
+
+    /** Emits one display reference, while retaining source provenance and reusing original-picture OCR. */
+    public String compositeImage(byte[] png, Map<String, Object> metadata, List<CompositeImageSource> sources,
+                                 String section, String range) {
+        String path = addAsset("image", png, "png", "image/png", "compositeImage");
+        Map<String, Object> block = new LinkedHashMap<>();
+        block.put("type", "compositeImage");
+        if (section != null) block.put("section", section);
+        if (range != null) block.put("range", range);
+        block.put("path", path);
+        block.put("metadata", new LinkedHashMap<>(metadata));
+        List<Map<String, Object>> sourceImages = new ArrayList<>();
+        Set<String> emittedText = new HashSet<>();
+        StringBuilder markdown = new StringBuilder("![" + DiagramMetadata.imageAlt(metadata) + "](" + path + ")");
+        long markdownBytes = utf8Length(markdown.toString());
+        for (CompositeImageSource source : sources) {
+            if (source.bytes().length > limits.maxImageBytes())
+                throw limit("IMAGE_BYTES_LIMIT", "画像1件のサイズが上限を超えました。");
+            String hash = sha256(source.bytes());
+            ImageOcr ocr = recognizePreparedImage(source.bytes(), source.contentType(), source.ocrEligible());
+            Map<String, Object> detail = new LinkedHashMap<>();
+            detail.put("sha256", hash);
+            detail.put("sizeBytes", source.bytes().length);
+            detail.put("contentType", source.contentType());
+            detail.put("metadata", source.metadata());
+            detail.put("ocr", ocrMetadata(ocr, section, range));
+            sourceImages.add(detail);
+            // Two placements of the same picture inside one composite need only one OCR paragraph.
+            if (!ocr.text().isBlank() && emittedText.add(hash)) {
+                String fragment = ocrMarkdown(ocr);
+                markdownBytes += utf8Length(fragment);
+                if (markdownBytes > limits.maxMarkdownBytes() - embeddedImageMarkdownBytes)
+                    throw limit("MARKDOWN_BYTES_LIMIT", "画像参照とOCRテキストの合計サイズが上限を超えました。");
+                markdown.append(fragment);
+            }
+        }
+        block.put("sourceImages", sourceImages);
+        block(block);
+        String result = markdown.toString();
+        accountImageMarkdown(result);
+        return result;
+    }
+
+    private ImageOcr recognizePreparedImage(byte[] bytes, String contentType, boolean eligible) {
+        if (imageMode != ImageMode.OCR) return new ImageOcr("notRequested", "", null);
+        if (!eligible) return new ImageOcr("skipped", "", "OCR_IMAGE_UNSUPPORTED");
+        return imageOcr.computeIfAbsent(sha256(bytes), key -> recognizeImage(bytes, contentType));
+    }
+
+    private Map<String, Object> ocrMetadata(ImageOcr ocr, String section, String range) {
         Map<String, Object> ocrMetadata = new LinkedHashMap<>();
         ocrMetadata.put("status", ocr.status());
         if (imageMode == ImageMode.OCR) ocrMetadata.put("model", "prebuilt-read");
@@ -147,20 +218,25 @@ public final class ConversionWorkspace implements AutoCloseable {
                 default -> "画像のOCRに失敗したため、画像の参照だけを残しました。";
             });
         }
-        block.put("ocr", ocrMetadata);
-        block(block);
-        // Unsupported attachments remain downloadable without advertising an unsupported inline format.
-        boolean inline = Set.of("png", "jpg", "jpeg", "gif", "webp").contains(extension);
-        String markdown = (inline ? "!" : "") + "[" + DiagramMetadata.imageAlt(metadata) + "](" + path + ")";
-        if (!ocr.text().isBlank()) markdown += "\n\n画像内の文字（OCR）:\n\n"
+        return ocrMetadata;
+    }
+
+    private static String ocrMarkdown(ImageOcr ocr) {
+        return ocr.text().isBlank() ? "" : "\n\n画像内の文字（OCR）:\n\n"
                 + Markdown.escape(ocr.text()).replace("\n", "  \n");
+    }
+
+    private static long utf8Length(String value) {
+        return value.getBytes(java.nio.charset.StandardCharsets.UTF_8).length;
+    }
+
+    private void accountImageMarkdown(String markdown) {
         // Drawing extractors collect blocks before assembling the document. Bound every placement,
         // including repeated references to cached OCR, before those intermediate strings accumulate.
-        int markdownBytes = markdown.getBytes(java.nio.charset.StandardCharsets.UTF_8).length;
+        long markdownBytes = utf8Length(markdown);
         if (markdownBytes > limits.maxMarkdownBytes() - embeddedImageMarkdownBytes)
             throw limit("MARKDOWN_BYTES_LIMIT", "画像参照とOCRテキストの合計サイズが上限を超えました。");
         embeddedImageMarkdownBytes += markdownBytes;
-        return markdown;
     }
 
     private ImageOcr recognizeImage(byte[] bytes, String contentType) {

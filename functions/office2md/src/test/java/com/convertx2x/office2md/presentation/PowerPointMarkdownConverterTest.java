@@ -480,7 +480,8 @@ class PowerPointMarkdownConverterTest {
             XSLFSlide first = deck.createSlide();
             for (int i = 1; i <= 1001; i++) text(first, "Text box " + i, 20, 20, 300, 30);
             XSLFPictureData picture = deck.addPicture(png(), PictureData.PictureType.PNG);
-            for (int i = 0; i < 201; i++) first.createPicture(picture).setAnchor(new Rectangle2D.Double(20, 80, 40, 30));
+            for (int i = 0; i < 201; i++) first.createPicture(picture).setAnchor(
+                    new Rectangle2D.Double(20 + i % 20 * 30, 80 + i / 20 * 30, 20, 20));
             // Varied text keeps the fixture below POI's compression-ratio protection.
             var random = new Random(42);
             StringBuilder largeText = new StringBuilder();

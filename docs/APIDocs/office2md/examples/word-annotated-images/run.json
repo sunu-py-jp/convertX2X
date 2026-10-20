@@ -1,0 +1,43 @@
+{
+  "completedAt" : "2026-10-20T15:32:51.435622Z",
+  "execution" : "OfficeMarkdownService shared by HTTP and Queue",
+  "imageMode" : "ignore",
+  "input" : {
+    "path" : "input.docx",
+    "sizeBytes" : 37201,
+    "sha256" : "4f3f9a9494b2dcd340b479bace5fb15b3aa8d93335aa7a2ee3beb1170dab79a5"
+  },
+  "elapsedMs" : 915,
+  "sectionCount" : 1,
+  "warningCount" : 3,
+  "zip" : {
+    "path" : "result.zip",
+    "sizeBytes" : 88927,
+    "sha256" : "afbc3b81efedf3c9d0a56a28e80f15269697cc97b9f7226ebbaa7e62a57e0320"
+  },
+  "artifacts" : [ {
+    "path" : "result/images/image-0001.png",
+    "sizeBytes" : 31471,
+    "sha256" : "2f4dd898f3944d4c0f1566a783345337c2937dcae0908633fa1f0bce5879b202"
+  }, {
+    "path" : "result/images/diagram-0001.png",
+    "sizeBytes" : 5622,
+    "sha256" : "35806ce5b412652fcf5a5be51f5abe23b01791c22da4173f9b118ca88f68a26f"
+  }, {
+    "path" : "result/images/image-0002.png",
+    "sizeBytes" : 35473,
+    "sha256" : "74212e1dbe8e48fe20913dad1550acc62d5d8415fec46e552e0b56c358dd7750"
+  }, {
+    "path" : "result/images/image-0003.png",
+    "sizeBytes" : 21929,
+    "sha256" : "dff2308e63b8bd275ae77c2257c6b7e4aef3b38056a39167b184b060438235af"
+  }, {
+    "path" : "result/document.md",
+    "sizeBytes" : 1962,
+    "sha256" : "3590f159cd262a7db891a074521e44d067d135e546749491e4dd1bfed1995541"
+  }, {
+    "path" : "result/report.json",
+    "sizeBytes" : 11429,
+    "sha256" : "0344e5a9243cfeb39c63c84359ca585532d3245f1ffbf29a802d2b7b11b1fed4"
+  } ]
+}

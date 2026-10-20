@@ -1,5 +1,10 @@
 #!/usr/bin/env node
 // Default: isolated mock API tests. --base URL --fixtures DIR also checks a running real Functions host.
+// Requires Node.js with Playwright + its Chromium (or PLAYWRIGHT_CHANNEL=chrome).
+// Run: node functions/office2md/scripts/test_playground_browser.cjs --out /tmp/office2md-browser
+// The large-result case expands 102 MiB across six 1x1 PNG assets, with only two preview images.
+// Report acceptance reuses a 20 MiB+1 JSON body; oversize/boundary cases use only tiny bodies.
+// ZIP metadata and HTTP length checks must reject oversize reports before inflation/body reads.
 'use strict';
 const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
@@ -10,17 +15,18 @@ const zlib = require('node:zlib');
 const crypto = require('node:crypto');
 const { chromium } = require('playwright');
 const root = path.resolve(__dirname, '..');
+const MiB = 1024 * 1024;
 const args = process.argv.slice(2);
 const arg = name => { const at = args.indexOf(name); return at < 0 ? null : args[at + 1]; };
 const sha = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 const crcTable = Array.from({ length: 256 }, (_, n) => { for (let bit = 0; bit < 8; bit++) n = n & 1 ? 0xedb88320 ^ n >>> 1 : n >>> 1; return n >>> 0; });
 const crc = bytes => { let n = 0xffffffff; for (const byte of bytes) n = crcTable[(n ^ byte) & 255] ^ n >>> 8; return (n ^ 0xffffffff) >>> 0; };
-function zip(files, extra = '') {
+function zip(files, extra = '', declaredSizes = new Map()) {
   const locals = [], entries = []; let offset = 0;
   for (const [name, raw] of [...files, ...(extra ? [[extra, Buffer.from('unexpected')]] : [])]) {
-    const filename = Buffer.from(name), data = zlib.deflateRawSync(raw), local = Buffer.alloc(30), central = Buffer.alloc(46);
-    local.writeUInt32LE(0x04034b50); local.writeUInt16LE(20, 4); local.writeUInt16LE(0x800, 6); local.writeUInt16LE(8, 8); local.writeUInt32LE(crc(raw), 14); local.writeUInt32LE(data.length, 18); local.writeUInt32LE(raw.length, 22); local.writeUInt16LE(filename.length, 26);
-    central.writeUInt32LE(0x02014b50); central.writeUInt16LE(20, 4); central.writeUInt16LE(20, 6); central.writeUInt16LE(0x800, 8); central.writeUInt16LE(8, 10); central.writeUInt32LE(crc(raw), 16); central.writeUInt32LE(data.length, 20); central.writeUInt32LE(raw.length, 24); central.writeUInt16LE(filename.length, 28); central.writeUInt32LE(offset, 42);
+    const filename = Buffer.from(name), data = zlib.deflateRawSync(raw), local = Buffer.alloc(30), central = Buffer.alloc(46), size = declaredSizes.get(name) ?? raw.length;
+    local.writeUInt32LE(0x04034b50); local.writeUInt16LE(20, 4); local.writeUInt16LE(0x800, 6); local.writeUInt16LE(8, 8); local.writeUInt32LE(crc(raw), 14); local.writeUInt32LE(data.length, 18); local.writeUInt32LE(size, 22); local.writeUInt16LE(filename.length, 26);
+    central.writeUInt32LE(0x02014b50); central.writeUInt16LE(20, 4); central.writeUInt16LE(20, 6); central.writeUInt16LE(0x800, 8); central.writeUInt16LE(8, 10); central.writeUInt32LE(crc(raw), 16); central.writeUInt32LE(data.length, 20); central.writeUInt32LE(size, 24); central.writeUInt16LE(filename.length, 28); central.writeUInt32LE(offset, 42);
     locals.push(local, filename, data); entries.push(central, filename); offset += local.length + filename.length + data.length;
   }
   const end = Buffer.alloc(22), directory = Buffer.concat(entries); end.writeUInt32LE(0x06054b50); end.writeUInt16LE(entries.length / 2, 8); end.writeUInt16LE(entries.length / 2, 10); end.writeUInt32LE(directory.length, 12); end.writeUInt32LE(offset, 16);
@@ -36,7 +42,7 @@ async function main() {
   await fs.mkdir(work, { recursive: true });
   let base = arg('--base'), server, mode = 'normal', polled = 0, jobImageMode = 'ignore';
   const external = [], pageErrors = [], requests = [], report = [];
-  const limits = { asyncEnabled: true, supportedFormats: ['xlsx', 'xls', 'docx', 'pptx'], supportedOutputs: ['markdown'], ocrEnabled: true, supportedImageModes: ['ignore', 'ocr'], maxInputBytes: 20971520, maxSections: 0, maxReadItems: 0, maxTableCells: 0, maxMarkdownBytes: 20971520, maxImages: 0, maxImageBytes: 20971520, maxOutputBytes: 104857600, maxShapes: 0, maxGroupDepth: 16, maxImagePixels: 20000000 };
+  const limits = { asyncEnabled: true, supportedFormats: ['xlsx', 'xls', 'docx', 'pptx'], supportedOutputs: ['markdown'], ocrEnabled: true, supportedImageModes: ['ignore', 'ocr'], maxInputBytes: 104857600, maxSections: 0, maxReadItems: 0, maxTableCells: 0, maxMarkdownBytes: 20971520, maxImages: 0, maxImageBytes: 20971520, maxOutputBytes: 314572800, maxShapes: 0, maxGroupDepth: 16, maxImagePixels: 20000000 };
   const id = '3b6e6d68-41bc-4c78-b186-a8d6bb75d449', jobPath = `/api/jobs/${id}`;
   // Hand-authored JSON escapes exercise the preview parser independently of the Java serializer.
   const jsonImageLabel = String.raw`{"type":"長方形","text":"引用\u0022日本語\u0022 \u005B表示\u005D (URL)\nC:\u005Ctemp\u005Ca.png \u0026 \u003Cscript\u003E \u002A強調\u002A \u005F下線\u005F \u0060code\u0060","x":20.125,"y":100,"width":120,"height":40}`;
@@ -51,22 +57,76 @@ async function main() {
   const manyAssets = Array.from({ length: 1201 }, (_, index) => ({ path: `images/image-${String(index + 1).padStart(4, '0')}.png`, contentType: 'image/png', sizeBytes: image.length, sha256: sha(image) }));
   const manyManifest = Buffer.from(JSON.stringify({ ...JSON.parse(manifest), assets: manyAssets }));
   const manyArchive = zip(new Map([['document.md', md], ['report.json', manyManifest], ...manyAssets.map(asset => [asset.path, image])]));
+  let expandedArchive, expandedReport, expandedReportArchive;
+  const limitArchives = new Map([
+    ['oversized-markdown', zip(files, '', new Map([['document.md', 21 * MiB]]))],
+    ['report-boundary', zip(files, '', new Map([['report.json', 100 * MiB]]))],
+    ['oversized-report', zip(files, '', new Map([['report.json', 100 * MiB + 1]]))],
+    ['oversized-image', zip(files, '', new Map([['images/image-0001.png', 21 * MiB]]))],
+    ['lower-total', zip(files, '', new Map([['images/image-0001.png', 2 * MiB]]))],
+    ['lower-report-total', zip(files, '', new Map([['report.json', MiB + 1]]))],
+  ]);
+  // These archives have tiny actual bodies but ~300 MiB of declared output. Preflight must check
+  // every entry before inflation, so the aggregate rejection wins over the first incorrect size.
+  for (const [name, total] of [['aggregate-boundary', 300 * MiB], ['aggregate-over', 300 * MiB + 1]]) {
+    const entries = new Map([['document.md', md], ['report.json', manifest]]), sizes = new Map();
+    for (let index = 1; index <= 15; index++) {
+      const asset = `images/image-${String(index).padStart(4, '0')}.png`;
+      entries.set(asset, image);
+      sizes.set(asset, index === 15 ? total - md.length - manifest.length - 14 * 20 * MiB : 20 * MiB);
+    }
+    limitArchives.set(name, zip(entries, '', sizes));
+  }
+  function largeResultArchive() {
+    if (expandedArchive) return expandedArchive;
+    // PNG decoders ignore trailing bytes. Keep true 1x1 pixels to avoid a large decoded bitmap.
+    const padded = Buffer.alloc(17 * MiB); image.copy(padded);
+    const assets = Array.from({ length: 6 }, (_, index) => ({ path: `images/image-${String(index + 1).padStart(4, '0')}.png`, contentType: 'image/png', sizeBytes: padded.length, sha256: sha(padded) }));
+    const largeManifest = Buffer.from(JSON.stringify({ ...JSON.parse(manifest), assets }));
+    expandedArchive = zip(new Map([['document.md', md], ['report.json', largeManifest], ...assets.map(asset => [asset.path, padded])]));
+    return expandedArchive;
+  }
+  function largeReport() {
+    if (!expandedReport) {
+      // Trailing whitespace keeps the JSON valid and its 200,000-character preview parseable.
+      expandedReport = Buffer.alloc(20 * MiB + 1, ' '); manifest.copy(expandedReport);
+    }
+    return expandedReport;
+  }
+  function largeReportArchive() {
+    if (!expandedReportArchive) expandedReportArchive = zip(new Map([...files, ['report.json', largeReport()]]));
+    return expandedReportArchive;
+  }
+  const capabilityOverrides = () => ({
+    ...(mode === 'limited' ? { maxSections: 50, maxImages: 200, maxShapes: 1000 } : {}),
+    ...(mode.startsWith('aggregate-') || mode.startsWith('oversized-') ? { maxOutputBytes: 1024 * MiB, maxMarkdownBytes: 100 * MiB, maxImageBytes: 100 * MiB } : {}),
+    ...(mode === 'lower-total' || mode === 'lower-report-total' ? { maxOutputBytes: MiB } : {}),
+    ...(mode === 'lower-markdown' ? { maxMarkdownBytes: 512 } : {}),
+    ...(mode === 'lower-image' ? { maxImageBytes: 32 } : {}),
+  });
   if (!base) {
     server = http.createServer(async (req, res) => {
       const url = new URL(req.url, 'http://localhost'); requests.push({ pathname: url.pathname, search: url.search, key: req.headers['x-functions-key'], type: req.headers['content-type'] });
       const send = (status, type, body, headers = {}) => { res.writeHead(status, { 'Content-Type': type, 'Cache-Control': 'no-store', ...headers }); res.end(body); };
       const json = (status, data, headers) => send(status, 'application/json', JSON.stringify(data), headers);
-      if (url.pathname === '/api/capabilities') return mode === 'config-fail' ? json(503, {}) : json(200, { ...limits, ...(mode === 'limited' ? { maxSections: 50, maxImages: 200, maxShapes: 1000 } : {}), asyncEnabled: mode !== 'disabled', ocrEnabled: mode !== 'ocr-disabled', supportedImageModes: mode === 'ocr-disabled' ? ['ignore'] : ['ignore', 'ocr'] });
+      if (url.pathname === '/api/capabilities') return mode === 'config-fail' ? json(503, {}) : json(200, { ...limits, ...capabilityOverrides(), asyncEnabled: mode !== 'disabled', ocrEnabled: mode !== 'ocr-disabled', supportedImageModes: mode === 'ocr-disabled' ? ['ignore'] : ['ignore', 'ocr'] });
       if (url.pathname === '/api/convert' && req.method === 'POST') {
         req.resume(); if (mode === 'slow') return setTimeout(() => send(200, 'application/zip', archive), 1000);
         if (mode === 'api-error') return json(422, { error: { code: 'INVALID_WORKBOOK', message: '変換できないExcelです。' } });
+        if (mode === 'expanded-result') return send(200, 'application/zip', largeResultArchive());
+        if (mode === 'expanded-report') return send(200, 'application/zip', largeReportArchive());
+        if (limitArchives.has(mode)) return send(200, 'application/zip', limitArchives.get(mode));
         if (url.searchParams.get('imageMode') === 'ocr') return send(200, 'application/zip', ocrArchive);
         return send(200, 'application/zip', mode === 'bad-path' ? zip(files, '../outside') : mode === 'duplicate' ? zip([...files, ['document.md', md]]) : mode === 'many-assets' ? manyArchive : archive);
       }
       if (url.pathname === '/api/jobs' && req.method === 'POST') { req.resume(); polled = 0; jobImageMode = url.searchParams.get('imageMode') || 'ignore'; return json(202, { job: { id, status: 'queued' }, statusUrl: mode === 'unsafe-url' ? `https://external.invalid${jobPath}` : jobPath }, { 'Retry-After': '0.5' }); }
       if (url.pathname === jobPath) { polled++; return json(200, { job: { id, status: polled === 1 ? 'running' : 'succeeded' }, statusUrl: jobPath, resultUrl: `${jobPath}/result`, reportUrl: `${jobPath}/report`, archiveUrl: `${jobPath}/archive`, assetsBaseUrl: `${jobPath}/images/` }, { 'Retry-After': '0.5' }); }
       if (url.pathname === `${jobPath}/result`) return send(200, 'text/markdown', jobImageMode === 'ocr' ? ocrMd : md);
-      if (url.pathname === `${jobPath}/report`) return send(200, 'application/json', mode === 'many-assets' ? manyManifest : manifest);
+      if (url.pathname === `${jobPath}/report`) {
+        // The deliberately short response must never be read when its declared length is too big.
+        if (mode === 'oversized-report' || mode === 'lower-report-total') return send(200, 'application/json', manifest, { 'Content-Length': mode === 'oversized-report' ? 100 * MiB + 1 : MiB + 1 });
+        return send(200, 'application/json', mode === 'expanded-report' ? largeReport() : mode === 'many-assets' ? manyManifest : mode === 'lower-total' ? Buffer.from(JSON.stringify({ ...JSON.parse(manifest), assets: [{ ...JSON.parse(manifest).assets[0], sizeBytes: 2 * MiB }] })) : manifest);
+      }
       if (url.pathname.startsWith(`${jobPath}/images/image-`) && url.pathname.endsWith('.png')) return send(200, 'image/png', image);
       if (url.pathname === `${jobPath}/archive`) return send(200, 'application/zip', jobImageMode === 'ocr' ? ocrArchive : mode === 'many-assets' ? manyArchive : archive);
       const asset = url.pathname === '/api/playground' ? 'index.html' : url.pathname.startsWith('/api/playground/assets/') ? url.pathname.split('/').pop() : '';
@@ -80,6 +140,23 @@ async function main() {
   try {
     browser = await chromium.launch({ headless: true, ...(process.env.PLAYWRIGHT_CHANNEL ? { channel: process.env.PLAYWRIGHT_CHANNEL } : {}) });
     const context = await browser.newContext({ viewport: { width: 1440, height: 1024 } });
+    if (mock) await context.addInitScript(() => {
+      window.limitTestReads = { inflations: 0, reportResponses: 0, reportReaders: 0 };
+      const NativeDecompressionStream = window.DecompressionStream;
+      window.DecompressionStream = new Proxy(NativeDecompressionStream, {
+        construct(target, args) { window.limitTestReads.inflations++; return Reflect.construct(target, args); },
+      });
+      const nativeFetch = window.fetch;
+      window.fetch = async (...args) => {
+        const response = await nativeFetch(...args);
+        if (new URL(response.url).pathname.endsWith('/report')) {
+          window.limitTestReads.reportResponses++;
+          const body = response.body, getReader = body.getReader;
+          body.getReader = function (...readerArgs) { window.limitTestReads.reportReaders++; return getReader.apply(this, readerArgs); };
+        }
+        return response;
+      };
+    });
     const page = await context.newPage(); page.setDefaultTimeout(15000);
     page.on('pageerror', error => pageErrors.push(error.message));
     page.on('request', request => { if (/^https?:\/\//.test(request.url()) && !request.url().startsWith(base)) external.push(request.url()); });
@@ -112,7 +189,9 @@ async function main() {
       if (mock) assert.equal(markdownSource.includes('OCRで読み取ったサンプル文字'), imageMode === 'ocr');
       report.push(`${mock ? 'mock' : 'live'} ${extension} ${async ? 'async' : 'sync'} ${imageMode} preview`);
     }
-    await ready(); await page.screenshot({ path: path.join(work, 'playground-desktop.png'), fullPage: true });
+    await ready();
+    if (mock) assert((await page.locator('#file-hint').textContent()).includes('100.0 MiB'));
+    await page.screenshot({ path: path.join(work, 'playground-desktop.png'), fullPage: true });
     await run('xlsx');
     await page.screenshot({ path: path.join(work, 'playground-preview.png'), fullPage: true });
     await page.locator('#tab-source').click(); assert.equal(await page.locator('#source-panel').isVisible(), true); await page.locator('#tab-preview').click();
@@ -179,6 +258,64 @@ async function main() {
       mode = 'limited'; await ready();
       assert((await page.locator('#file-hint').textContent()).includes('50 シート／スライド'));
       await run('xlsx');
+      mode = 'expanded-result'; await ready(); await run('xlsx');
+      assert.equal(JSON.parse(await page.locator('#report-source').textContent()).assets.reduce((sum, asset) => sum + asset.sizeBytes, 0), 102 * MiB);
+      assert.equal(await page.locator('#preview img').count(), 2);
+      report.push('102 MiB expanded ZIP accepted with 300 MiB default; six 1x1 PNGs, bounded preview');
+      mode = 'expanded-report';
+      for (const async of [false, true]) {
+        await ready(); await run('xlsx', async);
+        assert.equal(await page.locator('#report-source').evaluate(element => element.textContent.length), 200000);
+        assert.equal(await page.locator('#preview-notice').isVisible(), true);
+        const reportEvent = page.waitForEvent('download'); await page.locator('#download-report').click();
+        const savedReport = path.join(work, `large-report-${async ? 'async' : 'sync'}.json`);
+        await (await reportEvent).saveAs(savedReport);
+        const savedBytes = await fs.readFile(savedReport);
+        assert.equal(savedBytes.length, 20 * MiB + 1);
+        assert.equal(sha(savedBytes), sha(largeReport()), 'The download must preserve the complete report beyond its bounded preview');
+        const reads = await page.evaluate(() => window.limitTestReads);
+        assert.equal(async ? reads.reportReaders : reads.inflations, async ? 1 : files.size);
+        report.push(`20 MiB+1 report accepted with bounded preview and complete download (${async ? 'async' : 'sync'})`);
+      }
+      async function rejectLimit(failure, expected, absent = [], async = false) {
+        mode = failure; await ready();
+        await page.locator('#file-input').setInputFiles({ name: 'sample.xlsx', mimeType: 'application/octet-stream', buffer: Buffer.from('fixture') });
+        await page.locator(async ? '#mode-async' : '#mode-sync').check(); await page.locator('#submit-button').click();
+        await page.locator('#error-message').waitFor();
+        const message = await page.locator('#error-message').textContent();
+        assert.equal(await page.locator('#result-content').isVisible(), false);
+        for (const pattern of expected) assert.match(message, pattern, `${failure}: ${message}`);
+        for (const pattern of absent) assert.doesNotMatch(message, pattern, `${failure}: ${message}`);
+        report.push(`reject ${failure} (${async ? 'async' : 'sync'}): ${message}`);
+      }
+      // Exactly 300 MiB is permitted by metadata checks. Intentionally invalid body lengths still
+      // fail validation; adding a single byte must instead report the aggregate limit before inflate.
+      await rejectLimit('aggregate-boundary', [/形式/], [/上限/]);
+      await rejectLimit('aggregate-over', [/合計/, /314,572,801 B/, /上限/, /314,572,800 B/]);
+      for (const [failure, filename] of [['oversized-markdown', /document\.md/], ['oversized-image', /images\/image-0001\.png/]]) {
+        await rejectLimit(failure, [filename, /21\.0 MiB/, /20\.0 MiB/, /上限/]);
+      }
+      // Exactly 100 MiB passes the report metadata cap; its tiny, inconsistent body fails later.
+      await rejectLimit('report-boundary', [/形式/], [/上限/]);
+      assert((await page.evaluate(() => window.limitTestReads.inflations)) > 0);
+      for (const async of [false, true]) {
+        for (const [failure, sizes] of [
+          ['oversized-report', [/104,857,601 B/, /104,857,600 B/]],
+          ['lower-report-total', [/1,048,577 B/, /1,048,576 B/]],
+        ]) {
+          const previousRequests = requests.length;
+          await rejectLimit(failure, [/report\.json/, /上限/, ...sizes], [/形式/, /通信/], async);
+          const reads = await page.evaluate(() => window.limitTestReads);
+          assert.deepEqual(reads, { inflations: 0, reportResponses: async ? 1 : 0, reportReaders: 0 }, `${failure} must reject before expansion or report body reads`);
+          if (async) assert.equal(requests.slice(previousRequests).some(request => request.pathname === `${jobPath}/result` || request.pathname.startsWith(`${jobPath}/images/`)), false);
+        }
+      }
+      await rejectLimit('lower-total', [/合計/, /2\.0 MiB/, /1\.0 MiB/, /上限/]);
+      await rejectLimit('lower-markdown', [/document\.md/, /512 B/, /上限/]);
+      await rejectLimit('lower-image', [/images\/image-0001\.png/, /32 B/, /上限/]);
+      await rejectLimit('lower-total', [/合計/, /2\.0 MiB/, /1\.0 MiB/, /上限/], [], true);
+      await rejectLimit('lower-markdown', [/document\.md/, /512 B/, /上限/], [], true);
+      await rejectLimit('lower-image', [/images\/image-0001\.png/, /32 B/, /上限/], [], true);
       mode = 'normal'; await ready();
       await page.locator('.auth-settings summary').click(); await page.locator('#function-key').fill('test-header-only-secret'); await run('xlsx', true);
       for (const request of requests.filter(request => request.key)) { assert.equal(request.key, 'test-header-only-secret'); assert.equal(request.search.includes('test-header-only-secret'), false); }

@@ -14,12 +14,18 @@ import java.awt.geom.AffineTransform;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.List;
 
 /** Draws sanitized leaves with their parent transforms, without masters, notes or external content. */
 final class PresentationRenderer {
-    record Layer(XSLFShape shape, AffineTransform parent) { }
+    record Layer(XSLFShape shape, AffineTransform parent, byte[] preparedPicture, Rectangle2D pictureBounds) {
+        Layer(XSLFShape shape, AffineTransform parent) { this(shape, parent, null, null); }
+        static Layer picture(XSLFShape shape, byte[] preparedPicture, Rectangle2D bounds) {
+            return new Layer(shape, new AffineTransform(), preparedPicture, bounds);
+        }
+    }
     record Background(Color color, boolean approximated) { }
 
     /** Inspect the stored fill before asking POI to resolve colors; never instantiate a texture paint. */
@@ -94,6 +100,22 @@ final class PresentationRenderer {
             for (Layer layer : layers) {
                 Graphics2D item = (Graphics2D) g.create();
                 try {
+                    if (layer.preparedPicture() != null) {
+                        // Crop, rotation, flip and group transforms are already baked into these pixels.
+                        // Draw their axis-aligned bounds directly so no transform is applied twice.
+                        BufferedImage picture = ImageIO.read(new ByteArrayInputStream(layer.preparedPicture()));
+                        if (picture == null) throw new IOException("Prepared picture cannot be decoded");
+                        try {
+                            Rectangle2D boundsOnSlide = layer.pictureBounds();
+                            AffineTransform placement = AffineTransform.getTranslateInstance(
+                                    boundsOnSlide.getX(), boundsOnSlide.getY());
+                            placement.scale(boundsOnSlide.getWidth() / picture.getWidth(),
+                                    boundsOnSlide.getHeight() / picture.getHeight());
+                            item.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+                            item.drawImage(picture, placement, null);
+                        } finally { picture.flush(); }
+                        continue;
+                    }
                     item.transform(layer.parent());
                     item.setRenderingHint(Drawable.GROUP_TRANSFORM, new AffineTransform());
                     // DrawFactory.drawShape skips zero-height/width anchors, erasing horizontal/vertical connectors.

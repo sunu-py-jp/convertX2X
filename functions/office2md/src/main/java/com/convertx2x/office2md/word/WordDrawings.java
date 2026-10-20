@@ -14,6 +14,7 @@ import java.awt.geom.AffineTransform;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -31,13 +32,210 @@ final class WordDrawings {
     private static final String WP = "http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing";
     private final ConversionWorkspace workspace;
     private int drawingNumber;
+    private List<Reader> paragraphReaders;
+    private List<Reader> tableReaders;
+    private int paragraphPageSegment;
+    private int paragraphSequence;
+    private String paragraphToken;
     private record Frame(AffineTransform transform, boolean known, boolean sizeKnown) { }
 
     WordDrawings(ConversionWorkspace workspace) { this.workspace = workspace; }
 
     String render(Node source, PackagePart sourcePart, String section, String range,
                   Function<Node, String> visibleText) {
-        return new Reader(sourcePart, section, range, visibleText).render(source);
+        Reader reader = new Reader(sourcePart, section, range, visibleText);
+        reader.readSource(source);
+        for (Object output : reader.outputs)
+            if (output instanceof Scope scope) {
+                scope.pageSegment = paragraphPageSegment;
+                scope.paragraph = paragraphSequence;
+            }
+        if (paragraphReaders == null) {
+            mergeOverlappingScopes(List.of(reader));
+            return reader.renderOutputs();
+        }
+        int index = paragraphReaders.size();
+        paragraphReaders.add(reader);
+        return paragraphToken + index + "\uFDD2";
+    }
+
+    void beginParagraph() {
+        paragraphSequence++;
+        if (tableReaders != null) {
+            paragraphReaders = tableReaders;
+            return;
+        }
+        paragraphReaders = new ArrayList<>(); paragraphPageSegment = 0;
+        paragraphToken = "\uFDD1word-drawing-" + java.util.UUID.randomUUID() + "-";
+    }
+    void pageBreak() { paragraphPageSegment++; }
+
+    String finishParagraph(String markdown) {
+        List<Reader> readers = paragraphReaders;
+        paragraphReaders = null;
+        if (tableReaders != null) return markdown;
+        return finishReaders(markdown, readers, false);
+    }
+
+    /** Defer cell drawings only when the table provides a resolvable saved rectangle. */
+    boolean beginTable(Node table, PackagePart part, String section, String range, Function<Node, String> visibleText) {
+        if (find(table, "anchor") == null && find(table, "pict") == null) return false;
+        WordTableLayout.Layout layout = WordTableLayout.read(table);
+        if (layout == null) {
+            workspace.info("TABLE_OVERLAP_POSITION_UNAVAILABLE", section, range,
+                    "表の固定座標・列幅・行高が確定しないため、表と浮動画像・図形は個別に保持しました。");
+            return false;
+        }
+        tableReaders = new ArrayList<>();
+        paragraphPageSegment = 0;
+        paragraphToken = "\uFDD1word-drawing-" + java.util.UUID.randomUUID() + "-";
+        Reader reader = new Reader(part, section, range, visibleText);
+        Scope scope = new Scope();
+        scope.tableBackground = true;
+        scope.coordinateReference = layout.reference();
+        scope.offsetX = layout.x(); scope.offsetY = layout.y();
+        scope.layoutInCell = false;
+        workspace.limits().checkTableCells(layout.cells().size());
+        double width = layout.cells().stream().mapToDouble(cell -> cell.x + cell.width).max().orElse(0);
+        double height = layout.cells().stream().mapToDouble(cell -> cell.y + cell.height).max().orElse(0);
+        for (WordTableLayout.Cell cell : layout.cells()) {
+            Item item = tableCell(cell, visibleText);
+            item.sourceId = "table-cell-" + (scope.outputs.size() + 1);
+            item.reference = "浮動表、保存配置基準: " + layout.reference();
+            scope.outputs.add(item);
+            tableBorders(scope, cell, layout, item, width, height);
+        }
+        reader.outputs.add(scope);
+        tableReaders.add(reader);
+        return true;
+    }
+
+    String finishTable(String markdown) {
+        List<Reader> readers = tableReaders;
+        tableReaders = null;
+        paragraphReaders = null;
+        // Table preview follows the semantic table; absorbed drawing placeholders are removed.
+        return finishReaders(markdown + "\n\n" + paragraphToken + "0\uFDD2", readers, true).stripTrailing();
+    }
+
+    private String finishReaders(String markdown, List<Reader> readers, boolean tableContext) {
+        if (readers == null) return markdown;
+        mergeOverlappingScopes(readers);
+        if (readers.isEmpty()) return markdown;
+        List<String> rendered = readers.stream().map(Reader::renderOutputs).toList();
+        StringBuilder output = new StringBuilder();
+        int cursor = 0;
+        for (int start = markdown.indexOf(paragraphToken); start >= 0; start = markdown.indexOf(paragraphToken, cursor)) {
+            int end = markdown.indexOf('\uFDD2', start + paragraphToken.length());
+            if (end < 0) break;
+            int index;
+            try { index = Integer.parseInt(markdown.substring(start + paragraphToken.length(), end)); }
+            catch (NumberFormatException error) { break; }
+            if (index < 0 || index >= rendered.size()) break;
+            boolean inCell = tableContext && index > 0;
+            String replacement = inCell ? rendered.get(index).replace("\n", "<br>") : rendered.get(index);
+            String separators = inCell ? "<br><br>" : "\n\n";
+            int appendEnd = start;
+            // inline() inserts exactly two separators around each drawing placeholder.
+            // Remove only those separators when this anchor was absorbed by a composite.
+            if (replacement.isEmpty() && start - cursor >= separators.length()
+                    && markdown.startsWith(separators, start - separators.length()))
+                appendEnd -= separators.length();
+            output.append(markdown, cursor, appendEnd).append(replacement);
+            cursor = end + 1;
+            if (replacement.isEmpty() && markdown.startsWith(separators, cursor)) cursor += separators.length();
+        }
+        return output.append(markdown, cursor, markdown.length()).toString();
+    }
+
+    /**
+     * Word supplies no reliable page number for a floating anchor. Only anchors from the
+     * same paragraph and matching saved coordinate references can be compared without
+     * a Word layout engine. An explicit canvas/group already forms one local scope.
+     */
+    private void mergeOverlappingScopes(List<Reader> readers) {
+        List<Scope> scopes = readers.stream().flatMap(reader -> reader.outputs.stream())
+                .filter(Scope.class::isInstance).map(Scope.class::cast).toList();
+        List<List<Item>> items = scopes.stream().map(Scope::items).toList();
+        List<Integer> pictureScopes = new ArrayList<>(), visualScopes = new ArrayList<>();
+        boolean[] hasPicture = new boolean[scopes.size()], hasShape = new boolean[scopes.size()];
+        for (int i = 0; i < scopes.size(); i++) {
+            hasPicture[i] = items.get(i).stream().anyMatch(WordDrawings::compositePicture);
+            hasShape[i] = items.get(i).stream().anyMatch(WordDrawings::nativeShape);
+            if (hasPicture[i] || scopes.get(i).tableBackground) pictureScopes.add(i);
+            if (hasPicture[i] || hasShape[i]) visualScopes.add(i);
+        }
+        if (pictureScopes.isEmpty()) return;
+        int[] parents = new int[scopes.size()];
+        for (int i = 0; i < parents.length; i++) parents[i] = i;
+        boolean unavailable = false;
+        for (int i : pictureScopes) for (int j : visualScopes) {
+            if (i == j || j < i && hasPicture[j]) continue;
+            Scope a = scopes.get(i), b = scopes.get(j);
+            if (a.pageSegment != b.pageSegment) continue;
+            if (a.paragraph != b.paragraph && !a.tableBackground && !b.tableBackground) continue;
+            if (a.coordinateReference == null || !a.coordinateReference.equals(b.coordinateReference)
+                    || a.layoutInCell != b.layoutInCell) {
+                unavailable = true;
+                continue;
+            }
+            if (overlap(a, items.get(i), b, items.get(j))) parents[root(parents, j)] = root(parents, i);
+        }
+        Map<Integer, List<Scope>> groups = new LinkedHashMap<>();
+        for (int i = 0; i < scopes.size(); i++)
+            groups.computeIfAbsent(root(parents, i), ignored -> new ArrayList<>()).add(scopes.get(i));
+        for (List<Scope> group : groups.values()) {
+            if (group.size() < 2) continue;
+            Scope first = group.get(0);
+            List<Scope> ordered = group.stream().sorted(Comparator.comparing((Scope s) -> !s.behindDocument)
+                    .thenComparingLong(s -> s.zIndex)).toList();
+            List<Object> combined = new ArrayList<>();
+            for (Scope scope : ordered) for (Object entry : scope.outputs) {
+                if (entry instanceof Item item) {
+                    item.transform.preConcatenate(AffineTransform.getTranslateInstance(scope.offsetX, scope.offsetY));
+                    item.reference = "同一段落の浮動図形、保存配置基準: " + scope.coordinateReference;
+                    item.combinedAcrossAnchors = true;
+                }
+                combined.add(entry);
+            }
+            for (Scope scope : group) scope.outputs.clear();
+            first.outputs.addAll(combined);
+            first.combinedTable = group.stream().anyMatch(scope -> scope.tableBackground);
+        }
+        if (unavailable && !readers.isEmpty()) {
+            Reader reader = readers.get(0);
+            workspace.info("DRAWING_OVERLAP_POSITION_UNAVAILABLE", reader.section, reader.range,
+                    "画像と図形の配置基準が異なる、または本文内の組版位置が未確定のため、自動合成せず個別に保持しました。");
+        }
+    }
+
+    private static int root(int[] parents, int index) {
+        while (parents[index] != index) { parents[index] = parents[parents[index]]; index = parents[index]; }
+        return index;
+    }
+    private static boolean overlap(Scope a, List<Item> aItems, Scope b, List<Item> bItems) {
+        for (Item x : aItems) for (Item y : bItems) {
+            if (!x.geometryKnown || !y.geometryKnown) continue;
+            if ((compositePicture(x) || x.tableCell) && (nativeShape(y) || compositePicture(y))
+                    && NativeDrawingRenderer.shapesOverlap(at(x.shape(), a), at(y.shape(), b))) return true;
+            if ((compositePicture(y) || y.tableCell) && (nativeShape(x) || compositePicture(x))
+                    && NativeDrawingRenderer.shapesOverlap(at(y.shape(), b), at(x.shape(), a))) return true;
+        }
+        return false;
+    }
+    private static NativeDrawingRenderer.Shape at(NativeDrawingRenderer.Shape shape, Scope scope) {
+        AffineTransform transform = AffineTransform.getTranslateInstance(scope.offsetX, scope.offsetY);
+        transform.concatenate(shape.transform());
+        return new NativeDrawingRenderer.Shape(shape.preset(), shape.width(), shape.height(), transform,
+                shape.fill(), shape.line(), shape.lineWidth(), shape.text(), shape.fontFamily(), shape.fontSize(),
+                shape.bold(), shape.textColor(), shape.horizontalAlignment(), shape.verticalAlignment(),
+                shape.picture(), shape.extension(), shape.startArrow(), shape.endArrow());
+    }
+    private static boolean nativeShape(Item item) { return item.picture == null && item.renderable; }
+    private static boolean compositePicture(Item item) {
+        return item.picture != null && item.renderable && item.geometryKnown && item.width > 0 && item.height > 0
+                && item.visiblePicture != null && item.visiblePicture.skipReason() == null
+                && List.of("png", "jpg").contains(item.visiblePicture.extension());
     }
 
     private static final class Item {
@@ -52,21 +250,75 @@ final class WordDrawings {
         String reference, graphId, sourceId, startId, endId;
         String startArrow = "none", endArrow = "none";
         boolean connector, renderable = true;
+        boolean combinedAcrossAnchors, tableCell;
         String unsupportedMessage;
         int horizontal = 1, vertical = 1;
         byte[] picture;
         EmbeddedImagePreprocessor.Prepared visiblePicture;
-        boolean croppedPicture;
-        boolean inlineImage() { return extension.equals("png") || extension.equals("jpg"); }
         NativeDrawingRenderer.Shape shape() {
-            return new NativeDrawingRenderer.Shape(connector ? "line" : preset, width, height, transform, fill, line, lineWidth,
+            return new NativeDrawingRenderer.Shape(connector && !NativeDrawingRenderer.supports(preset) ? "line" : preset,
+                    width, height, transform, fill, line, lineWidth,
                     text, font, fontSize, bold, textColor, horizontal, vertical, picture, extension,
                     directional(startArrow), directional(endArrow));
+        }
+        NativeDrawingRenderer.Shape previewShape() {
+            if (!compositePicture(this)) return shape();
+            Rectangle2D bounds = transform.createTransformedShape(new Rectangle2D.Double(0, 0, width, height)).getBounds2D();
+            return new NativeDrawingRenderer.Shape("rect", bounds.getWidth(), bounds.getHeight(),
+                    AffineTransform.getTranslateInstance(bounds.getX(), bounds.getY()),
+                    null, null, 0, "", font, fontSize, false, textColor, 1, 1,
+                    visiblePicture.bytes(), visiblePicture.extension(), false, false);
         }
     }
 
     private static final class Scope {
         final List<Object> outputs = new ArrayList<>();
+        String coordinateReference;
+        double offsetX, offsetY;
+        long zIndex;
+        boolean behindDocument;
+        boolean layoutInCell = true;
+        boolean tableBackground, combinedTable;
+        int pageSegment, paragraph;
+        List<Item> items() { return outputs.stream().filter(Item.class::isInstance).map(Item.class::cast).toList(); }
+        void anchor(Node node) {
+            if (VML.equals(node.getNamespaceURI())) {
+                Map<String, String> saved = style(node);
+                String h = reference(saved.get("mso-position-horizontal-relative")),
+                        v = reference(saved.get("mso-position-vertical-relative"));
+                if (!"absolute".equals(saved.get("position")) || h.equals("不明") || v.equals("不明")
+                        || List.of("char", "character").contains(h) || v.equals("line")
+                        || measuredPoints(saved.getOrDefault("left", saved.get("margin-left"))) == null
+                        || measuredPoints(saved.getOrDefault("top", saved.get("margin-top"))) == null
+                        || saved.containsKey("mso-position-horizontal") && !"absolute".equals(saved.get("mso-position-horizontal"))
+                        || saved.containsKey("mso-position-vertical") && !"absolute".equals(saved.get("mso-position-vertical")))
+                    return;
+                // VML coordinates already include its left/top translation.
+                coordinateReference = h + "/" + v;
+                zIndex = (long) number(saved.get("z-index"), 0);
+                behindDocument = zIndex < 0;
+                return;
+            }
+            if (!WP.equals(node.getNamespaceURI()) || !local(node).equals("anchor")) return;
+            layoutInCell = flag(attr(node, "layoutInCell"), true);
+            // Word may move an anchor when overlap is explicitly disabled.
+            if (!flag(attr(node, "allowOverlap"), true)) return;
+            behindDocument = flag(attr(node, "behindDoc"), false);
+            zIndex = (long) number(attr(node, "relativeHeight"), 0);
+            if (flag(attr(node, "simplePos"), false)) {
+                Double x = emu(attr(child(node, "simplePos"), "x")), y = emu(attr(child(node, "simplePos"), "y"));
+                if (x != null && y != null) { coordinateReference = "simplePos"; offsetX = x; offsetY = y; }
+                return;
+            }
+            Node horizontal = child(node, "positionH"), vertical = child(node, "positionV");
+            String h = reference(attr(horizontal, "relativeFrom")), v = reference(attr(vertical, "relativeFrom"));
+            // Character/line-relative positions may differ even within the same paragraph.
+            if (List.of("不明", "character", "char").contains(h) || List.of("不明", "line").contains(v)) return;
+            Node xOffset = child(horizontal, "posOffset"), yOffset = child(vertical, "posOffset");
+            Double x = xOffset == null ? null : emu(WordXml.text(xOffset)),
+                    y = yOffset == null ? null : emu(WordXml.text(yOffset));
+            if (x != null && y != null) { coordinateReference = h + "/" + v; offsetX = x; offsetY = y; }
+        }
     }
 
     private final class Reader {
@@ -81,7 +333,7 @@ final class WordDrawings {
             this.part = part; this.section = section; this.range = range; this.visibleText = visibleText;
         }
 
-        String render(Node source) {
+        void readSource(Node source) {
             if (local(source).equals("object")) {
                 workspace.shapeVisited(1);
                 unsupported("OLE_UNSUPPORTED", "埋め込みオブジェクトは展開しません。", source);
@@ -94,15 +346,19 @@ final class WordDrawings {
                 if (!handled && outputs.isEmpty())
                     unsupported("DRAWING_UNSUPPORTED", "このWord描画形式は未対応です。", source);
             }
+        }
+
+        String renderOutputs() {
             List<String> result = new ArrayList<>();
             for (Object output : outputs) {
                 if (output instanceof String text) result.add(text);
-                else result.add(renderScope((Scope) output));
+                else if (!((Scope) output).outputs.isEmpty()) result.add(renderScope((Scope) output));
             }
             return String.join("\n\n", result);
         }
 
         private String renderScope(Scope scope) {
+            if (scope.tableBackground && !scope.combinedTable) return "";
             List<Item> items = scope.outputs.stream().filter(Item.class::isInstance).map(Item.class::cast).toList();
             if (items.isEmpty()) return String.join("\n\n", scope.outputs.stream().map(Object::toString).toList());
             String diagramRange = range + "/drawing:" + (++drawingNumber);
@@ -110,7 +366,9 @@ final class WordDrawings {
             List<DiagramGraph.Connection> connections = new ArrayList<>();
             List<NativeDrawingRenderer.Shape> shapes = new ArrayList<>();
             List<String> imageReferences = new ArrayList<>();
-            boolean hasNonPictureLayer = items.stream().anyMatch(item -> item.picture == null && item.renderable);
+            List<ConversionWorkspace.CompositeImageSource> compositeSources = new ArrayList<>();
+            boolean combinePictures = items.stream().anyMatch(item -> item.picture == null && item.renderable)
+                    || items.stream().filter(WordDrawings::compositePicture).count() > 1;
             List<String> connectorText = new ArrayList<>();
             Map<String, Map<String, Object>> connectorMetadata = new LinkedHashMap<>();
             Rectangle2D union = null;
@@ -121,12 +379,12 @@ final class WordDrawings {
                 sourceCounts.merge(item.sourceId, 1L, Long::sum);
             for (Item item : items) item.graphId = "shape-" + (++ordinal);
             Map<String, Rectangle2D> contactTargets = new LinkedHashMap<>();
-            for (Item item : items) if (!item.connector && item.geometryKnown && item.sourceId != null
+            for (Item item : items) if (!item.tableCell && !item.connector && item.geometryKnown && item.sourceId != null
                     && !item.sourceId.isBlank() && sourceCounts.getOrDefault(item.sourceId, 0L) == 1
                     && axisAligned(item.transform))
                 contactTargets.put(item.sourceId, item.transform.createTransformedShape(
                         new Rectangle2D.Double(0, 0, item.width, item.height)).getBounds2D());
-            for (Item item : items) if (item.connector && item.geometryKnown) {
+            for (Item item : items) if (item.connector && item.geometryKnown && !item.combinedAcrossAnchors) {
                 Point2D start = item.transform.transform(new Point2D.Double(0, 0), null);
                 Point2D end = item.transform.transform(new Point2D.Double(item.width, item.height), null);
                 if (item.startId == null || item.startId.isBlank())
@@ -138,9 +396,13 @@ final class WordDrawings {
                 String id = item.graphId;
                 Rectangle2D bounds = item.geometryKnown ? item.transform.createTransformedShape(
                         new Rectangle2D.Double(0, 0, item.width, item.height)).getBounds2D() : null;
-                if (item.renderable && (item.picture == null || item.inlineImage())) {
+                if (nativeShape(item) || combinePictures && compositePicture(item)) {
                     geometryKnown &= bounds != null;
                     if (bounds != null) union = union == null ? bounds : union.createUnion(bounds);
+                }
+                if (item.tableCell) {
+                    shapes.add(item.shape());
+                    continue; // The table already retains these cells as Markdown, not graph nodes.
                 }
                 String type = item.picture == null ? DrawingAltText.typeName(item.preset) : "画像";
                 String text = item.picture == null ? item.text : item.alt.equals("画像") ? "" : item.alt;
@@ -154,15 +416,16 @@ final class WordDrawings {
                     EmbeddedImagePreprocessor.Prepared prepared = item.visiblePicture;
                     if (prepared != null) {
                         metadata.put("id", id);
-                        imageReferences.add(workspace.embeddedImage(prepared.bytes(), prepared.extension(),
-                                prepared.contentType(), metadata, section, diagramRange + "/" + id,
-                                prepared.ocrEligible()));
+                        if (combinePictures && compositePicture(item)) {
+                            compositeSources.add(new ConversionWorkspace.CompositeImageSource(prepared.bytes(),
+                                    prepared.extension(), prepared.contentType(), metadata, prepared.ocrEligible()));
+                            shapes.add(item.previewShape());
+                        } else {
+                            imageReferences.add(workspace.embeddedImage(prepared.bytes(), prepared.extension(),
+                                    prepared.contentType(), metadata, section, diagramRange + "/" + id,
+                                    prepared.ocrEligible()));
+                        }
                     }
-                    // A pure picture is already represented by its own asset. In mixed scenes a
-                    // preview can retain its position, unless an unsupported crop would reveal
-                    // picture content that Word had hidden.
-                    if (hasNonPictureLayer && item.renderable && item.inlineImage() && !item.croppedPicture)
-                        shapes.add(item.shape());
                 } else if (item.renderable) shapes.add(item.shape());
             }
             var edges = DiagramGraph.resolve(vertices, connections);
@@ -182,15 +445,31 @@ final class WordDrawings {
                 return metadata;
             }).toList());
             if (!shapes.isEmpty()) {
-                String path = workspace.addAsset("diagram", NativeDrawingRenderer.render(shapes, workspace), "png", "image/png");
+                byte[] rendered = NativeDrawingRenderer.render(shapes, workspace);
                 Map<String, Object> metadata = items.size() == 1
                         ? DiagramMetadata.of(items.get(0).picture == null ? DrawingAltText.typeName(items.get(0).preset) : "画像",
                                 items.get(0).picture == null ? items.get(0).text : items.get(0).alt, geometryKnown ? union : null)
                         : DiagramMetadata.of("図", "", geometryKnown ? union : null);
-                output.add("![" + DiagramMetadata.imageAlt(metadata) + "](" + path + ")");
-                block.put("path", path); block.put("metadata", metadata);
+                if (scope.combinedTable) {
+                    metadata.put("includesTable", true);
+                    metadata.put("tableRange", range);
+                }
+                if (compositeSources.isEmpty() && !scope.combinedTable) {
+                    String path = workspace.addAsset("diagram", rendered, "png", "image/png");
+                    output.add("![" + DiagramMetadata.imageAlt(metadata) + "](" + path + ")");
+                    block.put("path", path);
+                } else {
+                    metadata.put("sourceIds", items.stream().filter(item -> !item.tableCell && (nativeShape(item) || compositePicture(item)))
+                            .map(item -> item.graphId).toList());
+                    block.put("composite", true);
+                    output.add(workspace.compositeImage(rendered, metadata, compositeSources, section, diagramRange));
+                }
+                block.put("metadata", metadata);
                 workspace.info("DRAWING_SIMPLIFIED", section, diagramRange,
                         "Wordの図形・保存された接続を文字として保持し、同じ描画領域を確認用画像にまとめました。ページ全体の配置は再現しません。");
+                if (scope.combinedTable)
+                    workspace.info("TABLE_DRAWING_SIMPLIFIED", section, diagramRange,
+                            "浮動表の保存済み固定位置・列幅・行高に画像や図形を重ねました。表の文字はMarkdownに保持し、画像中のセル書式は直接指定された代表書式で簡易描画します。");
             }
             output.addAll(imageReferences);
             workspace.block(block);
@@ -214,7 +493,7 @@ final class WordDrawings {
             if (activeScope == null && (WP.equals(node.getNamespaceURI()) && List.of("inline", "anchor").contains(name)
                     || List.of("wpc", "wgp", "grpSp").contains(name)
                     || VML.equals(node.getNamespaceURI()) && name.equals("group"))) {
-                Scope scope = new Scope(); outputs.add(scope); activeScope = scope;
+                Scope scope = new Scope(); scope.anchor(node); outputs.add(scope); activeScope = scope;
                 try { read(node, parent, width, height, flipped, groupDepth, xmlDepth); }
                 finally { activeScope = null; }
                 return;
@@ -380,12 +659,9 @@ final class WordDrawings {
                     }
                 }
                 if (!alt.isBlank()) item.alt = alt;
-                if (item.inlineImage()) NativeDrawingRenderer.verifyPicture(item.picture, workspace);
-                else workspace.warning("IMAGE_FORMAT_ATTACHMENT", section, range, "この画像形式は元ファイルの添付として保持します。");
                 Node cropNode = find(node, "srcRect");
                 EmbeddedImagePreprocessor.Crop crop = EmbeddedImagePreprocessor.Crop.drawingMl(cropNode);
                 boolean rectangular = EmbeddedImagePreprocessor.rectangularVisibility(node);
-                item.croppedPicture = crop.present() || !rectangular;
                 item.visiblePicture = rectangular
                         ? EmbeddedImagePreprocessor.prepare(item.picture, item.extension, item.contentType,
                                 crop, item.geometryKnown ? item.transform : null,
@@ -394,6 +670,9 @@ final class WordDrawings {
                                 false, false, "画像の非矩形マスク・透明化・VML可視領域を安全に再現できません。");
                 item.visiblePicture = item.visiblePicture.withBytes(
                         workspace.retainImageBytes(item.visiblePicture.bytes()));
+                if (List.of("png", "jpg").contains(item.visiblePicture.extension()))
+                    NativeDrawingRenderer.verifyPicture(item.visiblePicture.bytes(), workspace);
+                else workspace.warning("IMAGE_FORMAT_ATTACHMENT", section, range, "この画像形式は元ファイルの添付として保持します。");
                 if (item.visiblePicture.skipReason() != null)
                     workspace.warning("IMAGE_VISIBLE_AREA_UNAVAILABLE", section, range,
                             item.visiblePicture.skipReason() + "元画像を保存しました。");
@@ -431,7 +710,7 @@ final class WordDrawings {
                     }
                 }
             }
-            if (activeScope == null) { Scope scope = new Scope(); scope.outputs.add(item); outputs.add(scope); }
+            if (activeScope == null) { Scope scope = new Scope(); scope.anchor(source); scope.outputs.add(item); outputs.add(scope); }
             else activeScope.outputs.add(item);
         }
         private String placement(Node source) {
@@ -502,6 +781,61 @@ final class WordDrawings {
         private void textApproximation(Item item) {
             if (!item.text.isBlank()) workspace.warning("DRAWING_TEXT_APPROXIMATED", section, range,
                     "Word図形内の文字は取消線・非表示を除去して簡易描画します。段落ごとの書式・余白・文字回転は近似です。");
+        }
+    }
+
+    private static Item tableCell(WordTableLayout.Cell cell, Function<Node, String> visibleText) {
+        Item item = new Item();
+        item.tableCell = true; item.geometryKnown = true;
+        item.width = cell.width; item.height = cell.height;
+        item.transform.translate(cell.x, cell.y);
+        item.fill = parseColor(wattr(child(child(cell.source, "tcPr"), "shd"), "fill"), null);
+        item.line = null;
+        item.text = visibleText.apply(cell.source);
+        // Text uses the first paragraph's direct style; table cells remain full-fidelity text in Markdown.
+        Node paragraph = find(cell.source, "p"), properties = child(paragraph, "pPr");
+        String alignment = wval(child(properties, "jc"));
+        item.horizontal = alignment.equals("center") ? 2 : alignment.equals("right") ? 3 : 1;
+        String vertical = wval(child(child(cell.source, "tcPr"), "vAlign"));
+        item.vertical = vertical.equals("center") ? 2 : vertical.equals("bottom") ? 3 : 1;
+        Node runProperties = find(paragraph, "rPr");
+        item.bold = WordXml.on(child(runProperties, "b"));
+        item.fontSize = (float) Math.max(1, Math.min(400, number(wval(child(runProperties, "sz")), 24) / 2));
+        item.textColor = parseColor(wval(child(runProperties, "color")), Color.BLACK);
+        Node fonts = child(runProperties, "rFonts");
+        String font = wattr(fonts, "eastAsia");
+        if (font.isBlank()) font = wattr(fonts, "ascii");
+        if (!font.isBlank()) item.font = font;
+        return item;
+    }
+
+    private static void tableBorders(Scope scope, WordTableLayout.Cell cell, WordTableLayout.Layout layout,
+                                     Item source, double right, double bottom) {
+        String[] sides = {"top", "right", "bottom", "left"};
+        for (String side : sides) {
+            Node border = child(child(child(cell.source, "tcPr"), "tcBorders"), side);
+            if (border == null) {
+                String fallback = switch (side) {
+                    case "top" -> cell.y == 0 ? "top" : "insideH";
+                    case "bottom" -> cell.y + cell.height == bottom ? "bottom" : "insideH";
+                    case "left" -> cell.x == 0 ? "left" : "insideV";
+                    default -> cell.x + cell.width == right ? "right" : "insideV";
+                };
+                border = child(child(layout.properties(), "tblBorders"), fallback);
+            }
+            if (border == null || List.of("", "nil", "none").contains(wval(border))) continue;
+            Item item = new Item();
+            item.tableCell = true; item.geometryKnown = true; item.preset = "line";
+            item.width = side.equals("top") || side.equals("bottom") ? cell.width : 0;
+            item.height = side.equals("left") || side.equals("right") ? cell.height : 0;
+            item.transform.translate(cell.x + (side.equals("right") ? cell.width : 0),
+                    cell.y + (side.equals("bottom") ? cell.height : 0));
+            item.fill = null;
+            item.line = parseColor(wattr(border, "color"), Color.BLACK);
+            item.lineWidth = (float) Math.min(100, Math.max(.125, number(wattr(border, "sz"), 4) / 8));
+            item.sourceId = source.sourceId + "-" + side;
+            item.reference = source.reference;
+            scope.outputs.add(item);
         }
     }
 
@@ -630,7 +964,14 @@ final class WordDrawings {
         if (bytes.length >= 3 && bytes[0] == (byte)255 && bytes[1] == (byte)216 && bytes[2] == (byte)255) return new String[]{"jpg","image/jpeg"};
         if (bytes.length >= 2 && bytes[0] == 'B' && bytes[1] == 'M') return new String[]{"bmp","image/bmp"};
         if (bytes.length >= 6 && bytes[0] == 'G' && bytes[1] == 'I' && bytes[2] == 'F') return new String[]{"gif","image/gif"};
-        return switch(type) { case "image/x-emf", "image/emf" -> new String[]{"emf","image/emf"}; case "image/x-wmf", "image/wmf" -> new String[]{"wmf","image/wmf"}; default -> new String[]{"bin","application/octet-stream"}; };
+        return switch(type) {
+            case "image/svg+xml" -> new String[]{"svg","image/svg+xml"};
+            case "image/tiff" -> new String[]{"tiff","image/tiff"};
+            case "image/webp" -> new String[]{"webp","image/webp"};
+            case "image/x-emf", "image/emf" -> new String[]{"emf","image/emf"};
+            case "image/x-wmf", "image/wmf" -> new String[]{"wmf","image/wmf"};
+            default -> new String[]{"bin","application/octet-stream"};
+        };
     }
     private static double[] pair(String value, double x, double y) {
         if (value == null) return new double[]{x,y};

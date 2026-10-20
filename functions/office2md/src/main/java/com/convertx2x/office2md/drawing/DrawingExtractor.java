@@ -27,6 +27,7 @@ import org.apache.poi.ss.usermodel.Picture;
 import org.apache.poi.ss.usermodel.Shape;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.util.CellReference;
+import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.xssf.usermodel.*;
 import org.w3c.dom.Node;
 import static com.convertx2x.office2md.drawing.DrawingScene.Kind;
@@ -34,21 +35,27 @@ import static com.convertx2x.office2md.drawing.DrawingScene.Kind;
 /** Extracts embedded images and renders an explicitly bounded subset of Excel drawing shapes. */
 public final class DrawingExtractor {
     public List<DrawingBlock> extract(Sheet sheet, ConversionWorkspace workspace) {
+        return extract(sheet, workspace, List.of());
+    }
+
+    public List<DrawingBlock> extract(Sheet sheet, ConversionWorkspace workspace, List<CellRangeAddress> tables) {
         int index = sheet.getWorkbook().getSheetIndex(sheet);
         if (sheet.getWorkbook().isSheetHidden(index) || sheet.getWorkbook().isSheetVeryHidden(index)) return List.of();
-        return new Reader(sheet, workspace).extract();
+        return new Reader(sheet, workspace, tables).extract();
     }
 
     private static final class Reader {
         private final Sheet sheet;
         private final ConversionWorkspace workspace;
         private final SheetCoordinates coordinates;
+        private final List<CellRangeAddress> tables;
         private int sequence, groupSequence;
 
-        Reader(Sheet sheet, ConversionWorkspace workspace) {
+        Reader(Sheet sheet, ConversionWorkspace workspace, List<CellRangeAddress> tables) {
             this.sheet = sheet;
             this.workspace = workspace;
             coordinates = new SheetCoordinates(sheet);
+            this.tables = tables;
         }
 
         List<DrawingBlock> extract() {
@@ -116,10 +123,53 @@ public final class DrawingExtractor {
                 if (edge.startId() != null) union(parents, edge.id(), edge.startId());
                 if (edge.endId() != null) union(parents, edge.id(), edge.endId());
             }
+            // Visual overlap never establishes a semantic connector endpoint.
+            for (var picture : items) if (DrawingScene.compositePicture(picture)) {
+                for (var shape : items) if (DrawingScene.pictureOverlapsShape(picture, shape))
+                    union(parents, picture.graphId, shape.graphId);
+            }
+            Map<String, String> drawingParents = new LinkedHashMap<>(parents);
+            List<SheetCellLayer.Region> cellRegions = SheetCellLayer.touchingRegions(sheet, coordinates, tables, items, workspace);
+            for (var region : cellRegions) {
+                parents.put(region.id(), region.id());
+                for (var item : items) if ((item.kind != Kind.PICTURE || DrawingScene.compositePicture(item))
+                        && region.overlaps(item)) union(parents, region.id(), item.graphId);
+            }
             Map<String, List<DrawingScene.Item>> components = new LinkedHashMap<>();
             for (var item : items) components.computeIfAbsent(root(parents, item.graphId), ignored -> new ArrayList<>()).add(item);
+            Set<String> oversizedCells = new LinkedHashSet<>();
+            for (var component : components.values()) {
+                String componentRoot = root(parents, component.getFirst().graphId);
+                List<SheetCellLayer.Region> componentCells = cellRegions.stream()
+                        .filter(region -> root(parents, region.id()).equals(componentRoot)).toList();
+                if (!componentCells.isEmpty() && !SheetCellLayer.fitsPreview(componentCells, component, workspace)) {
+                    for (var region : componentCells) oversizedCells.add(region.id());
+                    workspace.warning("COMPOSITE_CELL_CANVAS_SKIPPED", sheet.getSheetName(),
+                            componentCells.getFirst().range().formatAsString(),
+                            "表・セルをつないだ合成範囲が描画上限を超えるため、文字・表と描画要素を個別に保持しました。");
+                }
+            }
+            if (!oversizedCells.isEmpty()) {
+                cellRegions = cellRegions.stream().filter(region -> !oversizedCells.contains(region.id())).toList();
+                // Removing cell pixels alone would leave unrelated distant images grouped by the
+                // omitted table. Restore original drawing groups/connections before adding safe cells.
+                parents.clear(); parents.putAll(drawingParents);
+                for (var region : cellRegions) {
+                    parents.put(region.id(), region.id());
+                    for (var item : items) if ((item.kind != Kind.PICTURE || DrawingScene.compositePicture(item))
+                            && region.overlaps(item)) union(parents, region.id(), item.graphId);
+                }
+                components.clear();
+                for (var item : items)
+                    components.computeIfAbsent(root(parents, item.graphId), ignored -> new ArrayList<>()).add(item);
+            }
             List<DrawingBlock> blocks = new ArrayList<>();
             for (var component : components.values()) {
+                String componentRoot = root(parents, component.getFirst().graphId);
+                List<SheetCellLayer.Region> componentCells = cellRegions.stream()
+                        .filter(region -> root(parents, region.id()).equals(componentRoot)).toList();
+                SheetCellLayer cellLayer = componentCells.isEmpty() ? null
+                        : new SheetCellLayer(sheet, coordinates, workspace, componentCells);
                 List<DiagramGraph.Vertex> componentVertices = new ArrayList<>();
                 List<DiagramGraph.Edge> componentEdges = new ArrayList<>();
                 for (var item : component) {
@@ -127,6 +177,7 @@ public final class DrawingExtractor {
                     if (edgesById.containsKey(item.graphId)) componentEdges.add(edgesById.get(item.graphId));
                 }
                 Rectangle2D bounds = placementBounds(component);
+                if (cellLayer != null) bounds = bounds == null ? cellLayer.bounds() : bounds.createUnion(cellLayer.bounds());
                 String location = bounds == null ? null : range(bounds);
                 String markdown = DiagramGraph.markdown(componentVertices, componentEdges, workspace, sheet.getSheetName(), location);
                 Map<String, Object> metadata = new LinkedHashMap<>();
@@ -140,23 +191,51 @@ public final class DrawingExtractor {
                 }
                 metadata.put("edges", edgeMetadata);
                 checkMarkdownLimit(markdown);
-                boolean hasNonPictureLayer = component.stream().anyMatch(item -> item.kind != Kind.PICTURE
-                        && item.kind != Kind.UNSUPPORTED);
+                long pictureCount = component.stream().filter(DrawingScene::compositePicture).count();
+                boolean combinePictures = cellLayer != null || pictureCount > 1
+                        || component.stream().anyMatch(item -> item.kind != Kind.PICTURE && item.kind != Kind.UNSUPPORTED);
                 List<DrawingScene.Item> rendered = component.stream()
                         .filter(item -> item.kind != Kind.UNSUPPORTED && (item.kind != Kind.PICTURE
-                                || hasNonPictureLayer && inline(item) && !item.croppedPicture)).toList();
+                                || combinePictures && DrawingScene.compositePicture(item))).toList();
+                Set<String> composedPictures = new LinkedHashSet<>();
                 if (!rendered.isEmpty()) {
-                    Map<String, Object> imageMetadata = DiagramMetadata.of("図", "", placementBounds(rendered));
-                    String alt = limitedAlt(imageMetadata);
-                    String path = workspace.addAsset("diagram", DrawingScene.render(rendered, workspace), "png", "image/png");
-                    markdown = append(markdown, "![" + alt + "](" + path + ")");
-                    metadata.put("path", path);
+                    Rectangle2D imageBounds = placementBounds(rendered);
+                    if (cellLayer != null) imageBounds = imageBounds.createUnion(cellLayer.bounds());
+                    Map<String, Object> imageMetadata = DiagramMetadata.of("図", "", imageBounds);
+                    if (cellLayer != null) {
+                        List<String> ranges = componentCells.stream().map(region -> region.range().formatAsString()).toList();
+                        imageMetadata.put("cellRanges", ranges); metadata.put("cellRanges", ranges);
+                    }
+                    List<ConversionWorkspace.CompositeImageSource> sources = new ArrayList<>();
+                    for (var item : rendered) if (item.kind == Kind.PICTURE) {
+                        var prepared = item.visiblePicture;
+                        Map<String, Object> sourceMetadata = DiagramMetadata.of("画像", item.alt, item.placementBounds());
+                        sourceMetadata.put("id", item.graphId);
+                        sources.add(new ConversionWorkspace.CompositeImageSource(prepared.bytes(), prepared.extension(),
+                                prepared.contentType(), sourceMetadata, prepared.ocrEligible()));
+                        composedPictures.add(item.graphId);
+                    }
+                    if (sources.isEmpty() && cellLayer == null) {
+                        String alt = limitedAlt(imageMetadata);
+                        String path = workspace.addAsset("diagram", DrawingScene.render(rendered, workspace), "png", "image/png");
+                        markdown = append(markdown, "![" + alt + "](" + path + ")");
+                        metadata.put("path", path);
+                    } else {
+                        List<String> sourceIds = rendered.stream().map(item -> item.graphId).toList();
+                        imageMetadata.put("sourceIds", sourceIds);
+                        metadata.put("sourceIds", sourceIds);
+                        metadata.put("composite", true);
+                        markdown = append(markdown, workspace.compositeImage(DrawingScene.render(rendered, workspace, cellLayer),
+                                imageMetadata, sources, sheet.getSheetName(), location));
+                    }
                     metadata.put("metadata", imageMetadata);
                     workspace.info("DRAWING_SIMPLIFIED", sheet.getSheetName(), location,
-                            "保存されたグループ・接続単位で図を簡易描画しました。セル内容は画像に含みません。");
+                            cellLayer != null ? "重なる表・セルの内容と描画オブジェクトを合成しました。セルの文字・表はMarkdownにも保持します。"
+                                    : sources.isEmpty() ? "保存されたグループ・接続単位で図を簡易描画しました。セル内容は画像に含みません。"
+                                    : "重なり・保存されたグループ・接続単位で画像と図形を合成しました。セル内容は画像に含みません。");
                 }
                 for (var item : component) {
-                    if (item.kind == Kind.PICTURE && item.visiblePicture != null) {
+                    if (item.kind == Kind.PICTURE && item.visiblePicture != null && !composedPictures.contains(item.graphId)) {
                         Map<String, Object> imageMetadata = DiagramMetadata.of("画像", item.alt,
                                 item.positionKnown ? item.placementBounds() : null);
                         imageMetadata.put("id", item.graphId);
@@ -283,19 +362,53 @@ public final class DrawingExtractor {
         private void readPicture(Picture picture, Node xml, DrawingScene.Item item) {
             item.alt = "";
             try {
-                var data = picture.getPictureData();
-                if (data == null) throw new IllegalArgumentException("Missing embedded picture");
-                item.picture = workspace.retainImageBytes(data.getData());
+                org.apache.poi.ss.usermodel.PictureData data;
+                try { data = picture.getPictureData(); }
+                catch (ClassCastException unmappedContentType) {
+                    if (!(picture instanceof XSSFPicture)) throw unmappedContentType;
+                    data = null;
+                }
+                String fallbackExtension = data == null ? "bin" : data.suggestFileExtension();
+                String fallbackContentType = data == null ? "application/octet-stream" : data.getMimeType();
+                if (data instanceof XSSFPictureData xssfData) fallbackContentType = xssfData.getPackagePart().getContentType();
+                byte[] source;
+                if (data == null && picture instanceof XSSFPicture xssf) {
+                    // POI's XSSF picture relation registry does not include all Office image
+                    // MIME types (notably SVG). Resolve only the saved internal image part.
+                    String id = xssf.getCTPicture().getBlipFill().getBlip().getEmbed();
+                    var owner = xssf.getDrawing().getPackagePart();
+                    var relationship = owner.getRelationship(id);
+                    if (relationship == null || relationship.getTargetMode()
+                            != org.apache.poi.openxml4j.opc.TargetMode.INTERNAL
+                            || !relationship.getRelationshipType().endsWith("/image"))
+                        throw new IllegalArgumentException("Missing internal image relationship");
+                    var part = owner.getRelatedPart(relationship);
+                    fallbackContentType = part.getContentType();
+                    fallbackExtension = part.getPartName().getExtension();
+                    if (fallbackContentType.equals("image/svg+xml")) fallbackExtension = "svg";
+                    long limit = Math.min(workspace.limits().maxImageBytes(), Integer.MAX_VALUE - 1L);
+                    if (part.getSize() > limit) throw ConversionWorkspace.limit("IMAGE_BYTES_LIMIT", "画像1件のサイズが上限を超えました。");
+                    try (var stream = part.getInputStream()) { source = stream.readNBytes((int) limit + 1); }
+                } else {
+                    if (data == null) throw new IllegalArgumentException("Missing embedded picture");
+                    source = data.getData();
+                }
+                item.picture = workspace.retainImageBytes(source);
                 if (item.picture.length > workspace.limits().maxImageBytes())
                     throw ConversionWorkspace.limit("IMAGE_BYTES_LIMIT", "画像1件のサイズが上限を超えました。");
                 String[] format = sniff(item.picture);
+                if (fallbackContentType.equals("image/svg+xml")) fallbackExtension = "svg";
+                if (format[0].equals("bin")) {
+                    String extension = fallbackExtension;
+                    if (extension != null && extension.matches("[a-zA-Z0-9]{1,8}"))
+                        format = new String[]{extension.toLowerCase(java.util.Locale.ROOT), fallbackContentType};
+                }
                 item.extension = format[0]; item.contentType = format[1]; item.kind = Kind.PICTURE;
                 Node properties = child(child(xml, "nvPicPr"), "cNvPr");
                 String description = attr(properties, "descr");
                 if (description.isBlank()) description = attr(properties, "title");
                 if (!description.isBlank()) item.alt = description;
                 if (inline(item)) DrawingScene.verifyPicture(item.picture, workspace);
-                else warning("IMAGE_FORMAT_ATTACHMENT", item, "この画像形式は元ファイルの添付として保持します。");
                 EmbeddedImagePreprocessor.Crop crop = EmbeddedImagePreprocessor.Crop.none();
                 if (picture instanceof XSSFPicture) {
                     Node blipFill = child(xml, "blipFill");
@@ -328,7 +441,7 @@ public final class DrawingExtractor {
                 if (item.visiblePicture.skipReason() != null)
                     warning("IMAGE_VISIBLE_AREA_UNAVAILABLE", item,
                             item.visiblePicture.skipReason() + "元画像を保存しました。");
-            } catch (IOException | RuntimeException ex) {
+            } catch (IOException | org.apache.poi.openxml4j.exceptions.InvalidFormatException | RuntimeException ex) {
                 if (ex instanceof ConversionException conversion) throw conversion;
                 item.kind = Kind.UNSUPPORTED;
                 item.placeholder = "画像を抽出できませんでした";
@@ -366,6 +479,7 @@ public final class DrawingExtractor {
                 item.typeName = DrawingAltText.typeName(shape instanceof XSSFTextBox ? "textBox"
                         : geometry.isEmpty() && child(properties, "custGeom") != null ? "custGeom" : geometry);
                 item.kind = kind(geometry);
+                preset(item, geometry);
                 if (shape instanceof XSSFTextBox) item.kind = Kind.TEXT;
                 style(xml, properties, item);
                 Node body = child(child(xml, "txBody"), "bodyPr");
@@ -387,10 +501,18 @@ public final class DrawingExtractor {
                 String geometry = attr(child(properties, "prstGeom"), "prst");
                 item.typeName = DrawingAltText.typeName(geometry);
                 item.kind = "line".equals(geometry) || "straightConnector1".equals(geometry) ? Kind.LINE : Kind.UNSUPPORTED;
+                preset(item, geometry);
                 style(xml, properties, item);
+                if (hasElementChildren(child(child(properties, "prstGeom"), "avLst")))
+                    warning("SHAPE_ADJUSTMENTS_IGNORED", item, "コネクターの調整ハンドルは標準の形に簡略化します。");
             } else if (shape instanceof HSSFSimpleShape simple && !(shape instanceof org.apache.poi.ss.usermodel.ObjectData)) {
                 item.kind = hssfKind(simple.getShapeType());
-                item.typeName = DrawingAltText.typeName(item.kind == Kind.UNSUPPORTED ? "HSSF:" + simple.getShapeType() : item.kind.name());
+                if (item.kind == Kind.UNSUPPORTED) {
+                    try { preset(item, org.apache.poi.sl.usermodel.ShapeType.forId(simple.getShapeType(), false).getOoxmlName()); }
+                    catch (IllegalArgumentException unknown) { /* Keep the explicit unsupported placeholder. */ }
+                }
+                item.typeName = DrawingAltText.typeName(item.preset != null ? item.preset
+                        : item.kind == Kind.UNSUPPORTED ? "HSSF:" + simple.getShapeType() : item.kind.name());
                 item.fill = simple.isNoFill() ? null : hssfColor(simple.getFillColor());
                 item.line = simple.getLineStyle() == HSSFShape.LINESTYLE_NONE ? null : hssfColor(simple.getLineStyleColor());
                 item.lineWidth = (float) Math.max(0, simple.getLineWidth() / 12700d);
@@ -412,6 +534,12 @@ public final class DrawingExtractor {
                 warning("XLS_DRAWING_APPROXIMATED", item, "XLS図形を簡易描画します。テーマ・効果・図形リンクは再現しません。");
             }
             if (item.kind == Kind.UNSUPPORTED) warning("SHAPE_UNSUPPORTED", item, "この種類の図形は未対応です。取得できた取消線除去後の文字を残します。");
+        }
+
+        private void preset(DrawingScene.Item item, String name) {
+            if (item.kind != Kind.UNSUPPORTED || !DrawingPresetGeometry.supports(name)) return;
+            item.presetGeometry = DrawingPresetGeometry.create(name, item.width, item.height);
+            if (item.presetGeometry != null) { item.preset = name; item.kind = Kind.PRESET; }
         }
 
         private List<DrawingText.Run> flatten(DrawingText.Content content) {

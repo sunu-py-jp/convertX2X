@@ -35,7 +35,7 @@ Javaのルートパッケージは `com.convertx2x.office2md` です。`conversi
 
 `ImageMode.IGNORE`（既定）では元の埋め込み画像のファイルとMarkdown参照を保持し、OCRしません。`OCR` では `OcrClient` を介して元画像の可視領域だけを読み取り、画像参照の直後に通常テキストの `画像内の文字（OCR）:` を置き、読み取った文字をその下へ追加します。環境設定だけでは自動実行せず、依頼側のモード指定も必要です。図形・接続の参考PNGはOCR対象外です。本文・表・図形から直接取り出せる文字と関係は従来の抽出を使います。
 
-`ConversionWorkspace.embeddedImage` が画像asset保存・OCR・Markdown・画像ブロックのreportをまとめます。同一文書内の同じ可視画像バイト列はSHA-256でOCR結果を共有し、配置ごとの参照・テキストは残します。抽出時に保持する画像バッファも共有し、保持画像の合計は `maxOutputBytes`、各配置へ出したOCR・画像参照の合計は `maxMarkdownBytes` で先に制限します。OCR失敗・未対応は画像参照と警告を残し、文字がなければ参照だけです。モード未設定時の外部OCR通信はありません。`report.imageMode` と `blocks[].ocr.status`（notRequested / succeeded / noText / skipped / failed）で区別できます。`assets[].sourceKind` は embeddedImage または renderedDiagram です。
+`ConversionWorkspace.embeddedImage` が画像asset保存・OCR・Markdown・画像ブロックのreportをまとめます。同一文書内の同じ可視画像バイト列はSHA-256でOCR結果を共有し、配置ごとの参照・テキストは残します。抽出時に保持する画像バッファも共有し、保持画像の合計は `maxOutputBytes`、各配置へ出したOCR・画像参照の合計は `maxMarkdownBytes` で先に制限します。OCR失敗・未対応は画像参照と警告を残し、文字がなければ参照だけです。モード未設定時の外部OCR通信はありません。`report.imageMode` と `blocks[].ocr.status`（notRequested / succeeded / noText / skipped / failed）で区別できます。`assets[].sourceKind` は embeddedImage / renderedDiagram / compositeImage です。
 
 `ocr/DocumentIntelligenceOcrClient` は固定の prebuilt-read / API 2024-11-30 を使います。設定されたHTTPSホストへのバイナリ送信と結果ポーリングのみを許可し、リダイレクト・異なるホストへのOperation-Location・任意モデルへの移動を拒否します。資格情報・画像・HTTP応答本文を例外やログへ含めません。通信はテスト時に差し替え、実サービスの精度・疎通・料金は配置先で別途確認します。
 
@@ -68,13 +68,13 @@ Javaのルートパッケージは `com.convertx2x.office2md` です。`conversi
 
 ### PowerPointの処理
 
-各表示スライドの先頭に、元のスライド番号を使った `[page n]` を付けます。非表示スライドを除外すると番号は飛びます。`PresentationText` が文字を抽出し、明示タイトルをH1、タイトルなしなら `# スライドN` にします。H2以降の見出しは追加しません。通常本文・表と、グループにも接続にも属さない元画像は上→下・左→右の順で出します。単独画像のOCR文字は画像参照の直後に `画像内の文字（OCR）:` とともに入れます。図形のグループや接続は一体で扱い、続けて `図中の項目:`、`接続関係:` と参考画像の参照を出します。図形文字は太字・リンクを保った通常のMarkdownであり、画像やaltを解釈しなくても取得できます。接続先になった通常テキストボックスも図中の項目へ移し、本文と重複させません。関係のない本文はそのまま残します。
+各表示スライドの先頭に、元のスライド番号を使った `[page n]` を付けます。非表示スライドを除外すると番号は飛びます。`PresentationText` が文字を抽出し、明示タイトルをH1、タイトルなしなら `# スライドN` にします。H2以降の見出しは追加しません。通常本文・表と、合成・グループ・接続に属さない元画像は上→下・左→右の順で出します。単独画像のOCR文字は画像参照の直後に `画像内の文字（OCR）:` とともに入れます。図形のグループや接続は一体で扱い、続けて `図中の項目:`、`接続関係:` と参考画像の参照を出します。図形文字は太字・リンクを保った通常のMarkdownであり、画像やaltを解釈しなくても取得できます。接続先になった通常テキストボックスも図中の項目へ移し、本文と重複させません。関係のない本文はそのまま残します。
 
 `PresentationConnections` は、表示対象の図形IDとコネクターに保存された `stCxn` / `endCxn` だけを使います。開始点の `headEnd`、終端の `tailEnd` にある `triangle` / `stealth` / `arrow` から向きを判定します。丸（●、`oval`）・ひし形（◆、`diamond`）は方向判定では矢印なしとして扱い、JSONの `startArrow / endArrow` には元の端点種類を残します。開始点が `oval`、終端が `triangle` なら `start-to-end`、両端が丸・ひし形なら `undirected` です。未知の端点記号の `arrowheadDirectionAlongLine` は `unknown` です。近さ・横並び・重なりから接続や読む順序を推測せず、近くの文字を分岐ラベルへ結び付けません。参照の欠落・除外済みの対象・重複ID・未知の端点記号は本文で「接続関係不明」と表示し、`DIAGRAM_CONNECTION_UNRESOLVED` を記録します。双方向・無方向・循環・自己接続は保存された関係のまま扱い、実行順へ並べ替えません。
 
 PowerPointの図形・コネクターは、変形後の外接矩形の中心をスライドの縦横3等分に当てはめ、`positionOnSlide` に `left-top` などの9値を記録します。中心がスライド外・取得不能ならJSONの `null` です。Markdownにも日本語で位置を記します。両端に保存された接続先IDがなく、矢印が片端だけにあるコネクターは、見た目の矢印先端方向を `arrowheadPointsToward` に8方向で記録します。曲線・折れ線・長さゼロなど先端方向を確定できないものはJSONの `null` です。このキーは対象のコネクターだけに付けます。保存IDが欠ける端点は、線端が軸に沿った図形の境界に一意に接触する場合だけ接続を補完します。図形の中心位置、矢印の向き、近さ、重なり、線の交差からは接続を補いません。
 
-`report.json` のPowerPoint `type: "diagram"` ブロックに `nodes` と `edges` を格納します。Excel・Wordは `type: "drawing"` ブロックに格納します。PowerPointのIDはスライド内の `shape-N` で、資料全体では `section` と組み合わせて識別します。
+`report.json` のPowerPoint・Wordは `type: "diagram"` ブロック、Excelは `type: "drawing"` ブロックに `nodes` と `edges` を格納します。PowerPointのIDはスライド内の `shape-N` で、資料全体では `section` と組み合わせて識別します。
 
 | 項目 | 構造 |
 | --- | --- |
@@ -85,7 +85,9 @@ PowerPointの図形・コネクターは、変形後の外接矩形の中心を�
 | `positionOnSlide / arrowheadPointsToward` | 9区画の位置と8方向の矢印先端方向。判定できない値は `null`。後者は対象外の線には付けない |
 | `fromId / toId` | `resolved` かつ片方向の接続だけに追加する、向きを反映した始点・終点。未解決の端点キーは省略 |
 
-グループを内部で子要素へ展開して座標を求めますが、個別PNGにはしません。`PresentationRenderer` が表示対象の対応要素を元の重なり順と親からの座標変換で描き、接続または明示グループでまとまる図ごとに参考PNGを出します。独立した図形群は同じスライド内でまとめるため、1スライドから複数の参考PNGになる場合があります。各画像のキャンバスは元のスライド寸法です。図形・PNG/JPEGの回転・反転・グループ変形を反映し、元の埋め込み画像は独立したassetと画像参照を出力します。図形と混在する図では対応するPNG/JPEGを参考画像にも含めますが、切り抜き・非矩形マスク等がある画像は合成せず個別の画像参照で扱います。対応できない画像形式・加工は原本添付と警告を残し、隠れた文字をOCRへ送らないようスキップします。保存・継承された単色背景はテーマ参照を含めて反映し、背景指定がなければ白にします。画像・グラデーションなど未対応の背景は白へ置き換えて `UNSUPPORTED_SLIDE_BACKGROUND` を記録し、外部の背景画像は取得しません。外部画像参照と取消線Runは描画前に作業中のモデルから除外します。入力バイト列は変更しません。
+グループを内部で子要素へ展開して座標を求めますが、個別PNGにはしません。PowerPointは同じスライド内で重なる画像同士、画像と図形・テキストボックス・表を検出し、共通座標と元の重なり順を保って合成します。合成PNGは画像と関連図形の範囲までキャンバスを広げ、余白を透明にします。対応する画像形式は可視領域のPNG/JPEGへ正規化し、矩形切り抜き・回転・反転を適用してから描きます。合成に使った要素は通常の図形PNGや元画像として重複出力しません。通常のテキストボックスの文字は通常本文へ1回だけ残し、図形文字と接続の構造も保持します。
+
+`PresentationRenderer` は合成対象を除く表示要素を、接続・明示グループでまとまる図や、独立した図形群ごとに描画します。通常の参考PNGのキャンバスはスライド寸法です。1スライドから複数の参考PNGや合成PNGになる場合があります。安全に可視領域を準備できない画像形式・非矩形マスク等は原本添付と警告を残し、隠れた文字をOCRへ送らないようスキップします。通常の参考PNGでは保存・継承された単色背景をテーマ参照を含めて反映し、背景指定がなければ白にします。画像・グラデーションなど未対応の背景は白へ置き換えて `UNSUPPORTED_SLIDE_BACKGROUND` を記録し、外部の背景画像は取得しません。外部画像参照と取消線Runは描画前に作業中のモデルから除外します。入力バイト列は変更しません。
 
 参考画像のaltは次の6項目のJSONで、`blocks[].metadata` にも格納します。`path` は画像ファイルへの参照です。
 
@@ -93,7 +95,7 @@ PowerPointの図形・コネクターは、変形後の外接矩形の中心を�
 ![{"type":"接続図","text":"","x":0,"y":0,"width":960,"height":540}](images/diagram-0001.png)
 ```
 
-PowerPointの参考画像の `type` は「接続図」または「図形」、`text` は空文字、寸法は入力スライドの寸法です。各図形の情報は `nodes` から取得します。添付ファイルのリンクには個別の形状種類・文字・外接矩形と `positionOnSlide` のJSONを使います。座標はスライド左上を原点とし、右がXの正方向、下がYの正方向です。単位はpt（1/72インチ）で固定し、原点・単位・回転角のフィールドは出力しません。図形の外接矩形は変形後の範囲を小数3桁まで丸め、描画余白・ストロークを含みません。
+PowerPointの通常の参考画像の `type` は「接続図」または「図形」、`text` は空文字、寸法は入力スライドの寸法です。各図形の情報は `nodes` から取得します。添付ファイルのリンクには個別の形状種類・文字・外接矩形と `positionOnSlide` のJSONを使います。座標はスライド左上を原点とし、右がXの正方向、下がYの正方向です。単位はpt（1/72インチ）で固定し、原点・単位・回転角のフィールドは出力しません。図形の外接矩形は変形後の範囲を小数3桁まで丸め、描画余白・ストロークを含みません。
 
 altにはコンパクトなJSONを埋め込み、Markdownの構文になる文字はJSONのUnicodeエスケープで保護します。例えば文字列内の `[`・引用符・バックスラッシュは `\u005B`・`\u0022`・`\u005C` です。JSON化した後に通常の `Markdown.escape` や1行化処理を重ねないでください。Markdownソースのaltにも、レンダリング後の画像の `alt` にも、そのまま `JSON.parse` を適用できます。
 
@@ -142,19 +144,23 @@ Excelの名前付き範囲は、罫線表を検出・展開した後でのみ参
 
 Excelでは `DrawingExtractor` の形式別分岐がDrawingML（`.xlsx`）またはEscher（`.xls`）を読み、`DrawingScene.Item` へ渡します。左上アンカーの行・列が非表示の場合も除外します。位置不明はシート末尾へ送り、診断を残します。
 
-Excelの参考画像は、明示された最上位グループと、保存済み接続または保存IDがない場合の一意な線端・図形境界の接触でつながる図を単位にします。入れ子グループの子要素も同じ画像へ描きます。近さ・重なり・横並び・線の交差だけで図をまとめず、セル本文や罫線も画像へ取り込みません。図形文字と接続を本文へ出し、図の左上アンカーに沿って通常のセル本文・表の間へ配置します。表と重なる図は最後に重なる表の直後です。`.xlsx` は保存された `stCxn` / `endCxn` を優先します。`.xls` は接続先IDを取得できないため `XLS_CONNECTION_UNSUPPORTED` を記録しますが、一意な線端接触は補完対象です。
+Excel・Word・PowerPointでは、共通の座標で重なりを確認できる画像同士、画像と図形・テキストボックス、表・セルと描画要素を、保存された重なり順で1枚のPNGへ合成します。画像内の赤枠と、画像から一部はみ出す注釈の両方を対象にし、図形全体が収まるようキャンバスを広げ、拡張領域の背景だけを透明にします。図形の塗り・線・文字は保持します。合成に使った元画像・図形を単独のアセットやMarkdown画像参照として重複出力しません。離れた図形や端が接するだけの図形は、重なりによる合成の対象外です。図形文字と確認できた接続、表とセル本文はMarkdownに残します。
 
-Wordは一つの `wp:inline` / `wp:anchor`、または独立した図形グループ・描画キャンバスを参考画像の単位にします。独立した描画オブジェクトを近さだけで合成しません。図形文字・接続・参考画像は、その描画が属する本文位置に出力します。DrawingMLの保存済み接続先だけを読み、VMLの線の接続関係は推測せず未解決として残します。未対応の基本形状も読み取れる文字・IDをノードとして残し、画像へ描けなくても保存済み接続を解決できます。折れ線・曲線コネクターは参考画像では直線で近似し、警告を残します。本文・表の変換ルールは変更しません。
+その他のExcel参考画像は、明示された最上位グループと、保存済み接続または保存IDがない場合の一意な線端・図形境界の接触でつながる図を単位にします。入れ子グループの子要素も同じ画像へ描きます。画像や表・セルとの重なりで合成するものを除き、近さ・横並び・線の交差だけでは図をまとめません。重なる表・セルは SheetCellLayer で塗り・罫線・取消線除去後の文字を描き、セル本文と表はMarkdownにも保持します。図形文字と接続を本文へ出し、図の左上アンカーに沿って通常のセル本文・表の間へ配置します。表と重なる図は最後に重なる表の直後です。`.xlsx` は保存された `stCxn` / `endCxn` を優先します。`.xls` は接続先IDを取得できないため `XLS_CONNECTION_UNSUPPORTED` を記録しますが、一意な線端接触は補完対象です。
+
+Wordは一つの `wp:inline` / `wp:anchor`、図形グループ・描画キャンバスの中の画像と図形を扱います。別の `wp:anchor` でも、同一段落内で上下・左右の `relativeFrom` が一致し、両軸に数値の `posOffset` がある場合は、共通座標へ移して画像との重なりを判定します。段落をまたぐアンカーや行内画像のページ位置、揃え指定からの実位置は推測しません。保存済み改ページを跨ぐ要素、`layoutInCell` の条件が異なるアンカー、`allowOverlap=false` も個別に保持します。図形文字・接続・参考画像は、その描画が属する本文位置に出力します。DrawingMLの保存済み接続先だけを読み、VMLの線の接続関係は推測せず未解決として残します。未対応の基本形状も読み取れる文字・IDをノードとして残し、画像へ描けなくても保存済み接続を解決できます。対応する折れ線・曲線コネクターは DrawingPresetGeometry による標準形状を描画し、未対応の経路は近似と警告にします。本文・表の変換ルールは変更しません。 固定浮動表の保存済み数値位置・列幅・exact行高が揃う場合は表内の比較可能な浮動描画と合成し、表をMarkdownにも保持します。自動組版が必要な位置は推測せず、理由をreportへ残します。
 
 Wordのコネクター自身が持つ文字は「接続線 … の文字」として本文へ出し、その接続の `edges[]` にも `type / text / x / y / width / height` を加えます。近くの独立したテキストボックスは接続のラベルへ結び付けません。
 
-Excel・Wordは共有の `DiagramGraph` で、図形文字を `図中の項目:`、接続を `接続関係:` の通常テキストのラベルの下へMarkdownで出し、`diagram` ブロックの `nodes / edges` に構造を残します。形式別の処理が表示対象だけのノードと保存済み接続先を渡し、共有処理は近い文字を分岐条件に結び付けたり、配置から意味を補完したりしません。IDはExcelではシート、Wordでは描画ブロック内で有効なので、`section / range` と組み合わせてください。参照先・向きを確認できない接続は「接続関係不明」と `DIAGRAM_CONNECTION_UNRESOLVED` を残します。接続の `arrowheadDirectionAlongLine / connectionResolutionStatus / connectionResolutionReason / connectionResolutionExplanation` と端点記号の方向判定はPowerPointと同じルールを使います。`positionOnSlide / arrowheadPointsToward` はスライド座標を持つPowerPointだけのフィールドです。
+Excel・Wordは共有の `DiagramGraph` で、図形文字を `図中の項目:`、接続を `接続関係:` の通常テキストのラベルの下へMarkdownで出し、Excelは `drawing`、Wordは `diagram` ブロックの `nodes / edges` に構造を残します。形式別の処理が表示対象だけのノードと保存済み接続先を渡し、共有処理は近い文字を分岐条件に結び付けたり、配置から意味を補完したりしません。IDはExcelではシート、Wordでは描画ブロック内で有効なので、`section / range` と組み合わせてください。参照先・向きを確認できない接続は「接続関係不明」と `DIAGRAM_CONNECTION_UNRESOLVED` を残します。接続の `arrowheadDirectionAlongLine / connectionResolutionStatus / connectionResolutionReason / connectionResolutionExplanation` と端点記号の方向判定はPowerPointと同じルールを使います。`positionOnSlide / arrowheadPointsToward` はスライド座標を持つPowerPointだけのフィールドです。
 
 参考画像の前には「参考画像（図形）：」「参考画像（接続図）：」などの説明見出しを付けません。接続がない図の「図形間の接続情報はありません。配置から順序や関係を推測していません。」という説明文も出しません。図形文字・接続関係・不明な接続・JSONの構造情報は保持します。
 
-参考画像と添付リンクのaltは、`DiagramMetadata` が生成する `type / text / x / y / width / height` の6項目のJSONです。PowerPointと同じ規則でMarkdownの構文になる文字を保護し、同じ内容を `blocks[].metadata` に格納します。原点・単位・回転角のフィールドは出力しません。座標はpt、Excelではシート左上、Wordでは描画オブジェクト内のローカル座標です。Wordの保存された本文配置指定は図の `placement` 文字列として別に残し、ページ上の絶対位置を推測しません。変形後の外接矩形は描画余白やストロークを含まず、位置不明は `null` にしてPNG描画用の仮座標を流用しません。
+参考画像と添付リンクのaltは、`DiagramMetadata` が生成する `type / text / x / y / width / height` の6項目を基本とするJSONです。合成画像には構成要素の `sourceIds` も付けます。PowerPointと同じ規則でMarkdownの構文になる文字を保護し、同じ内容を `blocks[].metadata` に格納します。原点・単位・回転角のフィールドは出力しません。座標はpt、Excelではシート左上、Wordは通常は描画オブジェクト内のローカル座標です。Wordの別アンカーを合成した場合は、保存された共通基準に対する数値オフセットと子要素の変形を適用します（page/pageならページ基準）。Wordの本文配置指定は図の `placement` 文字列として別に残し、未保存のページ位置や段落をまたぐ実ページを推測しません。変形後の外接矩形は描画余白やストロークを含まず、位置不明は `null` にしてPNG描画用の仮座標を流用しません。
 
-元の埋め込み画像は個別のassetとMarkdown参照を出力します。混合図では配置確認用の参考画像にも含むことがあります。対応する画像の切り抜き・回転・反転を適用し、可視領域を安全に準備できない画像は原本添付と警告を残してOCRしません。保存済みの説明とOCRテキストは分けて出し、参考図形PNGはOCRしません。シート全体やWordのページ組版は再現しません。
+元の埋め込み画像は、合成画像に含まれる場合を除き、個別のassetとMarkdown参照を出力します。混合図では配置確認用の参考画像にも含むことがあります。対応する画像の切り抜き・回転・反転を適用し、可視領域を安全に準備できない画像は原本添付と警告を残してOCRしません。保存済みの説明とOCRテキストは分けて出し、参考図形PNGと合成PNGはOCRしません。合成でもOCR対象は元画像の可視処理済みバイト列であり、同一文書内の同じ可視画像は注釈が違ってもOCR結果を共有します。シート全体やWordのページ組版は再現しません。
+
+合成画像は `assets[].sourceKind: "compositeImage"` と `blocks[].type: "compositeImage"` で識別します。ブロックは `path: "images/image-NNNN.png"`、合成範囲の `metadata`、元画像ごとの `sourceImages[]` を持ちます。各元画像には `sha256 / sizeBytes / contentType / metadata / ocr` を記録し、OCRの状態は `sourceImages[].ocr.status` で確認できます。対応する図形ブロックは画像パスを重複させず、同じ `section / range` と `metadata.sourceIds` で合成画像ブロックへ対応づけます。既存の `embeddedImage` と `renderedDiagram` の形式は変更しません。 画像を含まない表と図形の合成では sourceImages は空配列です。Excelの合成には metadata.cellRanges を追加します。
 
 Wordの `WordDrawings` はDrawingML/VMLを読み、全段落の除去済み文字を本文とJSONへ残します。図形内文字の本文出力はプレーンテキストで、太字装飾やハイパーリンク先は保持しません。リンクの表示文字は残ります。通常の本文・表の太字・リンクの扱いは変わりません。図形PNGの文字は先頭の代表書式を使う簡易描画です。混在書式・独自余白・文字だけの回転は近似として警告します。共有の `NativeDrawingRenderer` を通してExcelと同じ基本図形描画を使います。未対応のグラフ・SmartArt・OLEなどを外部取得や別アプリ実行で補完しません。PowerPointもグラフ・SmartArt・数式オブジェクトの忠実な描画は対象外です。
 
@@ -178,7 +184,7 @@ Excelとは異なる組版なので、フォント置換後の字幅・改行位
 
 `ConversionWorkspace` が出力ファイル名、SHA-256とバイト比較による同一カテゴリ内の重複排除、件数・バイト数の上限、診断を管理します。入力由来のシート名・画像名を出力パスに使いません。上限超過を警告へ落として途中成果物を成功扱いにする変更は避けてください。
 
-`report.json` は `specVersion: 1` です。接続情報は `arrowheadDirectionAlongLine / connectionResolutionStatus / connectionResolutionReason / connectionResolutionExplanation` を使います。Queue依頼本文の `version` は独立した仕様です。`source.format` は入力拡張子、`sectionKind` は `sheet` / `slide` / `document`、`sectionCount` は出力したセクション数です。診断やブロックの `section` は形式別の位置名です。`blocks` は元の位置・範囲との対応を持ち、ExcelではMarkdown行番号も記録し、表には元の行列番号・ヘッダー判定・結合範囲・出力列ごとの `sourceColumnSpans` を付けます。無罫線の角にある文字列を表の前に示す注記は `type: text` と `noteKind: unbordered-top-note`、明細の結合範囲を示す注記は `type: text` と `noteKind: body-merge` を持ちます。名前付き範囲を採用した表には `definedNames`、分割した表には元範囲の `sourceTableRange` を付けます。PowerPointの `diagram` ブロックとExcel・Wordの `drawing` ブロックは `nodes / edges`、参考画像があれば `path / metadata` を持ちます。添付ファイルにも `path / metadata` を付けます。`assets` はファイルのパス・MIME・サイズ・SHA-256です。フィールドは形式とブロック種別ごとに読み取ってください。レポート形式を変える場合はUIとQueueの成果物取得も確認します。
+`report.json` は `specVersion: 1` です。接続情報は `arrowheadDirectionAlongLine / connectionResolutionStatus / connectionResolutionReason / connectionResolutionExplanation` を使います。Queue依頼本文の `version` は独立した仕様です。`source.format` は入力拡張子、`sectionKind` は `sheet` / `slide` / `document`、`sectionCount` は出力したセクション数です。診断やブロックの `section` は形式別の位置名です。`blocks` は元の位置・範囲との対応を持ち、ExcelではMarkdown行番号も記録し、表には元の行列番号・ヘッダー判定・結合範囲・出力列ごとの `sourceColumnSpans` を付けます。無罫線の角にある文字列を表の前に示す注記は `type: text` と `noteKind: unbordered-top-note`、明細の結合範囲を示す注記は `type: text` と `noteKind: body-merge` を持ちます。名前付き範囲を採用した表には `definedNames`、分割した表には元範囲の `sourceTableRange` を付けます。PowerPoint・Wordの `diagram` ブロックとExcelの `drawing` ブロックは `nodes / edges`、参考画像があれば `path / metadata` を持ちます。添付ファイルにも `path / metadata` を付けます。`assets` はファイルのパス・MIME・サイズ・SHA-256です。フィールドは形式とブロック種別ごとに読み取ってください。レポート形式を変える場合はUIとQueueの成果物取得も確認します。
 
 - 同期HTTPは `OfficeMarkdownService.convert` の結果を `ConversionResult.zipBytes()` でZIP化する。最終レスポンスは上限付きのメモリーバッファで、HTTPストリーミングではない。
 - HTTPからの非同期受付は入力と状態を保存してからQueueへ送る。直接Queueも同じ `AzureJobService.process` と変換コアへ入る。
@@ -222,3 +228,5 @@ Queue JSONは [ConversionJobRequest](../functions/office2md/src/main/java/com/co
 Functionsホスト・Azuriteを含む試験、Playwrightでの画面検証は [開発・確認](../functions/office2md/docs/usage.md#開発確認) に従います。既存ビルドの使い回しで変更前のコードを検証しないよう、必要なpackageを先に実行します。
 
 [包括サンプルと検証手順](../functions/office2md/samples/README.md)、[図形文字の比較用サンプル](../functions/office2md/samples/shape-text.md) を再生成して確認できます。期待結果を変える際は、`report.json` の `source.sha256` と入力ファイル、`assets` のSHA-256と各画像を照合し、Markdown・report・画像を同じ変換結果から取得してください。仕様変更と不具合修正を区別して記録します。
+
+画像形式の正規化は `EmbeddedImagePreprocessor / VectorImageRasterizer` が担当します。PNG/JPEG、ImageIOで読み取れるGIF/BMP/DIB/TIFF、対応するSVG/EMF/WMFを可視PNGとして利用します。静的なSVGのみを扱い、スクリプト・DTD・外部リソースの読み込みを禁止します。対応外の加工は原本添付と警告へ戻します。仕様・実例は[合成対応README](../functions/office2md/docs/image-shape-composition/README.md)を参照してください。

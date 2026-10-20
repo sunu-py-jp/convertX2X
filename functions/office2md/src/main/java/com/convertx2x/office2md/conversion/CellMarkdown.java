@@ -6,12 +6,12 @@ import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.*;
 
 /** Display values only: no formula evaluator, external workbook or network access. */
-final class CellMarkdown {
+public final class CellMarkdown {
     private final Workbook workbook;
     private final ConversionWorkspace workspace;
     private final DataFormatter formatter = new DataFormatter(Locale.JAPAN, true);
 
-    CellMarkdown(Workbook workbook, ConversionWorkspace workspace) {
+    public CellMarkdown(Workbook workbook, ConversionWorkspace workspace) {
         this.workbook = workbook;
         this.workspace = workspace;
         // Security invariant: read saved results without a FormulaEvaluator, for every
@@ -21,6 +21,15 @@ final class CellMarkdown {
     }
 
     String format(Cell cell) {
+        return format(cell, true);
+    }
+
+    /** The same visible content policy as Markdown, without markup or link destinations. */
+    public String text(Cell cell) {
+        return format(cell, false);
+    }
+
+    private String format(Cell cell, boolean markup) {
         if (cell == null) return "";
         Font base = workbook.getFontAt(cell.getCellStyle().getFontIndex());
         String sheet = cell.getSheet().getSheetName(), coordinate = cell.getAddress().formatAsString();
@@ -77,6 +86,11 @@ final class CellMarkdown {
                     "数式の保存済み計算結果がありません。再計算せず、数式または確定できるリンク表示を残しました。");
         }
 
+        if (!markup) {
+            StringBuilder plain = new StringBuilder();
+            for (Run run : runs) if (!run.strike()) plain.append(run.text());
+            return plain.toString();
+        }
         String rendered = render(runs);
         if (address != null && !address.isBlank()) {
             if (removed > 0 && rendered.isEmpty()) return "";

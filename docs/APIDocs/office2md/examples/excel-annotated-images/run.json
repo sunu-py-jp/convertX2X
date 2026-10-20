@@ -1,0 +1,51 @@
+{
+  "completedAt" : "2026-10-20T15:32:48.806586Z",
+  "execution" : "OfficeMarkdownService shared by HTTP and Queue",
+  "imageMode" : "ignore",
+  "input" : {
+    "path" : "input.xlsx",
+    "sha256" : "462a34a810e1d1dd9d0701abfbe59f8acdc880babd8c991f4a435184767d7cd2",
+    "sizeBytes" : 45434
+  },
+  "elapsedMs" : 1015,
+  "sectionCount" : 3,
+  "warningCount" : 0,
+  "zip" : {
+    "path" : "result.zip",
+    "sha256" : "b51804cba489ac6f84949a2d0fb2332f15c14580693e590319e0f7a63f7d2278",
+    "sizeBytes" : 201804
+  },
+  "artifacts" : [ {
+    "path" : "result/images/image-0001.png",
+    "sha256" : "000dfaea2e4d30600aaff2e7a79b243398b12999efb61e492d4748d964db355e",
+    "sizeBytes" : 46766
+  }, {
+    "path" : "result/images/image-0002.png",
+    "sha256" : "0d03ce24e1e8851365cc7b0c16dafa19f8fbaa2823b0d116a9ee3a6b3dedc3e7",
+    "sizeBytes" : 44716
+  }, {
+    "path" : "result/images/diagram-0001.png",
+    "sha256" : "5ca8c0cb5e5f41b0e85a6a78f70b67201ddde751590750d0cab186707cc93328",
+    "sizeBytes" : 6103
+  }, {
+    "path" : "result/images/diagram-0002.png",
+    "sha256" : "c57642aa19d2623f49c3bd2cb56cf856ab62142ba287cbb878ba26b15838d70f",
+    "sizeBytes" : 7213
+  }, {
+    "path" : "result/images/image-0003.png",
+    "sha256" : "772f57534c839dae6b8fc3fec888ca0e8e239968532694f91d27a7eff6a81699",
+    "sizeBytes" : 81145
+  }, {
+    "path" : "result/images/image-0004.png",
+    "sha256" : "1ea5e0bbe0cbe7c648209206295ec822163b7c99dc1d28c7a55e12546173b77a",
+    "sizeBytes" : 30018
+  }, {
+    "path" : "result/document.md",
+    "sha256" : "cc3ac36bea20d01034e7157eacba563707c08dbe4b71175b516c2fe90adbf819",
+    "sizeBytes" : 3398
+  }, {
+    "path" : "result/report.json",
+    "sha256" : "75d6cf0c969df90356da5d2e8538cbae330da32bcc75733bc0cbb06d99c44cc2",
+    "sizeBytes" : 17056
+  } ]
+}

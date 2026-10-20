@@ -95,3 +95,33 @@ These supplements cover binary artifacts whose publisher omitted the complete le
 | `reactor-netty-http-1.2.18.jar` | [reactor-netty-http-1.2.18.jar](https://repo.maven.apache.org/maven2/io/projectreactor/netty/reactor-netty-http/1.2.18/reactor-netty-http-1.2.18.jar) |
 | `slf4j-api-1.7.36.jar` | [slf4j-api-1.7.36.jar](https://repo.maven.apache.org/maven2/org/slf4j/slf4j-api/1.7.36/slf4j-api-1.7.36.jar) |
 | `xmlbeans-5.3.0.jar` | [xmlbeans-5.3.0.jar](https://repo.maven.apache.org/maven2/org/apache/xmlbeans/xmlbeans/5.3.0/xmlbeans-5.3.0.jar) |
+
+## Static vector image support
+
+The Office2MD image preprocessor additionally uses unmodified Apache Batik 1.19 for static SVG and Apache POI scratchpad 5.5.1 for EMF/WMF. Full upstream LICENSE and NOTICE files are retained per artifact; the XML APIs artifacts include their complete `license/` directories, including W3C and SAX notices. SVG scripting and external resource loading are disabled by the application.
+
+| Runtime JAR | Original Maven Central artifact |
+| --- | --- |
+| `batik-anim-1.19.jar` | [batik-anim-1.19.jar](https://repo.maven.apache.org/maven2/org/apache/xmlgraphics/batik-anim/1.19/batik-anim-1.19.jar) |
+| `batik-awt-util-1.19.jar` | [batik-awt-util-1.19.jar](https://repo.maven.apache.org/maven2/org/apache/xmlgraphics/batik-awt-util/1.19/batik-awt-util-1.19.jar) |
+| `batik-bridge-1.19.jar` | [batik-bridge-1.19.jar](https://repo.maven.apache.org/maven2/org/apache/xmlgraphics/batik-bridge/1.19/batik-bridge-1.19.jar) |
+| `batik-constants-1.19.jar` | [batik-constants-1.19.jar](https://repo.maven.apache.org/maven2/org/apache/xmlgraphics/batik-constants/1.19/batik-constants-1.19.jar) |
+| `batik-css-1.19.jar` | [batik-css-1.19.jar](https://repo.maven.apache.org/maven2/org/apache/xmlgraphics/batik-css/1.19/batik-css-1.19.jar) |
+| `batik-dom-1.19.jar` | [batik-dom-1.19.jar](https://repo.maven.apache.org/maven2/org/apache/xmlgraphics/batik-dom/1.19/batik-dom-1.19.jar) |
+| `batik-ext-1.19.jar` | [batik-ext-1.19.jar](https://repo.maven.apache.org/maven2/org/apache/xmlgraphics/batik-ext/1.19/batik-ext-1.19.jar) |
+| `batik-gvt-1.19.jar` | [batik-gvt-1.19.jar](https://repo.maven.apache.org/maven2/org/apache/xmlgraphics/batik-gvt/1.19/batik-gvt-1.19.jar) |
+| `batik-i18n-1.19.jar` | [batik-i18n-1.19.jar](https://repo.maven.apache.org/maven2/org/apache/xmlgraphics/batik-i18n/1.19/batik-i18n-1.19.jar) |
+| `batik-parser-1.19.jar` | [batik-parser-1.19.jar](https://repo.maven.apache.org/maven2/org/apache/xmlgraphics/batik-parser/1.19/batik-parser-1.19.jar) |
+| `batik-script-1.19.jar` | [batik-script-1.19.jar](https://repo.maven.apache.org/maven2/org/apache/xmlgraphics/batik-script/1.19/batik-script-1.19.jar) |
+| `batik-shared-resources-1.19.jar` | [batik-shared-resources-1.19.jar](https://repo.maven.apache.org/maven2/org/apache/xmlgraphics/batik-shared-resources/1.19/batik-shared-resources-1.19.jar) |
+| `batik-svg-dom-1.19.jar` | [batik-svg-dom-1.19.jar](https://repo.maven.apache.org/maven2/org/apache/xmlgraphics/batik-svg-dom/1.19/batik-svg-dom-1.19.jar) |
+| `batik-svggen-1.19.jar` | [batik-svggen-1.19.jar](https://repo.maven.apache.org/maven2/org/apache/xmlgraphics/batik-svggen/1.19/batik-svggen-1.19.jar) |
+| `batik-transcoder-1.19.jar` | [batik-transcoder-1.19.jar](https://repo.maven.apache.org/maven2/org/apache/xmlgraphics/batik-transcoder/1.19/batik-transcoder-1.19.jar) |
+| `batik-util-1.19.jar` | [batik-util-1.19.jar](https://repo.maven.apache.org/maven2/org/apache/xmlgraphics/batik-util/1.19/batik-util-1.19.jar) |
+| `batik-xml-1.19.jar` | [batik-xml-1.19.jar](https://repo.maven.apache.org/maven2/org/apache/xmlgraphics/batik-xml/1.19/batik-xml-1.19.jar) |
+| `commons-logging-1.3.0.jar` | [commons-logging-1.3.0.jar](https://repo.maven.apache.org/maven2/commons-logging/commons-logging/1.3.0/commons-logging-1.3.0.jar) |
+| `poi-scratchpad-5.5.1.jar` | [poi-scratchpad-5.5.1.jar](https://repo.maven.apache.org/maven2/org/apache/poi/poi-scratchpad/5.5.1/poi-scratchpad-5.5.1.jar) |
+| `xml-apis-1.4.01.jar` | [xml-apis-1.4.01.jar](https://repo.maven.apache.org/maven2/xml-apis/xml-apis/1.4.01/xml-apis-1.4.01.jar) |
+| `xml-apis-ext-1.3.04.jar` | [xml-apis-ext-1.3.04.jar](https://repo.maven.apache.org/maven2/xml-apis/xml-apis-ext/1.3.04/xml-apis-ext-1.3.04.jar) |
+| `xmlgraphics-commons-2.11.jar` | [xmlgraphics-commons-2.11.jar](https://repo.maven.apache.org/maven2/org/apache/xmlgraphics/xmlgraphics-commons/2.11/xmlgraphics-commons-2.11.jar) |
+| `batik-codec-1.19.jar` | [batik-codec-1.19.jar](https://repo.maven.apache.org/maven2/org/apache/xmlgraphics/batik-codec/1.19/batik-codec-1.19.jar) |

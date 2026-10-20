@@ -30,6 +30,8 @@ import uuid
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_INPUT_BYTES = 100 * 1024 * 1024
+DEFAULT_OUTPUT_BYTES = 300 * 1024 * 1024
 
 FIXTURE_SOURCE = r"""
 import org.apache.poi.xssf.usermodel.*;
@@ -152,8 +154,8 @@ class Api:
         except urllib.error.HTTPError as error:
             response = error
         with response:
-            data = response.read(100 * 1024 * 1024 + 1)
-            check(len(data) <= 100 * 1024 * 1024, "HTTP response exceeds the default output budget")
+            data = response.read(DEFAULT_OUTPUT_BYTES + 1)
+            check(len(data) <= DEFAULT_OUTPUT_BYTES, "HTTP response exceeds the default output budget")
             self.measurements.append({"path": path, "method": request.get_method(), "status": response.status,
                     "elapsedMs": round((time.perf_counter() - started) * 1000, 3), "responseBytes": len(data)})
             return response.status, response.headers, data
@@ -225,10 +227,11 @@ def unzip_artifacts(data):
             name = entry.filename
             check(name in ("document.md", "report.json") or re.fullmatch(r"images/[a-z]+-[0-9]+\.[a-z0-9]{1,8}", name), "Unsafe ZIP artifact path")
             check(name not in files and not entry.is_dir() and not entry.flag_bits & 1, "Duplicate/directory/encrypted ZIP entry")
-            maximum = 100 * 1024 * 1024 if name == "report.json" else 20 * 1024 * 1024
+            # The API report uses the aggregate output budget; Playground has its own smaller cap.
+            maximum = DEFAULT_OUTPUT_BYTES if name == "report.json" else 20 * 1024 * 1024
             check(0 <= entry.file_size <= maximum, "ZIP member exceeds the default budget")
             total += entry.file_size
-            check(total <= 100 * 1024 * 1024, "Expanded ZIP exceeds the default budget")
+            check(total <= DEFAULT_OUTPUT_BYTES, "Expanded ZIP exceeds the default budget")
             files[name] = archive.read(entry)
     check("document.md" in files and "report.json" in files, "Required ZIP artifacts missing")
     return files
@@ -458,8 +461,8 @@ def main():
     if args.input:
         if not args.input.is_file() or args.input.suffix.lower() not in (".xlsx", ".xls", ".docx", ".pptx"):
             parser.error("--input must be an existing .xlsx, .xls, .docx or .pptx file.")
-        if not 0 < args.input.stat().st_size <= 20 * 1024 * 1024:
-            parser.error("--input must fit the isolated test host's default 20 MiB input limit.")
+        if not 0 < args.input.stat().st_size <= DEFAULT_INPUT_BYTES:
+            parser.error("--input must fit the isolated test host's default 100 MiB input limit.")
         args.input = args.input.resolve()
     if args.result_dir:
         if args.result_dir.exists() and (not args.result_dir.is_dir() or any(args.result_dir.iterdir())):

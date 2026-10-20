@@ -199,31 +199,33 @@ class WordDrawingsTest {
             note.addRelationship(image.getPartName(), TargetMode.INTERNAL, IMAGE_REL, "notePicture");
             String markdown = new WordDrawings(workspace).render(xml(group(picture("notePicture") + shape("2", "rect", 0, ""), 0, 0, 0)),
                     note, "脚注", "note1", n -> "");
-            assertEquals(2, markdown.split("!\\[", -1).length - 1);
+            assertEquals(1, markdown.split("!\\[", -1).length - 1);
             assertTrue(markdown.contains("](images/image-0001.png)"));
-            assertTrue(markdown.contains("](images/diagram-0001.png)"));
-            assertArrayEquals(coloredPicture(), Files.readAllBytes(workspace.files().get("images/image-0001.png")));
-            assertPng(workspace, "images/diagram-0001.png");
+            assertFalse(markdown.contains("](images/diagram-0001.png)"));
+            assertPng(workspace, "images/image-0001.png");
             var report = report(workspace);
             assertEquals(2, block(report, "diagram").path("nodes").size());
-            assertEquals("脚注", block(report, "embeddedImage").path("section").asText());
-            assertEquals("images/image-0001.png", block(report, "embeddedImage").path("path").asText());
+            assertEquals("脚注", block(report, "compositeImage").path("section").asText());
+            assertEquals("images/image-0001.png", block(report, "compositeImage").path("path").asText());
+            assertEquals(ConversionWorkspace.sha256(coloredPicture()),
+                    block(report, "compositeImage").path("sourceImages").get(0).path("sha256").asText());
         }
     }
 
-    @Test void purePictureGroupKeepsIndividualReferencesAndNativeNodesWithoutDuplicatePreview() throws Exception {
+    @Test void explicitPurePictureGroupKeepsOneCompositeAndSourceNodesWithoutDuplicateAssets() throws Exception {
         byte[] original = coloredPicture();
         try (var document = new XWPFDocument(); var workspace = workspace()) {
             String id = document.addPictureData(original, Document.PICTURE_TYPE_PNG);
             String second = picture(id).replace("id='1'", "id='2'")
                     .replace("x='0' y='0'", "x='2540000' y='0'");
             String markdown = render(workspace, document, group(picture(id) + second, 0, 0, 0), n -> "");
-            assertEquals(2, markdown.split("!\\[", -1).length - 1);
-            assertEquals(2, markdown.split("images/image-0001.png", -1).length - 1);
+            assertEquals(1, markdown.split("!\\[", -1).length - 1);
+            assertEquals(1, markdown.split("images/image-0001.png", -1).length - 1);
             assertEquals(1, workspace.files().size());
-            assertArrayEquals(original, Files.readAllBytes(workspace.files().get("images/image-0001.png")));
+            assertPng(workspace, "images/image-0001.png");
             var report = report(workspace);
-            assertEquals(3, report.path("blocks").size());
+            assertEquals(2, report.path("blocks").size());
+            assertEquals(2, block(report, "compositeImage").path("sourceImages").size());
             var diagram = block(report, "diagram");
             assertFalse(diagram.has("path"));
             assertEquals(2, diagram.path("nodes").size());
@@ -321,14 +323,14 @@ class WordDrawingsTest {
         }
     }
 
-    @Test void unsupportedPlaceholdersStayBetweenIndependentDrawings() throws Exception {
+    @Test void unsupportedEmbeddedObjectPlaceholderStaysBetweenSupportedIndependentDrawings() throws Exception {
         try (var document = new XWPFDocument(); var workspace = workspace()) {
             String markdown = render(workspace, document, shape("1", "rect", 0, "") + shape("2", "star5", 0, "")
                     + "<w:object><o:OLEObject/></w:object>" + shape("3", "ellipse", 0, ""), n -> "");
             assertTrue(markdown.indexOf("長方形") < markdown.indexOf("星（5角）"));
             assertTrue(markdown.indexOf("星（5角）") < markdown.indexOf("埋め込みオブジェクト"));
             assertTrue(markdown.indexOf("埋め込みオブジェクト") < markdown.indexOf("楕円"));
-            assertEquals(2, workspace.files().size());
+            assertEquals(3, workspace.files().size());
         }
     }
 
@@ -374,7 +376,7 @@ class WordDrawingsTest {
         }
     }
 
-    @Test void bentConnectorRetainsSavedRelationsAndNativeTextWithExplicitPreviewApproximation() throws Exception {
+    @Test void bentConnectorRetainsSavedRelationsAndNativeTextWithPresetPreview() throws Exception {
         try (var document = new XWPFDocument(); var workspace = workspace()) {
             String connector = connector("3", "1", "2", "none", "triangle").replace("prst='line'", "prst='bentConnector3'")
                     .replace("<wps:bodyPr/>", "<wps:txbx><w:txbxContent><w:p><w:r><w:t>承認済</w:t></w:r></w:p></w:txbxContent></wps:txbx><wps:bodyPr/>");
@@ -385,14 +387,32 @@ class WordDrawingsTest {
             var edge = report.path("blocks").get(0).path("edges").get(0);
             assertEquals("resolved", edge.path("connectionResolutionStatus").asText());
             assertEquals("承認済", edge.path("text").asText());
-            assertTrue(report.path("warnings").toString().contains("直線で近似"));
+            assertFalse(report.path("warnings").toString().contains("直線で近似"));
+        }
+    }
+
+    @Test void diamondAndCurvedConnectorRenderTheirPresetGeometry() throws Exception {
+        try (var document = new XWPFDocument(); var rectangle = workspace(); var diamond = workspace();
+                var straight = workspace(); var curved = workspace()) {
+            render(rectangle, document, shape("1", "rect", 0, ""), n -> "");
+            render(diamond, document, shape("1", "diamond", 0, ""), n -> "");
+            String connection = connector("2", "", "", "none", "triangle").replace("cy='0'", "cy='635000'");
+            render(straight, document, connection, n -> "");
+            render(curved, document, connection
+                    .replace("prst='line'", "prst='curvedConnector3'"), n -> "");
+            assertFalse(java.util.Arrays.equals(Files.readAllBytes(rectangle.files().get("images/diagram-0001.png")),
+                    Files.readAllBytes(diamond.files().get("images/diagram-0001.png"))));
+            assertFalse(java.util.Arrays.equals(Files.readAllBytes(straight.files().get("images/diagram-0001.png")),
+                    Files.readAllBytes(curved.files().get("images/diagram-0001.png"))));
+            assertFalse(report(diamond).path("warnings").toString().contains("SHAPE_UNSUPPORTED"));
+            assertFalse(report(curved).path("warnings").toString().contains("直線で近似"));
         }
     }
 
     @Test void unsupportedGeometryStillHasNativeVertexAndSavedConnections() throws Exception {
         try (var document = new XWPFDocument(); var workspace = workspace()) {
             String markdown = render(workspace, document,
-                    group(shape("1", "rect", 0, "申請") + shape("2", "diamond", 0, "金額を確認")
+                    group(shape("1", "rect", 0, "申請") + shape("2", "futureShape", 0, "金額を確認")
                             + connector("3", "1", "2", "none", "triangle"), 0, 0, 0), WordDrawingsTest::allText);
             assertTrue(markdown.contains("金額を確認")); assertTrue(markdown.contains("→"));
             var report = report(workspace);
@@ -403,7 +423,7 @@ class WordDrawingsTest {
             assertTrue(report.path("warnings").toString().contains("SHAPE_UNSUPPORTED"));
         }
         try (var document = new XWPFDocument(); var workspace = workspace()) {
-            String markdown = render(workspace, document, shape("1", "diamond", 0, "判断"), WordDrawingsTest::allText);
+            String markdown = render(workspace, document, shape("1", "futureShape", 0, "判断"), WordDrawingsTest::allText);
             assertTrue(markdown.contains("判断")); assertFalse(markdown.contains("!["));
             var block = report(workspace).path("blocks").get(0);
             assertEquals(1, block.path("nodes").size()); assertFalse(block.has("path"));
@@ -416,7 +436,7 @@ class WordDrawingsTest {
             try (var out = image.getOutputStream()) { out.write(new byte[]{1, 2, 3}); }
             document.getPackagePart().addRelationship(image.getPartName(), TargetMode.INTERNAL, IMAGE_REL, "vector");
             String content = shape("1", "rect", 0, "本文")
-                    + shape("2", "diamond", 0, "判断").replace("x='0' y='0'", "x='12700000' y='12700000'")
+                    + shape("2", "futureShape", 0, "判断").replace("x='0' y='0'", "x='12700000' y='12700000'")
                     + picture("vector").replace("x='0' y='0'", "x='25400000' y='25400000'");
             String markdown = render(workspace, document, group(content, 0, 0, 0), WordDrawingsTest::allText);
             var report = report(workspace);

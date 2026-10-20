@@ -1,0 +1,600 @@
+{
+  "specVersion" : 1,
+  "source" : {
+    "format" : "xlsx",
+    "filename" : "input.xlsx",
+    "sha256" : "462a34a810e1d1dd9d0701abfbe59f8acdc880babd8c991f4a435184767d7cd2"
+  },
+  "sectionKind" : "sheet",
+  "sectionCount" : 3,
+  "warnings" : [ ],
+  "information" : [ {
+    "code" : "MERGED_CELLS",
+    "section" : "画像と注釈の比較",
+    "range" : "A1:AE2",
+    "message" : "結合セルは表示中の左上セルの値だけを出力します。"
+  }, {
+    "code" : "MERGED_CELLS",
+    "section" : "画像と注釈の比較",
+    "range" : "A3:AE3",
+    "message" : "結合セルは表示中の左上セルの値だけを出力します。"
+  }, {
+    "code" : "MERGED_CELLS",
+    "section" : "画像と注釈の比較",
+    "range" : "B4:N4",
+    "message" : "結合セルは表示中の左上セルの値だけを出力します。"
+  }, {
+    "code" : "MERGED_CELLS",
+    "section" : "画像と注釈の比較",
+    "range" : "Q4:AE4",
+    "message" : "結合セルは表示中の左上セルの値だけを出力します。"
+  }, {
+    "code" : "MERGED_CELLS",
+    "section" : "画像と注釈の比較",
+    "range" : "B26:N27",
+    "message" : "結合セルは表示中の左上セルの値だけを出力します。"
+  }, {
+    "code" : "MERGED_CELLS",
+    "section" : "画像と注釈の比較",
+    "range" : "Q23:AE25",
+    "message" : "結合セルは表示中の左上セルの値だけを出力します。"
+  }, {
+    "code" : "MERGED_CELLS",
+    "section" : "画像と注釈の比較",
+    "range" : "B34:AE35",
+    "message" : "結合セルは表示中の左上セルの値だけを出力します。"
+  }, {
+    "code" : "DRAWING_SIMPLIFIED",
+    "section" : "画像と注釈の比較",
+    "range" : "B6:O25",
+    "message" : "重なり・保存されたグループ・接続単位で画像と図形を合成しました。セル内容は画像に含みません。"
+  }, {
+    "code" : "DRAWING_SIMPLIFIED",
+    "section" : "画像と注釈の比較",
+    "range" : "Q6:AD21",
+    "message" : "重なり・保存されたグループ・接続単位で画像と図形を合成しました。セル内容は画像に含みません。"
+  }, {
+    "code" : "DRAWING_SIMPLIFIED",
+    "section" : "画像と注釈の比較",
+    "range" : "AA17:AF20",
+    "message" : "保存されたグループ・接続単位で図を簡易描画しました。セル内容は画像に含みません。"
+  }, {
+    "code" : "DRAWING_SIMPLIFIED",
+    "section" : "画像と注釈の比較",
+    "range" : "B29:J33",
+    "message" : "保存されたグループ・接続単位で図を簡易描画しました。セル内容は画像に含みません。"
+  }, {
+    "code" : "MERGED_CELLS",
+    "section" : "画像同士の重なり",
+    "range" : "A1:R2",
+    "message" : "結合セルは表示中の左上セルの値だけを出力します。"
+  }, {
+    "code" : "MERGED_CELLS",
+    "section" : "画像同士の重なり",
+    "range" : "A3:R4",
+    "message" : "結合セルは表示中の左上セルの値だけを出力します。"
+  }, {
+    "code" : "DRAWING_SIMPLIFIED",
+    "section" : "画像同士の重なり",
+    "range" : "B6:R27",
+    "message" : "重なり・保存されたグループ・接続単位で画像と図形を合成しました。セル内容は画像に含みません。"
+  }, {
+    "code" : "MERGED_CELLS",
+    "section" : "表と画像と注釈",
+    "range" : "A1:J2",
+    "message" : "結合セルは表示中の左上セルの値だけを出力します。"
+  }, {
+    "code" : "MERGED_CELLS",
+    "section" : "表と画像と注釈",
+    "range" : "A11:J12",
+    "message" : "結合セルは表示中の左上セルの値だけを出力します。"
+  }, {
+    "code" : "DRAWING_SIMPLIFIED",
+    "section" : "表と画像と注釈",
+    "range" : "A4:H9",
+    "message" : "重なる表・セルの内容と描画オブジェクトを合成しました。セルの文字・表はMarkdownにも保持します。"
+  } ],
+  "blocks" : [ {
+    "type" : "compositeImage",
+    "section" : "画像と注釈の比較",
+    "range" : "B6:O25",
+    "path" : "images/image-0001.png",
+    "metadata" : {
+      "type" : "図",
+      "text" : "",
+      "x" : 47.261,
+      "y" : 100,
+      "width" : 614.399,
+      "height" : 380,
+      "sourceIds" : [ "shape-1-1", "shape-3", "shape-4", "shape-1-5" ]
+    },
+    "sourceImages" : [ {
+      "sha256" : "a744c9f79ab12349212c295d1085352209a200ff2449b9e84c30eac75f1fe62e",
+      "sizeBytes" : 36902,
+      "contentType" : "image/png",
+      "metadata" : {
+        "type" : "画像",
+        "text" : "架空の申請一覧画面。元画像はscreen-Bと同一。",
+        "x" : 47.261,
+        "y" : 100,
+        "width" : 472.615,
+        "height" : 300,
+        "id" : "shape-1-1"
+      },
+      "ocr" : {
+        "status" : "notRequested"
+      }
+    } ]
+  }, {
+    "type" : "compositeImage",
+    "section" : "画像と注釈の比較",
+    "range" : "Q6:AD21",
+    "path" : "images/image-0002.png",
+    "metadata" : {
+      "type" : "図",
+      "text" : "",
+      "x" : 756.184,
+      "y" : 100,
+      "width" : 614.399,
+      "height" : 300,
+      "sourceIds" : [ "shape-2", "shape-6", "shape-7" ]
+    },
+    "sourceImages" : [ {
+      "sha256" : "a744c9f79ab12349212c295d1085352209a200ff2449b9e84c30eac75f1fe62e",
+      "sizeBytes" : 36902,
+      "contentType" : "image/png",
+      "metadata" : {
+        "type" : "画像",
+        "text" : "架空の申請一覧画面。元画像はscreen-Aと同一。",
+        "x" : 756.184,
+        "y" : 100,
+        "width" : 472.615,
+        "height" : 300,
+        "id" : "shape-2"
+      },
+      "ocr" : {
+        "status" : "notRequested"
+      }
+    } ]
+  }, {
+    "type" : "text",
+    "section" : "画像と注釈の比較",
+    "range" : "A1",
+    "markdownStartLine" : 3,
+    "markdownEndLine" : 3
+  }, {
+    "type" : "text",
+    "section" : "画像と注釈の比較",
+    "range" : "A3",
+    "markdownStartLine" : 5,
+    "markdownEndLine" : 5
+  }, {
+    "type" : "text",
+    "section" : "画像と注釈の比較",
+    "range" : "B4:Q4",
+    "markdownStartLine" : 6,
+    "markdownEndLine" : 6
+  }, {
+    "nodes" : [ {
+      "type" : "画像",
+      "text" : "架空の申請一覧画面。元画像はscreen-Bと同一。",
+      "x" : 47.261,
+      "y" : 100,
+      "width" : 472.615,
+      "height" : 300,
+      "id" : "shape-1-1"
+    }, {
+      "type" : "長方形",
+      "text" : "",
+      "x" : 47.261,
+      "y" : 300,
+      "width" : 330.83,
+      "height" : 80,
+      "id" : "shape-3"
+    }, {
+      "type" : "長方形",
+      "text" : "送信前に\n状態を確認",
+      "x" : 425.353,
+      "y" : 360,
+      "width" : 236.307,
+      "height" : 120,
+      "id" : "shape-4"
+    } ],
+    "edges" : [ {
+      "id" : "shape-1-5",
+      "startId" : "shape-3",
+      "endId" : "shape-4",
+      "startArrow" : "none",
+      "endArrow" : "triangle",
+      "arrowheadDirectionAlongLine" : "start-to-end",
+      "connectionResolutionStatus" : "resolved",
+      "connectionResolutionReason" : "",
+      "connectionResolutionExplanation" : "",
+      "fromId" : "shape-3",
+      "toId" : "shape-4",
+      "type" : "直線コネクタ",
+      "text" : "",
+      "x" : 378.092,
+      "y" : 340,
+      "width" : 47.261,
+      "height" : 80
+    } ],
+    "sourceIds" : [ "shape-1-1", "shape-3", "shape-4", "shape-1-5" ],
+    "composite" : true,
+    "metadata" : {
+      "type" : "図",
+      "text" : "",
+      "x" : 47.261,
+      "y" : 100,
+      "width" : 614.399,
+      "height" : 380,
+      "sourceIds" : [ "shape-1-1", "shape-3", "shape-4", "shape-1-5" ]
+    },
+    "type" : "drawing",
+    "section" : "画像と注釈の比較",
+    "range" : "B6:O25",
+    "markdownStartLine" : 8,
+    "markdownEndLine" : 20
+  }, {
+    "nodes" : [ {
+      "type" : "画像",
+      "text" : "架空の申請一覧画面。元画像はscreen-Aと同一。",
+      "x" : 756.184,
+      "y" : 100,
+      "width" : 472.615,
+      "height" : 300,
+      "id" : "shape-2"
+    }, {
+      "type" : "長方形",
+      "text" : "",
+      "x" : 756.184,
+      "y" : 140,
+      "width" : 378.092,
+      "height" : 40,
+      "id" : "shape-6"
+    }, {
+      "type" : "長方形",
+      "text" : "受付番号を確認\n別の注釈を保持",
+      "x" : 1134.275,
+      "y" : 140,
+      "width" : 236.307,
+      "height" : 100,
+      "id" : "shape-7"
+    } ],
+    "edges" : [ ],
+    "sourceIds" : [ "shape-2", "shape-6", "shape-7" ],
+    "composite" : true,
+    "metadata" : {
+      "type" : "図",
+      "text" : "",
+      "x" : 756.184,
+      "y" : 100,
+      "width" : 614.399,
+      "height" : 300,
+      "sourceIds" : [ "shape-2", "shape-6", "shape-7" ]
+    },
+    "type" : "drawing",
+    "section" : "画像と注釈の比較",
+    "range" : "Q6:AD21",
+    "markdownStartLine" : 22,
+    "markdownEndLine" : 29
+  }, {
+    "nodes" : [ {
+      "type" : "長方形",
+      "text" : "接触だけの図形\n画像とは別に保持",
+      "x" : 1228.798,
+      "y" : 320,
+      "width" : 236.307,
+      "height" : 60,
+      "id" : "shape-8"
+    } ],
+    "edges" : [ ],
+    "path" : "images/diagram-0001.png",
+    "metadata" : {
+      "type" : "図",
+      "text" : "",
+      "x" : 1228.798,
+      "y" : 320,
+      "width" : 236.307,
+      "height" : 60
+    },
+    "type" : "drawing",
+    "section" : "画像と注釈の比較",
+    "range" : "AA17:AF20",
+    "markdownStartLine" : 31,
+    "markdownEndLine" : 37
+  }, {
+    "type" : "text",
+    "section" : "画像と注釈の比較",
+    "range" : "Q23",
+    "markdownStartLine" : 39,
+    "markdownEndLine" : 39
+  }, {
+    "type" : "text",
+    "section" : "画像と注釈の比較",
+    "range" : "B26",
+    "markdownStartLine" : 41,
+    "markdownEndLine" : 41
+  }, {
+    "nodes" : [ {
+      "type" : "長方形",
+      "text" : "画像と離れたメモ\n単独の図形として保持",
+      "x" : 47.261,
+      "y" : 560,
+      "width" : 378.092,
+      "height" : 80,
+      "id" : "shape-9"
+    } ],
+    "edges" : [ ],
+    "path" : "images/diagram-0002.png",
+    "metadata" : {
+      "type" : "図",
+      "text" : "",
+      "x" : 47.261,
+      "y" : 560,
+      "width" : 378.092,
+      "height" : 80
+    },
+    "type" : "drawing",
+    "section" : "画像と注釈の比較",
+    "range" : "B29:J33",
+    "markdownStartLine" : 43,
+    "markdownEndLine" : 49
+  }, {
+    "type" : "text",
+    "section" : "画像と注釈の比較",
+    "range" : "B34",
+    "markdownStartLine" : 51,
+    "markdownEndLine" : 51
+  }, {
+    "type" : "compositeImage",
+    "section" : "画像同士の重なり",
+    "range" : "B6:R27",
+    "path" : "images/image-0003.png",
+    "metadata" : {
+      "type" : "図",
+      "text" : "",
+      "x" : 52.513,
+      "y" : 110,
+      "width" : 840.204,
+      "height" : 462,
+      "sourceIds" : [ "shape-1", "shape-2" ]
+    },
+    "sourceImages" : [ {
+      "sha256" : "a744c9f79ab12349212c295d1085352209a200ff2449b9e84c30eac75f1fe62e",
+      "sizeBytes" : 36902,
+      "contentType" : "image/png",
+      "metadata" : {
+        "type" : "画像",
+        "text" : "背面の画面",
+        "x" : 52.513,
+        "y" : 110,
+        "width" : 577.64,
+        "height" : 330,
+        "id" : "shape-1"
+      },
+      "ocr" : {
+        "status" : "notRequested"
+      }
+    }, {
+      "sha256" : "a744c9f79ab12349212c295d1085352209a200ff2449b9e84c30eac75f1fe62e",
+      "sizeBytes" : 36902,
+      "contentType" : "image/png",
+      "metadata" : {
+        "type" : "画像",
+        "text" : "手前に重ねた画面",
+        "x" : 420.102,
+        "y" : 286,
+        "width" : 472.615,
+        "height" : 286,
+        "id" : "shape-2"
+      },
+      "ocr" : {
+        "status" : "notRequested"
+      }
+    } ]
+  }, {
+    "type" : "text",
+    "section" : "画像同士の重なり",
+    "range" : "A1",
+    "markdownStartLine" : 55,
+    "markdownEndLine" : 55
+  }, {
+    "type" : "text",
+    "section" : "画像同士の重なり",
+    "range" : "A3",
+    "markdownStartLine" : 57,
+    "markdownEndLine" : 57
+  }, {
+    "nodes" : [ {
+      "type" : "画像",
+      "text" : "背面の画面",
+      "x" : 52.513,
+      "y" : 110,
+      "width" : 577.64,
+      "height" : 330,
+      "id" : "shape-1"
+    }, {
+      "type" : "画像",
+      "text" : "手前に重ねた画面",
+      "x" : 420.102,
+      "y" : 286,
+      "width" : 472.615,
+      "height" : 286,
+      "id" : "shape-2"
+    } ],
+    "edges" : [ ],
+    "sourceIds" : [ "shape-1", "shape-2" ],
+    "composite" : true,
+    "metadata" : {
+      "type" : "図",
+      "text" : "",
+      "x" : 52.513,
+      "y" : 110,
+      "width" : 840.204,
+      "height" : 462,
+      "sourceIds" : [ "shape-1", "shape-2" ]
+    },
+    "type" : "drawing",
+    "section" : "画像同士の重なり",
+    "range" : "B6:R27",
+    "markdownStartLine" : 59,
+    "markdownEndLine" : 66
+  }, {
+    "type" : "compositeImage",
+    "section" : "表と画像と注釈",
+    "range" : "A4:H9",
+    "path" : "images/image-0004.png",
+    "metadata" : {
+      "type" : "図",
+      "text" : "",
+      "x" : 0,
+      "y" : 108,
+      "width" : 588.143,
+      "height" : 180,
+      "cellRanges" : [ "A4:E7" ],
+      "sourceIds" : [ "shape-1", "shape-2", "shape-3" ]
+    },
+    "sourceImages" : [ {
+      "sha256" : "a744c9f79ab12349212c295d1085352209a200ff2449b9e84c30eac75f1fe62e",
+      "sizeBytes" : 36902,
+      "contentType" : "image/png",
+      "metadata" : {
+        "type" : "画像",
+        "text" : "表に重なる画面",
+        "x" : 252.061,
+        "y" : 144,
+        "width" : 168.041,
+        "height" : 72,
+        "id" : "shape-1"
+      },
+      "ocr" : {
+        "status" : "notRequested"
+      }
+    } ]
+  }, {
+    "type" : "text",
+    "section" : "表と画像と注釈",
+    "range" : "A1",
+    "markdownStartLine" : 70,
+    "markdownEndLine" : 70
+  }, {
+    "sourceRows" : [ 4, 5, 6, 7 ],
+    "sourceColumns" : [ 1, 2, 3, 4, 5 ],
+    "sourceColumnSpans" : [ {
+      "last" : 1,
+      "first" : 1
+    }, {
+      "last" : 2,
+      "first" : 2
+    }, {
+      "last" : 3,
+      "first" : 3
+    }, {
+      "last" : 4,
+      "first" : 4
+    }, {
+      "last" : 5,
+      "first" : 5
+    } ],
+    "header" : "fill-color",
+    "headerSourceRows" : [ 4 ],
+    "mergedRanges" : [ ],
+    "detectedRanges" : [ "A4:E7" ],
+    "inferredMergedRanges" : [ ],
+    "type" : "table",
+    "section" : "表と画像と注釈",
+    "range" : "A4:E7",
+    "markdownStartLine" : 72,
+    "markdownEndLine" : 76
+  }, {
+    "nodes" : [ {
+      "type" : "画像",
+      "text" : "表に重なる画面",
+      "x" : 252.061,
+      "y" : 144,
+      "width" : 168.041,
+      "height" : 72,
+      "id" : "shape-1"
+    }, {
+      "type" : "長方形",
+      "text" : "",
+      "x" : 168.041,
+      "y" : 144,
+      "width" : 252.061,
+      "height" : 72,
+      "id" : "shape-2"
+    }, {
+      "type" : "長方形",
+      "text" : "画面と確認箇所を\nまとめて確認",
+      "x" : 336.082,
+      "y" : 180,
+      "width" : 252.061,
+      "height" : 108,
+      "id" : "shape-3"
+    } ],
+    "edges" : [ ],
+    "cellRanges" : [ "A4:E7" ],
+    "sourceIds" : [ "shape-1", "shape-2", "shape-3" ],
+    "composite" : true,
+    "metadata" : {
+      "type" : "図",
+      "text" : "",
+      "x" : 0,
+      "y" : 108,
+      "width" : 588.143,
+      "height" : 180,
+      "cellRanges" : [ "A4:E7" ],
+      "sourceIds" : [ "shape-1", "shape-2", "shape-3" ]
+    },
+    "type" : "drawing",
+    "section" : "表と画像と注釈",
+    "range" : "A4:H9",
+    "markdownStartLine" : 78,
+    "markdownEndLine" : 85
+  }, {
+    "type" : "text",
+    "section" : "表と画像と注釈",
+    "range" : "A11",
+    "markdownStartLine" : 87,
+    "markdownEndLine" : 87
+  } ],
+  "assets" : [ {
+    "sha256" : "000dfaea2e4d30600aaff2e7a79b243398b12999efb61e492d4748d964db355e",
+    "path" : "images/image-0001.png",
+    "sourceKind" : "compositeImage",
+    "sizeBytes" : 46766,
+    "contentType" : "image/png"
+  }, {
+    "sha256" : "0d03ce24e1e8851365cc7b0c16dafa19f8fbaa2823b0d116a9ee3a6b3dedc3e7",
+    "path" : "images/image-0002.png",
+    "sourceKind" : "compositeImage",
+    "sizeBytes" : 44716,
+    "contentType" : "image/png"
+  }, {
+    "sha256" : "5ca8c0cb5e5f41b0e85a6a78f70b67201ddde751590750d0cab186707cc93328",
+    "path" : "images/diagram-0001.png",
+    "sourceKind" : "renderedDiagram",
+    "sizeBytes" : 6103,
+    "contentType" : "image/png"
+  }, {
+    "sha256" : "c57642aa19d2623f49c3bd2cb56cf856ab62142ba287cbb878ba26b15838d70f",
+    "path" : "images/diagram-0002.png",
+    "sourceKind" : "renderedDiagram",
+    "sizeBytes" : 7213,
+    "contentType" : "image/png"
+  }, {
+    "sha256" : "772f57534c839dae6b8fc3fec888ca0e8e239968532694f91d27a7eff6a81699",
+    "path" : "images/image-0003.png",
+    "sourceKind" : "compositeImage",
+    "sizeBytes" : 81145,
+    "contentType" : "image/png"
+  }, {
+    "sha256" : "1ea5e0bbe0cbe7c648209206295ec822163b7c99dc1d28c7a55e12546173b77a",
+    "path" : "images/image-0004.png",
+    "sourceKind" : "compositeImage",
+    "sizeBytes" : 30018,
+    "contentType" : "image/png"
+  } ],
+  "imageMode" : "ignore"
+}

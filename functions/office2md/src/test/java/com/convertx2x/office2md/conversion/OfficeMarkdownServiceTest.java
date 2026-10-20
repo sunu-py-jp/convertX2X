@@ -116,6 +116,30 @@ class OfficeMarkdownServiceTest {
         assertThrows(IllegalArgumentException.class, () -> AppConfig.from(Map.of("CONVERSION_MAX_SECTIONS", "-1")));
     }
 
+    @Test void capacityDefaultsKeepImageAndMarkdownMemoryProtections() {
+        var limits = AppConfig.from(Map.of()).limits();
+        assertEquals(314_572_800L, limits.maxOutputBytes());
+        assertEquals(104_857_600L, limits.maxInputBytes());
+        assertEquals(20_971_520L, limits.maxMarkdownBytes());
+        assertEquals(20_971_520L, limits.maxImageBytes());
+        assertEquals(20_000_000L, limits.maxImagePixels());
+        assertEquals(16, limits.maxGroupDepth());
+        assertEquals(0, limits.maxSections());
+        assertEquals(0, limits.maxReadItems());
+        assertEquals(0, limits.maxTableCells());
+        assertEquals(0, limits.maxImages());
+        assertEquals(0, limits.maxShapes());
+        assertEquals(limits, AppConfig.from(Map.of("CONVERSION_MAX_INPUT_BYTES", " ", "CONVERSION_MAX_OUTPUT_BYTES", " ")).limits());
+    }
+
+    @ParameterizedTest @ValueSource(longs={104_857_600L, 524_288_000L})
+    void explicitOutputLimitsRemainHonoredBelowAndAboveThePlaygroundCeiling(long bytes) {
+        var limits = AppConfig.from(Map.of("CONVERSION_MAX_OUTPUT_BYTES", Long.toString(bytes))).limits();
+        assertEquals(bytes, limits.maxOutputBytes());
+        assertEquals(20_971_520L, limits.maxImageBytes());
+        assertEquals(20_971_520L, limits.maxMarkdownBytes());
+    }
+
     @Test void moreThanFiftySheetsConvertWithDefaultLimits() throws Exception {
         byte[] input;
         try (var book = new XSSFWorkbook(); var out = new ByteArrayOutputStream()) {

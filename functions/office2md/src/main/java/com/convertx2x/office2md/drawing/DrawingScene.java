@@ -9,9 +9,12 @@ import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.Shape;
 import java.awt.geom.AffineTransform;
+import java.awt.geom.Area;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Line2D;
+import java.awt.geom.NoninvertibleTransformException;
 import java.awt.geom.Path2D;
+import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.geom.RoundRectangle2D;
 import java.awt.image.BufferedImage;
@@ -26,7 +29,7 @@ import javax.imageio.stream.ImageInputStream;
 
 /** Deliberately small scene model, independent of Excel's two shape implementations. */
 final class DrawingScene {
-    enum Kind { RECTANGLE, ROUND_RECTANGLE, ELLIPSE, LINE, RIGHT_ARROW, LEFT_ARROW, UP_ARROW, DOWN_ARROW, TEXT, PICTURE, UNSUPPORTED }
+    enum Kind { RECTANGLE, ROUND_RECTANGLE, ELLIPSE, LINE, RIGHT_ARROW, LEFT_ARROW, UP_ARROW, DOWN_ARROW, TEXT, PICTURE, PRESET, UNSUPPORTED }
 
     static final class Item {
         int order;
@@ -36,6 +39,8 @@ final class DrawingScene {
         boolean connector;
         String startArrowType = "none", endArrowType = "none";
         Kind kind = Kind.UNSUPPORTED;
+        String preset;
+        DrawingPresetGeometry.Geometry presetGeometry;
         double width, height;
         AffineTransform transform = new AffineTransform();
         Color fill = Color.WHITE, line = Color.BLACK;
@@ -56,16 +61,106 @@ final class DrawingScene {
 
         Rectangle2D bounds() {
             double padding = Math.max(1, lineWidth / 2d) + (startArrow || endArrow ? Math.max(6, lineWidth * 4) : 0);
-            return transform.createTransformedShape(new Rectangle2D.Double(-padding, -padding,
-                    Math.max(0, width) + padding * 2, Math.max(0, height) + padding * 2)).getBounds2D();
+            Rectangle2D content = new Rectangle2D.Double(0, 0, Math.max(0, width), Math.max(0, height));
+            if (presetGeometry != null) content = content.createUnion(presetGeometry.outline().getBounds2D());
+            return transform.createTransformedShape(new Rectangle2D.Double(content.getX() - padding, content.getY() - padding,
+                    content.getWidth() + padding * 2, content.getHeight() + padding * 2)).getBounds2D();
         }
         Rectangle2D placementBounds() {
             return transform.createTransformedShape(new Rectangle2D.Double(0, 0, width, height)).getBounds2D();
         }
     }
 
+    /** Only safely prepared visible pixels may enter a composite; masked originals stay attachments. */
+    static boolean compositePicture(Item item) {
+        return item.kind == Kind.PICTURE && item.positionKnown && item.visiblePicture != null
+                && item.visiblePicture.skipReason() == null
+                && (item.visiblePicture.extension().equals("png") || item.visiblePicture.extension().equals("jpg"))
+                && item.width > 0 && item.height > 0;
+    }
+
+    /** Positive overlap associates a picture with a supported picture or native shape. */
+    static boolean pictureOverlapsShape(Item picture, Item shape) {
+        return compositePicture(picture) && (shape.kind != Kind.PICTURE || compositePicture(shape))
+                && visualsOverlap(picture, shape);
+    }
+
+    /** Geometry-only check shared with Word; callers separately validate usable picture pixels. */
+    static boolean pictureAreaOverlapsShape(Item picture, Item shape) {
+        return visualsOverlap(picture, shape);
+    }
+
+    static boolean visualsOverlap(Item picture, Item shape) {
+        // Nested group scales can overflow even when every saved anchor value was finite.
+        // Reject them before Area/FlatteningPathIterator see NaN or infinite coordinates.
+        if (!finiteGeometry(picture) || !finiteGeometry(shape)) return false;
+        if (line(picture) && !line(shape)) return visualsOverlap(shape, picture);
+        if (!picture.positionKnown || picture.width <= 0 || picture.height <= 0 || !shape.positionKnown
+                || picture.kind == Kind.UNSUPPORTED || shape.kind == Kind.UNSUPPORTED) return false;
+        if (line(shape)) {
+            // Lines can have zero width or height. Test the segment against the open picture
+            // rectangle in picture coordinates, so crossing lines count but an edge touch does not.
+            try {
+                AffineTransform toPicture = picture.transform.createInverse();
+                toPicture.concatenate(shape.transform);
+                if (!finiteTransform(toPicture)
+                        || !finiteBounds(toPicture.createTransformedShape(geometry(shape)).getBounds2D())) return false;
+                double inset = Math.min(1e-6, Math.min(picture.width, picture.height) / 4);
+                Rectangle2D inside = new Rectangle2D.Double(inset, inset, picture.width - 2 * inset, picture.height - 2 * inset);
+                var path = geometry(shape).getPathIterator(toPicture, .05);
+                double[] points = new double[6];
+                double x = 0, y = 0;
+                int segments = 0;
+                while (!path.isDone() && segments++ < 4096) {
+                    int command = path.currentSegment(points);
+                    if (command == java.awt.geom.PathIterator.SEG_LINETO && inside.intersectsLine(x, y, points[0], points[1])) {
+                        if (picture.kind == Kind.PICTURE || picture.kind == Kind.RECTANGLE || picture.kind == Kind.TEXT) return true;
+                        Area overlap = new Area(geometry(picture));
+                        overlap.intersect(new Area(new BasicStroke(.00001f)
+                                .createStrokedShape(new Line2D.Double(x, y, points[0], points[1]))));
+                        if (!overlap.isEmpty()) return true;
+                    }
+                    x = points[0]; y = points[1]; path.next();
+                }
+                return false;
+            } catch (NoninvertibleTransformException invalid) { return false; }
+        }
+        Rectangle2D pictureBounds = picture.transform.createTransformedShape(geometry(picture)).getBounds2D();
+        Rectangle2D shapeBounds = shape.transform.createTransformedShape(geometry(shape)).getBounds2D();
+        if (!pictureBounds.intersects(shapeBounds)) return false;
+        Area overlap = new Area(picture.transform.createTransformedShape(geometry(picture)));
+        overlap.intersect(new Area(shape.transform.createTransformedShape(geometry(shape))));
+        return !overlap.isEmpty();
+    }
+
+    private static boolean finiteGeometry(Item item) {
+        return Double.isFinite(item.width) && Double.isFinite(item.height) && item.width >= 0 && item.height >= 0
+                && finiteTransform(item.transform)
+                && finiteBounds(item.transform.createTransformedShape(geometry(item)).getBounds2D());
+    }
+
+    private static boolean finiteTransform(AffineTransform transform) {
+        double[] matrix = new double[6];
+        transform.getMatrix(matrix);
+        for (double value : matrix) if (!Double.isFinite(value)) return false;
+        double determinant = transform.getDeterminant();
+        return Double.isFinite(determinant) && determinant != 0;
+    }
+
+    private static boolean finiteBounds(Rectangle2D bounds) {
+        return Double.isFinite(bounds.getX()) && Double.isFinite(bounds.getY())
+                && Double.isFinite(bounds.getWidth()) && Double.isFinite(bounds.getHeight())
+                && Double.isFinite(bounds.getMaxX()) && Double.isFinite(bounds.getMaxY())
+                && bounds.getWidth() >= 0 && bounds.getHeight() >= 0;
+    }
+
     static byte[] render(List<Item> items, ConversionWorkspace workspace) {
+        return render(items, workspace, null);
+    }
+
+    static byte[] render(List<Item> items, ConversionWorkspace workspace, SheetCellLayer cells) {
         Rectangle2D bounds = bounds(items);
+        if (cells != null) bounds = bounds.createUnion(cells.bounds());
         final double scale = 96d / 72;
         double requestedWidth = Math.ceil((bounds.getWidth() + 6) * scale);
         double requestedHeight = Math.ceil((bounds.getHeight() + 6) * scale);
@@ -83,6 +178,7 @@ final class DrawingScene {
             graphics.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
             graphics.scale(scale, scale);
             graphics.translate(3 - bounds.getX(), 3 - bounds.getY());
+            if (cells != null) cells.draw(graphics);
             for (Item item : items) draw(graphics, item, workspace);
             ByteArrayOutputStream bytes = new ByteArrayOutputStream() {
                 @Override public synchronized void write(byte[] buffer, int offset, int length) {
@@ -115,6 +211,19 @@ final class DrawingScene {
     private static void draw(Graphics2D parent, Item item, ConversionWorkspace workspace) throws IOException {
         Graphics2D graphics = (Graphics2D) parent.create();
         try {
+            if (compositePicture(item)) {
+                // Prepared pixels already include cropping, rotation and flips. Their canvas
+                // covers the transformed placement rectangle, so applying item.transform again
+                // would rotate/flip them twice and could expose cropped source pixels.
+                BufferedImage picture = decode(item.visiblePicture.bytes(), workspace);
+                try {
+                    Rectangle2D bounds = item.placementBounds();
+                    AffineTransform transform = AffineTransform.getTranslateInstance(bounds.getX(), bounds.getY());
+                    transform.scale(bounds.getWidth() / picture.getWidth(), bounds.getHeight() / picture.getHeight());
+                    graphics.drawImage(picture, transform, null);
+                } finally { picture.flush(); }
+                return;
+            }
             graphics.transform(item.transform);
             if (item.kind == Kind.PICTURE && (item.extension.equals("png") || item.extension.equals("jpg"))) {
                 BufferedImage picture = decode(item.picture, workspace);
@@ -125,26 +234,48 @@ final class DrawingScene {
                 return;
             }
             Shape geometry = geometry(item);
-            if (item.kind != Kind.LINE && item.fill != null) {
-                graphics.setColor(item.fill);
-                graphics.fill(geometry);
-            }
-            if (item.line != null && item.lineWidth > 0) {
-                graphics.setColor(item.line);
-                graphics.setStroke(item.dashed
-                        ? new BasicStroke(item.lineWidth, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 10, new float[]{4, 3}, 0)
-                        : new BasicStroke(item.lineWidth, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-                graphics.draw(geometry);
-                if (item.kind == Kind.LINE) {
-                    if (item.startArrow) arrowHead(graphics, item.width, item.height, 0, 0, item.lineWidth);
-                    if (item.endArrow) arrowHead(graphics, 0, 0, item.width, item.height, item.lineWidth);
+            if (item.kind == Kind.PRESET && item.presetGeometry != null) {
+                for (var part : item.presetGeometry.parts()) {
+                    if (part.filled() && !line(item) && item.fill != null) {
+                        graphics.setColor(item.fill); graphics.fill(part.shape());
+                    }
+                    if (part.stroked() && item.line != null && item.lineWidth > 0) {
+                        graphics.setColor(item.line);
+                        graphics.setStroke(stroke(item));
+                        graphics.draw(part.shape());
+                    }
+                }
+                if (line(item) && item.line != null && item.lineWidth > 0) {
+                    graphics.setColor(item.line);
+                    var start = item.presetGeometry.start(); var end = item.presetGeometry.end();
+                    if (item.startArrow && start != null) arrowHead(graphics, start.from().getX(), start.from().getY(),
+                            start.tip().getX(), start.tip().getY(), item.lineWidth);
+                    if (item.endArrow && end != null) arrowHead(graphics, end.from().getX(), end.from().getY(),
+                            end.tip().getX(), end.tip().getY(), item.lineWidth);
+                }
+            } else {
+                if (item.kind != Kind.LINE && item.fill != null) {
+                    graphics.setColor(item.fill);
+                    graphics.fill(geometry);
+                }
+                if (item.line != null && item.lineWidth > 0) {
+                    graphics.setColor(item.line);
+                    graphics.setStroke(stroke(item));
+                    graphics.draw(geometry);
+                    if (item.kind == Kind.LINE) {
+                        if (item.startArrow) arrowHead(graphics, item.width, item.height, 0, 0, item.lineWidth);
+                        if (item.endArrow) arrowHead(graphics, 0, 0, item.width, item.height, item.lineWidth);
+                    }
                 }
             }
             // XLS child anchors use group coordinates; text and insets remain physical point sizes.
             double insetScale = item.textScale;
-            Rectangle2D textBox = new Rectangle2D.Double(item.leftInset * insetScale, item.topInset * insetScale,
-                    Math.max(0.1, item.width - (item.leftInset + item.rightInset) * insetScale),
-                    Math.max(0.1, item.height - (item.topInset + item.bottomInset) * insetScale));
+            Rectangle2D textArea = item.presetGeometry == null ? new Rectangle2D.Double(0, 0, item.width, item.height)
+                    : item.presetGeometry.textBounds();
+            Rectangle2D textBox = new Rectangle2D.Double(textArea.getX() + item.leftInset * insetScale,
+                    textArea.getY() + item.topInset * insetScale,
+                    Math.max(0.1, textArea.getWidth() - (item.leftInset + item.rightInset) * insetScale),
+                    Math.max(0.1, textArea.getHeight() - (item.topInset + item.bottomInset) * insetScale));
             if (item.kind == Kind.UNSUPPORTED || item.kind == Kind.PICTURE) {
                 graphics.setColor(new Color(160, 40, 40));
                 List<DrawingText.Run> text = new ArrayList<>(item.text);
@@ -159,6 +290,7 @@ final class DrawingScene {
     }
 
     private static Shape geometry(Item item) {
+        if (item.presetGeometry != null) return item.presetGeometry.outline();
         double width = item.width, height = item.height;
         return switch (item.kind) {
             case ROUND_RECTANGLE -> new RoundRectangle2D.Double(0, 0, width, height, Math.min(width, height) * .25, Math.min(width, height) * .25);
@@ -167,6 +299,15 @@ final class DrawingScene {
             case RIGHT_ARROW, LEFT_ARROW, UP_ARROW, DOWN_ARROW -> blockArrow(item.kind, width, height);
             default -> new Rectangle2D.Double(0, 0, width, height);
         };
+    }
+
+    private static boolean line(Item item) {
+        return item.kind == Kind.LINE || item.kind == Kind.PRESET && DrawingPresetGeometry.connector(item.preset);
+    }
+
+    private static BasicStroke stroke(Item item) {
+        return item.dashed ? new BasicStroke(item.lineWidth, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 10, new float[]{4, 3}, 0)
+                : new BasicStroke(item.lineWidth, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
     }
 
     private static Shape blockArrow(Kind kind, double width, double height) {

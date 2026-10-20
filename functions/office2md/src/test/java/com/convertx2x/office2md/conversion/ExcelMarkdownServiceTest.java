@@ -850,8 +850,15 @@ class ExcelMarkdownServiceTest {
             try(ConversionResult result=convert(book)) {
                 String md=markdown(result);assertEquals(2,result.sectionCount());assertTrue(md.indexOf("表の末尾")<md.indexOf("!["));
                 assertTrue(md.contains("|  |  | 表外本文 |"));assertTrue(md.indexOf("表外本文")<md.indexOf("!["));
-                assertTrue(md.contains("# [画像のみ] シート"));assertEquals(1,report(result).path("assets").size());
-                assertEquals(2, md.split("images/image-0001.png", -1).length - 1);
+                assertTrue(md.contains("# [画像のみ] シート"));
+                // The table preview includes its saved cells, while the image-only sheet keeps
+                // the original image. These are distinct assets, each referenced exactly once.
+                assertEquals(2,report(result).path("assets").size());
+                assertEquals(1, md.split("images/image-0001.png", -1).length - 1);
+                assertEquals(1, md.split("images/image-0002.png", -1).length - 1);
+                List<String> sourceKinds = new ArrayList<>();
+                report(result).path("assets").forEach(asset -> sourceKinds.add(asset.path("sourceKind").asText()));
+                assertEquals(List.of("compositeImage", "embeddedImage"), sourceKinds);
             }
         }
     }

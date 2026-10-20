@@ -15,9 +15,12 @@
   });
   const sizeLabel = n => n < 1024 ? `${n} B` : n < MiB ? `${(n / 1024).toFixed(1)} KiB` : `${(n / MiB).toFixed(1)} MiB`;
   const check = (condition, message = '変換結果の形式が正しくありません。') => { if (!condition) throw new Error(message); };
+  const exactSizeLabel = n => n < 1024 ? sizeLabel(n) : `${sizeLabel(n)}（${n.toLocaleString('ja-JP')} B）`;
+  const checkSize = (size, limit, subject) => check(size <= limit,
+    `${subject}がPlaygroundの上限を超えています。サイズ: ${exactSizeLabel(size)}、上限: ${exactSizeLabel(limit)}。`);
   const alive = run => { if (run?.controller.signal.aborted) throw new DOMException('Stopped', 'AbortError'); };
   const blobUrl = blob => { const url = URL.createObjectURL(blob); objectUrls.add(url); return url; };
-  const budget = () => ({ total: Math.min(config.maxOutputBytes, 100 * MiB), markdown: Math.min(config.maxMarkdownBytes, 20 * MiB), image: Math.min(config.maxImageBytes, 20 * MiB), images: config.maxImages === 0 || config.maxShapes === 0 ? Infinity : config.maxImages + config.maxShapes });
+  const budget = () => ({ total: Math.min(config.maxOutputBytes, 300 * MiB), markdown: Math.min(config.maxMarkdownBytes, 20 * MiB), report: Math.min(config.maxOutputBytes, 100 * MiB), image: Math.min(config.maxImageBytes, 20 * MiB), images: config.maxImages === 0 || config.maxShapes === 0 ? Infinity : config.maxImages + config.maxShapes });
 
   function status(state, title, detail = '') {
     $('status-bar').dataset.state = state;
@@ -58,7 +61,7 @@
       ? 'Queueへ登録し、完了後にMarkdown・画像・変換情報を取得します。'
       : '変換の完了を待ち、結果をZIPで受け取ります。';
   }
-  async function readStream(stream, limit, run) {
+  async function readStream(stream, limit, run, subject = '取得データ') {
     const reader = stream.getReader(), chunks = [];
     let size = 0;
     const abort = () => { reader.cancel().catch(() => {}); };
@@ -70,7 +73,7 @@
         alive(run);
         if (item.done) break;
         size += item.value.length;
-        check(size <= limit, '結果がPlaygroundの表示・取得上限を超えています。APIから結果を取得してください。');
+        checkSize(size, limit, subject);
         chunks.push(item.value);
       }
     } finally {
@@ -83,10 +86,10 @@
     for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.length; }
     return bytes;
   }
-  async function responseBytes(response, limit, run) {
+  async function responseBytes(response, limit, run, subject = '取得データ') {
     const length = response.headers.get('Content-Length');
-    check(!length || Number(length) <= limit, '結果がPlaygroundの取得上限を超えています。');
-    return readStream(response.body, limit, run);
+    if (length) checkSize(Number(length), limit, subject);
+    return readStream(response.body, limit, run, subject);
   }
   const utf8 = bytes => new TextDecoder('utf-8', { fatal: true }).decode(bytes);
   async function apiFetch(url, run, options = {}) {
@@ -123,7 +126,7 @@
     });
   }
 
-  // Read only our fixed ZIP artifact paths. Central-directory sizes bound streaming inflation.
+  // Validate every declared size and fixed artifact path before inflating any entry.
   async function unzip(bytes, run) {
     const limits = budget(), view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
     const u16 = at => view.getUint16(at, true), u32 = at => view.getUint32(at, true);
@@ -134,7 +137,7 @@
     check(end >= 0, 'ZIPを読み取れませんでした。');
     const count = u16(end + 10), central = u32(end + 16);
     check(!u16(end + 4) && !u16(end + 6) && u16(end + 8) === count && count >= 2 && count <= limits.images + 2 && central + u32(end + 12) === end);
-    const files = new Map(), ranges = [];
+    const entries = new Map(), ranges = [];
     let at = central, total = 0;
     for (let index = 0; index < count; index++) {
       alive(run);
@@ -143,30 +146,36 @@
       const nameLength = u16(at + 28), extraLength = u16(at + 30), commentLength = u16(at + 32), local = u32(at + 42);
       check(at + 46 + nameLength + extraLength + commentLength <= end && !u16(at + 34) && !(flags & 1) && [0, 8].includes(method));
       const name = utf8(bytes.subarray(at + 46, at + 46 + nameLength));
-      check((['document.md', 'report.json'].includes(name) || assetPath.test(name)) && !files.has(name), 'ZIPに不正な成果物パスがあります。');
+      check((['document.md', 'report.json'].includes(name) || assetPath.test(name)) && !entries.has(name), 'ZIPに不正な成果物パスがあります。');
       total += size;
-      const individual = name === 'document.md' ? limits.markdown : name === 'report.json' ? 20 * MiB : limits.image;
-      check(size <= individual && total <= limits.total, 'ZIPの展開サイズがPlaygroundの上限を超えています。');
+      const individual = name === 'document.md' ? limits.markdown : name === 'report.json' ? limits.report : limits.image;
+      checkSize(size, individual, `ZIP内の「${name}」`);
+      checkSize(total, limits.total, `ZIPの展開後の合計（${name}まで）`);
+      check(method !== 0 || compressed === size, 'ZIP内の非圧縮ファイルのサイズが一致しません。');
       check(local + 30 <= central && u32(local) === 0x04034b50 && u16(local + 8) === method && u16(local + 6) === flags);
       const localName = u16(local + 26), start = local + 30 + localName + u16(local + 28);
       check(start <= central && start + compressed <= central && utf8(bytes.subarray(local + 30, local + 30 + localName)) === name);
       ranges.push([local, start + compressed]);
-      const packed = bytes.subarray(start, start + compressed);
+      entries.set(name, { packed: bytes.subarray(start, start + compressed), method, size, crc });
+      at += 46 + nameLength + extraLength + commentLength;
+    }
+    ranges.sort((a, b) => a[0] - b[0]);
+    check(at === end && ranges.every((range, index) => !index || range[0] >= ranges[index - 1][1]) && entries.has('document.md') && entries.has('report.json'));
+    const files = new Map();
+    for (const [name, { packed, method, size, crc }] of entries) {
+      alive(run);
       let data;
       if (method === 0) data = packed.slice();
       else {
         check(typeof DecompressionStream !== 'undefined', 'ZIPのプレビューに対応した最新のChrome・Edge・Safariを使用してください。');
-        data = await readStream(new Blob([packed]).stream().pipeThrough(new DecompressionStream('deflate-raw')), size, run);
+        data = await readStream(new Blob([packed]).stream().pipeThrough(new DecompressionStream('deflate-raw')), size, run, `ZIP内の「${name}」の展開データ`);
       }
       check(data.length === size);
       let actualCrc = 0xffffffff;
       for (const byte of data) actualCrc = crcTable[(actualCrc ^ byte) & 255] ^ actualCrc >>> 8;
       check(((actualCrc ^ 0xffffffff) >>> 0) === crc, 'ZIP内のファイルが破損しています。');
       files.set(name, data);
-      at += 46 + nameLength + extraLength + commentLength;
     }
-    ranges.sort((a, b) => a[0] - b[0]);
-    check(at === end && ranges.every((range, index) => !index || range[0] >= ranges[index - 1][1]) && files.has('document.md') && files.has('report.json'));
     return files;
   }
   function parseReport(bytes) {
@@ -175,7 +184,8 @@
     check(report.assets.length <= budget().images);
     const names = new Set();
     for (const asset of report.assets) {
-      check(asset && assetPath.test(asset.path) && !names.has(asset.path) && Number.isSafeInteger(asset.sizeBytes) && asset.sizeBytes >= 0 && asset.sizeBytes <= budget().image && /^[a-f0-9]{64}$/.test(asset.sha256));
+      check(asset && assetPath.test(asset.path) && !names.has(asset.path) && Number.isSafeInteger(asset.sizeBytes) && asset.sizeBytes >= 0 && /^[a-f0-9]{64}$/.test(asset.sha256));
+      checkSize(asset.sizeBytes, budget().image, `添付ファイル「${asset.path}」`);
       names.add(asset.path);
     }
     return report;
@@ -362,7 +372,7 @@
     url.searchParams.set('imageMode', imageMode);
     let response = await apiFetch(url, run, { method: 'POST', headers: { 'Content-Type': 'application/octet-stream' }, body: run.file });
     if (mode === 'convert') {
-      const bytes = await responseBytes(response, budget().total + MiB, run), files = await unzip(bytes, run);
+      const bytes = await responseBytes(response, budget().total, run, '取得するZIP'), files = await unzip(bytes, run);
       const report = parseReport(files.get('report.json'));
       await showResult(files, report, bytes, null, run); return;
     }
@@ -382,15 +392,16 @@
     }
     const job = { id, archiveUrl: checkedJobUrl(data.archiveUrl, id, '/archive') };
     const base = checkedJobUrl(data.assetsBaseUrl, id, '/images/');
-    const reportBytes = await responseBytes(await apiFetch(checkedJobUrl(data.reportUrl, id, '/report'), run), 20 * MiB, run);
+    const reportBytes = await responseBytes(await apiFetch(checkedJobUrl(data.reportUrl, id, '/report'), run), budget().report, run, 'report.json');
     const report = parseReport(reportBytes), files = new Map([['report.json', reportBytes]]);
     let total = reportBytes.length;
-    const md = await responseBytes(await apiFetch(checkedJobUrl(data.resultUrl, id, '/result'), run), budget().markdown, run);
-    total += md.length; check(total <= budget().total);
+    checkSize(total, budget().total, '成果物の取得合計（report.jsonまで）');
+    const md = await responseBytes(await apiFetch(checkedJobUrl(data.resultUrl, id, '/result'), run), budget().markdown, run, 'document.md');
+    total += md.length; checkSize(total, budget().total, '成果物の取得合計（document.mdまで）');
     files.set('document.md', md);
     for (const asset of report.assets) {
-      check(total + asset.sizeBytes <= budget().total, '成果物の合計がPlaygroundの取得上限を超えています。');
-      const bytes = await responseBytes(await apiFetch(new URL(asset.path.slice('images/'.length), base), run), Math.min(budget().image, asset.sizeBytes), run);
+      checkSize(total + asset.sizeBytes, budget().total, `成果物の取得合計（${asset.path}まで）`);
+      const bytes = await responseBytes(await apiFetch(new URL(asset.path.slice('images/'.length), base), run), Math.min(budget().image, asset.sizeBytes), run, `添付ファイル「${asset.path}」`);
       total += bytes.length; files.set(asset.path, bytes);
     }
     await showResult(files, report, null, job, run);
@@ -437,7 +448,7 @@
     try {
       check(/\.(?:xlsx?|docx|pptx)$/i.test(file.name), 'XLSX・XLS・DOCX・PPTXファイルを選んでください。');
       check(file.size > 0, 'ファイルが空です。');
-      check(!config || file.size <= config.maxInputBytes, `ファイルサイズの上限は${sizeLabel(config?.maxInputBytes || 20 * MiB)}です。`);
+      check(!config || file.size <= config.maxInputBytes, `ファイルサイズの上限は${sizeLabel(config?.maxInputBytes || 100 * MiB)}です。`);
       selectedFile = file; $('selected-name').textContent = file.name; $('selected-meta').textContent = `${sizeLabel(file.size)} · クリックして変更`; $('dropzone').classList.add('has-file'); status('idle', '変換の準備ができました', '「Markdownに変換」を押してください。');
     } catch (error) { status('error', 'ファイルを確認してください'); errorMessage(error); }
     controls();
@@ -459,7 +470,7 @@
     const download = url => { const link = document.createElement('a'); link.href = url; link.download = 'document.zip'; document.body.append(link); link.click(); link.remove(); };
     if (result.archiveUrl) { download(result.archiveUrl); return; }
     const current = result;
-    perform(async run => { const bytes = await responseBytes(await apiFetch(current.job.archiveUrl, run), budget().total + MiB, run); alive(run); current.archiveUrl = blobUrl(new Blob([bytes], { type: 'application/zip' })); download(current.archiveUrl); status('success', 'ZIPを保存しました', 'Markdown・変換情報・画像が含まれます。'); }, false);
+    perform(async run => { const bytes = await responseBytes(await apiFetch(current.job.archiveUrl, run), budget().total, run, '取得するZIP'); alive(run); current.archiveUrl = blobUrl(new Blob([bytes], { type: 'application/zip' })); download(current.archiveUrl); status('success', 'ZIPを保存しました', 'Markdown・変換情報・画像が含まれます。'); }, false);
   };
   $('download-archive').addEventListener('click', saveArchive);
   for (const name of ['dragenter', 'dragover']) $('dropzone').addEventListener(name, event => { event.preventDefault(); if (!active) $('dropzone').classList.add('dragover'); });

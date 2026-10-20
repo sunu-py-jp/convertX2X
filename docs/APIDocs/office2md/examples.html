@@ -18,11 +18,280 @@
 <p class="eyebrow">Office → Markdown / Actual examples</p>
 <h1>実際の変換例</h1>
 <p class="lead">複数シートのExcel、変更履歴を含むWord、グループ図形を含むPowerPointを、実際のAPIとPlaygroundで変換しました。入力・変換結果・警告をまとめて確認できます。</p>
-<p>すべてこのリポジトリで作成したオリジナル資料です。掲載画像は実行後のPlaygroundを撮影したもので、変換結果の文章や図を補正していません。出力ZIPには <code>document.md</code>・<code>report.json</code>・<code>images/</code> が入っています。</p>
-<div class="callout"><p><strong>掲載済みの実行記録：</strong>以下は各run.jsonに記載された日時・実装で取得した結果です。最新の画像OCR機能を実Azureで検証した記録ではありません。現在は元画像を参考図形PNGと分けて保存し、<code>imageMode=ocr</code> で文字を補えます。画像数・分類はこの記録と異なる場合があります。現行出力では「図中の項目:」「接続関係:」「画像内の文字（OCR）:」を半角コロン付きの通常テキストとし、参考画像の説明見出しと接続情報がないことを説明する文章は出しません。掲載済みのMarkdown・抜粋・スクリーンショットは実行時の状態を保持しています。<a href="index.html#image-ocr">現行の画像モードと出力仕様</a>を参照してください。Office2MDのPDF出力は廃止しました。</p></div>
+<p>すべてこのリポジトリで作成したオリジナル資料です。既存の包括例は実行後のPlaygroundを撮影し、画像と注釈の例は生成されたPNGを直接掲載しています。変換結果の文章や図を補正していません。出力ZIPには <code>document.md</code>・<code>report.json</code>・<code>images/</code> が入っています。</p>
+<div class="callout"><p><strong>掲載済みの実行記録：</strong>以下は各run.jsonに記載された日時・実装で取得した結果です。最新の画像OCR機能を実Azureで検証した記録ではありません。現在はExcel・Word・PowerPointで、位置を確認できる画像と図形・テキストボックスの重なりを1枚のPNGへまとめます。合成対象外の元画像は個別に保存し、<code>imageMode=ocr</code> で元画像の文字を補えます。画像数・分類はこの記録と異なる場合があります。現行出力では「図中の項目:」「接続関係:」「画像内の文字（OCR）:」を半角コロン付きの通常テキストとし、参考画像の説明見出しと接続情報がないことを説明する文章は出しません。掲載済みのMarkdown・抜粋・スクリーンショットは実行時の状態を保持しています。<a href="index.html#image-ocr">現行の画像モードと出力仕様</a>を参照してください。Office2MDのPDF出力は廃止しました。</p></div>
+<div class="callout"><p><strong>画像と注釈の実例：</strong><a href="#excel-annotated-images">Excel</a> · <a href="#word-annotated-images">Word</a> · <a href="#powerpoint-annotated-images">PowerPoint</a>。画像同士、編集可能な赤枠・テキストボックス、表に重なる要素を合成したPNG、Markdown、ZIPを並べています。</p></div>
 <div class="cards example-index"><a class="card" href="#excel"><h3>Excel：13シートの包括例</h3><p>文章、6個の表、数式キャッシュ、図形・画像、非表示・未対応要素を一度に確認。</p></a><a class="card" href="#word"><h3>Word：2種類の表と脚注</h3><p>変更履歴、3列表、2件の脚注、2つの図形、画像を実変換。</p></a><a class="card" href="#powerpoint"><h3>PowerPoint：6スライドの表と図</h3><p>2種類の表、レビュー経路、接続線、埋め込み画像を抽出。</p></a></div>
 <p>Excelの見出し行とセル結合の扱いを詳しく比較する場合は、<a href="merge-cases.html">Excel結合・見出しの実例</a>をご覧ください。入力ブックの各ケースと実変換したMarkdown・reportを並べています。RAG向け業務フローのデモ：<a href="#word-rag">Word</a> · <a href="#powerpoint-rag">PowerPoint</a>。入力・実変換Markdown・JSON・スクリーンショットを掲載しています。</p>
-<div class="callout"><p>このページは<strong>同期HTTP</strong>の実行例です。非同期HTTP・直接Queueも同じ変換コアを使いますが、ここでQueue経由の動作やAzure上の性能を測定したものではありません。PowerPointは図中の文字・保存された接続関係・スライド上の大まかな位置を本文にし、位置と未接続の矢印が向く方向をJSONにも残します。見た目はスライド全体の参考画像で確認できます。Word・Excelも図形の文字と保存済み接続を本文に残します。Wordは描画グループ・キャンバス、Excelは明示グループまたは解決した接続を確認用画像にまとめます。</p></div>
+<div class="callout"><p>既存の包括例は<strong>同期HTTP</strong>の実行例です。画像と注釈の例は共通変換コアを直接実行しています。非同期HTTP・直接Queueも同じ変換コアを使いますが、ここでQueue経由の動作やAzure上の性能を測定したものではありません。PowerPointは図中の文字・保存された接続関係・スライド上の大まかな位置を本文にし、位置と未接続の矢印が向く方向をJSONにも残します。見た目は通常の参考画像や、画像と注釈の合成PNGで確認できます。Word・Excelも図形の文字と保存済み接続を本文に残します。画像同士・図形・テキストボックス・表などは位置を確認できる範囲で合成します。Wordの別々の浮動オブジェクトは同一段落・共通座標基準が条件で、表は固定位置・固定サイズの浮動表に限定します。それ以外の図は各形式のグループ・接続の扱いに従います。</p></div>
+<section class="sample-case" aria-labelledby="excel-annotated-images">
+<h2 id="excel-annotated-images">Excel：画像同士・図形・表をまとめる</h2>
+<p>3シートで、画面画像と注釈、画像同士の重なり、セルの表に画像・図形を重ねた配置を比較します。セルの文字・直接塗り・罫線・結合も合成範囲に描画し、値は従来どおりMarkdownへ取り出します。</p>
+<p>画像の端に接するだけの図形と、離れた図形は別のPNGです。セルの書式を完全再現する機能ではなく、合成する範囲の表示内容を簡易描画しています。</p>
+<p>はみ出した内容も表示できるよう画像サイズを広げ、広がった領域の背景だけを透明にします。下の市松模様はページの背景で、PNGには入りません。合成した構成要素を単独の画像として重複出力しません。見た目の重なりを理由に、図形間の意味や接続方向を追加することはありません。</p>
+<p class="sample-meta">共通変換コアの実行結果 · 入力 45,434 bytes · ZIP 201,804 bytes · 3シート · 合成4枚＋独立図形2枚 · 警告0件 · imageMode=ignore</p>
+<div class="sample-links"><a href="examples/excel-annotated-images/input.xlsx" download>入力 XLSX</a><a href="examples/excel-annotated-images/result/document.md" download>実変換 Markdown</a><a href="examples/excel-annotated-images/result.zip" download>実際の出力 ZIP</a><a href="examples/excel-annotated-images/result/report.json">report.json</a><a href="examples/excel-annotated-images/run.json">実行記録・SHA-256</a><a href="examples/excel-annotated-images/README.md">再生成手順</a></div>
+<div class="screenshot-grid">
+<figure class="example-figure"><a href="examples/excel-annotated-images/result/images/image-0001.png" style="background-color:#fff;background-image:linear-gradient(45deg,#e2e8ed 25%,transparent 25%),linear-gradient(-45deg,#e2e8ed 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#e2e8ed 75%),linear-gradient(-45deg,transparent 75%,#e2e8ed 75%);background-size:24px 24px;background-position:0 0,0 12px,12px -12px,-12px 0"><img src="examples/excel-annotated-images/result/images/image-0001.png" alt="画像内の赤枠と、右下にはみ出す注釈" loading="lazy" style="background:transparent"></a><figcaption><strong>画像内の赤枠と、右下にはみ出す注釈</strong>保存された接続先IDから枠と注釈の関係を本文にも残します。<br><a href="examples/excel-annotated-images/result/images/image-0001.png">PNGを原寸で開く</a> · <a href="examples/excel-annotated-images/result/images/image-0001.png" download>PNGを保存</a></figcaption></figure>
+<figure class="example-figure"><a href="examples/excel-annotated-images/result/images/image-0002.png" style="background-color:#fff;background-image:linear-gradient(45deg,#e2e8ed 25%,transparent 25%),linear-gradient(-45deg,#e2e8ed 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#e2e8ed 75%),linear-gradient(-45deg,transparent 75%,#e2e8ed 75%);background-size:24px 24px;background-position:0 0,0 12px,12px -12px,-12px 0"><img src="examples/excel-annotated-images/result/images/image-0002.png" alt="同じ元画像に別の青い注釈" loading="lazy" style="background:transparent"></a><figcaption><strong>同じ元画像に別の青い注釈</strong>元画像が同じでも注釈が違えば異なる合成PNGになります。<br><a href="examples/excel-annotated-images/result/images/image-0002.png">PNGを原寸で開く</a> · <a href="examples/excel-annotated-images/result/images/image-0002.png" download>PNGを保存</a></figcaption></figure>
+<figure class="example-figure"><a href="examples/excel-annotated-images/result/images/image-0003.png" style="background-color:#fff;background-image:linear-gradient(45deg,#e2e8ed 25%,transparent 25%),linear-gradient(-45deg,#e2e8ed 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#e2e8ed 75%),linear-gradient(-45deg,transparent 75%,#e2e8ed 75%);background-size:24px 24px;background-position:0 0,0 12px,12px -12px,-12px 0"><img src="examples/excel-annotated-images/result/images/image-0003.png" alt="画像の上に別の画像" loading="lazy" style="background:transparent"></a><figcaption><strong>画像の上に別の画像</strong>画像だけの重なりを検知し、元の重なり順で1枚へまとめます。<br><a href="examples/excel-annotated-images/result/images/image-0003.png">PNGを原寸で開く</a> · <a href="examples/excel-annotated-images/result/images/image-0003.png" download>PNGを保存</a></figcaption></figure>
+<figure class="example-figure"><a href="examples/excel-annotated-images/result/images/image-0004.png" style="background-color:#fff;background-image:linear-gradient(45deg,#e2e8ed 25%,transparent 25%),linear-gradient(-45deg,#e2e8ed 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#e2e8ed 75%),linear-gradient(-45deg,transparent 75%,#e2e8ed 75%);background-size:24px 24px;background-position:0 0,0 12px,12px -12px,-12px 0"><img src="examples/excel-annotated-images/result/images/image-0004.png" alt="セルの表と画像・図形" loading="lazy" style="background:transparent"></a><figcaption><strong>セルの表と画像・図形</strong>表の塗り・罫線・セル文字と重なる画像・図形を表示します。Markdownの表も保持します。<br><a href="examples/excel-annotated-images/result/images/image-0004.png">PNGを原寸で開く</a> · <a href="examples/excel-annotated-images/result/images/image-0004.png" download>PNGを保存</a></figcaption></figure>
+</div>
+<details class="sample-details"><summary>合成前の元画像と、独立した図形を見る</summary><div class="screenshot-grid two-up">
+<figure class="example-figure"><a href="examples/excel-annotated-images/source-image.png"><img src="examples/excel-annotated-images/source-image.png" alt="注釈を付ける前の元画像" loading="lazy"></a><figcaption><strong>注釈を付ける前の元画像</strong>画面・数値・名称はすべて架空です。<br><a href="examples/excel-annotated-images/source-image.png">PNGを原寸で開く</a> · <a href="examples/excel-annotated-images/source-image.png" download>PNGを保存</a></figcaption></figure>
+<figure class="example-figure"><a href="examples/excel-annotated-images/result/images/diagram-0001.png" style="background-color:#fff;background-image:linear-gradient(45deg,#e2e8ed 25%,transparent 25%),linear-gradient(-45deg,#e2e8ed 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#e2e8ed 75%),linear-gradient(-45deg,transparent 75%,#e2e8ed 75%);background-size:24px 24px;background-position:0 0,0 12px,12px -12px,-12px 0"><img src="examples/excel-annotated-images/result/images/diagram-0001.png" alt="独立した図形 1" loading="lazy" style="background:transparent"></a><figcaption><strong>独立した図形 1</strong>重なりによる合成に含まれない図形は、別のPNGと文字として保持します。<br><a href="examples/excel-annotated-images/result/images/diagram-0001.png">PNGを原寸で開く</a> · <a href="examples/excel-annotated-images/result/images/diagram-0001.png" download>PNGを保存</a></figcaption></figure>
+<figure class="example-figure"><a href="examples/excel-annotated-images/result/images/diagram-0002.png" style="background-color:#fff;background-image:linear-gradient(45deg,#e2e8ed 25%,transparent 25%),linear-gradient(-45deg,#e2e8ed 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#e2e8ed 75%),linear-gradient(-45deg,transparent 75%,#e2e8ed 75%);background-size:24px 24px;background-position:0 0,0 12px,12px -12px,-12px 0"><img src="examples/excel-annotated-images/result/images/diagram-0002.png" alt="独立した図形 2" loading="lazy" style="background:transparent"></a><figcaption><strong>独立した図形 2</strong>重なりによる合成に含まれない図形は、別のPNGと文字として保持します。<br><a href="examples/excel-annotated-images/result/images/diagram-0002.png">PNGを原寸で開く</a> · <a href="examples/excel-annotated-images/result/images/diagram-0002.png" download>PNGを保存</a></figcaption></figure>
+</div></details>
+<p>変換時間 1,015 ms はHTTP・Queueと共通の <code>OfficeMarkdownService</code> を直接実行した実測です。Functions起動・通信時間やAzure上の性能測定は含みません。今回はOCRを指定しておらず、元画像の <code>sourceImages[].ocr.status</code> は <code>notRequested</code> です。OCRモードでも対象は可視処理した元画像だけで、合成PNGや図形・表のPNGは送信しません。同じ可視画像のバイト列に対する結果は同一文書内で共有します。</p>
+<details class="sample-details"><summary>この入力から生成したMarkdown全文</summary><pre><code># [画像と注釈の比較] シート
+
+**画像と注釈の比較 / 同じ画面に異なる図形を重ねた例**
+
+画面は同じPNGを2か所へ配置。赤枠・青枠・注釈はExcelで編集できる図形です。&#32;&#32;
+&lt;strong&gt;① 赤枠 ＋ 画像の外にはみ出す注釈&lt;/strong&gt;　&lt;strong&gt;② 同じ元画像 ＋ 別の青い注釈&lt;/strong&gt;
+
+図中の項目:
+
+- shape-1-1（画像）：架空の申請一覧画面。元画像はscreen\-Bと同一。
+- shape-3（長方形）：文字なし
+- shape-4（長方形）：**送信前に**&lt;br&gt;**状態を確認**
+
+接続関係:
+
+- shape-1-5：shape-3（文字なし） → shape-4「送信前に 状態を確認」
+
+
+
+![{&quot;type&quot;:&quot;図&quot;,&quot;text&quot;:&quot;&quot;,&quot;x&quot;:47.261,&quot;y&quot;:100,&quot;width&quot;:614.399,&quot;height&quot;:380,&quot;sourceIds&quot;:[&quot;shape-1-1&quot;,&quot;shape-3&quot;,&quot;shape-4&quot;,&quot;shape-1-5&quot;]}](images/image-0001.png)
+
+図中の項目:
+
+- shape-2（画像）：架空の申請一覧画面。元画像はscreen\-Aと同一。
+- shape-7（長方形）：**受付番号を確認**&lt;br&gt;**別の注釈を保持**
+
+
+
+![{&quot;type&quot;:&quot;図&quot;,&quot;text&quot;:&quot;&quot;,&quot;x&quot;:756.184,&quot;y&quot;:100,&quot;width&quot;:614.399,&quot;height&quot;:300,&quot;sourceIds&quot;:[&quot;shape-2&quot;,&quot;shape-6&quot;,&quot;shape-7&quot;]}](images/image-0002.png)
+
+図中の項目:
+
+- shape-8（長方形）：**接触だけの図形**&lt;br&gt;**画像とは別に保持**
+
+
+
+![{&quot;type&quot;:&quot;図&quot;,&quot;text&quot;:&quot;&quot;,&quot;x&quot;:1228.798,&quot;y&quot;:320,&quot;width&quot;:236.307,&quot;height&quot;:60}](images/diagram-0001.png)
+
+青い注釈は元画像の右へはみ出します。緑の図形は画像右端に接するだけで、重なる面積はありません。
+
+赤枠は画面内に重なります。注釈は画面の右下へはみ出し、赤枠との保存済み接続を持ちます。
+
+図中の項目:
+
+- shape-9（長方形）：**画像と離れたメモ**&lt;br&gt;**単独の図形として保持**
+
+
+
+![{&quot;type&quot;:&quot;図&quot;,&quot;text&quot;:&quot;&quot;,&quot;x&quot;:47.261,&quot;y&quot;:560,&quot;width&quot;:378.092,&quot;height&quot;:80}](images/diagram-0002.png)
+
+全て架空の内容です。同じ元画像でも注釈が異なれば別の合成結果になり、図形文字と確認できた接続はMarkdownに残ります。
+
+# [画像同士の重なり] シート
+
+**画面に別の画面を重ねる / 画像だけでも1枚に合成**
+
+画像の重なり順と位置を保持。図形がなくても、重なる画像は同じ出力画像へまとめます。
+
+図中の項目:
+
+- shape-1（画像）：背面の画面
+- shape-2（画像）：手前に重ねた画面
+
+
+
+![{&quot;type&quot;:&quot;図&quot;,&quot;text&quot;:&quot;&quot;,&quot;x&quot;:52.513,&quot;y&quot;:110,&quot;width&quot;:840.204,&quot;height&quot;:462,&quot;sourceIds&quot;:[&quot;shape-1&quot;,&quot;shape-2&quot;]}](images/image-0003.png)
+
+# [表と画像と注釈] シート
+
+**表の文字も画像も注釈も保持**
+
+| **対象** | **担当** | **確認ポイント** | **画面 / 状態** | **備考** |
+| --- | --- | --- | --- | --- |
+| 申請一覧 | 業務担当 | 受付番号と状態 |  | 画面上の赤枠を確認 |
+| 承認一覧 | 管理担当 | 承認待ちの表示 |  | 操作手順を添付 |
+| 保存結果 | 開発担当 | 処理履歴 | 正常 | Markdownにも表を保持 |
+
+図中の項目:
+
+- shape-1（画像）：表に重なる画面
+- shape-3（長方形）：**画面と確認箇所を**&lt;br&gt;**まとめて確認**
+
+
+
+![{&quot;type&quot;:&quot;図&quot;,&quot;text&quot;:&quot;&quot;,&quot;x&quot;:0,&quot;y&quot;:108,&quot;width&quot;:588.143,&quot;height&quot;:180,&quot;cellRanges&quot;:[&quot;A4:E7&quot;],&quot;sourceIds&quot;:[&quot;shape-1&quot;,&quot;shape-2&quot;,&quot;shape-3&quot;]}](images/image-0004.png)
+
+表はMarkdownにも残ります。合成画像内の表や図形文字をOCRへ重複送信しません。
+</code></pre></details>
+</section>
+<section class="sample-case" aria-labelledby="word-annotated-images">
+<h2 id="word-annotated-images">Word：画像同士・図形・表をまとめる</h2>
+<p>3ページで、画面画像と注釈、画像同士の重なり、固定位置の浮動表に画像・図形を重ねた配置を比較します。保存された位置を比較できる要素をまとめ、表と図形の文字をMarkdownにも残します。</p>
+<p>通常の浮動画像・図形は同一段落・同じ保存ページ区切り・共通座標基準が条件です。表との合成は、固定列幅と固定行高・数値で保存されたページまたは余白基準位置を持つ浮動表に限ります。表のセルにアンカーがある、同じ座標基準のlayoutInCell=false・重なり許可のオブジェクトを使っています。自動組版のページ位置は推測しません。</p>
+<p>はみ出した内容も表示できるよう画像サイズを広げ、広がった領域の背景だけを透明にします。下の市松模様はページの背景で、PNGには入りません。合成した構成要素を単独の画像として重複出力しません。見た目の重なりを理由に、図形間の意味や接続方向を追加することはありません。</p>
+<p class="sample-meta">共通変換コアの実行結果 · 入力 37,201 bytes · ZIP 88,927 bytes · 3ページの入力 · 合成3枚＋独立図形1枚 · 警告3件 · imageMode=ignore</p>
+<div class="sample-links"><a href="examples/word-annotated-images/input.docx" download>入力 DOCX</a><a href="examples/word-annotated-images/result/document.md" download>実変換 Markdown</a><a href="examples/word-annotated-images/result.zip" download>実際の出力 ZIP</a><a href="examples/word-annotated-images/result/report.json">report.json</a><a href="examples/word-annotated-images/run.json">実行記録・SHA-256</a><a href="examples/word-annotated-images/README.md">再生成手順</a></div>
+<div class="screenshot-grid">
+<figure class="example-figure"><a href="examples/word-annotated-images/result/images/image-0001.png" style="background-color:#fff;background-image:linear-gradient(45deg,#e2e8ed 25%,transparent 25%),linear-gradient(-45deg,#e2e8ed 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#e2e8ed 75%),linear-gradient(-45deg,transparent 75%,#e2e8ed 75%);background-size:24px 24px;background-position:0 0,0 12px,12px -12px,-12px 0"><img src="examples/word-annotated-images/result/images/image-0001.png" alt="画像内の赤枠と、はみ出すテキストボックス" loading="lazy" style="background:transparent"></a><figcaption><strong>画像内の赤枠と、はみ出すテキストボックス</strong>元の塗り・線・文字を保持し、追加の余白だけ透明にします。<br><a href="examples/word-annotated-images/result/images/image-0001.png">PNGを原寸で開く</a> · <a href="examples/word-annotated-images/result/images/image-0001.png" download>PNGを保存</a></figcaption></figure>
+<figure class="example-figure"><a href="examples/word-annotated-images/result/images/image-0002.png" style="background-color:#fff;background-image:linear-gradient(45deg,#e2e8ed 25%,transparent 25%),linear-gradient(-45deg,#e2e8ed 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#e2e8ed 75%),linear-gradient(-45deg,transparent 75%,#e2e8ed 75%);background-size:24px 24px;background-position:0 0,0 12px,12px -12px,-12px 0"><img src="examples/word-annotated-images/result/images/image-0002.png" alt="同じ画像を縮小して上へ重ねる" loading="lazy" style="background:transparent"></a><figcaption><strong>同じ画像を縮小して上へ重ねる</strong>図形がなくても画像同士で合成します。元画像の単独出力はありません。<br><a href="examples/word-annotated-images/result/images/image-0002.png">PNGを原寸で開く</a> · <a href="examples/word-annotated-images/result/images/image-0002.png" download>PNGを保存</a></figcaption></figure>
+<figure class="example-figure"><a href="examples/word-annotated-images/result/images/image-0003.png" style="background-color:#fff;background-image:linear-gradient(45deg,#e2e8ed 25%,transparent 25%),linear-gradient(-45deg,#e2e8ed 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#e2e8ed 75%),linear-gradient(-45deg,transparent 75%,#e2e8ed 75%);background-size:24px 24px;background-position:0 0,0 12px,12px -12px,-12px 0"><img src="examples/word-annotated-images/result/images/image-0003.png" alt="固定浮動表に重なる画像・図形" loading="lazy" style="background:transparent"></a><figcaption><strong>固定浮動表に重なる画像・図形</strong>表はMarkdownにも残し、重なった見た目をPNGにまとめます。<br><a href="examples/word-annotated-images/result/images/image-0003.png">PNGを原寸で開く</a> · <a href="examples/word-annotated-images/result/images/image-0003.png" download>PNGを保存</a></figcaption></figure>
+</div>
+<details class="sample-details"><summary>合成前の元画像と、独立した図形を見る</summary><div class="screenshot-grid two-up">
+<figure class="example-figure"><a href="examples/word-annotated-images/source-image.png"><img src="examples/word-annotated-images/source-image.png" alt="注釈を付ける前の元画像" loading="lazy"></a><figcaption><strong>注釈を付ける前の元画像</strong>画面・数値・名称はすべて架空です。<br><a href="examples/word-annotated-images/source-image.png">PNGを原寸で開く</a> · <a href="examples/word-annotated-images/source-image.png" download>PNGを保存</a></figcaption></figure>
+<figure class="example-figure"><a href="examples/word-annotated-images/result/images/diagram-0001.png" style="background-color:#fff;background-image:linear-gradient(45deg,#e2e8ed 25%,transparent 25%),linear-gradient(-45deg,#e2e8ed 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#e2e8ed 75%),linear-gradient(-45deg,transparent 75%,#e2e8ed 75%);background-size:24px 24px;background-position:0 0,0 12px,12px -12px,-12px 0"><img src="examples/word-annotated-images/result/images/diagram-0001.png" alt="独立した図形 1" loading="lazy" style="background:transparent"></a><figcaption><strong>独立した図形 1</strong>重なりによる合成に含まれない図形は、別のPNGと文字として保持します。<br><a href="examples/word-annotated-images/result/images/diagram-0001.png">PNGを原寸で開く</a> · <a href="examples/word-annotated-images/result/images/diagram-0001.png" download>PNGを保存</a></figcaption></figure>
+</div></details>
+<p>この例の警告は <code>DRAWING_TEXT_APPROXIMATED</code> です。Wordの図形文字の段落書式・余白・文字回転を代表書式で近似していることを示し、変換失敗ではありません。</p>
+<p>変換時間 915 ms はHTTP・Queueと共通の <code>OfficeMarkdownService</code> を直接実行した実測です。Functions起動・通信時間やAzure上の性能測定は含みません。今回はOCRを指定しておらず、元画像の <code>sourceImages[].ocr.status</code> は <code>notRequested</code> です。OCRモードでも対象は可視処理した元画像だけで、合成PNGや図形・表のPNGは送信しません。同じ可視画像のバイト列に対する結果は同一文書内で共有します。</p>
+<details class="sample-details"><summary>この入力から生成したMarkdown全文</summary><pre><code>[page 1]
+
+# **Word / 画面画像と編集可能な注釈**
+
+同じ段落のページ基準で配置した画像・赤枠・注釈です。図形は画像に焼き込まず、Wordで編集できます。
+
+
+
+図中の項目:
+
+- shape-1（画像）：架空の申請一覧画面。赤枠と注釈は別の編集可能な図形。
+- shape-3（長方形）：送信前に&lt;br&gt;状態を確認
+
+
+
+![{&quot;type&quot;:&quot;図&quot;,&quot;text&quot;:&quot;&quot;,&quot;x&quot;:54,&quot;y&quot;:155,&quot;width&quot;:481,&quot;height&quot;:288,&quot;sourceIds&quot;:[&quot;shape-1&quot;,&quot;shape-2&quot;,&quot;shape-3&quot;]}](images/image-0001.png)
+
+
+
+図中の項目:
+
+- shape-1（長方形）：画像と離れたメモ&lt;br&gt;単独の図形として保持
+
+
+
+![{&quot;type&quot;:&quot;長方形&quot;,&quot;text&quot;:&quot;画像と離れたメモ\n単独の図形として保持&quot;,&quot;x&quot;:0,&quot;y&quot;:0,&quot;width&quot;:230,&quot;height&quot;:62}](images/diagram-0001.png)
+
+赤枠と右下の注釈は画面画像へ重なります。緑のメモは画像から離れた場所にあります。
+
+[page 2]
+
+# **Word / 画像の上に画像を重ねる**
+
+同じ画面を縮小して右下へ重ねています。画像同士の重なりも1枚にまとめます。
+
+
+
+図中の項目:
+
+- shape-1（画像）：架空の申請一覧画面。
+- shape-2（画像）：同じ画面を縮小した画像。
+
+
+
+![{&quot;type&quot;:&quot;図&quot;,&quot;text&quot;:&quot;&quot;,&quot;x&quot;:54,&quot;y&quot;:160,&quot;width&quot;:461,&quot;height&quot;:297,&quot;sourceIds&quot;:[&quot;shape-1&quot;,&quot;shape-2&quot;]}](images/image-0002.png)
+
+[page 3]
+
+# **Word / 固定位置の表と画像・図形**
+
+固定列幅・固定行高・保存位置を持つ浮動表です。表の文字はMarkdownにも保持します。
+
+| **項目** | **担当** | **状態** |
+| --- | --- | --- |
+| 申請内容 | 営業 | 確認済み |
+| 承認条件 | 管理 | 再確認 |
+
+図中の項目:
+
+- shape-46（画像）：表に重なる補足画面。
+- shape-47（長方形）：確認対象を強調
+
+
+
+![{&quot;type&quot;:&quot;図&quot;,&quot;text&quot;:&quot;&quot;,&quot;x&quot;:50,&quot;y&quot;:170,&quot;width&quot;:490,&quot;height&quot;:201,&quot;includesTable&quot;:true,&quot;tableRange&quot;:&quot;table:1&quot;,&quot;sourceIds&quot;:[&quot;shape-46&quot;,&quot;shape-47&quot;]}](images/image-0003.png)
+
+</code></pre></details>
+</section>
+
+<section class="sample-case" aria-labelledby="powerpoint-annotated-images">
+<h2 id="powerpoint-annotated-images">PowerPoint：画像同士・図形・表をまとめる</h2>
+<p>3スライドで、画面画像と注釈、画面とその拡大画像、ネイティブ表に画像・赤枠・テキストボックスを重ねた配置を比較します。表や取り出せる文字はMarkdownにも残します。</p>
+<p>同じスライドの保存座標と重なり順を使います。離れた緑の図形は、従来のスライド寸法の参考PNGとして別に残します。重なる通常テキストボックスの文字は、本文へ1回だけ出します。</p>
+<p>はみ出した内容も表示できるよう画像サイズを広げ、広がった領域の背景だけを透明にします。下の市松模様はページの背景で、PNGには入りません。合成した構成要素を単独の画像として重複出力しません。見た目の重なりを理由に、図形間の意味や接続方向を追加することはありません。</p>
+<p class="sample-meta">共通変換コアの実行結果 · 入力 62,153 bytes · ZIP 165,170 bytes · 3スライド · 合成3枚＋独立図形1枚 · 警告0件 · imageMode=ignore</p>
+<div class="sample-links"><a href="examples/powerpoint-annotated-images/input.pptx" download>入力 PPTX</a><a href="examples/powerpoint-annotated-images/result/document.md" download>実変換 Markdown</a><a href="examples/powerpoint-annotated-images/result.zip" download>実際の出力 ZIP</a><a href="examples/powerpoint-annotated-images/result/report.json">report.json</a><a href="examples/powerpoint-annotated-images/run.json">実行記録・SHA-256</a><a href="examples/powerpoint-annotated-images/README.md">再生成手順</a></div>
+<div class="screenshot-grid">
+<figure class="example-figure"><a href="examples/powerpoint-annotated-images/result/images/image-0001.png" style="background-color:#fff;background-image:linear-gradient(45deg,#e2e8ed 25%,transparent 25%),linear-gradient(-45deg,#e2e8ed 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#e2e8ed 75%),linear-gradient(-45deg,transparent 75%,#e2e8ed 75%);background-size:24px 24px;background-position:0 0,0 12px,12px -12px,-12px 0"><img src="examples/powerpoint-annotated-images/result/images/image-0001.png" alt="画像内の赤枠と、はみ出すテキストボックス" loading="lazy" style="background:transparent"></a><figcaption><strong>画像内の赤枠と、はみ出すテキストボックス</strong>塗り・線・文字を描画し、広がった範囲の空白だけ透明にします。<br><a href="examples/powerpoint-annotated-images/result/images/image-0001.png">PNGを原寸で開く</a> · <a href="examples/powerpoint-annotated-images/result/images/image-0001.png" download>PNGを保存</a></figcaption></figure>
+<figure class="example-figure"><a href="examples/powerpoint-annotated-images/result/images/image-0002.png" style="background-color:#fff;background-image:linear-gradient(45deg,#e2e8ed 25%,transparent 25%),linear-gradient(-45deg,#e2e8ed 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#e2e8ed 75%),linear-gradient(-45deg,transparent 75%,#e2e8ed 75%);background-size:24px 24px;background-position:0 0,0 12px,12px -12px,-12px 0"><img src="examples/powerpoint-annotated-images/result/images/image-0002.png" alt="画像の上に拡大画像" loading="lazy" style="background:transparent"></a><figcaption><strong>画像の上に拡大画像</strong>画面全体と、その状態欄・送信ボタンを切り抜いた画像を1枚へ合成します。<br><a href="examples/powerpoint-annotated-images/result/images/image-0002.png">PNGを原寸で開く</a> · <a href="examples/powerpoint-annotated-images/result/images/image-0002.png" download>PNGを保存</a></figcaption></figure>
+<figure class="example-figure"><a href="examples/powerpoint-annotated-images/result/images/image-0003.png" style="background-color:#fff;background-image:linear-gradient(45deg,#e2e8ed 25%,transparent 25%),linear-gradient(-45deg,#e2e8ed 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#e2e8ed 75%),linear-gradient(-45deg,transparent 75%,#e2e8ed 75%);background-size:24px 24px;background-position:0 0,0 12px,12px -12px,-12px 0"><img src="examples/powerpoint-annotated-images/result/images/image-0003.png" alt="表・画面画像・赤枠・テキストボックス" loading="lazy" style="background:transparent"></a><figcaption><strong>表・画面画像・赤枠・テキストボックス</strong>表の値はMarkdownの表へ、注釈は本文へ残し、見た目も1枚にまとめます。<br><a href="examples/powerpoint-annotated-images/result/images/image-0003.png">PNGを原寸で開く</a> · <a href="examples/powerpoint-annotated-images/result/images/image-0003.png" download>PNGを保存</a></figcaption></figure>
+</div>
+<details class="sample-details"><summary>合成前の元画像と、独立した図形を見る</summary><div class="screenshot-grid two-up">
+<figure class="example-figure"><a href="examples/powerpoint-annotated-images/source-image.png"><img src="examples/powerpoint-annotated-images/source-image.png" alt="注釈を付ける前の元画像" loading="lazy"></a><figcaption><strong>注釈を付ける前の元画像</strong>画面・数値・名称はすべて架空です。<br><a href="examples/powerpoint-annotated-images/source-image.png">PNGを原寸で開く</a> · <a href="examples/powerpoint-annotated-images/source-image.png" download>PNGを保存</a></figcaption></figure>
+<figure class="example-figure"><a href="examples/powerpoint-annotated-images/result/images/diagram-0001.png" style="background-color:#fff;background-image:linear-gradient(45deg,#e2e8ed 25%,transparent 25%),linear-gradient(-45deg,#e2e8ed 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#e2e8ed 75%),linear-gradient(-45deg,transparent 75%,#e2e8ed 75%);background-size:24px 24px;background-position:0 0,0 12px,12px -12px,-12px 0"><img src="examples/powerpoint-annotated-images/result/images/diagram-0001.png" alt="独立した図形 1" loading="lazy" style="background:transparent"></a><figcaption><strong>独立した図形 1</strong>重なりによる合成に含まれない図形は、別のPNGと文字として保持します。<br><a href="examples/powerpoint-annotated-images/result/images/diagram-0001.png">PNGを原寸で開く</a> · <a href="examples/powerpoint-annotated-images/result/images/diagram-0001.png" download>PNGを保存</a></figcaption></figure>
+</div></details>
+<p>変換時間 426 ms はHTTP・Queueと共通の <code>OfficeMarkdownService</code> を直接実行した実測です。Functions起動・通信時間やAzure上の性能測定は含みません。今回はOCRを指定しておらず、元画像の <code>sourceImages[].ocr.status</code> は <code>notRequested</code> です。OCRモードでも対象は可視処理した元画像だけで、合成PNGや図形・表のPNGは送信しません。同じ可視画像のバイト列に対する結果は同一文書内で共有します。</p>
+<details class="sample-details"><summary>この入力から生成したMarkdown全文</summary><pre><code>[page 1]
+
+# PowerPoint / 画面画像と編集可能な注釈
+
+赤枠は画像内、注釈は右下へはみ出します。緑のメモは画像から離しています。
+
+**送信前に**
+**状態を確認**
+
+図中の項目:
+
+- shape-4（画像、スライド中央）：架空の申請一覧画面。赤枠と注釈は別の編集可能な図形。
+
+![{&quot;type&quot;:&quot;図&quot;,&quot;text&quot;:&quot;&quot;,&quot;x&quot;:45,&quot;y&quot;:135,&quot;width&quot;:745,&quot;height&quot;:427,&quot;sourceIds&quot;:[&quot;shape-4&quot;,&quot;shape-5&quot;,&quot;shape-6&quot;],&quot;positionOnSlide&quot;:&quot;center-middle&quot;}](images/image-0001.png)
+
+図中の項目:
+
+- shape-7（長方形、スライド右中央）：**画像と離れたメモ**&lt;br&gt;**単独の図形として保持**
+
+![{&quot;type&quot;:&quot;図形&quot;,&quot;text&quot;:&quot;&quot;,&quot;x&quot;:0,&quot;y&quot;:0,&quot;width&quot;:960,&quot;height&quot;:620}](images/diagram-0001.png)
+
+[page 2]
+
+# PowerPoint / 画像の上に画像を重ねる
+
+画面全体に拡大画像を重ねています。画像だけの重なりも1枚へまとめます。
+
+図中の項目:
+
+- shape-4（画像、スライド中央）：架空の申請一覧画面
+- shape-5（画像、スライド右下）：状態欄と送信ボタンの拡大画像
+
+![{&quot;type&quot;:&quot;図&quot;,&quot;text&quot;:&quot;&quot;,&quot;x&quot;:45,&quot;y&quot;:145,&quot;width&quot;:865,&quot;height&quot;:360,&quot;sourceIds&quot;:[&quot;shape-4&quot;,&quot;shape-5&quot;],&quot;positionOnSlide&quot;:&quot;center-middle&quot;}](images/image-0002.png)
+
+[page 3]
+
+# PowerPoint / 表に重なる画像・図形・文字
+
+表はMarkdownの表として残し、重なりを保った見た目も1枚のPNGにします。
+
+| **確認項目** | **担当** | **状態** |
+| --- | --- | --- |
+| 申請内容 | 営業 | 確認済み |
+| 承認条件 | 管理 | 再確認 |
+| 送信前確認 | 担当者 | 未着手 |
+
+**承認条件を再確認**
+
+図中の項目:
+
+- shape-6（画像、スライド右下）：表の右下に重なる補足画面
+
+![{&quot;type&quot;:&quot;図&quot;,&quot;text&quot;:&quot;&quot;,&quot;x&quot;:45,&quot;y&quot;:165,&quot;width&quot;:860,&quot;height&quot;:422,&quot;sourceIds&quot;:[&quot;shape-4&quot;,&quot;shape-5&quot;,&quot;shape-6&quot;,&quot;shape-7&quot;],&quot;positionOnSlide&quot;:&quot;center-middle&quot;}](images/image-0003.png)
+
+</code></pre></details>
+</section>
 <section class="sample-case" aria-labelledby="excel">
 <h2 id="excel">Excel：文章・表・図形・未対応要素を含む13シート</h2>
 <p>13シートから、出力内容のある8シートを残します。非表示2シートと空・取消線のみ・罫線のみの3シートは除外されます。6個の罫線表、部分太字・リンク・取消線、結合セル、保存済みの数式結果、名前付き範囲、画像の重複、入れ子グループ・回転・接続線・未対応グラフを同じファイルに含めています。通常の罫線表では、先頭行に直接塗りつぶしのセルが1つでもあればヘッダーとし、2行目以降は表の表示対象セル（縦結合の続きは除く）がすべて直接塗りつぶされている間だけヘッダーに追加します。直後の行でも左端だけ色付きなら明細として残し、見出し判定は再開しません。先頭行に直接塗りがなければ元の行を明細として残します。左上角だけ罫線がないマトリックスは構造から見出しを判定する例外で、下の24ケースに実出力を示します。採用した元行は <code>report.json</code> の <code>headerSourceRows</code> で確認できます。全行の表示対象セルが直接塗りなら全行が見出しに入り、明細はなくなります。この例の「04_画像」にも該当する表があります。全表示行で同じ明示的な横結合が続く列範囲は1列に畳み、元の列範囲を <code>sourceColumnSpans</code> に記録します。</p>
@@ -68,21 +337,21 @@
 | みかん | 5 | 個 | データB | 20 | 文章として出力 |
 | バナナ | 2 | 本 | データC | 30 |  |
 
-**単一セルの囲みは文章**　**閉じていない罫線**　**値**　**備考**  
-途中の行　10　文章として保持  
+**単一セルの囲みは文章**　**閉じていない罫線**　**値**　**備考**&#32;&#32;
+途中の行　10　文章として保持&#32;&#32;
 最終の行　20　右下の外周が欠ける
 
 下線だけでは表にしません
 
-条件付き書式の見た目は再評価せず、通常の保存値と直接書式を使います。  
+条件付き書式の見た目は再評価せず、通常の保存値と直接書式を使います。&#32;&#32;
 100</code></pre></details>
-<details class="sample-details"><summary>実際のMarkdown抜粋：数式キャッシュと外部画像</summary><pre><code>保存キャッシュ999（数式は1\+2）　999  
+<details class="sample-details"><summary>実際のMarkdown抜粋：数式キャッシュと外部画像</summary><pre><code>保存キャッシュ999（数式は1\+2）　999&#32;&#32;
 数式の通貨表示　¥12,345
 
 キャッシュなしの数式　=1\+2
 
-リンク先と表示が文字列リテラル　[数式の公式リンク](https://poi.apache.org/spreadsheet/)  
-リンク先は固定、表示は保存値　[保存されたリンク表示](https://example.com/cached)  
+リンク先と表示が文字列リテラル　[数式の公式リンク](https://poi.apache.org/spreadsheet/)&#32;&#32;
+リンク先は固定、表示は保存値　[保存されたリンク表示](https://example.com/cached)&#32;&#32;
 リンク先が動的ならリンク化しない　動的なリンク表示
 
 IMAGE関数は取得しない　\[セル内画像: 未対応\]

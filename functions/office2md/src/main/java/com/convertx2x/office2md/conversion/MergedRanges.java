@@ -4,12 +4,12 @@ import java.util.*;
 import org.apache.poi.ss.util.CellRangeAddress;
 
 /** Row interval tree avoids scanning every merged range for every physical cell. */
-final class MergedRanges {
+public final class MergedRanges {
     private final Node root;
     private final List<CellRangeAddress> ranges;
-    MergedRanges(List<CellRangeAddress> ranges) { this.ranges = ranges; root = build(ranges); }
+    public MergedRanges(List<CellRangeAddress> ranges) { this.ranges = ranges; root = build(ranges); }
     List<CellRangeAddress> all() { return ranges; }
-    CellRangeAddress at(int row, int column) { return find(root, row, column); }
+    public CellRangeAddress at(int row, int column) { return find(root, row, column); }
     List<CellRangeAddress> overlappingRows(int first, int last) {
         List<CellRangeAddress> result = new ArrayList<>();
         overlappingRows(root, first, last, result);

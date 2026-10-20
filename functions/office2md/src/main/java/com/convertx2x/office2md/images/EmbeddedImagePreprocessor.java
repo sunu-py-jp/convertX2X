@@ -1,6 +1,7 @@
 package com.convertx2x.office2md.images;
 
 import com.convertx2x.office2md.conversion.ConversionLimits;
+import com.convertx2x.office2md.conversion.ConversionException;
 import com.convertx2x.office2md.conversion.ConversionWorkspace;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
@@ -18,8 +19,8 @@ import org.w3c.dom.Node;
 
 /**
  * Produces the visible pixels of an embedded Office picture without rendering neighboring shapes.
- * The source resolution is the ceiling: placement transforms may rotate or downsample, but never
- * create additional detail. A crop that cannot be applied is never sent to OCR.
+ * Raster source resolution is the ceiling; vectors are first rasterized at two pixels per point.
+ * A crop that cannot be applied is never sent to OCR.
  */
 public final class EmbeddedImagePreprocessor {
     private EmbeddedImagePreprocessor() { }
@@ -94,6 +95,39 @@ public final class EmbeddedImagePreprocessor {
                 return skipped(bytes, extension, contentType, "画像の表示方向を解釈できません。");
         if (!Double.isFinite(placement.getDeterminant()) || Math.abs(placement.getDeterminant()) < 1e-12)
             return skipped(bytes, extension, contentType, "画像の表示方向を解釈できません。");
+
+        if (("dib".equalsIgnoreCase(extension) || "image/x-dib".equalsIgnoreCase(contentType))
+                && !(bytes.length >= 2 && bytes[0] == 'B' && bytes[1] == 'M')) {
+            try {
+                var dib = new org.apache.poi.hwmf.record.HwmfBitmapDib();
+                dib.init(new org.apache.poi.util.LittleEndianInputStream(new ByteArrayInputStream(bytes)), bytes.length);
+                var properties = dib.getGenericProperties();
+                long dibWidth = Math.abs(((Number) properties.get("width").get()).longValue());
+                long dibHeight = Math.abs(((Number) properties.get("height").get()).longValue());
+                if (dibWidth <= 0 || dibHeight <= 0 || dibWidth > limits.maxImagePixels() / dibHeight)
+                    throw ConversionWorkspace.limit("IMAGE_PIXEL_LIMIT", "画像の画素数が上限を超えました。");
+                return prepare(dib.getBMPData(), "bmp", "image/bmp", crop, placement, width, height, limits);
+            } catch (ConversionException limit) { throw limit;
+            } catch (IOException | RuntimeException failure) {
+                return skipped(bytes, extension, contentType, "DIB画像を安全に復号できません。");
+            }
+        }
+
+        if (VectorImageRasterizer.recognizes(bytes, extension, contentType)) {
+            try {
+                BufferedImage vector = VectorImageRasterizer.rasterize(bytes, extension, contentType, width, height, limits);
+                try {
+                    // Apply the same visibility transform exactly once after vector decoding.
+                    Prepared prepared = prepare(encodePng(vector, limits), "png", "image/png", crop,
+                            placement, width, height, limits);
+                    return new Prepared(prepared.bytes(), prepared.extension(), prepared.contentType(),
+                            prepared.ocrEligible(), true, prepared.skipReason());
+                } finally { vector.flush(); }
+            } catch (ConversionException limit) { throw limit;
+            } catch (IOException | RuntimeException failure) {
+                return skipped(bytes, extension, contentType, "ベクター画像を安全に描画できないため原本を保持しました。");
+            }
+        }
 
         try (ImageInputStream stream = ImageIO.createImageInputStream(new ByteArrayInputStream(bytes))) {
             if (stream == null) return skipped(bytes, extension, contentType, "画像形式を復号できません。");
@@ -229,13 +263,22 @@ public final class EmbeddedImagePreprocessor {
             for (Node extension = node.getFirstChild(); extension != null; extension = extension.getNextSibling()) {
                 if (extension.getNodeType() != Node.ELEMENT_NODE) continue;
                 if (!"ext".equals(extension.getLocalName())) return false;
-                boolean localDpi = false;
+                boolean harmlessFeature = false;
                 for (Node feature = extension.getFirstChild(); feature != null; feature = feature.getNextSibling()) {
                     if (feature.getNodeType() != Node.ELEMENT_NODE) continue;
-                    if (!"useLocalDpi".equals(feature.getLocalName()) || localDpi) return false;
-                    localDpi = true;
+                    if (harmlessFeature) return false;
+                    boolean localDpi = "useLocalDpi".equals(feature.getLocalName());
+                    boolean embeddedSvg = "svgBlip".equals(feature.getLocalName())
+                            && "http://schemas.microsoft.com/office/drawing/2016/SVG/main".equals(feature.getNamespaceURI())
+                            && feature.getAttributes() != null
+                            && feature.getAttributes().getNamedItemNS(
+                                    "http://schemas.openxmlformats.org/officeDocument/2006/relationships", "embed") != null
+                            && feature.getAttributes().getNamedItemNS(
+                                    "http://schemas.openxmlformats.org/officeDocument/2006/relationships", "link") == null;
+                    if (!localDpi && !embeddedSvg) return false;
+                    harmlessFeature = true;
                 }
-                if (!localDpi) return false;
+                if (!harmlessFeature) return false;
             }
         }
         return true;

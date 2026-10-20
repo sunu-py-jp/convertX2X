@@ -24,10 +24,10 @@ import urllib.request
 import zipfile
 
 DEFAULT_LIMITS = {
-    "maxInputBytes": 20 * 1024 * 1024, "maxSections": 0,
+    "maxInputBytes": 100 * 1024 * 1024, "maxSections": 0,
     "maxReadItems": 0, "maxTableCells": 0,
     "maxMarkdownBytes": 20 * 1024 * 1024, "maxImages": 0,
-    "maxImageBytes": 20 * 1024 * 1024, "maxOutputBytes": 100 * 1024 * 1024,
+    "maxImageBytes": 20 * 1024 * 1024, "maxOutputBytes": 300 * 1024 * 1024,
     "maxShapes": 0, "maxGroupDepth": 16, "maxImagePixels": 20_000_000,
 }
 SAFE_HEADERS = {"content-type", "content-length", "content-disposition", "x-section-count",

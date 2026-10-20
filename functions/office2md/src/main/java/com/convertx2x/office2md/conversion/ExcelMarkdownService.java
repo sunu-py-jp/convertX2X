@@ -93,7 +93,8 @@ public class ExcelMarkdownService {
                         limits.checkTableCells(tableCells);
                     }
                     List<Block> blocks = blocks(sheet, tableParts, merges, borders, values, workspace);
-                    List<DrawingBlock> drawings = new DrawingExtractor().extract(sheet, workspace);
+                    List<DrawingBlock> drawings = new DrawingExtractor().extract(sheet, workspace,
+                            tableParts.stream().map(part -> part.table().range()).toList());
                     for (DrawingBlock drawing : drawings) {
                         int row = drawing.firstRow(), column = drawing.firstColumn();
                         for (NamedTableRanges.Part part : tableParts) if (overlaps(part.table().range(), drawing)) {

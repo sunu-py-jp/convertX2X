@@ -1,0 +1,383 @@
+{
+  "specVersion" : 1,
+  "source" : {
+    "format" : "docx",
+    "sha256" : "4f3f9a9494b2dcd340b479bace5fb15b3aa8d93335aa7a2ee3beb1170dab79a5",
+    "filename" : "input.docx"
+  },
+  "sectionKind" : "document",
+  "sectionCount" : 1,
+  "warnings" : [ {
+    "code" : "DRAWING_TEXT_APPROXIMATED",
+    "section" : "document",
+    "range" : "paragraph:3",
+    "message" : "Word図形内の文字は取消線・非表示を除去して簡易描画します。段落ごとの書式・余白・文字回転は近似です。"
+  }, {
+    "code" : "DRAWING_TEXT_APPROXIMATED",
+    "section" : "document",
+    "range" : "paragraph:3",
+    "message" : "Word図形内の文字は取消線・非表示を除去して簡易描画します。段落ごとの書式・余白・文字回転は近似です。"
+  }, {
+    "code" : "DRAWING_TEXT_APPROXIMATED",
+    "section" : "document",
+    "range" : "table:1/row:1/column:1",
+    "message" : "Word図形内の文字は取消線・非表示を除去して簡易描画します。段落ごとの書式・余白・文字回転は近似です。"
+  } ],
+  "information" : [ {
+    "code" : "DRAWING_SIMPLIFIED",
+    "section" : "document",
+    "range" : "paragraph:3/drawing:1",
+    "message" : "Wordの図形・保存された接続を文字として保持し、同じ描画領域を確認用画像にまとめました。ページ全体の配置は再現しません。"
+  }, {
+    "code" : "DRAWING_SIMPLIFIED",
+    "section" : "document",
+    "range" : "paragraph:3/drawing:2",
+    "message" : "Wordの図形・保存された接続を文字として保持し、同じ描画領域を確認用画像にまとめました。ページ全体の配置は再現しません。"
+  }, {
+    "code" : "DRAWING_SIMPLIFIED",
+    "section" : "document",
+    "range" : "paragraph:8/drawing:3",
+    "message" : "Wordの図形・保存された接続を文字として保持し、同じ描画領域を確認用画像にまとめました。ページ全体の配置は再現しません。"
+  }, {
+    "code" : "DRAWING_SIMPLIFIED",
+    "section" : "document",
+    "range" : "table:1/drawing:4",
+    "message" : "Wordの図形・保存された接続を文字として保持し、同じ描画領域を確認用画像にまとめました。ページ全体の配置は再現しません。"
+  }, {
+    "code" : "TABLE_DRAWING_SIMPLIFIED",
+    "section" : "document",
+    "range" : "table:1/drawing:4",
+    "message" : "浮動表の保存済み固定位置・列幅・行高に画像や図形を重ねました。表の文字はMarkdownに保持し、画像中のセル書式は直接指定された代表書式で簡易描画します。"
+  } ],
+  "blocks" : [ {
+    "range" : "paragraph:1",
+    "markdownStartLine" : 3,
+    "section" : "document",
+    "markdownEndLine" : 3,
+    "type" : "paragraph"
+  }, {
+    "range" : "paragraph:2",
+    "markdownStartLine" : 5,
+    "section" : "document",
+    "markdownEndLine" : 5,
+    "type" : "paragraph"
+  }, {
+    "type" : "compositeImage",
+    "section" : "document",
+    "range" : "paragraph:3/drawing:1",
+    "path" : "images/image-0001.png",
+    "metadata" : {
+      "type" : "図",
+      "text" : "",
+      "x" : 54,
+      "y" : 155,
+      "width" : 481,
+      "height" : 288,
+      "sourceIds" : [ "shape-1", "shape-2", "shape-3" ]
+    },
+    "sourceImages" : [ {
+      "sha256" : "a744c9f79ab12349212c295d1085352209a200ff2449b9e84c30eac75f1fe62e",
+      "sizeBytes" : 36902,
+      "contentType" : "image/png",
+      "metadata" : {
+        "type" : "画像",
+        "text" : "架空の申請一覧画面。赤枠と注釈は別の編集可能な図形。",
+        "x" : 54,
+        "y" : 155,
+        "width" : 384,
+        "height" : 240,
+        "id" : "shape-1"
+      },
+      "ocr" : {
+        "status" : "notRequested"
+      }
+    } ]
+  }, {
+    "type" : "diagram",
+    "section" : "document",
+    "range" : "paragraph:3/drawing:1",
+    "placement" : "同一段落の浮動図形、保存配置基準: page/page",
+    "nodes" : [ {
+      "type" : "画像",
+      "text" : "架空の申請一覧画面。赤枠と注釈は別の編集可能な図形。",
+      "x" : 54,
+      "y" : 155,
+      "width" : 384,
+      "height" : 240,
+      "id" : "shape-1"
+    }, {
+      "type" : "長方形",
+      "text" : "",
+      "x" : 66,
+      "y" : 326,
+      "width" : 240,
+      "height" : 50,
+      "id" : "shape-2"
+    }, {
+      "type" : "長方形",
+      "text" : "送信前に\n状態を確認",
+      "x" : 365,
+      "y" : 365,
+      "width" : 170,
+      "height" : 78,
+      "id" : "shape-3"
+    } ],
+    "edges" : [ ],
+    "composite" : true,
+    "metadata" : {
+      "type" : "図",
+      "text" : "",
+      "x" : 54,
+      "y" : 155,
+      "width" : 481,
+      "height" : 288,
+      "sourceIds" : [ "shape-1", "shape-2", "shape-3" ]
+    }
+  }, {
+    "type" : "diagram",
+    "section" : "document",
+    "range" : "paragraph:3/drawing:2",
+    "placement" : "浮動図形、paragraph:3、ローカル座標（ページ位置未算出）、保存配置: 水平基準=page、保存オフセット=54pt、垂直基準=page、保存オフセット=485pt",
+    "nodes" : [ {
+      "type" : "長方形",
+      "text" : "画像と離れたメモ\n単独の図形として保持",
+      "x" : 0,
+      "y" : 0,
+      "width" : 230,
+      "height" : 62,
+      "id" : "shape-1"
+    } ],
+    "edges" : [ ],
+    "path" : "images/diagram-0001.png",
+    "metadata" : {
+      "type" : "長方形",
+      "text" : "画像と離れたメモ\n単独の図形として保持",
+      "x" : 0,
+      "y" : 0,
+      "width" : 230,
+      "height" : 62
+    }
+  }, {
+    "range" : "paragraph:3",
+    "markdownStartLine" : 7,
+    "section" : "document",
+    "markdownEndLine" : 26,
+    "type" : "paragraph"
+  }, {
+    "range" : "paragraph:4",
+    "markdownStartLine" : 28,
+    "section" : "document",
+    "markdownEndLine" : 28,
+    "type" : "paragraph"
+  }, {
+    "range" : "paragraph:6",
+    "markdownStartLine" : 32,
+    "section" : "document",
+    "markdownEndLine" : 32,
+    "type" : "paragraph"
+  }, {
+    "range" : "paragraph:7",
+    "markdownStartLine" : 34,
+    "section" : "document",
+    "markdownEndLine" : 34,
+    "type" : "paragraph"
+  }, {
+    "type" : "compositeImage",
+    "section" : "document",
+    "range" : "paragraph:8/drawing:3",
+    "path" : "images/image-0002.png",
+    "metadata" : {
+      "type" : "図",
+      "text" : "",
+      "x" : 54,
+      "y" : 160,
+      "width" : 461,
+      "height" : 297,
+      "sourceIds" : [ "shape-1", "shape-2" ]
+    },
+    "sourceImages" : [ {
+      "sha256" : "a744c9f79ab12349212c295d1085352209a200ff2449b9e84c30eac75f1fe62e",
+      "sizeBytes" : 36902,
+      "contentType" : "image/png",
+      "metadata" : {
+        "type" : "画像",
+        "text" : "架空の申請一覧画面。",
+        "x" : 54,
+        "y" : 160,
+        "width" : 384,
+        "height" : 240,
+        "id" : "shape-1"
+      },
+      "ocr" : {
+        "status" : "notRequested"
+      }
+    }, {
+      "sha256" : "a744c9f79ab12349212c295d1085352209a200ff2449b9e84c30eac75f1fe62e",
+      "sizeBytes" : 36902,
+      "contentType" : "image/png",
+      "metadata" : {
+        "type" : "画像",
+        "text" : "同じ画面を縮小した画像。",
+        "x" : 280,
+        "y" : 310,
+        "width" : 235,
+        "height" : 147,
+        "id" : "shape-2"
+      },
+      "ocr" : {
+        "status" : "notRequested"
+      }
+    } ]
+  }, {
+    "type" : "diagram",
+    "section" : "document",
+    "range" : "paragraph:8/drawing:3",
+    "placement" : "同一段落の浮動図形、保存配置基準: page/page",
+    "nodes" : [ {
+      "type" : "画像",
+      "text" : "架空の申請一覧画面。",
+      "x" : 54,
+      "y" : 160,
+      "width" : 384,
+      "height" : 240,
+      "id" : "shape-1"
+    }, {
+      "type" : "画像",
+      "text" : "同じ画面を縮小した画像。",
+      "x" : 280,
+      "y" : 310,
+      "width" : 235,
+      "height" : 147,
+      "id" : "shape-2"
+    } ],
+    "edges" : [ ],
+    "composite" : true,
+    "metadata" : {
+      "type" : "図",
+      "text" : "",
+      "x" : 54,
+      "y" : 160,
+      "width" : 461,
+      "height" : 297,
+      "sourceIds" : [ "shape-1", "shape-2" ]
+    }
+  }, {
+    "range" : "paragraph:8",
+    "markdownStartLine" : 36,
+    "section" : "document",
+    "markdownEndLine" : 45,
+    "type" : "paragraph"
+  }, {
+    "range" : "paragraph:10",
+    "markdownStartLine" : 49,
+    "section" : "document",
+    "markdownEndLine" : 49,
+    "type" : "paragraph"
+  }, {
+    "range" : "paragraph:11",
+    "markdownStartLine" : 51,
+    "section" : "document",
+    "markdownEndLine" : 51,
+    "type" : "paragraph"
+  }, {
+    "type" : "compositeImage",
+    "section" : "document",
+    "range" : "table:1/drawing:4",
+    "path" : "images/image-0003.png",
+    "metadata" : {
+      "type" : "図",
+      "text" : "",
+      "x" : 50,
+      "y" : 170,
+      "width" : 490,
+      "height" : 201,
+      "includesTable" : true,
+      "tableRange" : "table:1",
+      "sourceIds" : [ "shape-46", "shape-47" ]
+    },
+    "sourceImages" : [ {
+      "sha256" : "a744c9f79ab12349212c295d1085352209a200ff2449b9e84c30eac75f1fe62e",
+      "sizeBytes" : 36902,
+      "contentType" : "image/png",
+      "metadata" : {
+        "type" : "画像",
+        "text" : "表に重なる補足画面。",
+        "x" : 330,
+        "y" : 240,
+        "width" : 210,
+        "height" : 131,
+        "id" : "shape-46"
+      },
+      "ocr" : {
+        "status" : "notRequested"
+      }
+    } ]
+  }, {
+    "type" : "diagram",
+    "section" : "document",
+    "range" : "table:1/drawing:4",
+    "placement" : "同一段落の浮動図形、保存配置基準: page/page",
+    "nodes" : [ {
+      "type" : "画像",
+      "text" : "表に重なる補足画面。",
+      "x" : 330,
+      "y" : 240,
+      "width" : 210,
+      "height" : 131,
+      "id" : "shape-46"
+    }, {
+      "type" : "長方形",
+      "text" : "確認対象を強調",
+      "x" : 350,
+      "y" : 185,
+      "width" : 170,
+      "height" : 60,
+      "id" : "shape-47"
+    } ],
+    "edges" : [ ],
+    "composite" : true,
+    "metadata" : {
+      "type" : "図",
+      "text" : "",
+      "x" : 50,
+      "y" : 170,
+      "width" : 490,
+      "height" : 201,
+      "includesTable" : true,
+      "tableRange" : "table:1",
+      "sourceIds" : [ "shape-46", "shape-47" ]
+    }
+  }, {
+    "range" : "table:1",
+    "markdownStartLine" : 53,
+    "section" : "document",
+    "markdownEndLine" : 65,
+    "type" : "table"
+  } ],
+  "assets" : [ {
+    "sha256" : "2f4dd898f3944d4c0f1566a783345337c2937dcae0908633fa1f0bce5879b202",
+    "contentType" : "image/png",
+    "sizeBytes" : 31471,
+    "sourceKind" : "compositeImage",
+    "path" : "images/image-0001.png"
+  }, {
+    "sha256" : "35806ce5b412652fcf5a5be51f5abe23b01791c22da4173f9b118ca88f68a26f",
+    "contentType" : "image/png",
+    "sizeBytes" : 5622,
+    "sourceKind" : "renderedDiagram",
+    "path" : "images/diagram-0001.png"
+  }, {
+    "sha256" : "74212e1dbe8e48fe20913dad1550acc62d5d8415fec46e552e0b56c358dd7750",
+    "contentType" : "image/png",
+    "sizeBytes" : 35473,
+    "sourceKind" : "compositeImage",
+    "path" : "images/image-0002.png"
+  }, {
+    "sha256" : "dff2308e63b8bd275ae77c2257c6b7e4aef3b38056a39167b184b060438235af",
+    "contentType" : "image/png",
+    "sizeBytes" : 21929,
+    "sourceKind" : "compositeImage",
+    "path" : "images/image-0003.png"
+  } ],
+  "imageMode" : "ignore"
+}

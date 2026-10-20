@@ -214,8 +214,9 @@ public final class WordMarkdownConverter {
         private String paragraph(Node p, PackagePart part, String range, boolean cell, boolean pages) {
             String prefix = numbering.prefix(p, section, range);
             StringBuilder text = new StringBuilder();
+            drawings.beginParagraph();
             inlineChildren(p, p, part, range, text, false, pages);
-            String result = text.toString();
+            String result = drawings.finishParagraph(text.toString());
             boolean breakBefore = pages && on(child(child(p, "pPr"), "pageBreakBefore"));
             if (result.isBlank()) return breakBefore ? PAGE_BREAK : "";
             int heading = styles.heading(p);
@@ -236,7 +237,9 @@ public final class WordMarkdownConverter {
                     for (Node child : children(node)) {
                         if (is(child, "fldChar")) field(child, range, plain);
                         else if (pages && fieldVisible() && (is(child, "lastRenderedPageBreak")
-                                || is(child, "br") && "page".equals(attr(child, "type")))) append(out, PAGE_BREAK);
+                                || is(child, "br") && "page".equals(attr(child, "type")))) {
+                            drawings.pageBreak(); append(out, PAGE_BREAK);
+                        }
                     }
                     return;
                 }
@@ -271,9 +274,13 @@ public final class WordMarkdownConverter {
                 if (!plain) notice("FIELD_CACHED_RESULT", range, "フィールドは実行せず、保存済みの表示だけを保持しました。", true);
                 inlineChildren(node, paragraph, part, range, out, plain, pages);
             } else if (is(node, "br")) {
-                if (fieldVisible()) append(out, pages && "page".equals(attr(node, "type")) ? PAGE_BREAK : "\n");
+                if (fieldVisible()) {
+                    boolean page = pages && "page".equals(attr(node, "type"));
+                    if (page) drawings.pageBreak();
+                    append(out, page ? PAGE_BREAK : "\n");
+                }
             } else if (is(node, "lastRenderedPageBreak")) {
-                if (fieldVisible() && pages) append(out, PAGE_BREAK);
+                if (fieldVisible() && pages) { drawings.pageBreak(); append(out, PAGE_BREAK); }
             } else if (is(node, "cr")) { if (fieldVisible()) append(out, "\n"); }
             else if (is(node, "tab")) { if (fieldVisible()) append(out, "    "); }
             else if (is(node, "noBreakHyphen")) { if (fieldVisible()) append(out, plain ? "‑" : Markdown.escape("‑")); }
@@ -337,6 +344,7 @@ public final class WordMarkdownConverter {
             } else for (Node child : children(node)) visibleParagraphs(child, out);
         }
         private String table(Node table, PackagePart part, String range) {
+            boolean composed = drawings.beginTable(table, part, section, range, this::visibleText);
             List<Node> rows = new ArrayList<>();
             collectRows(table, rows);
             List<List<String>> values = new ArrayList<>();
@@ -370,7 +378,7 @@ public final class WordMarkdownConverter {
                 values.add(cells);
                 width = Math.max(width, cells.size());
             }
-            if (width == 0 || values.isEmpty()) return "";
+            if (width == 0 || values.isEmpty()) return composed ? drawings.finishTable("") : "";
             tableCells += (long) width * (values.size() + (header ? 0 : 1));
             workspace.limits().checkTableCells(tableCells);
             StringBuilder out = new StringBuilder();
@@ -379,7 +387,8 @@ public final class WordMarkdownConverter {
             else tableRow(out, List.of(), width);
             append(out, "|" + " --- |".repeat(width) + "\n");
             for (int i = start; i < values.size(); i++) tableRow(out, values.get(i), width);
-            return out.toString().stripTrailing();
+            String markdown = out.toString().stripTrailing();
+            return composed ? drawings.finishTable(markdown) : markdown;
         }
         private void checkTableWidth(long width, int rows, boolean header) {
             workspace.limits().checkTableCells(tableCells + width * (rows + (header ? 0L : 1L)));

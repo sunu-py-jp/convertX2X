@@ -113,6 +113,9 @@ public final class PowerPointMarkdownConverter {
                         && !(entry.shape instanceof XSLFConnectorShape)
                         && (drawing(entry) || endpoints.contains(range(entry.shape)) || entry.groupKey != null))
                         .sorted(readingOrder()).toList();
+                List<DiagramComponent> diagramComponents = components(visible, nodes, edges);
+                for (DiagramComponent component : diagramComponents) if (component.composite())
+                    for (Entry entry : component.entries()) if (compositePicture(entry)) entry.compositeImage = true;
                 Entry title = entries.stream().filter(entry -> isTitle(entry.shape) && !entry.text.plain().isBlank())
                         .min(readingOrder()).orElse(null);
                 append("[page " + ordinal + "]\n\n");
@@ -129,11 +132,11 @@ public final class PowerPointMarkdownConverter {
                         emitEmbeddedImage(entry, slideBounds);
                     else if (!drawing(entry) && !(entry.normalText && endpoints.contains(range(entry.shape)))) emit(entry);
                 }
-                if (!nodes.isEmpty() || !edges.isEmpty()) {
+                if (!diagramComponents.isEmpty()) {
                     int componentOrdinal = 0;
-                    for (DiagramComponent component : components(visible, nodes, edges))
+                    for (DiagramComponent component : diagramComponents)
                         emitDiagram(slide, component.entries(), component.nodes(), component.edges(), ordinal,
-                                ++componentOrdinal, slideBounds);
+                                ++componentOrdinal, slideBounds, component.composite());
                 }
             }
             workspace.write("document.md", markdown.toString().getBytes(StandardCharsets.UTF_8));
@@ -195,9 +198,8 @@ public final class PowerPointMarkdownConverter {
                     if (pictureBytes.length > limits.maxImageBytes()) throw ConversionWorkspace.limit("IMAGE_BYTES_LIMIT", "画像1件のサイズが上限を超えました。");
                     entry.picture = data;
                     entry.pictureType = data.getType();
-                    entry.attachment = entry.pictureType != PictureType.PNG && entry.pictureType != PictureType.JPEG;
-                    if (entry.attachment) workspace.warning("UNSUPPORTED_IMAGE_FORMAT", section, range(shape), "PNG・JPEG以外の画像は参考図に描画せず、個別の画像または原本添付として残します。");
-                    else checkPicturePixels(pictureBytes);
+                    if (entry.pictureType == PictureType.PNG || entry.pictureType == PictureType.JPEG)
+                        checkPicturePixels(pictureBytes);
                     String extension = entry.pictureType.extension.replace(".", "").toLowerCase(Locale.ROOT);
                     if (!extension.matches("[a-z0-9]{1,8}")) extension = "bin";
                     java.awt.Insets clipping = picture.getClipping();
@@ -218,6 +220,11 @@ public final class PowerPointMarkdownConverter {
                                     false, false, "画像の非矩形マスク・透明化を安全に再現できません。");
                     entry.visiblePicture = entry.visiblePicture.withBytes(
                             workspace.retainImageBytes(entry.visiblePicture.bytes()));
+                    // The preparation step safely normalizes supported raster/vector formats.
+                    // Eligibility follows those decoded pixels, not the original file extension.
+                    entry.attachment = entry.visiblePicture.skipReason() != null
+                            || !Set.of("image/png", "image/jpeg").contains(entry.visiblePicture.contentType());
+                    if (!entry.attachment) checkPicturePixels(entry.visiblePicture.bytes());
                     if (entry.visiblePicture.skipReason() != null)
                         workspace.warning("IMAGE_VISIBLE_AREA_UNAVAILABLE", section, range(shape),
                                 entry.visiblePicture.skipReason() + "元画像を保存しました。");
@@ -286,7 +293,7 @@ public final class PowerPointMarkdownConverter {
         }
 
         private void emitDiagram(XSLFSlide slide, List<Entry> visible, List<Entry> nodes, List<PresentationConnections.Edge> edges,
-                                 int ordinal, int componentOrdinal, Rectangle2D slideBounds) throws IOException {
+                                 int ordinal, int componentOrdinal, Rectangle2D slideBounds, boolean composite) throws IOException {
             Map<String, Entry> byId = new HashMap<>();
             Set<String> endpoints = new HashSet<>();
             for (var edge : edges) {
@@ -354,18 +361,37 @@ public final class PowerPointMarkdownConverter {
                 }
                 append("\n");
             }
-            boolean hasNonPictureLayer = visible.stream().anyMatch(entry -> entry.unsupported == null
-                    && entry.picture == null);
-            List<PresentationRenderer.Layer> layers = visible.stream()
+            List<Entry> rendered = visible.stream()
                     .filter(entry -> entry.unsupported == null && !entry.attachment
-                            && (entry.picture == null || hasNonPictureLayer && !entry.croppedPicture))
-                    .sorted(Comparator.comparingInt(entry -> entry.order))
-                    .map(entry -> new PresentationRenderer.Layer(entry.shape, entry.parentTransform)).toList();
+                            && (entry.picture == null || composite && compositePicture(entry)))
+                    .sorted(Comparator.comparingInt(entry -> entry.order)).toList();
+            List<PresentationRenderer.Layer> layers = rendered.stream()
+                    .map(entry -> entry.picture == null
+                            ? new PresentationRenderer.Layer(entry.shape, entry.parentTransform)
+                            : PresentationRenderer.Layer.picture(entry.shape, entry.visiblePicture.bytes(), entry.bounds)).toList();
             Map<String, Object> block = new LinkedHashMap<>();
             String blockRange = "slide-" + ordinal + "-diagram-" + componentOrdinal;
             block.put("type", "diagram"); block.put("section", section); block.put("range", blockRange);
             block.put("nodes", nodeMetadata); block.put("edges", edgeMetadata);
-            if (!layers.isEmpty()) {
+            if (!layers.isEmpty() && composite) {
+                Rectangle2D bounds = unionBounds(rendered);
+                Map<String, Object> metadata = PresentationImageMetadata.of("図", "", bounds);
+                List<String> sourceIds = rendered.stream().map(entry -> range(entry.shape)).toList();
+                metadata.put("sourceIds", sourceIds);
+                metadata.put("positionOnSlide", PresentationSpatialMetadata.positionOnSlide(bounds, slideBounds));
+                List<ConversionWorkspace.CompositeImageSource> sources = new ArrayList<>();
+                for (Entry entry : rendered) if (entry.picture != null) {
+                    Map<String, Object> source = PresentationImageMetadata.of("画像", nodeText(entry), entry.bounds);
+                    source.put("id", range(entry.shape));
+                    source.put("positionOnSlide", PresentationSpatialMetadata.positionOnSlide(entry.bounds, slideBounds));
+                    sources.add(new ConversionWorkspace.CompositeImageSource(entry.visiblePicture.bytes(),
+                            entry.visiblePicture.extension(), entry.visiblePicture.contentType(), source,
+                            entry.visiblePicture.ocrEligible()));
+                }
+                append(workspace.compositeImage(PresentationRenderer.png(layers, bounds, limits),
+                        metadata, sources, section, blockRange) + "\n\n");
+                block.put("composite", true); block.put("sourceIds", sourceIds); block.put("metadata", metadata);
+            } else if (!layers.isEmpty()) {
                 var background = PresentationRenderer.background(slide);
                 if (background.approximated()) workspace.warning("UNSUPPORTED_SLIDE_BACKGROUND", section, "slide-" + ordinal,
                         "参考画像の背景は単色のみ対応しています。画像・グラデーションなどの背景は取得せず白色に置き換えました。");
@@ -378,7 +404,7 @@ public final class PowerPointMarkdownConverter {
         }
 
         private void emitEmbeddedImage(Entry entry, Rectangle2D slideBounds) {
-            if (entry.picture == null || entry.visiblePicture == null || entry.embeddedImageEmitted) return;
+            if (entry.picture == null || entry.visiblePicture == null || entry.embeddedImageEmitted || entry.compositeImage) return;
             Map<String, Object> metadata = PresentationImageMetadata.of(typeName(entry), nodeText(entry), entry.bounds);
             metadata.put("positionOnSlide", PresentationSpatialMetadata.positionOnSlide(entry.bounds, slideBounds));
             append("\n" + workspace.embeddedImage(entry.visiblePicture.bytes(), entry.visiblePicture.extension(),
@@ -431,6 +457,17 @@ public final class PowerPointMarkdownConverter {
             for (Entry node : nodes) candidates.put(range(node.shape), node);
             for (Entry entry : visible) if (entry.unsupported == null && entry.shape instanceof XSLFConnectorShape)
                 candidates.put(range(entry.shape), entry);
+            // Images and tables are visual bases. Their overlapping pictures, native drawings,
+            // and textboxes share one preview while editable text/table content remains Markdown.
+            // These overlap edges never become semantic graph relationships.
+            List<String[]> overlaps = new ArrayList<>();
+            for (Entry base : visible) if (compositeBase(base)) {
+                for (Entry shape : visible) if (visualOverlaps(base, shape)) {
+                    candidates.putIfAbsent(range(base.shape), base);
+                    candidates.putIfAbsent(range(shape.shape), shape);
+                    overlaps.add(new String[] { range(base.shape), range(shape.shape) });
+                }
+            }
             Map<String, String> parents = new LinkedHashMap<>();
             Map<String, String> groupRoots = new HashMap<>();
             for (Entry entry : candidates.values()) {
@@ -445,6 +482,11 @@ public final class PowerPointMarkdownConverter {
                 if (edge.startId() != null && parents.containsKey(edge.startId())) union(parents, edge.id(), edge.startId());
                 if (edge.endId() != null && parents.containsKey(edge.endId())) union(parents, edge.id(), edge.endId());
             }
+            for (String[] pair : overlaps) union(parents, pair[0], pair[1]);
+            Set<String> overlappingIds = new HashSet<>();
+            for (String[] pair : overlaps) {
+                overlappingIds.add(pair[0]); overlappingIds.add(pair[1]);
+            }
             Map<String, List<Entry>> grouped = new LinkedHashMap<>();
             for (Entry entry : candidates.values()) grouped.computeIfAbsent(root(parents, range(entry.shape)), ignored -> new ArrayList<>()).add(entry);
             List<DiagramComponent> result = new ArrayList<>();
@@ -452,22 +494,25 @@ public final class PowerPointMarkdownConverter {
             for (List<Entry> entries : grouped.values()) {
                 entries.sort(Comparator.comparingInt(entry -> entry.order));
                 if (entries.size() == 1) unconnected.add(entries.getFirst());
-                else result.add(component(entries, nodes, edges));
+                else result.add(component(entries, nodes, edges,
+                        entries.stream().anyMatch(PowerPointMarkdownConverter::compositePicture)
+                                || entries.stream().anyMatch(entry -> entry.table != null
+                                    && overlappingIds.contains(range(entry.shape)))));
             }
-            if (!unconnected.isEmpty()) result.add(component(unconnected, nodes, edges));
+            if (!unconnected.isEmpty()) result.add(component(unconnected, nodes, edges, false));
             result.sort(Comparator.comparingInt(component -> component.entries().getFirst().order));
             return result;
         }
 
         private DiagramComponent component(List<Entry> entries, List<Entry> nodes,
-                                           List<PresentationConnections.Edge> edges) {
+                                           List<PresentationConnections.Edge> edges, boolean composite) {
             List<Entry> ordered = entries.stream().sorted(Comparator.comparingInt(entry -> entry.order)).toList();
             Set<String> ids = new HashSet<>();
             for (Entry entry : ordered) ids.add(range(entry.shape));
             List<Entry> componentNodes = nodes.stream().filter(node -> ids.contains(range(node.shape)))
                     .sorted(readingOrder()).toList();
             List<PresentationConnections.Edge> componentEdges = edges.stream().filter(edge -> ids.contains(edge.id())).toList();
-            return new DiagramComponent(ordered, componentNodes, componentEdges);
+            return new DiagramComponent(ordered, componentNodes, componentEdges, composite);
         }
 
         private String root(Map<String, String> parents, String id) {
@@ -542,7 +587,7 @@ public final class PowerPointMarkdownConverter {
         String table, unsupported, shapeLink, pictureDescription = "";
         XSLFPictureData picture; PictureType pictureType;
         EmbeddedImagePreprocessor.Prepared visiblePicture;
-        boolean embeddedImageEmitted;
+        boolean embeddedImageEmitted, compositeImage;
         Entry(XSLFShape shape, Rectangle2D bounds, int order, AffineTransform parentTransform, String groupKey) {
             this.shape = shape; this.bounds = bounds; this.order = order;
             this.parentTransform = parentTransform;
@@ -550,7 +595,31 @@ public final class PowerPointMarkdownConverter {
         }
     }
     private record DiagramComponent(List<Entry> entries, List<Entry> nodes,
-                                    List<PresentationConnections.Edge> edges) { }
+                                    List<PresentationConnections.Edge> edges, boolean composite) { }
+    private static boolean compositePicture(Entry entry) {
+        return entry.picture != null && !entry.attachment && entry.visiblePicture != null
+                && entry.visiblePicture.skipReason() == null && entry.bounds.getWidth() > 0 && entry.bounds.getHeight() > 0;
+    }
+    private static boolean compositeBase(Entry entry) {
+        return entry.unsupported == null && (entry.table != null || compositePicture(entry));
+    }
+    private static boolean visualOverlaps(Entry base, Entry shape) {
+        if (base == shape || shape.unsupported != null) return false;
+        Rectangle2D baseAnchor = anchor(base.shape), shapeAnchor = anchor(shape.shape);
+        if (baseAnchor == null || shapeAnchor == null) return false;
+        AffineTransform baseTransform = shapeTransform(base.shape, base.parentTransform, baseAnchor);
+        AffineTransform targetTransform = shapeTransform(shape.shape, shape.parentTransform, shapeAnchor);
+        if (compositeBase(shape))
+            return PresentationOverlap.intersects(baseAnchor, baseTransform, shapeAnchor, targetTransform);
+        // Unavailable picture geometry must remain a separate attachment, not a native POI draw.
+        if (shape.picture != null || !(shape.shape instanceof XSLFSimpleShape simple)) return false;
+        return PresentationOverlap.intersects(baseAnchor, baseTransform, simple, targetTransform);
+    }
+    private static Rectangle2D unionBounds(List<Entry> entries) {
+        Rectangle2D bounds = null;
+        for (Entry entry : entries) bounds = bounds == null ? (Rectangle2D) entry.bounds.clone() : bounds.createUnion(entry.bounds);
+        return bounds;
+    }
     private static void leaves(Entry entry, List<Entry> target) {
         if (entry.children.isEmpty()) target.add(entry); else entry.children.forEach(child -> leaves(child, target));
     }

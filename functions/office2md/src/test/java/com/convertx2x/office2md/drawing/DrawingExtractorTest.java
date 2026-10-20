@@ -4,7 +4,9 @@ import com.convertx2x.office2md.conversion.ConversionException;
 import com.convertx2x.office2md.conversion.ConversionLimits;
 import com.convertx2x.office2md.conversion.ConversionWorkspace;
 import com.convertx2x.office2md.conversion.ExcelMarkdownService;
+import com.convertx2x.office2md.images.EmbeddedImagePreprocessor;
 import java.awt.Color;
+import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -115,7 +117,7 @@ class DrawingExtractorTest {
         }
     }
 
-    @Test void overlapAloneDoesNotGroupUnrelatedDrawings() throws Exception {
+    @Test void overlappingBackgroundShapeAndPictureProduceOneCompositeInSavedOrder() throws Exception {
         byte[] original = png(Color.RED);
         try (var book = new XSSFWorkbook(); var workspace = workspace()) {
             var sheet = book.createSheet("図");
@@ -124,17 +126,150 @@ class DrawingExtractorTest {
             rectangle.setShapeType(ShapeTypes.RECT); rectangle.setFillColor(0, 128, 0);
             drawing.createPicture(anchor(2, 3, 6, 9), book.addPicture(original, Workbook.PICTURE_TYPE_PNG));
             List<DrawingBlock> blocks = extractor.extract(sheet, workspace);
-            assertEquals(2, blocks.size()); assertEquals(2, workspace.files().size());
-            assertTrue(blocks.getFirst().markdown().contains("images/diagram-0001.png"));
-            assertTrue(blocks.getLast().markdown().contains("images/image-0001.png"));
-            assertEquals(1, blocks.getFirst().firstRow()); assertEquals(3, blocks.getLast().firstRow());
-            BufferedImage first = image(workspace, "images/diagram-0001.png");
-            BufferedImage second = image(workspace, "images/image-0001.png");
+            assertEquals(1, blocks.size()); assertEquals(1, workspace.files().size());
+            assertTrue(blocks.getFirst().markdown().contains("images/image-0001.png"));
+            assertEquals(1, blocks.getFirst().markdown().lines().filter(line -> line.startsWith("![")).count());
+            assertFalse(blocks.getFirst().markdown().contains("images/diagram-"));
+            assertEquals(1, blocks.getFirst().firstRow());
+            assertEquals(2, ((List<?>) blocks.getFirst().metadata().get("sourceIds")).size());
+            assertTrue(((List<?>) blocks.getFirst().metadata().get("edges")).isEmpty());
+            BufferedImage first = image(workspace, "images/image-0001.png");
             try {
-                assertEquals(0, countColor(first, Color.RED));
+                assertTrue(countColor(first, Color.RED) > 100);
                 assertTrue(countColor(first, new Color(0, 128, 0)) > 100);
-                assertTrue(countColor(second, Color.RED) > 100);
-            } finally { first.flush(); second.flush(); }
+                assertEquals(Color.RED.getRGB(), first.getRGB(first.getWidth() / 2, first.getHeight() / 2));
+                assertEquals(0, first.getRGB(0, 0) >>> 24);
+            } finally { first.flush(); }
+        }
+    }
+
+    @Test void touchingOrSeparatedPictureAndShapeStaySeparate() throws Exception {
+        for (int startColumn : new int[]{4, 6}) {
+            try (var book = new XSSFWorkbook(); var workspace = workspace()) {
+                var sheet = book.createSheet("接触");
+                var drawing = sheet.createDrawingPatriarch();
+                drawing.createPicture(anchor(1, 1, 4, 5), book.addPicture(png(Color.BLUE), Workbook.PICTURE_TYPE_PNG));
+                var shape = drawing.createSimpleShape(anchor(startColumn, 2, startColumn + 2, 4));
+                shape.setShapeType(ShapeTypes.RECT);
+                assertEquals(2, extractor.extract(sheet, workspace).size());
+                assertEquals(2, workspace.files().size());
+            }
+        }
+    }
+
+    @Test void overlapGroupsPicturesButDoesNotInventGroupsForUnconnectedShapesOnly() throws Exception {
+        try (var book = new XSSFWorkbook(); var workspace = workspace()) {
+            var sheet = book.createSheet("画像のみ");
+            var drawing = sheet.createDrawingPatriarch();
+            drawing.createPicture(anchor(1, 1, 5, 6), book.addPicture(png(Color.BLUE), Workbook.PICTURE_TYPE_PNG));
+            drawing.createPicture(anchor(2, 2, 6, 7), book.addPicture(png(Color.RED), Workbook.PICTURE_TYPE_PNG));
+            var blocks = extractor.extract(sheet, workspace);
+            assertEquals(1, blocks.size());
+            assertEquals(1, workspace.files().size());
+            assertEquals(2, ((List<?>) blocks.getFirst().metadata().get("sourceIds")).size());
+            assertTrue(blocks.getFirst().markdown().contains("images/image-0001.png"));
+        }
+        try (var book = new XSSFWorkbook(); var workspace = workspace()) {
+            var sheet = book.createSheet("図形のみ");
+            var drawing = sheet.createDrawingPatriarch();
+            drawing.createSimpleShape(anchor(1, 1, 5, 6)).setShapeType(ShapeTypes.RECT);
+            drawing.createSimpleShape(anchor(2, 2, 6, 7)).setShapeType(ShapeTypes.ELLIPSE);
+            assertEquals(2, extractor.extract(sheet, workspace).size());
+            assertEquals(2, workspace.files().size());
+        }
+    }
+
+    @Test void positiveOverlapHandlesZeroAreaLinesAndRejectsRotatedBoundingBoxCorners() {
+        var picture = new DrawingScene.Item();
+        picture.kind = DrawingScene.Kind.PICTURE;
+        picture.width = picture.height = 100;
+        picture.visiblePicture = new EmbeddedImagePreprocessor.Prepared(new byte[0], "png", "image/png", true, false, null);
+        var line = new DrawingScene.Item();
+        line.kind = DrawingScene.Kind.LINE; line.width = 100; line.height = 0;
+        line.transform = AffineTransform.getTranslateInstance(-50, 50);
+        assertTrue(DrawingScene.pictureOverlapsShape(picture, line));
+        line.transform = AffineTransform.getTranslateInstance(-100, 50);
+        assertFalse(DrawingScene.pictureOverlapsShape(picture, line), "endpoint-only contact is not overlap");
+        line.transform = AffineTransform.getTranslateInstance(0, 0);
+        assertFalse(DrawingScene.pictureOverlapsShape(picture, line), "a segment along the edge only touches");
+        line.width = 0; line.height = 120;
+        line.transform = AffineTransform.getTranslateInstance(50, -10);
+        assertTrue(DrawingScene.pictureOverlapsShape(picture, line));
+
+        picture.transform = AffineTransform.getRotateInstance(Math.PI / 4, 50, 50);
+        var shape = new DrawingScene.Item();
+        shape.kind = DrawingScene.Kind.RECTANGLE; shape.width = shape.height = 5;
+        shape.transform = AffineTransform.getTranslateInstance(-19, -19);
+        assertTrue(picture.placementBounds().intersects(shape.placementBounds()));
+        assertFalse(DrawingScene.pictureOverlapsShape(picture, shape), "empty rotated bounding-box corner must not join");
+        shape.transform = AffineTransform.getTranslateInstance(48, 48);
+        assertTrue(DrawingScene.pictureOverlapsShape(picture, shape));
+    }
+
+    @Test void cropRotationAndFlipAreAppliedExactlyOnceInComposite() throws Exception {
+        BufferedImage source = new BufferedImage(60, 30, BufferedImage.TYPE_INT_RGB);
+        var graphics = source.createGraphics();
+        graphics.setColor(Color.RED); graphics.fillRect(0, 0, 20, 30);
+        graphics.setColor(Color.GREEN); graphics.fillRect(20, 0, 20, 30);
+        graphics.setColor(Color.BLUE); graphics.fillRect(40, 0, 20, 30);
+        graphics.dispose();
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream(); ImageIO.write(source, "png", bytes); source.flush();
+        try (var book = new XSSFWorkbook(); var workspace = workspace()) {
+            var sheet = book.createSheet("切抜きと方向");
+            var drawing = sheet.createDrawingPatriarch();
+            var picture = drawing.createPicture(anchor(2, 12, 8, 16), book.addPicture(bytes.toByteArray(), Workbook.PICTURE_TYPE_PNG));
+            picture.getCTPicture().getBlipFill().addNewSrcRect().setL(33333);
+            picture.getCTPicture().getSpPr().getXfrm().setRot(90 * 60000);
+            picture.getCTPicture().getSpPr().getXfrm().setFlipH(true);
+            var frame = drawing.createSimpleShape(anchor(0, 1, 10, 30));
+            frame.setShapeType(ShapeTypes.RECT); frame.setNoFill(true); frame.setLineStyleColor(255, 0, 255);
+            var blocks = extractor.extract(sheet, workspace);
+            assertEquals(1, blocks.size()); assertEquals(1, workspace.files().size());
+            BufferedImage result = image(workspace, "images/image-0001.png");
+            try {
+                assertEquals(0, countColor(result, Color.RED), "cropped source pixels must never reappear");
+                assertTrue(countColor(result, Color.BLUE) > 100);
+                assertTrue(countColor(result, Color.GREEN) > 100);
+                assertTrue(colorCenterY(result, Color.BLUE) + 30 < colorCenterY(result, Color.GREEN),
+                        "horizontal flip followed by 90-degree rotation puts blue above green");
+                assertEquals(0, result.getRGB(0, 0) >>> 24);
+            } finally { result.flush(); }
+        }
+    }
+
+    @Test void pictureWithUnsupportedMaskKeepsSeparateOriginalFallback() throws Exception {
+        try (var book = new XSSFWorkbook(); var workspace = workspace()) {
+            var sheet = book.createSheet("マスク");
+            var drawing = sheet.createDrawingPatriarch();
+            var picture = drawing.createPicture(anchor(2, 2, 6, 7), book.addPicture(png(Color.BLUE), Workbook.PICTURE_TYPE_PNG));
+            picture.getCTPicture().getSpPr().getPrstGeom().setPrst(STShapeType.ELLIPSE);
+            var shape = drawing.createSimpleShape(anchor(1, 1, 8, 9));
+            shape.setShapeType(ShapeTypes.RECT); shape.setNoFill(true);
+            var blocks = extractor.extract(sheet, workspace);
+            assertEquals(2, blocks.size()); assertEquals(2, workspace.files().size());
+            assertTrue(blocks.stream().noneMatch(block -> Boolean.TRUE.equals(block.metadata().get("composite"))));
+            assertTrue(workspace.warningCount() > 0);
+            assertTrue(countColor(image(workspace, "images/image-0001.png"), Color.BLUE) > 100);
+        }
+    }
+
+    @Test void xlsOverlapCompositesSurviveWorkbookRoundTrip() throws Exception {
+        try (var original = new HSSFWorkbook()) {
+            var sheet = original.createSheet("重なり");
+            var drawing = sheet.createDrawingPatriarch();
+            drawing.createPicture(hssfAnchor(1, 1, 5, 8), original.addPicture(png(Color.BLUE), Workbook.PICTURE_TYPE_PNG));
+            var rectangle = drawing.createSimpleShape(hssfAnchor(3, 4, 7, 12));
+            rectangle.setShapeType(HSSFShapeTypes.Rectangle); rectangle.setFillColor(255, 0, 0);
+            try (Workbook book = roundTrip(original); var workspace = workspace()) {
+                var blocks = extractor.extract(book.getSheetAt(0), workspace);
+                assertEquals(1, blocks.size()); assertEquals(1, workspace.files().size());
+                BufferedImage result = image(workspace, "images/image-0001.png");
+                try {
+                    assertTrue(countColor(result, Color.BLUE) > 100);
+                    assertTrue(countColor(result, Color.RED) > 100);
+                    assertEquals(0, result.getRGB(0, 0) >>> 24);
+                } finally { result.flush(); }
+            }
         }
     }
 
@@ -238,7 +373,7 @@ class DrawingExtractorTest {
         }
     }
 
-    @Test void explicitlyUnsupportedImageFormatRemainsAnOriginalAttachment() throws Exception {
+    @Test void bmpImageIsNormalizedToPngWithoutUnsupportedFormatWarning() throws Exception {
         BufferedImage image = new BufferedImage(20, 15, BufferedImage.TYPE_INT_RGB);
         var output = new ByteArrayOutputStream();
         ImageIO.write(image, "bmp", output); image.flush();
@@ -253,7 +388,7 @@ class DrawingExtractorTest {
             BufferedImage converted = image(workspace, "images/image-0001.png");
             try { assertEquals(20, converted.getWidth()); assertEquals(15, converted.getHeight()); }
             finally { converted.flush(); }
-            assertTrue(workspace.warningCount() > 0);
+            assertEquals(0, workspace.warningCount());
         }
     }
 
@@ -359,6 +494,14 @@ class DrawingExtractorTest {
         for (int y = 0; y < image.getHeight(); y++) for (int x = 0; x < image.getWidth(); x++)
             if (image.getRGB(x, y) == color.getRGB()) count++;
         return count;
+    }
+    private static double colorCenterY(BufferedImage image, Color color) {
+        long total = 0, count = 0;
+        for (int y = 0; y < image.getHeight(); y++) for (int x = 0; x < image.getWidth(); x++) {
+            if (image.getRGB(x, y) == color.getRGB()) { total += y; count++; }
+        }
+        assertTrue(count > 0);
+        return total / (double) count;
     }
     private static void assertVisiblePng(byte[] bytes) throws Exception {
         BufferedImage image = ImageIO.read(new ByteArrayInputStream(bytes));

@@ -31,8 +31,8 @@ public record ConversionLimits(long maxInputBytes, int maxSections, int maxReadI
     }
 
     public static ConversionLimits defaults() {
-        return new ConversionLimits(20L * 1024 * 1024, 0, 0, 0,
-                20L * 1024 * 1024, 0, 20L * 1024 * 1024, 100L * 1024 * 1024,
+        return new ConversionLimits(100L * 1024 * 1024, 0, 0, 0,
+                20L * 1024 * 1024, 0, 20L * 1024 * 1024, 300L * 1024 * 1024,
                 0, 16, 20_000_000);
     }
 }
