@@ -1,9 +1,9 @@
 {
-  "startedAt": "2026-10-20T09:32:09.902223+00:00",
+  "startedAt": "2026-10-20T12:12:29.406943+00:00",
   "transport": "real HTTP",
   "baseUrl": "http://localhost:7076/api",
   "capabilities": {
-    "asyncEnabled": true,
+    "asyncEnabled": false,
     "supportedFormats": [
       "xlsx",
       "xls"
@@ -29,11 +29,11 @@
   "fixtures": {
     "wide-table": {
       "path": "inputs/wide-table.xlsx",
-      "bytes": 14368,
-      "sha256": "ecdce76d078a00c3ac8e8003f23c43e4a3c9e74f1a8debe8b653f8fcca32de16",
+      "bytes": 14358,
+      "sha256": "abc6aebf40cb028d4a748840612699fed02a03be187d26b962b6369016d37fb1",
       "sheetNames": [
         "24列の横長一覧",
-        "48列・可読性不足"
+        "48列・横分割"
       ],
       "pictureCount": 0,
       "mediaParts": [],
@@ -41,10 +41,12 @@
     },
     "embedded-images": {
       "path": "inputs/embedded-images.xlsx",
-      "bytes": 127055,
-      "sha256": "e260fd365a9e755f0dd1ebe480b9231a342c425471fe214b4ffac51345fea5f2",
+      "bytes": 131307,
+      "sha256": "06a722926a0e4df74d676f72317d53d2e38490e495e01a18252b35a4235e5aed",
       "sheetNames": [
-        "画像3種と記録"
+        "画像3種と記録",
+        "文字のはみ出し比較",
+        "縦書きと折返し中央"
       ],
       "pictureCount": 3,
       "mediaParts": [
@@ -120,11 +122,11 @@
     },
     "wide-with-images": {
       "path": "inputs/wide-with-images.xlsx",
-      "bytes": 147932,
-      "sha256": "a7624f058589d5cd8722d6bb0503096a872370d05d1fb26a565427536679446a",
+      "bytes": 147956,
+      "sha256": "e675018d7d337100144126f6f7c0be8b2fafde81707b1bd25794f549a631e26e",
       "sheetNames": [
         "横長一覧と画像",
-        "52列・可読性不足"
+        "52列・横分割"
       ],
       "pictureCount": 3,
       "mediaParts": [
@@ -176,7 +178,7 @@
           }
         },
         {
-          "sheet": "52列・可読性不足",
+          "sheet": "52列・横分割",
           "name": "Picture 1",
           "drawingPart": "xl/drawings/drawing2.xml",
           "mediaPart": "xl/media/image3.png",
@@ -202,6 +204,7 @@
   "requests": [
     {
       "fixture": "wide-table",
+      "selection": "workbook",
       "method": "POST",
       "endpoint": "/convert",
       "parameters": {
@@ -209,13 +212,13 @@
         "format": "png"
       },
       "httpStatus": 200,
-      "elapsedMs": 136,
-      "responseBytes": 152351,
+      "elapsedMs": 1326,
+      "responseBytes": 313218,
       "zip": "outputs/wide-table/png.zip",
       "report": "outputs/wide-table/png/report.json",
-      "pageCount": 1,
-      "sectionCount": 1,
-      "warningCount": 1,
+      "pageCount": 3,
+      "sectionCount": 2,
+      "warningCount": 4,
       "outcome": "partial",
       "ranges": [
         {
@@ -229,13 +232,71 @@
           ]
         },
         {
-          "sheet": "48列・可読性不足",
+          "sheet": "48列・横分割",
           "range": "A1:AV29",
           "selection": "printArea",
-          "status": "skipped",
-          "reason": "WIDTH_UNREADABLE",
-          "message": "幅を収めると文字が最小可読サイズを下回るため、この範囲をスキップしました。",
-          "pages": []
+          "status": "rendered",
+          "pixelsPerPoint": 1.0909090909090908,
+          "pages": [
+            2,
+            3
+          ]
+        }
+      ],
+      "pages": [
+        {
+          "page": 1,
+          "sheet": "24列の横長一覧",
+          "range": "A1:X29",
+          "path": "pages/page-001.png",
+          "widthPixels": 2048,
+          "heightPixels": 787,
+          "firstRow": 1,
+          "lastRow": 29,
+          "firstColumn": 1,
+          "lastColumn": 24,
+          "sourceBoundsPoints": {
+            "width": 1795.9359855651855,
+            "y": 0.0,
+            "x": 0.0,
+            "height": 690.0
+          }
+        },
+        {
+          "page": 2,
+          "sheet": "48列・横分割",
+          "range": "A1:AV29",
+          "path": "pages/page-002.png",
+          "widthPixels": 2006,
+          "heightPixels": 760,
+          "firstRow": 1,
+          "lastRow": 29,
+          "firstColumn": 1,
+          "lastColumn": 25,
+          "sourceBoundsPoints": {
+            "width": 1837.9461765289307,
+            "y": 0.0,
+            "x": 0.0,
+            "height": 696.0
+          }
+        },
+        {
+          "page": 3,
+          "sheet": "48列・横分割",
+          "range": "A1:AV29",
+          "path": "pages/page-003.png",
+          "widthPixels": 1845,
+          "heightPixels": 760,
+          "firstRow": 1,
+          "lastRow": 29,
+          "firstColumn": 26,
+          "lastColumn": 48,
+          "sourceBoundsPoints": {
+            "width": 1690.9104824066162,
+            "y": 0.0,
+            "x": 1837.9461765289307,
+            "height": 696.0
+          }
         }
       ],
       "pictureEvidence": {
@@ -248,6 +309,7 @@
     },
     {
       "fixture": "wide-table",
+      "selection": "workbook",
       "method": "POST",
       "endpoint": "/convert",
       "parameters": {
@@ -255,13 +317,13 @@
         "format": "pdf"
       },
       "httpStatus": 200,
-      "elapsedMs": 292,
-      "responseBytes": 216290,
+      "elapsedMs": 699,
+      "responseBytes": 407873,
       "zip": "outputs/wide-table/pdf.zip",
       "report": "outputs/wide-table/pdf/report.json",
-      "pageCount": 1,
-      "sectionCount": 1,
-      "warningCount": 1,
+      "pageCount": 3,
+      "sectionCount": 2,
+      "warningCount": 4,
       "outcome": "partial",
       "ranges": [
         {
@@ -275,13 +337,71 @@
           ]
         },
         {
-          "sheet": "48列・可読性不足",
+          "sheet": "48列・横分割",
           "range": "A1:AV29",
           "selection": "printArea",
-          "status": "skipped",
-          "reason": "WIDTH_UNREADABLE",
-          "message": "幅を収めると文字が最小可読サイズを下回るため、この範囲をスキップしました。",
-          "pages": []
+          "status": "rendered",
+          "pixelsPerPoint": 1.0909090909090908,
+          "pages": [
+            2,
+            3
+          ]
+        }
+      ],
+      "pages": [
+        {
+          "page": 1,
+          "sheet": "24列の横長一覧",
+          "range": "A1:X29",
+          "path": "document.pdf",
+          "widthPixels": 2048,
+          "heightPixels": 787,
+          "firstRow": 1,
+          "lastRow": 29,
+          "firstColumn": 1,
+          "lastColumn": 24,
+          "sourceBoundsPoints": {
+            "width": 1795.9359855651855,
+            "y": 0.0,
+            "x": 0.0,
+            "height": 690.0
+          }
+        },
+        {
+          "page": 2,
+          "sheet": "48列・横分割",
+          "range": "A1:AV29",
+          "path": "document.pdf",
+          "widthPixels": 2006,
+          "heightPixels": 760,
+          "firstRow": 1,
+          "lastRow": 29,
+          "firstColumn": 1,
+          "lastColumn": 25,
+          "sourceBoundsPoints": {
+            "width": 1837.9461765289307,
+            "y": 0.0,
+            "x": 0.0,
+            "height": 696.0
+          }
+        },
+        {
+          "page": 3,
+          "sheet": "48列・横分割",
+          "range": "A1:AV29",
+          "path": "document.pdf",
+          "widthPixels": 1845,
+          "heightPixels": 760,
+          "firstRow": 1,
+          "lastRow": 29,
+          "firstColumn": 26,
+          "lastColumn": 48,
+          "sourceBoundsPoints": {
+            "width": 1690.9104824066162,
+            "y": 0.0,
+            "x": 1837.9461765289307,
+            "height": 696.0
+          }
         }
       ],
       "pictureEvidence": {
@@ -294,36 +414,163 @@
     },
     {
       "fixture": "wide-table",
+      "selection": "wide-sheet",
       "method": "POST",
       "endpoint": "/convert",
       "parameters": {
         "filename": "wide-table.xlsx",
         "format": "png",
-        "sheet": "48列・可読性不足"
+        "sheet": "48列・横分割"
       },
-      "httpStatus": 422,
-      "elapsedMs": 44,
-      "responseBytes": 799,
-      "errorResponse": "outputs/wide-table/oversized-error.json",
-      "errorCode": "NO_RENDERABLE_RANGE",
-      "pageCount": 0,
-      "sectionCount": 0,
-      "warningCount": 0,
+      "httpStatus": 200,
+      "elapsedMs": 192,
+      "responseBytes": 161192,
+      "zip": "outputs/wide-table/wide-sheet/png.zip",
+      "report": "outputs/wide-table/wide-sheet/png/report.json",
+      "pageCount": 2,
+      "sectionCount": 1,
+      "warningCount": 3,
       "outcome": "partial",
       "ranges": [
         {
-          "sheet": "48列・可読性不足",
+          "sheet": "48列・横分割",
           "range": "A1:AV29",
           "selection": "printArea",
-          "status": "skipped",
-          "reason": "WIDTH_UNREADABLE",
-          "message": "幅を収めると文字が最小可読サイズを下回るため、この範囲をスキップしました。",
-          "pages": []
+          "status": "rendered",
+          "pixelsPerPoint": 1.0909090909090908,
+          "pages": [
+            1,
+            2
+          ]
         }
-      ]
+      ],
+      "pages": [
+        {
+          "page": 1,
+          "sheet": "48列・横分割",
+          "range": "A1:AV29",
+          "path": "pages/page-001.png",
+          "widthPixels": 2006,
+          "heightPixels": 760,
+          "firstRow": 1,
+          "lastRow": 29,
+          "firstColumn": 1,
+          "lastColumn": 25,
+          "sourceBoundsPoints": {
+            "width": 1837.9461765289307,
+            "y": 0.0,
+            "x": 0.0,
+            "height": 696.0
+          }
+        },
+        {
+          "page": 2,
+          "sheet": "48列・横分割",
+          "range": "A1:AV29",
+          "path": "pages/page-002.png",
+          "widthPixels": 1845,
+          "heightPixels": 760,
+          "firstRow": 1,
+          "lastRow": 29,
+          "firstColumn": 26,
+          "lastColumn": 48,
+          "sourceBoundsPoints": {
+            "width": 1690.9104824066162,
+            "y": 0.0,
+            "x": 1837.9461765289307,
+            "height": 696.0
+          }
+        }
+      ],
+      "pictureEvidence": {
+        "inputPictureCount": 0,
+        "picturesCoveredByReportedPages": 0,
+        "pictures": [],
+        "drawingWarnings": [],
+        "verification": "Workbook picture relationships and reported page/anchor coverage; visual fidelity is checked separately."
+      }
+    },
+    {
+      "fixture": "wide-table",
+      "selection": "wide-sheet",
+      "method": "POST",
+      "endpoint": "/convert",
+      "parameters": {
+        "filename": "wide-table.xlsx",
+        "format": "pdf",
+        "sheet": "48列・横分割"
+      },
+      "httpStatus": 200,
+      "elapsedMs": 417,
+      "responseBytes": 213202,
+      "zip": "outputs/wide-table/wide-sheet/pdf.zip",
+      "report": "outputs/wide-table/wide-sheet/pdf/report.json",
+      "pageCount": 2,
+      "sectionCount": 1,
+      "warningCount": 3,
+      "outcome": "partial",
+      "ranges": [
+        {
+          "sheet": "48列・横分割",
+          "range": "A1:AV29",
+          "selection": "printArea",
+          "status": "rendered",
+          "pixelsPerPoint": 1.0909090909090908,
+          "pages": [
+            1,
+            2
+          ]
+        }
+      ],
+      "pages": [
+        {
+          "page": 1,
+          "sheet": "48列・横分割",
+          "range": "A1:AV29",
+          "path": "document.pdf",
+          "widthPixels": 2006,
+          "heightPixels": 760,
+          "firstRow": 1,
+          "lastRow": 29,
+          "firstColumn": 1,
+          "lastColumn": 25,
+          "sourceBoundsPoints": {
+            "width": 1837.9461765289307,
+            "y": 0.0,
+            "x": 0.0,
+            "height": 696.0
+          }
+        },
+        {
+          "page": 2,
+          "sheet": "48列・横分割",
+          "range": "A1:AV29",
+          "path": "document.pdf",
+          "widthPixels": 1845,
+          "heightPixels": 760,
+          "firstRow": 1,
+          "lastRow": 29,
+          "firstColumn": 26,
+          "lastColumn": 48,
+          "sourceBoundsPoints": {
+            "width": 1690.9104824066162,
+            "y": 0.0,
+            "x": 1837.9461765289307,
+            "height": 696.0
+          }
+        }
+      ],
+      "pictureEvidence": {
+        "inputPictureCount": 0,
+        "picturesCoveredByReportedPages": 0,
+        "pictures": [],
+        "drawingWarnings": [],
+        "verification": "Workbook picture relationships and reported page/anchor coverage; visual fidelity is checked separately."
+      }
     },
     {
       "fixture": "embedded-images",
+      "selection": "workbook",
       "method": "POST",
       "endpoint": "/convert",
       "parameters": {
@@ -331,14 +578,14 @@
         "format": "png"
       },
       "httpStatus": 200,
-      "elapsedMs": 200,
-      "responseBytes": 337040,
+      "elapsedMs": 368,
+      "responseBytes": 580625,
       "zip": "outputs/embedded-images/png.zip",
       "report": "outputs/embedded-images/png/report.json",
-      "pageCount": 1,
-      "sectionCount": 1,
-      "warningCount": 0,
-      "outcome": "complete",
+      "pageCount": 3,
+      "sectionCount": 3,
+      "warningCount": 1,
+      "outcome": "partial",
       "ranges": [
         {
           "sheet": "画像3種と記録",
@@ -349,6 +596,82 @@
           "pages": [
             1
           ]
+        },
+        {
+          "sheet": "文字のはみ出し比較",
+          "range": "A1:L22",
+          "selection": "printArea",
+          "status": "rendered",
+          "pixelsPerPoint": 2.0,
+          "pages": [
+            2
+          ]
+        },
+        {
+          "sheet": "縦書きと折返し中央",
+          "range": "A1:U26",
+          "selection": "printArea",
+          "status": "rendered",
+          "pixelsPerPoint": 2.0,
+          "pages": [
+            3
+          ]
+        }
+      ],
+      "pages": [
+        {
+          "page": 1,
+          "sheet": "画像3種と記録",
+          "range": "A1:O38",
+          "path": "pages/page-001.png",
+          "widthPixels": 1733,
+          "heightPixels": 1824,
+          "firstRow": 1,
+          "lastRow": 38,
+          "firstColumn": 1,
+          "lastColumn": 15,
+          "sourceBoundsPoints": {
+            "width": 866.460371017456,
+            "y": 0.0,
+            "x": 0.0,
+            "height": 912.0
+          }
+        },
+        {
+          "page": 2,
+          "sheet": "文字のはみ出し比較",
+          "range": "A1:L22",
+          "path": "pages/page-002.png",
+          "widthPixels": 1187,
+          "heightPixels": 1232,
+          "firstRow": 1,
+          "lastRow": 22,
+          "firstColumn": 1,
+          "lastColumn": 12,
+          "sourceBoundsPoints": {
+            "width": 593.394063949585,
+            "y": 0.0,
+            "x": 0.0,
+            "height": 616.0
+          }
+        },
+        {
+          "page": 3,
+          "sheet": "縦書きと折返し中央",
+          "range": "A1:U26",
+          "path": "pages/page-003.png",
+          "widthPixels": 1082,
+          "heightPixels": 1304,
+          "firstRow": 1,
+          "lastRow": 26,
+          "firstColumn": 1,
+          "lastColumn": 21,
+          "sourceBoundsPoints": {
+            "width": 540.8813123703003,
+            "y": 0.0,
+            "x": 0.0,
+            "height": 652.0
+          }
         }
       ],
       "pictureEvidence": {
@@ -383,6 +706,7 @@
     },
     {
       "fixture": "embedded-images",
+      "selection": "workbook",
       "method": "POST",
       "endpoint": "/convert",
       "parameters": {
@@ -390,14 +714,14 @@
         "format": "pdf"
       },
       "httpStatus": 200,
-      "elapsedMs": 372,
-      "responseBytes": 425147,
+      "elapsedMs": 592,
+      "responseBytes": 778044,
       "zip": "outputs/embedded-images/pdf.zip",
       "report": "outputs/embedded-images/pdf/report.json",
-      "pageCount": 1,
-      "sectionCount": 1,
-      "warningCount": 0,
-      "outcome": "complete",
+      "pageCount": 3,
+      "sectionCount": 3,
+      "warningCount": 1,
+      "outcome": "partial",
       "ranges": [
         {
           "sheet": "画像3種と記録",
@@ -408,6 +732,82 @@
           "pages": [
             1
           ]
+        },
+        {
+          "sheet": "文字のはみ出し比較",
+          "range": "A1:L22",
+          "selection": "printArea",
+          "status": "rendered",
+          "pixelsPerPoint": 2.0,
+          "pages": [
+            2
+          ]
+        },
+        {
+          "sheet": "縦書きと折返し中央",
+          "range": "A1:U26",
+          "selection": "printArea",
+          "status": "rendered",
+          "pixelsPerPoint": 2.0,
+          "pages": [
+            3
+          ]
+        }
+      ],
+      "pages": [
+        {
+          "page": 1,
+          "sheet": "画像3種と記録",
+          "range": "A1:O38",
+          "path": "document.pdf",
+          "widthPixels": 1733,
+          "heightPixels": 1824,
+          "firstRow": 1,
+          "lastRow": 38,
+          "firstColumn": 1,
+          "lastColumn": 15,
+          "sourceBoundsPoints": {
+            "width": 866.460371017456,
+            "y": 0.0,
+            "x": 0.0,
+            "height": 912.0
+          }
+        },
+        {
+          "page": 2,
+          "sheet": "文字のはみ出し比較",
+          "range": "A1:L22",
+          "path": "document.pdf",
+          "widthPixels": 1187,
+          "heightPixels": 1232,
+          "firstRow": 1,
+          "lastRow": 22,
+          "firstColumn": 1,
+          "lastColumn": 12,
+          "sourceBoundsPoints": {
+            "width": 593.394063949585,
+            "y": 0.0,
+            "x": 0.0,
+            "height": 616.0
+          }
+        },
+        {
+          "page": 3,
+          "sheet": "縦書きと折返し中央",
+          "range": "A1:U26",
+          "path": "document.pdf",
+          "widthPixels": 1082,
+          "heightPixels": 1304,
+          "firstRow": 1,
+          "lastRow": 26,
+          "firstColumn": 1,
+          "lastColumn": 21,
+          "sourceBoundsPoints": {
+            "width": 540.8813123703003,
+            "y": 0.0,
+            "x": 0.0,
+            "height": 652.0
+          }
         }
       ],
       "pictureEvidence": {
@@ -442,6 +842,7 @@
     },
     {
       "fixture": "wide-with-images",
+      "selection": "workbook",
       "method": "POST",
       "endpoint": "/convert",
       "parameters": {
@@ -449,13 +850,13 @@
         "format": "png"
       },
       "httpStatus": 200,
-      "elapsedMs": 183,
-      "responseBytes": 276052,
+      "elapsedMs": 367,
+      "responseBytes": 482669,
       "zip": "outputs/wide-with-images/png.zip",
       "report": "outputs/wide-with-images/png/report.json",
-      "pageCount": 1,
-      "sectionCount": 1,
-      "warningCount": 1,
+      "pageCount": 3,
+      "sectionCount": 2,
+      "warningCount": 5,
       "outcome": "partial",
       "ranges": [
         {
@@ -469,18 +870,76 @@
           ]
         },
         {
-          "sheet": "52列・可読性不足",
+          "sheet": "52列・横分割",
           "range": "A1:AZ29",
           "selection": "printArea",
-          "status": "skipped",
-          "reason": "WIDTH_UNREADABLE",
-          "message": "幅を収めると文字が最小可読サイズを下回るため、この範囲をスキップしました。",
-          "pages": []
+          "status": "rendered",
+          "pixelsPerPoint": 1.0909090909090908,
+          "pages": [
+            2,
+            3
+          ]
+        }
+      ],
+      "pages": [
+        {
+          "page": 1,
+          "sheet": "横長一覧と画像",
+          "range": "A1:AA38",
+          "path": "pages/page-001.png",
+          "widthPixels": 2048,
+          "heightPixels": 1098,
+          "firstRow": 1,
+          "lastRow": 38,
+          "firstColumn": 1,
+          "lastColumn": 27,
+          "sourceBoundsPoints": {
+            "width": 1701.4131202697754,
+            "y": 0.0,
+            "x": 0.0,
+            "height": 912.0
+          }
+        },
+        {
+          "page": 2,
+          "sheet": "52列・横分割",
+          "range": "A1:AZ29",
+          "path": "pages/page-002.png",
+          "widthPixels": 1994,
+          "heightPixels": 760,
+          "firstRow": 1,
+          "lastRow": 29,
+          "firstColumn": 1,
+          "lastColumn": 29,
+          "sourceBoundsPoints": {
+            "width": 1827.4437217712402,
+            "y": 0.0,
+            "x": 0.0,
+            "height": 696.0
+          }
+        },
+        {
+          "page": 3,
+          "sheet": "52列・横分割",
+          "range": "A1:AZ29",
+          "path": "pages/page-003.png",
+          "widthPixels": 1582,
+          "heightPixels": 760,
+          "firstRow": 1,
+          "lastRow": 29,
+          "firstColumn": 30,
+          "lastColumn": 52,
+          "sourceBoundsPoints": {
+            "width": 1449.3519172668457,
+            "y": 0.0,
+            "x": 1827.4437217712402,
+            "height": 696.0
+          }
         }
       ],
       "pictureEvidence": {
         "inputPictureCount": 3,
-        "picturesCoveredByReportedPages": 2,
+        "picturesCoveredByReportedPages": 3,
         "pictures": [
           {
             "sheet": "横長一覧と画像",
@@ -497,17 +956,26 @@
             ]
           },
           {
-            "sheet": "52列・可読性不足",
+            "sheet": "52列・横分割",
             "mediaPart": "xl/media/image3.png",
-            "reportedPagesOverlappingAnchor": []
+            "reportedPagesOverlappingAnchor": [
+              3
+            ]
           }
         ],
-        "drawingWarnings": [],
+        "drawingWarnings": [
+          {
+            "code": "DRAWING_PAGINATION",
+            "sheet": "52列・横分割",
+            "message": "図形はシート座標のまま描画します。ページ境界にまたがる部分は次のページに続きます。"
+          }
+        ],
         "verification": "Workbook picture relationships and reported page/anchor coverage; visual fidelity is checked separately."
       }
     },
     {
       "fixture": "wide-with-images",
+      "selection": "workbook",
       "method": "POST",
       "endpoint": "/convert",
       "parameters": {
@@ -515,13 +983,13 @@
         "format": "pdf"
       },
       "httpStatus": 200,
-      "elapsedMs": 324,
-      "responseBytes": 377667,
+      "elapsedMs": 642,
+      "responseBytes": 622539,
       "zip": "outputs/wide-with-images/pdf.zip",
       "report": "outputs/wide-with-images/pdf/report.json",
-      "pageCount": 1,
-      "sectionCount": 1,
-      "warningCount": 1,
+      "pageCount": 3,
+      "sectionCount": 2,
+      "warningCount": 6,
       "outcome": "partial",
       "ranges": [
         {
@@ -535,18 +1003,76 @@
           ]
         },
         {
-          "sheet": "52列・可読性不足",
+          "sheet": "52列・横分割",
           "range": "A1:AZ29",
           "selection": "printArea",
-          "status": "skipped",
-          "reason": "WIDTH_UNREADABLE",
-          "message": "幅を収めると文字が最小可読サイズを下回るため、この範囲をスキップしました。",
-          "pages": []
+          "status": "rendered",
+          "pixelsPerPoint": 1.0909090909090908,
+          "pages": [
+            2,
+            3
+          ]
+        }
+      ],
+      "pages": [
+        {
+          "page": 1,
+          "sheet": "横長一覧と画像",
+          "range": "A1:AA38",
+          "path": "document.pdf",
+          "widthPixels": 2048,
+          "heightPixels": 1098,
+          "firstRow": 1,
+          "lastRow": 38,
+          "firstColumn": 1,
+          "lastColumn": 27,
+          "sourceBoundsPoints": {
+            "width": 1701.4131202697754,
+            "y": 0.0,
+            "x": 0.0,
+            "height": 912.0
+          }
+        },
+        {
+          "page": 2,
+          "sheet": "52列・横分割",
+          "range": "A1:AZ29",
+          "path": "document.pdf",
+          "widthPixels": 1994,
+          "heightPixels": 760,
+          "firstRow": 1,
+          "lastRow": 29,
+          "firstColumn": 1,
+          "lastColumn": 29,
+          "sourceBoundsPoints": {
+            "width": 1827.4437217712402,
+            "y": 0.0,
+            "x": 0.0,
+            "height": 696.0
+          }
+        },
+        {
+          "page": 3,
+          "sheet": "52列・横分割",
+          "range": "A1:AZ29",
+          "path": "document.pdf",
+          "widthPixels": 1582,
+          "heightPixels": 760,
+          "firstRow": 1,
+          "lastRow": 29,
+          "firstColumn": 30,
+          "lastColumn": 52,
+          "sourceBoundsPoints": {
+            "width": 1449.3519172668457,
+            "y": 0.0,
+            "x": 1827.4437217712402,
+            "height": 696.0
+          }
         }
       ],
       "pictureEvidence": {
         "inputPictureCount": 3,
-        "picturesCoveredByReportedPages": 2,
+        "picturesCoveredByReportedPages": 3,
         "pictures": [
           {
             "sheet": "横長一覧と画像",
@@ -563,45 +1089,217 @@
             ]
           },
           {
-            "sheet": "52列・可読性不足",
+            "sheet": "52列・横分割",
             "mediaPart": "xl/media/image3.png",
-            "reportedPagesOverlappingAnchor": []
+            "reportedPagesOverlappingAnchor": [
+              3
+            ]
           }
         ],
-        "drawingWarnings": [],
+        "drawingWarnings": [
+          {
+            "code": "DRAWING_PAGINATION",
+            "sheet": "52列・横分割",
+            "message": "図形はシート座標のまま描画します。ページ境界にまたがる部分は次のページに続きます。"
+          },
+          {
+            "code": "PDF_TEXT_OVERLAPS_DRAWING",
+            "sheet": "52列・横分割",
+            "message": "図形と重なるセル文字は、画像に隠された内容を検索文字層に含めないため、PDF検索対象から除外しました。"
+          }
+        ],
         "verification": "Workbook picture relationships and reported page/anchor coverage; visual fidelity is checked separately."
       }
     },
     {
       "fixture": "wide-with-images",
+      "selection": "wide-sheet",
       "method": "POST",
       "endpoint": "/convert",
       "parameters": {
         "filename": "wide-with-images.xlsx",
         "format": "png",
-        "sheet": "52列・可読性不足"
+        "sheet": "52列・横分割"
       },
-      "httpStatus": 422,
-      "elapsedMs": 43,
-      "responseBytes": 805,
-      "errorResponse": "outputs/wide-with-images/oversized-error.json",
-      "errorCode": "NO_RENDERABLE_RANGE",
-      "pageCount": 0,
-      "sectionCount": 0,
-      "warningCount": 0,
+      "httpStatus": 200,
+      "elapsedMs": 211,
+      "responseBytes": 205887,
+      "zip": "outputs/wide-with-images/wide-sheet/png.zip",
+      "report": "outputs/wide-with-images/wide-sheet/png/report.json",
+      "pageCount": 2,
+      "sectionCount": 1,
+      "warningCount": 4,
       "outcome": "partial",
       "ranges": [
         {
-          "sheet": "52列・可読性不足",
+          "sheet": "52列・横分割",
           "range": "A1:AZ29",
           "selection": "printArea",
-          "status": "skipped",
-          "reason": "WIDTH_UNREADABLE",
-          "message": "幅を収めると文字が最小可読サイズを下回るため、この範囲をスキップしました。",
-          "pages": []
+          "status": "rendered",
+          "pixelsPerPoint": 1.0909090909090908,
+          "pages": [
+            1,
+            2
+          ]
         }
-      ]
+      ],
+      "pages": [
+        {
+          "page": 1,
+          "sheet": "52列・横分割",
+          "range": "A1:AZ29",
+          "path": "pages/page-001.png",
+          "widthPixels": 1994,
+          "heightPixels": 760,
+          "firstRow": 1,
+          "lastRow": 29,
+          "firstColumn": 1,
+          "lastColumn": 29,
+          "sourceBoundsPoints": {
+            "width": 1827.4437217712402,
+            "y": 0.0,
+            "x": 0.0,
+            "height": 696.0
+          }
+        },
+        {
+          "page": 2,
+          "sheet": "52列・横分割",
+          "range": "A1:AZ29",
+          "path": "pages/page-002.png",
+          "widthPixels": 1582,
+          "heightPixels": 760,
+          "firstRow": 1,
+          "lastRow": 29,
+          "firstColumn": 30,
+          "lastColumn": 52,
+          "sourceBoundsPoints": {
+            "width": 1449.3519172668457,
+            "y": 0.0,
+            "x": 1827.4437217712402,
+            "height": 696.0
+          }
+        }
+      ],
+      "pictureEvidence": {
+        "inputPictureCount": 1,
+        "picturesCoveredByReportedPages": 1,
+        "pictures": [
+          {
+            "sheet": "52列・横分割",
+            "mediaPart": "xl/media/image3.png",
+            "reportedPagesOverlappingAnchor": [
+              2
+            ]
+          }
+        ],
+        "drawingWarnings": [
+          {
+            "code": "DRAWING_PAGINATION",
+            "sheet": "52列・横分割",
+            "message": "図形はシート座標のまま描画します。ページ境界にまたがる部分は次のページに続きます。"
+          }
+        ],
+        "verification": "Workbook picture relationships and reported page/anchor coverage; visual fidelity is checked separately."
+      }
+    },
+    {
+      "fixture": "wide-with-images",
+      "selection": "wide-sheet",
+      "method": "POST",
+      "endpoint": "/convert",
+      "parameters": {
+        "filename": "wide-with-images.xlsx",
+        "format": "pdf",
+        "sheet": "52列・横分割"
+      },
+      "httpStatus": 200,
+      "elapsedMs": 407,
+      "responseBytes": 262541,
+      "zip": "outputs/wide-with-images/wide-sheet/pdf.zip",
+      "report": "outputs/wide-with-images/wide-sheet/pdf/report.json",
+      "pageCount": 2,
+      "sectionCount": 1,
+      "warningCount": 5,
+      "outcome": "partial",
+      "ranges": [
+        {
+          "sheet": "52列・横分割",
+          "range": "A1:AZ29",
+          "selection": "printArea",
+          "status": "rendered",
+          "pixelsPerPoint": 1.0909090909090908,
+          "pages": [
+            1,
+            2
+          ]
+        }
+      ],
+      "pages": [
+        {
+          "page": 1,
+          "sheet": "52列・横分割",
+          "range": "A1:AZ29",
+          "path": "document.pdf",
+          "widthPixels": 1994,
+          "heightPixels": 760,
+          "firstRow": 1,
+          "lastRow": 29,
+          "firstColumn": 1,
+          "lastColumn": 29,
+          "sourceBoundsPoints": {
+            "width": 1827.4437217712402,
+            "y": 0.0,
+            "x": 0.0,
+            "height": 696.0
+          }
+        },
+        {
+          "page": 2,
+          "sheet": "52列・横分割",
+          "range": "A1:AZ29",
+          "path": "document.pdf",
+          "widthPixels": 1582,
+          "heightPixels": 760,
+          "firstRow": 1,
+          "lastRow": 29,
+          "firstColumn": 30,
+          "lastColumn": 52,
+          "sourceBoundsPoints": {
+            "width": 1449.3519172668457,
+            "y": 0.0,
+            "x": 1827.4437217712402,
+            "height": 696.0
+          }
+        }
+      ],
+      "pictureEvidence": {
+        "inputPictureCount": 1,
+        "picturesCoveredByReportedPages": 1,
+        "pictures": [
+          {
+            "sheet": "52列・横分割",
+            "mediaPart": "xl/media/image3.png",
+            "reportedPagesOverlappingAnchor": [
+              2
+            ]
+          }
+        ],
+        "drawingWarnings": [
+          {
+            "code": "DRAWING_PAGINATION",
+            "sheet": "52列・横分割",
+            "message": "図形はシート座標のまま描画します。ページ境界にまたがる部分は次のページに続きます。"
+          },
+          {
+            "code": "PDF_TEXT_OVERLAPS_DRAWING",
+            "sheet": "52列・横分割",
+            "message": "図形と重なるセル文字は、画像に隠された内容を検索文字層に含めないため、PDF検索対象から除外しました。"
+          }
+        ],
+        "verification": "Workbook picture relationships and reported page/anchor coverage; visual fidelity is checked separately."
+      }
     }
   ],
-  "completedAt": "2026-10-20T09:32:11.518211+00:00"
+  "completedAt": "2026-10-20T12:12:34.671496+00:00"
 }

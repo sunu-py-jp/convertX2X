@@ -8,5 +8,5 @@
   --data-binary @sample.xlsx \
   'http://localhost:7076/api/convert?filename=sample.xlsx&amp;format=png' \
   --output rendered.zip</code></pre><p>PDFは<code>format=pdf</code>に変更します。シート名・セル範囲はURLエンコードしてください。PDFでも応答はZIPです。</p>
-<h2 id="response">結果の確認</h2><p>ZIPには<code>pages/page-001.png</code>などのPNG群、または<code>document.pdf</code>と<code>report.json</code>が入ります。reportの範囲とページ対応、見送り理由、警告を確認してから画像・PDFを利用します。</p><p>部分的に変換できればHTTP 200です。全範囲を見送った場合は422 <code>NO_RENDERABLE_RANGE</code>で、JSONの<code>details</code>に理由が入ります。</p>
+<h2 id="response">結果の確認</h2><p>ZIPには<code>pages/page-001.png</code>などのPNG群、または<code>document.pdf</code>と<code>report.json</code>が入ります。reportの範囲とページ対応、見送り理由、警告を確認してから画像・PDFを利用します。各ページの<code>firstRow / lastRow / firstColumn / lastColumn</code>は元シートの1始まりの行・列番号、<code>sourceBoundsPoints</code>は元シート上の描画座標です。横分割は上段左→右、次段左→右の順で並びます。</p><p>部分的に変換できればHTTP 200です。全範囲を見送った場合は422 <code>NO_RENDERABLE_RANGE</code>で、JSONの<code>details</code>に理由が入ります。</p>
 <footer class="page-footer"><span>2026-10-20 · Java 21 / POI / Java2D / PDFBox</span><a href="index.html">機能概要</a></footer></article><aside class="toc"><p class="toc-title">このページの内容</p><nav id="page-toc"></nav></aside></div></main></body></html>

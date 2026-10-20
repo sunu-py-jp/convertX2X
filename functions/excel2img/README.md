@@ -4,7 +4,8 @@ Excelのセル・貼り付け画像・基本図形を、配置を保ったPNGま
 独立したAzure Functionsアプリです。画像を含む資料を、そのままLLMへ渡す用途を想定しています。
 
 Java 21、Apache POI、Java2D、PDFBoxで動作します。ExcelやLibreOfficeのインストールは不要です。
-文字が小さくなりすぎる横長の範囲は、理由を `report.json` に記録して変換を見送ります。
+横長の範囲は、文字の最小サイズを保てる範囲で縮小し、収まらない分を横方向にも分割します。
+各ページの元の行・列範囲と座標を `report.json` に記録します。
 
 | 入力 | 出力方法 |
 | --- | --- |
@@ -24,11 +25,26 @@ OCRやLLMへの送信は行いません。
 
 ## 最短の起動
 
-Java 21、Python 3.10以上、Azure Functions Core Tools v4を用意します。
+Java 21、Python 3.10以上、Azure Functions Core Tools v4、Node.js・npm、Azurite CLIを用意します。
+既定設定はホスト用Storageに `UseDevelopmentStorage=true` を使うため、同期HTTPだけでもAzuriteが必要です。
 
 ```shell
+npm install -g azurite
 python3 scripts/run_local.py
 ```
+
+WindowsのPowerShellでは次を使います。
+
+```powershell
+npm.cmd install -g azurite
+azurite.cmd --version
+python scripts/run_local.py
+```
+
+VS CodeのAzurite拡張だけではCLIがPATHに登録されない場合があります。
+起動済みのAzurite（Blob 10000・Queue 10001）は再利用します。
+導入の詳細は [Microsoft公式手順](https://learn.microsoft.com/azure/storage/common/storage-install-azurite?tabs=npm)、
+起動に失敗した場合は [利用ガイドの切り分け手順](docs/usage.md#azuriteが起動しない場合)を参照してください。
 
 Playgroundは <http://localhost:7076/api/playground> です。同期HTTPだけなら
 変換用Storageは不要です。非同期を使う場合は `local.settings.json` に

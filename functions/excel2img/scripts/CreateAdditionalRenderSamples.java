@@ -69,7 +69,7 @@ public class CreateAdditionalRenderSamples {
             sheet.getRow(4).setHeightInPoints(28); sheet.getRow(25).setHeightInPoints(12);
             for (int r = 26; r < 29; r++) sheet.getRow(r).setHeightInPoints(22);
             merge(sheet, 0, 1, 0, 23, "地域別の月次処理一覧 / 24列を横幅に収めるサンプル", styles.title);
-            merge(sheet, 2, 2, 0, 23, "架空の検証データ  |  20拠点 × 7か月  |  各セル11pt以上  |  横方向の分割なし", styles.note);
+            merge(sheet, 2, 2, 0, 23, "架空の検証データ  |  20拠点 × 7か月  |  各セル11pt以上  |  必要に応じて縮小と横分割", styles.note);
             merge(sheet, 3, 3, 0, 2, "基本情報", styles.section);
             String[] months = {"04月", "05月", "06月", "07月", "08月", "09月", "10月"};
             for (int m = 0; m < months.length; m++) merge(sheet, 3, 3, 3 + m * 3, 5 + m * 3, months[m], styles.section);
@@ -86,9 +86,9 @@ public class CreateAdditionalRenderSamples {
                 for (int c = 3; c < 24; c++) number(sheet, r, c, 110 + (r - 5) * 7 + (c / 3) * 13 - (c % 3) * 4, num);
             }
             merge(sheet, 26, 28, 0, 23, "確認ポイント：月ごとの結合見出し、交互の行色、罫線、右寄せの数値を同じ横長ページで確認できます。\n"
-                    + "次の「48列・可読性不足」シートは意図的に広く、既定の最小文字サイズを満たさずスキップされる比較用です。", styles.note);
+                    + "次の「48列・横分割」シートは意図的に広く、文字を小さくし過ぎず複数ページへ横分割する比較用です。", styles.note);
             book.setPrintArea(0, 0, 23, 0, 28);
-            oversize(book, styles, "48列・可読性不足", 48, 14, false);
+            wideComparison(book, styles, "48列・横分割", 48, 14, false);
             save(book, file);
             describe(sheet, "A1:X29", 0);
             describe(book.getSheetAt(1), "A1:AV29", 0);
@@ -123,8 +123,12 @@ public class CreateAdditionalRenderSamples {
             merge(sheet, 30, 33, 11, 14, "棒と折れ線の位置、色、ラベルを画像のまま比較します。", styles.note);
             merge(sheet, 36, 37, 0, 14, "画像は外部から取得せず、この生成スクリプトが作成したテスト用PNGです。\n"
                     + "このシートには印刷範囲を設定せず、セルと画像の使用範囲が自動選択されることも確認します。", styles.note);
+            textOverflowComparison(book, styles);
+            verticalAndWrappedComparison(book, styles);
             save(book, file);
             describe(sheet, "A1:O38", 3);
+            describe(book.getSheetAt(1), "A1:L22", 0);
+            describe(book.getSheetAt(2), "A1:U26", 0);
         }
     }
 
@@ -159,30 +163,96 @@ public class CreateAdditionalRenderSamples {
             merge(sheet, 19, 20, 17, 26, "画面と左の明細を照合：受付番号 DEMO-204 / 状態 承認待ち", styles.note);
             merge(sheet, 28, 28, 0, 15, "確認メモ", styles.section);
             merge(sheet, 29, 33, 0, 15, "・画像は表の右側のセル座標に固定しています。\n"
-                    + "・図や文字を読むため、横方向は分割せず可読性の条件内で縮小します。\n"
+                    + "・図や文字を読むため、可読性を保つ倍率まで縮小し、必要に応じて横方向に分割します。\n"
                     + "・数値と画面は架空の内容です。業務データや実在システムの画面は含みません。", styles.note);
             merge(sheet, 36, 37, 0, 26, "このシートは約1,700ptの横幅で既定の描画条件に収まる想定です。\n"
-                    + "次の52列シートは幅が大きすぎるためスキップされ、変換結果のreport.jsonに理由が記録される比較用です。", styles.note);
+                    + "次の52列シートは幅が大きいため複数ページに横分割され、report.jsonにページごとの範囲が記録される比較用です。", styles.note);
             book.setPrintArea(0, 0, 26, 0, 37);
-            oversize(book, styles, "52列・可読性不足", 52, 12, true);
+            wideComparison(book, styles, "52列・横分割", 52, 12, true);
             save(book, file);
             describe(sheet, "A1:AA38", 2);
             describe(book.getSheetAt(1), "A1:AZ29", 1);
         }
     }
 
-    private static void oversize(XSSFWorkbook book, Styles styles, String name, int columns, int width, boolean image) throws Exception {
+    private static void wideComparison(XSSFWorkbook book, Styles styles, String name, int columns, int width, boolean image) throws Exception {
         var sheet = sheet(book, name, columns, 29, width, 24);
-        merge(sheet, 0, 1, 0, columns - 1, "比較用 / " + columns + "列は横幅を縮小すると11ptの文字が読みにくくなる", styles.title);
-        merge(sheet, 2, 2, 0, columns - 1, "このシートは既定設定で WIDTH_UNREADABLE としてスキップされる想定です。", styles.note);
+        merge(sheet, 0, 1, 0, columns - 1, "横分割の比較 / " + columns + "列を読める文字サイズのまま複数ページへ", styles.title);
+        merge(sheet, 2, 2, 0, columns - 1, "文字の可読性を保てる倍率まで縮小し、それでも広い範囲は左から右へ分割して出力します。", styles.note);
         for (int c = 0; c < columns; c++) {
             put(sheet, 4, c, c == 0 ? "項目" : "列" + (c + 1), styles.header);
             for (int r = 5; r < 25; r++) put(sheet, r, c, c == 0 ? "検査" + (r - 4) : Integer.toString(100 + r * 2 + c),
                     (r & 1) == 0 ? styles.body : styles.alternate);
         }
         if (image) picture(book, sheet.createDrawingPatriarch(), screen(1200, 640), columns - 10, 6, columns, 20);
-        merge(sheet, 26, 28, 0, columns - 1, "確認ポイント：無理に小さな画像にせず、この範囲をスキップして他の読めるシートは出力します。", styles.note);
+        merge(sheet, 26, 28, 0, columns - 1, "確認ポイント：ページの左右を順につなぐと元の横長範囲になります。端の列、結合見出し、画像の位置も比較します。", styles.note);
         book.setPrintArea(book.getSheetIndex(sheet), 0, columns - 1, 0, 28);
+    }
+
+    private static void textOverflowComparison(XSSFWorkbook book, Styles styles) {
+        var sheet = sheet(book, "文字のはみ出し比較", 12, 22, 10, 28);
+        sheet.setColumnWidth(2, 5 * 256);
+        sheet.setColumnWidth(3, 9 * 256);
+        sheet.setColumnWidth(4, 9 * 256);
+        merge(sheet, 0, 1, 0, 11, "セル文字の表示比較 / プログラム名", styles.title);
+        merge(sheet, 2, 3, 0, 11, "同じ文字を、狭い単独セル・結合セル・隣に値があるセルで比較します。\n"
+                + "ラベルは14pt、左寄せ、折り返しなしです。塗りつぶし済みの空セルにも文字が続くことを確認します。", styles.note);
+        CellStyle label = style(book, 14, true, new Color(227, 241, 236), INK, false);
+        label.setWrapText(false); label.setAlignment(HorizontalAlignment.LEFT);
+        CellStyle adjacentValue = style(book, 11, false, new Color(227, 241, 236), INK, false);
+        adjacentValue.setWrapText(false); adjacentValue.setAlignment(HorizontalAlignment.LEFT);
+
+        merge(sheet, 5, 5, 0, 11, "① 狭いC8 + 同色の空セルD8:E8 / ラベル全体が見える", styles.section);
+        put(sheet, 7, 2, "プログラム名", label);
+        for (int c = 3; c <= 4; c++) {
+            var empty = sheet.getRow(7).createCell(c); empty.setBlank(); empty.setCellStyle(label);
+        }
+        merge(sheet, 7, 8, 6, 11, "D8・E8は値なしの空セル。\nC8の文字が右へ続くことを確認します。", styles.note);
+
+        merge(sheet, 10, 10, 0, 11, "② C13:E13の結合セル / 同じラベル全体が見える", styles.section);
+        merge(sheet, 12, 12, 2, 4, "プログラム名", label);
+        merge(sheet, 12, 13, 6, 11, "結合範囲の幅を使って表示します。\n①と②で文字が欠けないことを比較します。", styles.note);
+
+        merge(sheet, 15, 15, 0, 11, "③ 狭いC18 + D18に値あり / 隣の値へ侵入しない", styles.section);
+        put(sheet, 17, 2, "プログラム名", label);
+        put(sheet, 17, 3, "隣の値", adjacentValue);
+        var empty = sheet.getRow(17).createCell(4); empty.setBlank(); empty.setCellStyle(label);
+        merge(sheet, 17, 18, 6, 11, "D18には文字列があります。\nC18のラベルはセル境界で止まり、隣の値を覆いません。", styles.note);
+        merge(sheet, 20, 21, 0, 11, "セル参照：はみ出し C8→D8:E8 / 結合 C13:E13 / 停止 C18→値ありD18。\n"
+                + "いずれも架空の表示確認用ラベルです。", styles.note);
+        book.setPrintArea(book.getSheetIndex(sheet), 0, 11, 0, 21);
+    }
+
+    private static void verticalAndWrappedComparison(XSSFWorkbook book, Styles styles) {
+        var sheet = sheet(book, "縦書きと折返し中央", 21, 26, 4, 24);
+        sheet.getRow(2).setHeightInPoints(30); sheet.getRow(3).setHeightInPoints(30); sheet.getRow(5).setHeightInPoints(40);
+        sheet.setColumnWidth(6, 3 * 256); sheet.setColumnWidth(13, 3 * 256);
+        for (int c = 14; c < 21; c++) sheet.setColumnWidth(c, 7 * 256);
+        merge(sheet, 0, 1, 0, 14, "ウィンドウ", styles.title);
+        merge(sheet, 0, 1, 15, 20, "検証結果", styles.section);
+        merge(sheet, 2, 3, 0, 20, "写真だけではセル書式を断定せず、縦書き255と折り返し＋上下左右中央揃えを比較します。\n"
+                + "各見出しは縦長の結合セルです。①は上揃え、②③は中央揃えで、幅も変えています。", styles.note);
+        merge(sheet, 5, 5, 0, 5, "① 縦書き255", styles.section);
+        merge(sheet, 5, 5, 7, 12, "② 折返し中央・1字幅", styles.section);
+        merge(sheet, 5, 5, 14, 20, "③ 折返し中央・2字幅", styles.section);
+        CellStyle vertical = style(book, 14, true, new Color(215, 234, 245), INK, true);
+        vertical.setRotation((short) 255); vertical.setWrapText(false);
+        vertical.setAlignment(HorizontalAlignment.CENTER); vertical.setVerticalAlignment(VerticalAlignment.TOP);
+        CellStyle wrapped = style(book, 14, true, new Color(227, 241, 236), INK, true);
+        wrapped.setRotation((short) 0); wrapped.setWrapText(true);
+        wrapped.setAlignment(HorizontalAlignment.CENTER); wrapped.setVerticalAlignment(VerticalAlignment.CENTER);
+        String[] labels = {"起動", "表示内容", "表示順", "検索機能", "PG検証", "カーソル移動順"};
+        for (int index = 0; index < labels.length; index++) {
+            merge(sheet, 6, 18, index, index, labels[index], vertical);
+            merge(sheet, 6, 18, index + 7, index + 7, labels[index], wrapped);
+            merge(sheet, 6, 18, index + 14, index + 14, labels[index], wrapped);
+        }
+        merge(sheet, 20, 22, 0, 5, "CENTER / TOP\nrotation=255\n縦方向の文字送り", styles.note);
+        merge(sheet, 20, 22, 7, 12, "CENTER / CENTER\nwrapText=true\n約1文字幅で折り返し", styles.note);
+        merge(sheet, 20, 22, 14, 20, "CENTER / CENTER\nwrapText=true\n約2文字幅で折り返し", styles.note);
+        merge(sheet, 24, 25, 0, 20, "確認する文字：起動 / 表示内容 / 表示順 / 検索機能 / PG検証 / カーソル移動順。\n"
+                + "縦書きと自動折り返しは異なるExcel書式です。文字の並び、中央位置、欠けを比較します。", styles.note);
+        book.setPrintArea(book.getSheetIndex(sheet), 0, 20, 0, 25);
     }
 
     private static XSSFSheet sheet(XSSFWorkbook book, String name, int columns, int rows, int width, int height) {
@@ -235,9 +305,9 @@ public class CreateAdditionalRenderSamples {
         double width = 0, height = 0;
         for (int c = a.getFirstColumn(); c <= a.getLastColumn(); c++) width += sheet.getColumnWidthInPixels(c) * .75;
         for (int r = a.getFirstRow(); r <= a.getLastRow(); r++) height += sheet.getRow(r).getHeightInPoints();
-        double scale = Math.min(2, 2048 / width);
-        System.out.printf(java.util.Locale.ROOT, "  %s: %s, %.3f x %.3f pt, %d PNGs, scale %.6f, min text %.3f px%n",
-                sheet.getSheetName(), range, width, height, pictures, scale, 11 * scale);
+        double fitScale = Math.min(2, 2048 / width);
+        System.out.printf(java.util.Locale.ROOT, "  %s: %s, %.3f x %.3f pt, %d PNGs, whole-width fit scale %.6f; renderer chooses readable scale and pagination%n",
+                sheet.getSheetName(), range, width, height, pictures, fitScale);
     }
 
     private static Font font(String name) {

@@ -2,9 +2,9 @@
 <html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>配置を保って、Excelを画像へ。 | excel2img API</title><link rel="stylesheet" href="../assets/styles.css"><script src="../assets/app.js" defer></script></head>
 <body data-page="excelimg-overview"><a class="skip-link" href="#main-content">本文へ移動</a><div id="site-header"></div><aside id="sidebar" class="sidebar" aria-label="APIナビゲーション"></aside><div id="menu-overlay" class="menu-overlay" hidden></div><main id="main-content" class="main-content" tabindex="-1"><div class="page-layout"><article class="article"><p class="eyebrow">Excel → 画像・PDF</p><h1>配置を保って、Excelを画像へ。</h1>
 <p class="lead">セル・貼り付け画像・基本図形を同じページへ描画し、PNGまたはPDFとしてLLMへ渡せます。</p>
-<div class="callout"><strong>小さくしすぎない変換。</strong><br>印刷範囲を優先し、横幅に合わせると文字が小さくなりすぎる範囲は理由を記録して見送ります。描画には近似を含み、Excelの完全な印刷再現ではありません。</div>
+<div class="callout"><strong>小さくしすぎない変換。</strong><br>印刷範囲を優先し、文字を小さくしすぎない倍率まで縮小します。収まらない分は横方向にも分割します。描画には近似を含み、Excelの完全な印刷再現ではありません。</div>
 <h2 id="render">反映するもの</h2><table><thead><tr><th>要素</th><th>扱い</th></tr></thead><tbody><tr><td>セル</td><td>値、列幅、行高、結合、背景色、罫線、配置、折り返し、日本語</td></tr><tr><td>埋め込み画像</td><td>セル座標と同じ位置に描画。対応画像はサイズ・回転・切り抜きを反映</td></tr><tr><td>基本図形</td><td>矩形・楕円・ひし形・矢印・線・文字などを近似描画</td></tr><tr><td>数式</td><td>保存済みの結果。再計算や外部データ取得はしない</td></tr></tbody></table>
-<h2 id="range">範囲とページ</h2><ol><li>明示した<code>sheet</code>と<code>range</code>。</li><li>シートに保存された印刷範囲。複数なら個別に処理。</li><li>値や描画要素のある範囲。</li></ol><p>シート指定なしでは表示シートが対象です。非表示行・列を除き、縦はページに分けます。横方向は範囲全体を保ち、既定の最小文字サイズ12pxに収まらなければ見送ります。セル範囲の指定で必要な部分だけを変換することもできます。</p>
+<h2 id="range">範囲とページ</h2><ol><li>明示した<code>sheet</code>と<code>range</code>。</li><li>シートに保存された印刷範囲。複数なら個別に処理。</li><li>値や描画要素のある範囲。</li></ol><p>シート指定なしでは表示シートが対象です。非表示行・列を除き、縦・横ともページに分けます。まず横幅に合わせて縮小し、セル文字が既定12pxを下回る場合は、その下限の倍率で横に分割します。ページ順は上段の左から右、その次の段の左から右です。元から小さい文字は拡大せず警告を残し、文字がない範囲は設定解像度の50%まで縮小します。見出しの繰り返しは行いません。</p>
 <h2 id="output">結果</h2><pre><code># PNGの場合
 pages/page-001.png
 pages/page-002.png
@@ -14,5 +14,5 @@ report.json
 document.pdf
 report.json</code></pre><p>同期HTTPはどちらもZIPです。PDFには同じ描画画像を使い、描画したセルの文字を検索用に重ねます。図形と重なるセル文字は、見た目で隠れた情報が検索結果に出ないよう検索用文字層から除外し、警告を残します。画像内の文字や図形の文字はOCRしません。非同期では各ファイルをBlobへ個別保存します。</p><p>見送りや未対応要素があればreportの<code>outcome</code>が<code>partial</code>になります。全範囲を見送ると422を返します。</p>
 <h2 id="limits">再現範囲</h2><p>フォント置換、折り返し、図形などはExcelと差が出ます。グラフ、SmartArt、特殊な描画要素、条件付き書式、印刷余白やヘッダー／フッターの完全再現は対象外です。警告と実際の画像を確認してください。可読性判定はセル文字の幾何学的な基準であり、元画像内の小さな文字までは判定しません。</p>
-<div class="cards"><a class="card" href="examples.html"><h3>実際の変換例</h3><p>画像と図形がある業務フロー、印刷範囲、縦長一覧、横長の見送り。</p></a><a class="card" href="http.html"><h3>同期HTTP</h3><p>Excelを送り、PNG／PDFとreportのZIPを受け取る。</p></a><a class="card" href="queue.html"><h3>直接Queue</h3><p>入力Blobを参照し、同じ描画オプションで依頼する。</p></a></div>
+<div class="cards"><a class="card" href="examples.html"><h3>実際の変換例</h3><p>画像と図形がある業務フロー、印刷範囲、縦長一覧、横長の縮小と分割。</p></a><a class="card" href="http.html"><h3>同期HTTP</h3><p>Excelを送り、PNG／PDFとreportのZIPを受け取る。</p></a><a class="card" href="queue.html"><h3>直接Queue</h3><p>入力Blobを参照し、同じ描画オプションで依頼する。</p></a></div>
 <footer class="page-footer"><span>2026-10-20 · Java 21 / POI / Java2D / PDFBox</span><a href="index.html">機能概要</a></footer></article><aside class="toc"><p class="toc-title">このページの内容</p><nav id="page-toc"></nav></aside></div></main></body></html>

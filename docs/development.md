@@ -2,7 +2,7 @@
 
 [マニュアルの入口](README.md) · [Office → Markdownの実装](office2md.md) · [Office → PDFの実装](office2pdf.md) · [Markdown → PDFの実装](md2pdf.md) · [Excel → 画像・PDFの実装](excel2img.md) · [PowerPoint / PDFの実装](ppt-pdf-to-images.md) · [Movie → Audioの実装](movie2audio.md)
 
-以下のシェルコマンドはmacOS/Linux向けです。変換機能のディレクトリを作業場所にします。リポジトリ直下に共通の `pom.xml` はありません。
+PowerShellと明記した箇所以外のシェルコマンドはmacOS/Linux向けです。変換機能のディレクトリを作業場所にします。リポジトリ直下に共通の `pom.xml` はありません。
 
 ## 1. 開発環境を用意する
 
@@ -10,14 +10,20 @@
 | --- | --- |
 | JDK 21 | 画像・Office・Markdown変換のJavaコードのビルド・テスト・実行。`JAVA_HOME` も同じJDKに合わせる |
 | 同梱Maven Wrapper（`./mvnw`） | 画像・Office・Markdown変換でMavenを実行。Mavenの別途インストールは不要 |
-| Node.js 22または24・npm | Movie → Audioの実行・テスト・パッケージ作成。`.nvmrc` は24 |
+| Node.js 22または24・npm | Movie → Audioの実行・テスト・パッケージ作成、およびAzurite CLIの導入・実行。`.nvmrc` は24 |
 | Python 3.10以上 | 起動・設定・E2Eスクリプト |
 | Azure Functions Core Tools v4（`func`） | ローカルFunctionsホスト、Azureへの配置 |
-| Azurite | Blob・Queueを使うローカル検証 |
+| Azurite CLI | Blob・Queueを使うローカル検証。ホスト用Storageが `UseDevelopmentStorage=true` の場合も必要 |
 | Node.js・Playwright・対応Chromium | ブラウザーテストを実行するとき |
 | Azure CLI（`az`） | 既存Azureアプリの接続設定・スケール設定を変更するとき |
 
 初回は対象機能のMavenまたはnpm依存とFunctionsの拡張を取得するため、ネットワーク接続が必要です。Playgroundは配布済みHTML/CSS/JavaScriptで、フロントエンドビルド・CDNは不要です。Movie → AudioのサーバーはNode.jsで動作します。
+
+Azurite CLIは `npm install -g azurite` で導入します。WindowsのPowerShellでは
+`npm.cmd install -g azurite` を使い、`azurite.cmd --version` で確認してください。
+VS CodeのAzurite拡張だけではCLIがPATHに登録されない場合があります。
+Node.jsの導入後もコマンドが見つからない場合は、ターミナルを開き直してPATHを確認します。
+[Microsoft公式の導入手順](https://learn.microsoft.com/azure/storage/common/storage-install-azurite?tabs=npm)も参照してください。
 
 ## 2. まず同期HTTPで動かす
 
@@ -92,7 +98,9 @@ cp local.settings.example.json local.settings.json
 
 各機能とも `CONVERSION_STORAGE_CONNECTION_STRING`、または後述のManaged Identity用Blob/Queue設定が揃っている場合に、非同期HTTPと直接Queueを利用できます。
 
-まず別ターミナルで、開発用Azuriteを起動します。
+Office → PDF・Markdown → PDF・Excel → 画像・PDFの起動スクリプトは、
+`UseDevelopmentStorage=true` を選んだ場合、Blob 10000・Queue 10001の起動済みAzuriteを再利用し、
+未起動ならCLIから起動します。手動起動する場合は、別ターミナルで次を実行します。
 
 ```sh
 azurite --location /tmp/convertx2x-azurite --skipApiVersionCheck
@@ -310,6 +318,7 @@ Movie → Audioにも `python3 scripts/configure_azure_async.py --resource-group
 | 症状 | 最初に確認すること |
 | --- | --- |
 | Javaのビルド・起動に失敗 | JDK 21と `JAVA_HOME`、対象機能の作業ディレクトリ、初回依存取得の通信 |
+| `Azurite startup` で失敗 | 下の診断表、Azurite CLI、Node.js・PATH、10000/10001/10002の待受状態 |
 | Movie → Audioの起動に失敗 | Node.js 22 / 24、`npm ci`、Core Tools v4、`FUNCTIONS_WORKER_RUNTIME=node` |
 | 変更したコードやUIが反映されない | `--skip-build` で古い配布物を起動していないか。再ビルド後にホストを再起動 |
 | 非同期が選べない・503になる | 制御用接続の有無、設定ファイルより優先される環境変数、起動時の派生設定 |
@@ -322,6 +331,30 @@ Movie → Audioにも `python3 scripts/configure_azure_async.py --resource-group
 | 非同期の結果が見つからない | 成功状態が公開したパス・manifestを使っているか。試行途中のBlobを一覧から拾わない |
 
 調査結果には再現手順、秘密情報を除いたエラーコード、入力形式、期待値と実際の成果物を残します。実資料をそのまま公開サンプルやテスト結果へ追加しないでください。
+
+### Azuriteの起動診断
+
+Office → PDF・Markdown → PDF・Excel → 画像・PDFの起動スクリプトは、Azuriteの失敗を次のコードで区別します。
+
+| コード | 状態と確認事項 |
+| --- | --- |
+| `AZURITE_NOT_FOUND` | CLIが見つからない。Node.js・npmとAzuriteを導入し、PowerShellでは `azurite.cmd --version` とPATHを確認 |
+| `AZURITE_LAUNCH_FAILED` | CLIのプロセスを起動できない。表示されたOSエラー、Node.jsの実行可否、CLIの場所・実行権限を確認 |
+| `AZURITE_EXITED` | Azuriteが待受開始前に終了した。前面起動のエラーから、ポート競合やデータ保存先の問題を確認 |
+| `AZURITE_TIMEOUT` | Blob 10000・Queue 10001の両方の待受を確認できない。起動ログ、待受アドレス・ポートを確認 |
+
+バージョンが表示されても起動できない場合は、別のPowerShellで次を前面起動し、出力を確認します。
+データ保存先はその作業ディレクトリです。macOS/Linuxでは `.cmd` を外します。
+
+```powershell
+node --version
+Get-Command node, npm.cmd, azurite.cmd
+azurite.cmd --disableTelemetry --skipApiVersionCheck
+```
+
+Blob 10000・Queue 10001に加え、同時起動するTable 10002の競合も確認してください。
+既存のAzuriteが正常なら再利用し、ポート競合を理由に既存プロセスを一括終了しないでください。
+停止が必要な場合は用途と所有者を確認し、自分で起動したターミナルから停止します。
 
 ## 8. Managed Identity・閉域Storage・結果通知
 

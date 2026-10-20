@@ -168,19 +168,37 @@ final class CellPainter {
             Font base = excelFont.getBold() ? BOLD : REGULAR;
             return base.deriveFont(excelFont.getItalic() ? Font.ITALIC : Font.PLAIN, Math.max(1f, excelFont.getFontHeightInPoints()));
         });
+        HorizontalAlignment alignment = style.getAlignment();
+        boolean textCell = box.cell.getCellType() == CellType.STRING || box.cell.getCellType() == CellType.FORMULA
+                && box.cell.getCachedFormulaResultType() == CellType.STRING;
         Rectangle2D b = box.bounds;
+        if (alignment == HorizontalAlignment.CENTER_SELECTION && textCell && !box.merged
+                && !style.getWrapText() && !style.getShrinkToFit() && style.getRotation() == 0) {
+            double rightEdge = b.getMaxX();
+            for (int c = box.cell.getColumnIndex() + 1; c <= selected.getLastColumn(); c++) {
+                Cell next = cell(box.cell.getRowIndex(), c);
+                if (merged.containsKey(key(box.cell.getRowIndex(), c)) || !emptyForOverflow(next)
+                        || next == null || next.getCellStyle().getAlignment() != HorizontalAlignment.CENTER_SELECTION) break;
+                rightEdge = geometry.x(c + 1);
+            }
+            b = new Rectangle2D.Double(b.getX(), b.getY(), rightEdge - b.getX(), b.getHeight());
+        }
         double indent = Math.max(0, style.getIndention()) * font.getSize2D() * .75;
         double available = Math.max(.1, b.getWidth() - 4 - indent);
         if (style.getShrinkToFit()) workspace.warning("SHRINK_TO_FIT_IGNORED", sheet.getSheetName(),
                 "縮小して全体を表示する設定は、可読性を保つため適用していません。");
         short rotation = style.getRotation();
-        if (rotation != 0) workspace.warning("TEXT_ROTATION_APPROXIMATED", sheet.getSheetName(), "回転文字は横書きで近似しました。");
+        if (rotation != 0 && rotation != 255) workspace.warning("TEXT_ROTATION_APPROXIMATED", sheet.getSheetName(), "回転文字は横書きで近似しました。");
         if (box.cell.getCellType() == CellType.STRING && box.cell.getRichStringCellValue().numFormattingRuns() > 0)
             workspace.warning("RICH_TEXT_APPROXIMATED", sheet.getSheetName(), "セル内の部分書式はセル全体の書式で近似しました。");
         g.setFont(font);
         org.apache.poi.ss.usermodel.Color fontColor = excelFont instanceof XSSFFont x ? x.getXSSFColor() : null;
         g.setColor(color(fontColor, excelFont.getColor(), Color.BLACK));
         FontRenderContext context = g.getFontRenderContext();
+        if (rotation == 255) {
+            drawStackedText(g, box, b, value, font, excelFont, pageBounds, captured);
+            return;
+        }
         List<Line> lines = lines(value, font, context, available, style.getWrapText());
         double lineHeight = font.getLineMetrics("Ag", context).getHeight();
         double ascent = font.getLineMetrics("Ag", context).getAscent();
@@ -192,19 +210,20 @@ final class CellPainter {
             default -> b.getMaxY() - blockHeight - 1;
         };
         top = Math.max(b.getY() + 1, top);
-        HorizontalAlignment alignment = style.getAlignment();
         boolean numeric = box.cell.getCellType() == CellType.NUMERIC || box.cell.getCellType() == CellType.FORMULA && box.cell.getCachedFormulaResultType() == CellType.NUMERIC;
         boolean right = alignment == HorizontalAlignment.RIGHT || alignment == HorizontalAlignment.GENERAL && numeric;
         boolean center = alignment == HorizontalAlignment.CENTER || alignment == HorizontalAlignment.CENTER_SELECTION;
         Rectangle2D clip = new Rectangle2D.Double(b.getX() + 1, b.getY(), Math.max(0, b.getWidth() - 2), b.getHeight());
-        if (!style.getWrapText() && !box.merged && !right && !center && !numeric) {
+        if (textCell && !style.getWrapText() && !style.getShrinkToFit() && !box.merged && rotation == 0
+                && (alignment == HorizontalAlignment.LEFT || alignment == HorizontalAlignment.GENERAL)) {
             int c = box.cell.getColumnIndex() + 1;
             double rightEdge = b.getMaxX();
-            double wanted = lines.stream().mapToDouble(Line::width).max().orElse(0) + 4;
+            double wanted = lines.stream().mapToDouble(Line::width).max().orElse(0) + 4 + indent;
             while (c <= selected.getLastColumn() && rightEdge - b.getX() < wanted) {
                 Cell next = cell(box.cell.getRowIndex(), c);
-                if (merged.containsKey(key(box.cell.getRowIndex(), c)) || next != null &&
-                        (!values.text(next).isEmpty() || next.getCellStyle().getFillPattern() != FillPatternType.NO_FILL)) break;
+                // Formatting alone does not occupy a cell. In particular, a background fill
+                // must not truncate a heading spanning neighboring blank cells.
+                if (merged.containsKey(key(box.cell.getRowIndex(), c)) || !emptyForOverflow(next)) break;
                 rightEdge = geometry.x(++c);
             }
             clip.setRect(clip.getX(), clip.getY(), rightEdge - clip.getX() - 1, clip.getHeight());
@@ -225,21 +244,99 @@ final class CellPainter {
                 g.setStroke(new BasicStroke(.55f));
                 g.draw(new java.awt.geom.Line2D.Double(left, baseline + 1, left + line.width, baseline + 1));
             }
-            if (baseline >= visible.getMinY() && baseline <= visible.getMaxY() && !line.text.isEmpty()) {
-                int start = visible.getMinX() > left ? prefixAtWidth(line.text, font, context, visible.getMinX() - left) : 0;
-                int end = visible.getMaxX() + .5 < left + line.width
-                        ? prefixAtWidth(line.text, font, context, visible.getMaxX() + .5 - left) : line.text.length();
-                double offset;
-                if (start < end) {
-                    offset = font.getStringBounds(line.text.substring(0, start), context).getWidth();
-                    String actual = line.text.substring(start, end);
-                    captured.add(new TextLine(actual, left + offset, baseline, font.getStringBounds(actual, context).getWidth(), font.getSize2D(), excelFont.getBold()));
-                }
-            }
+            captureVisibleText(line.text, left, baseline, line.width, font, context, visible, excelFont.getBold(), captured);
             if (left < clip.getMinX() - 1 || left + line.width > clip.getMaxX() + 1 || baseline - ascent < b.getY() - 1 || baseline > b.getMaxY() + 1)
                 workspace.warning("CELL_TEXT_CLIPPED", sheet.getSheetName(), "元のセル寸法に収まらない文字はセル境界でクリップしました。行列サイズは変更していません。");
         }
         g.setClip(previous);
+    }
+    private static boolean emptyForOverflow(Cell cell) {
+        // A formula or number still occupies its cell when its displayed result is empty.
+        // Empty constant strings are also common in templates and have no visible content.
+        return cell == null || cell.getCellType() == CellType.BLANK || cell.getCellType() == CellType._NONE
+                || cell.getCellType() == CellType.STRING && cell.getStringCellValue().isEmpty();
+    }
+
+    /** Rotation 255 means upright characters stacked vertically, not rotated horizontal text. */
+    private void drawStackedText(Graphics2D parent, Box box, Rectangle2D bounds, String value, Font font,
+                                 org.apache.poi.ss.usermodel.Font excelFont, Rectangle2D pageBounds,
+                                 List<TextLine> captured) {
+        FontRenderContext context = parent.getFontRenderContext();
+        double advance = font.getLineMetrics("Agあ", context).getHeight();
+        double ascent = font.getLineMetrics("Agあ", context).getAscent();
+        int capacity = Math.max(1, (int) Math.floor(Math.max(0, bounds.getHeight() - 2) / advance));
+        List<List<String>> columns = new ArrayList<>();
+        double columnWidth = font.getSize2D();
+        for (String logical : value.split("\n", -1)) {
+            List<String> characters = logical.codePoints().mapToObj(cp -> new String(Character.toChars(cp))).toList();
+            for (String character : characters)
+                columnWidth = Math.max(columnWidth, font.getStringBounds(character, context).getWidth());
+            if (characters.isEmpty()) columns.add(List.of());
+            else if (box.style.getWrapText()) {
+                for (int start = 0; start < characters.size(); start += capacity)
+                    columns.add(characters.subList(start, Math.min(start + capacity, characters.size())));
+            } else columns.add(characters);
+        }
+        double blockWidth = columns.size() * columnWidth;
+        double blockHeight = columns.stream().mapToInt(List::size).max().orElse(0) * advance;
+        HorizontalAlignment alignment = box.style.getAlignment();
+        double left = switch (alignment) {
+            case CENTER, CENTER_SELECTION -> bounds.getCenterX() - blockWidth / 2;
+            case RIGHT -> bounds.getMaxX() - blockWidth - 2;
+            default -> bounds.getX() + 2 + Math.max(0, box.style.getIndention()) * font.getSize2D() * .75;
+        };
+        double top = switch (box.style.getVerticalAlignment()) {
+            case TOP -> bounds.getY() + 1;
+            case CENTER -> bounds.getCenterY() - blockHeight / 2;
+            default -> bounds.getMaxY() - blockHeight - 1;
+        };
+        top = Math.max(bounds.getY() + 1, top);
+        Rectangle2D clip = new Rectangle2D.Double(bounds.getX() + 1, bounds.getY(),
+                Math.max(0, bounds.getWidth() - 2), bounds.getHeight());
+        Rectangle2D visible = clip.createIntersection(pageBounds);
+        Graphics2D g = (Graphics2D) parent.create();
+        try {
+            g.clip(clip);
+            for (int column = 0; column < columns.size(); column++) {
+                List<String> characters = columns.get(column);
+                // Saved line breaks and wrapped continuations become columns from right to left.
+                double columnLeft = left + (columns.size() - column - 1) * columnWidth;
+                for (int row = 0; row < characters.size(); row++) {
+                    String character = characters.get(row);
+                    double width = font.getStringBounds(character, context).getWidth();
+                    double x = columnLeft + (columnWidth - width) / 2;
+                    double baseline = top + row * advance + ascent;
+                    g.drawString(character, (float) x, (float) baseline);
+                    if (excelFont.getStrikeout()) {
+                        g.setStroke(new BasicStroke(Math.max(.5f, font.getSize2D() / 16)));
+                        g.draw(new java.awt.geom.Line2D.Double(x, baseline - ascent * .35, x + width, baseline - ascent * .35));
+                    }
+                    if (excelFont.getUnderline() != org.apache.poi.ss.usermodel.Font.U_NONE) {
+                        g.setStroke(new BasicStroke(.55f));
+                        g.draw(new java.awt.geom.Line2D.Double(x, baseline + 1, x + width, baseline + 1));
+                    }
+                    captureVisibleText(character, x, baseline, width, font, context, visible, excelFont.getBold(), captured);
+                }
+            }
+            if (left < clip.getMinX() - 1 || left + blockWidth > clip.getMaxX() + 1
+                    || top + blockHeight > bounds.getMaxY() + 1)
+                workspace.warning("CELL_TEXT_CLIPPED", sheet.getSheetName(),
+                        "元のセル寸法に収まらない文字はセル境界でクリップしました。行列サイズは変更していません。");
+        } finally { g.dispose(); }
+    }
+
+    private static void captureVisibleText(String text, double left, double baseline, double width, Font font,
+                                            FontRenderContext context, Rectangle2D visible, boolean bold,
+                                            List<TextLine> captured) {
+        if (visible.isEmpty() || baseline < visible.getMinY() || baseline > visible.getMaxY() || text.isEmpty()) return;
+        int start = visible.getMinX() > left ? prefixAtWidth(text, font, context, visible.getMinX() - left) : 0;
+        int end = visible.getMaxX() + .5 < left + width
+                ? prefixAtWidth(text, font, context, visible.getMaxX() + .5 - left) : text.length();
+        if (start < end) {
+            double offset = font.getStringBounds(text.substring(0, start), context).getWidth();
+            String actual = text.substring(start, end);
+            captured.add(new TextLine(actual, left + offset, baseline, font.getStringBounds(actual, context).getWidth(), font.getSize2D(), bold));
+        }
     }
     private record Line(String text, double width) {}
     /** Binary prefix measurement avoids quadratic work on Excel's 32K-character cells. */

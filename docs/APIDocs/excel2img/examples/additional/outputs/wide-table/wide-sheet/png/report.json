@@ -1,0 +1,91 @@
+{
+  "specVersion" : 1,
+  "source" : {
+    "format" : "xlsx",
+    "sha256" : "abc6aebf40cb028d4a748840612699fed02a03be187d26b962b6369016d37fb1",
+    "filename" : "wide-table.xlsx"
+  },
+  "format" : "png",
+  "options" : {
+    "format" : "png",
+    "sheet" : "48列・横分割",
+    "range" : null
+  },
+  "outcome" : "partial",
+  "pageCount" : 2,
+  "sectionKind" : "sheet",
+  "sectionCount" : 1,
+  "ranges" : [ {
+    "sheet" : "48列・横分割",
+    "range" : "A1:AV29",
+    "selection" : "printArea",
+    "status" : "rendered",
+    "pixelsPerPoint" : 1.0909090909090908,
+    "sourceBoundsPoints" : {
+      "width" : 3528.856658935547,
+      "y" : 0.0,
+      "x" : 0.0,
+      "height" : 696.0
+    },
+    "pages" : [ 1, 2 ]
+  } ],
+  "pages" : [ {
+    "page" : 1,
+    "sheet" : "48列・横分割",
+    "range" : "A1:AV29",
+    "path" : "pages/page-001.png",
+    "widthPixels" : 2006,
+    "heightPixels" : 760,
+    "sourceBoundsPoints" : {
+      "width" : 1837.9461765289307,
+      "y" : 0.0,
+      "x" : 0.0,
+      "height" : 696.0
+    },
+    "firstRow" : 1,
+    "lastRow" : 29,
+    "firstColumn" : 1,
+    "lastColumn" : 25
+  }, {
+    "page" : 2,
+    "sheet" : "48列・横分割",
+    "range" : "A1:AV29",
+    "path" : "pages/page-002.png",
+    "widthPixels" : 1845,
+    "heightPixels" : 760,
+    "sourceBoundsPoints" : {
+      "width" : 1690.9104824066162,
+      "y" : 0.0,
+      "x" : 1837.9461765289307,
+      "height" : 696.0
+    },
+    "firstRow" : 1,
+    "lastRow" : 29,
+    "firstColumn" : 26,
+    "lastColumn" : 48
+  } ],
+  "warnings" : [ {
+    "code" : "RANGE_SCALED",
+    "sheet" : "48列・横分割",
+    "message" : "文字サイズまたは画像の縮小下限を保つ倍率で縮小しました。横幅を超える部分はページに分割します。"
+  }, {
+    "code" : "MERGE_SPLIT_ACROSS_PAGES",
+    "sheet" : "48列・横分割",
+    "message" : "ページ境界をまたぐ結合セルは、シート座標を保った連続ページに分割しました。"
+  }, {
+    "code" : "HORIZONTAL_PAGINATION",
+    "sheet" : "48列・横分割",
+    "message" : "文字や画像の縮小を抑え、列の境目を優先して横方向にも分割しました。ページ順は上段の左から右、その次の段の左から右です。"
+  } ],
+  "outputs" : [ {
+    "path" : "pages/page-001.png",
+    "contentType" : "image/png",
+    "sizeBytes" : 125094,
+    "sha256" : "4173e9db925a4a162f6d489fb91a5fa0e25aa130dd5f0ec4c75d45f8486fffe4"
+  }, {
+    "path" : "pages/page-002.png",
+    "contentType" : "image/png",
+    "sizeBytes" : 80652,
+    "sha256" : "7d60f164f1b772ece89d943a635bb773552c193ae023337c2ac5a77c731c975c"
+  } ]
+}

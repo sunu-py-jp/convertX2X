@@ -97,7 +97,7 @@ public final class ExcelImageService {
                         warning -> workspace.warning(warning.code(), sheet.getSheetName(), warning.message()));
                 partial |= drawings.hasUnsupported();
                 if (sheet.getRepeatingRows() != null || sheet.getRepeatingColumns() != null)
-                    workspace.warning("PRINT_TITLES_IGNORED", sheet.getSheetName(), "印刷タイトルの繰り返しは適用していません。縦方向の連続範囲として描画します。");
+                    workspace.warning("PRINT_TITLES_IGNORED", sheet.getSheetName(), "印刷タイトルの繰り返しは適用していません。シート座標に沿う連続範囲として描画します。");
                 if (sheet.getSheetConditionalFormatting().getNumConditionalFormattings() > 0)
                     workspace.warning("CONDITIONAL_FORMATTING_IGNORED", sheet.getSheetName(), "条件付き書式は評価していません。保存された通常のセル書式を使用しました。");
                 List<RangePlanner.Selection> selections;
@@ -141,7 +141,7 @@ public final class ExcelImageService {
                     List<Integer> rangePages = new ArrayList<>();
                     for (RangePlanner.Page window : plan.pages()) {
                         int number = workspace.pageCount() + 1;
-                        int width = RangePlanner.positiveCeil(plan.bounds().width * plan.scale());
+                        int width = RangePlanner.positiveCeil(window.width() * plan.scale());
                         int height = RangePlanner.positiveCeil(window.height() * plan.scale());
                         if ((long) width * height > limits.maxImagePixels())
                             throw ConversionWorkspace.limit("IMAGE_PIXELS_LIMIT", "生成画像の画素数が上限を超えました。");
@@ -155,8 +155,8 @@ public final class ExcelImageService {
                                 g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
                                 g.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON);
                                 g.scale(plan.scale(), plan.scale());
-                                g.translate(-plan.bounds().x, -window.y());
-                                Rectangle2D pageBounds = new Rectangle2D.Double(plan.bounds().x, window.y(), plan.bounds().width, window.height());
+                                g.translate(-window.x(), -window.y());
+                                Rectangle2D pageBounds = new Rectangle2D.Double(window.x(), window.y(), window.width(), window.height());
                                 g.clip(pageBounds);
                                 captured = painter.draw(g, window, pageBounds);
                                 drawings.draw(g);
@@ -183,8 +183,9 @@ public final class ExcelImageService {
                         page.put("page", number); page.put("sheet", sheet.getSheetName()); page.put("range", selected.formatAsString());
                         page.put("path", pdf == null ? String.format(Locale.ROOT, "pages/page-%03d.png", number) : "document.pdf");
                         page.put("widthPixels", width); page.put("heightPixels", height);
-                        page.put("sourceBoundsPoints", rectangle(new Rectangle2D.Double(plan.bounds().x, window.y(), plan.bounds().width, window.height())));
+                        page.put("sourceBoundsPoints", rectangle(new Rectangle2D.Double(window.x(), window.y(), window.width(), window.height())));
                         page.put("firstRow", window.firstRow() + 1); page.put("lastRow", window.lastRow() + 1);
+                        page.put("firstColumn", window.firstColumn() + 1); page.put("lastColumn", window.lastColumn() + 1);
                         pages.add(page);
                     }
                     rangeReport.put("pages", rangePages); ranges.add(rangeReport);
@@ -194,12 +195,12 @@ public final class ExcelImageService {
             }
             if (workspace.pageCount() == 0) {
                 Map<String, Object> details = workspace.report(filename, ConversionWorkspace.sha256(input), extension(filename), options, ranges, pages, true);
-                throw new ConversionException(422, "NO_RENDERABLE_RANGE", "可読性と描画上限を満たす範囲がありません。sheet / range または描画設定を見直してください。", details);
+                throw new ConversionException(422, "NO_RENDERABLE_RANGE", "描画対象となる範囲がありません。sheet / range または描画上限を見直してください。", details);
             }
             if (pdf != null) try (OutputStream output = workspace.output("document.pdf")) { pdf.finish(output); }
         }
         partial |= workspace.warnings().stream().anyMatch(w -> !Set.of("FONT_SUBSTITUTED",
-                "FORMULA_CACHED_VALUE", "RANGE_SCALED", "DRAWING_PAGINATION").contains(w.get("code")));
+                "FORMULA_CACHED_VALUE", "RANGE_SCALED", "DRAWING_PAGINATION", "HORIZONTAL_PAGINATION").contains(w.get("code")));
         workspace.finishReport(workspace.report(filename, ConversionWorkspace.sha256(input), extension(filename), options, ranges, pages, partial));
     }
     private static Map<String, Object> skipped(Sheet sheet, String range, String selection, String reason, String message) {

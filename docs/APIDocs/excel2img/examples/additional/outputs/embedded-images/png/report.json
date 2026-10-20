@@ -1,9 +1,9 @@
 {
   "specVersion" : 1,
   "source" : {
-    "sha256" : "e260fd365a9e755f0dd1ebe480b9231a342c425471fe214b4ffac51345fea5f2",
-    "filename" : "embedded-images.xlsx",
-    "format" : "xlsx"
+    "format" : "xlsx",
+    "sha256" : "06a722926a0e4df74d676f72317d53d2e38490e495e01a18252b35a4235e5aed",
+    "filename" : "embedded-images.xlsx"
   },
   "format" : "png",
   "options" : {
@@ -11,10 +11,10 @@
     "sheet" : null,
     "range" : null
   },
-  "outcome" : "complete",
-  "pageCount" : 1,
+  "outcome" : "partial",
+  "pageCount" : 3,
   "sectionKind" : "sheet",
-  "sectionCount" : 1,
+  "sectionCount" : 3,
   "ranges" : [ {
     "sheet" : "画像3種と記録",
     "range" : "A1:O38",
@@ -22,12 +22,38 @@
     "status" : "rendered",
     "pixelsPerPoint" : 2.0,
     "sourceBoundsPoints" : {
+      "width" : 866.460371017456,
       "y" : 0.0,
       "x" : 0.0,
-      "height" : 912.0,
-      "width" : 866.460371017456
+      "height" : 912.0
     },
     "pages" : [ 1 ]
+  }, {
+    "sheet" : "文字のはみ出し比較",
+    "range" : "A1:L22",
+    "selection" : "printArea",
+    "status" : "rendered",
+    "pixelsPerPoint" : 2.0,
+    "sourceBoundsPoints" : {
+      "width" : 593.394063949585,
+      "y" : 0.0,
+      "x" : 0.0,
+      "height" : 616.0
+    },
+    "pages" : [ 2 ]
+  }, {
+    "sheet" : "縦書きと折返し中央",
+    "range" : "A1:U26",
+    "selection" : "printArea",
+    "status" : "rendered",
+    "pixelsPerPoint" : 2.0,
+    "sourceBoundsPoints" : {
+      "width" : 540.8813123703003,
+      "y" : 0.0,
+      "x" : 0.0,
+      "height" : 652.0
+    },
+    "pages" : [ 3 ]
   } ],
   "pages" : [ {
     "page" : 1,
@@ -37,19 +63,69 @@
     "widthPixels" : 1733,
     "heightPixels" : 1824,
     "sourceBoundsPoints" : {
+      "width" : 866.460371017456,
       "y" : 0.0,
       "x" : 0.0,
-      "height" : 912.0,
-      "width" : 866.460371017456
+      "height" : 912.0
     },
     "firstRow" : 1,
-    "lastRow" : 38
+    "lastRow" : 38,
+    "firstColumn" : 1,
+    "lastColumn" : 15
+  }, {
+    "page" : 2,
+    "sheet" : "文字のはみ出し比較",
+    "range" : "A1:L22",
+    "path" : "pages/page-002.png",
+    "widthPixels" : 1187,
+    "heightPixels" : 1232,
+    "sourceBoundsPoints" : {
+      "width" : 593.394063949585,
+      "y" : 0.0,
+      "x" : 0.0,
+      "height" : 616.0
+    },
+    "firstRow" : 1,
+    "lastRow" : 22,
+    "firstColumn" : 1,
+    "lastColumn" : 12
+  }, {
+    "page" : 3,
+    "sheet" : "縦書きと折返し中央",
+    "range" : "A1:U26",
+    "path" : "pages/page-003.png",
+    "widthPixels" : 1082,
+    "heightPixels" : 1304,
+    "sourceBoundsPoints" : {
+      "width" : 540.8813123703003,
+      "y" : 0.0,
+      "x" : 0.0,
+      "height" : 652.0
+    },
+    "firstRow" : 1,
+    "lastRow" : 26,
+    "firstColumn" : 1,
+    "lastColumn" : 21
   } ],
-  "warnings" : [ ],
+  "warnings" : [ {
+    "code" : "CELL_TEXT_CLIPPED",
+    "sheet" : "文字のはみ出し比較",
+    "message" : "元のセル寸法に収まらない文字はセル境界でクリップしました。行列サイズは変更していません。"
+  } ],
   "outputs" : [ {
+    "path" : "pages/page-001.png",
     "contentType" : "image/png",
     "sizeBytes" : 361807,
-    "sha256" : "c327d024bd4af42cb73f78b83faee72fe5e2eed7a1281a43ea89306635a9b09d",
-    "path" : "pages/page-001.png"
+    "sha256" : "c327d024bd4af42cb73f78b83faee72fe5e2eed7a1281a43ea89306635a9b09d"
+  }, {
+    "path" : "pages/page-002.png",
+    "contentType" : "image/png",
+    "sizeBytes" : 133615,
+    "sha256" : "1248935a7bd165ce8692d66064574a99f79a7813933d83ad79dda2f934c9158e"
+  }, {
+    "path" : "pages/page-003.png",
+    "contentType" : "image/png",
+    "sizeBytes" : 145400,
+    "sha256" : "406f4745931a410402f3f0f1cbf43a0e57e4014b5cfa3202aa0f06ab03a84499"
   } ]
 }

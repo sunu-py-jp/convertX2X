@@ -15,10 +15,21 @@ Excelの印刷エンジンではないため、フォント置換や折り返し
 `sheet` を省略すると表示シートを対象にします。明示すれば非表示シートも選択できます。
 非表示行・列は描画しません。数式は保存済みの値を読み、再計算・外部参照の取得はしません。
 
-横方向を一律に縮小したときの文字サイズを検査し、既定12pxを下回る範囲は
-`WIDTH_UNREADABLE` として見送ります。横に分割して離れた列を別ページにする処理はありません。
-縦方向はページに分割します。長大な行・結合などがページをまたぐときは警告を残します。
-印刷範囲を指定していても可読性や資源上限の検査は行います。
+横幅に合わせて縮小し、セル文字の最小サイズ（既定12px）を保てなくなる場合は、
+その下限まで縮小したうえで横方向にも分割します。縦方向もページに分割します。
+ページ順は上段の左から右、その次の段の左から右です。原則として行・列の境目で分け、
+1ページに収まる結合セルは可能な範囲で分割を避けます。
+1ページより大きい行・列・結合セルや、境界をまたぐ画像は、元の位置のまま複数ページへ続きます。
+見出しの自動繰り返しは行いません。ページ数・画素数・総出力量の上限は引き続き適用します。
+
+既定解像度でも12px未満になる文字は、拡大せず警告を残します。
+セル文字がない範囲は、設定した解像度の50%を縮小の下限にして分割します。
+画像内の文字の大きさは検査しません。
+
+セルの折り返しと上下・左右の中央揃えは、結合セルなら結合後の全幅・全高を使って配置します。
+折り返しのない左寄せ文字は、背景色が付いていても隣が空セルならその上へ表示できます。
+隣の値・数式・結合領域や指定範囲の外へは延ばしません。
+「縦書き」（rotation 255）は文字を正立させて縦に並べます。その他の角度の回転文字は横書きで近似して警告を残します。
 
 複雑なグラフ、SmartArt、未対応の図形・画像形式などは完全再現できません。
 省略・近似・見送りは `report.json` の警告と範囲情報を確認してください。
@@ -27,14 +38,41 @@ OCRやLLMへの送信は行いません。
 ## ローカル実行
 
 JDK 21、Python 3.10以上、Azure Functions Core Tools v4が必要です。
+既定の `AzureWebJobsStorage=UseDevelopmentStorage=true` では、同期HTTPを使う場合も
+Node.js・npmとAzurite CLIが必要です。初回は `npm install -g azurite` で導入します。
+WindowsのPowerShellでは `npm.cmd install -g azurite` を使い、
+`azurite.cmd --version` で確認してください。VS Code拡張だけの導入ではCLIがPATHにない場合があります。
+詳しくは [Microsoft公式のAzurite導入手順](https://learn.microsoft.com/azure/storage/common/storage-install-azurite?tabs=npm)を参照してください。
 
 ```sh
 python3 scripts/run_local.py
 ```
 
+Windowsでは同じディレクトリで `python scripts/run_local.py` を実行します。
+起動スクリプトは、Blob 10000・Queue 10001で起動済みのAzuriteを再利用し、未起動ならCLIから起動します。
+
 <http://localhost:7076/api/playground> でファイルと出力形式を選べます。
 ポートを変える場合は `--port 7086`、ビルド済み配布物を使う場合は `--skip-build` を付けます。
 設定は `local.settings.example.json` を基に、Git管理対象外の `local.settings.json` へ保存してください。
+
+### Azuriteが起動しない場合
+
+`AZURITE_NOT_FOUND` はCLIの検出、`AZURITE_LAUNCH_FAILED` はプロセス起動、
+`AZURITE_EXITED` は起動直後の終了、`AZURITE_TIMEOUT` はBlob・Queueの待受開始を確認できない状態です。
+各コードの対処は [共通ガイドの診断表](../../../docs/development.md#azuriteの起動診断)に記載しています。
+
+`azurite.cmd --version` が表示できても起動に失敗するときは、別のPowerShellで前面起動し、
+表示されるエラーを確認します。Azuriteのデータは実行したディレクトリに保存されます。
+
+```powershell
+node --version
+Get-Command node, npm.cmd, azurite.cmd
+azurite.cmd --disableTelemetry --skipApiVersionCheck
+```
+
+特にBlob 10000・Queue 10001・Table 10002のポート競合、Node.jsとPATHを確認してください。
+既存のAzuriteが利用できる場合は、そのまま起動スクリプトを再実行します。
+ポートを空けるために既存プロセスを一括終了せず、用途と所有者を確認してください。
 
 ## 同期HTTP
 
@@ -67,6 +105,8 @@ report.json
 PDFの検索用文字層は描画したセル文字が対象です。図形・画像と重なる文字は保守的に文字層から除外し、警告を残します。見た目はPNGと同じです。画像内や図形内の文字はOCRしません。
 
 reportには処理範囲、ページとの対応、見送った理由、警告を記録します。
+各ページの `firstRow` / `lastRow`、`firstColumn` / `lastColumn` は1始まりの元シートの行・列番号です。
+`sourceBoundsPoints` はシート上の座標と描画範囲を示します。
 一部を見送っても他に描画できる範囲があれば成功し、reportの `outcome` が `partial` になります。
 全範囲を見送る場合はHTTP 422 `NO_RENDERABLE_RANGE` です。
 この場合のJSON `details` から理由を確認できます。

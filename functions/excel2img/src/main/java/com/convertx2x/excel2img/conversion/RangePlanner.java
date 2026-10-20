@@ -3,6 +3,7 @@ package com.convertx2x.excel2img.conversion;
 import com.convertx2x.excel2img.drawing.ExcelDrawingLayer;
 import java.awt.geom.Rectangle2D;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
@@ -11,10 +12,15 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.util.AreaReference;
 import org.apache.poi.ss.util.CellRangeAddress;
 
-/** Selects explicit/print/occupied rectangles and creates vertical windows without horizontal slicing. */
+/** Selects rectangles and tiles them in reading order without shrinking text below the permitted scale. */
 final class RangePlanner {
     record Selection(CellRangeAddress cells, String source) {}
-    record Page(double y, double height, int firstRow, int lastRow) {}
+    record Page(double x, double y, double width, double height,
+                int firstRow, int lastRow, int firstColumn, int lastColumn) {
+        Rectangle2D.Double bounds() { return new Rectangle2D.Double(x, y, width, height); }
+    }
+    private record Slice(double start, double end, int first, int last) {}
+    private record Span(double start, double end) {}
     record Plan(CellRangeAddress cells, Rectangle2D.Double bounds, double scale, List<Page> pages,
                 String skipReason, String skipMessage) {}
     static List<Selection> selections(Sheet sheet, RenderOptions options, SheetLayout geometry,
@@ -78,7 +84,8 @@ final class RangePlanner {
         double width = geometry.x(cells.getLastColumn() + 1) - x;
         double height = geometry.y(cells.getLastRow() + 1) - y;
         if (width <= 0 || height <= 0) return skip(cells, "EMPTY_VISIBLE_RANGE", "範囲に表示される行または列がありません。");
-        double scale = Math.min(policy.pixelsPerPoint(), policy.maxWidthPixels() / width);
+        double baseScale = policy.pixelsPerPoint();
+        double fitScale = Math.min(baseScale, policy.maxWidthPixels() / width);
         double minimumFont = Double.POSITIVE_INFINITY;
         for (Row row : sheet) {
             if (row.getRowNum() < cells.getFirstRow() || row.getRowNum() > cells.getLastRow() || row.getZeroHeight()) continue;
@@ -88,43 +95,131 @@ final class RangePlanner {
                         sheet.getWorkbook().getFontAt(cell.getCellStyle().getFontIndex()).getFontHeightInPoints());
             }
         }
-        if (Double.isFinite(minimumFont) && minimumFont * scale + 1e-6 < policy.minTextPixels())
-            return skip(cells, "WIDTH_UNREADABLE", "幅を収めると文字が最小可読サイズを下回るため、この範囲をスキップしました。");
-        if (scale < policy.pixelsPerPoint() - .00001) workspace.warning("RANGE_SCALED", sheet.getSheetName(),
-                "横幅を上限に収めるため、文字の最小サイズを維持できる範囲で縮小しました。");
-        int widthPixels = positiveCeil(width * scale);
-        double pageHeight = policy.maxHeightPixels() / scale;
-        if ((long) widthPixels * Math.min(policy.maxHeightPixels(), positiveCeil(height * scale)) > limits.maxImagePixels())
-            throw ConversionWorkspace.limit("IMAGE_PIXELS_LIMIT", "生成画像の画素数が上限を超えました。");
-        List<Page> pages = new ArrayList<>();
-        double end = y + height;
-        double current = y;
-        while (current < end - .00001) {
-            if (ConversionLimits.exceeds(pages.size() + 1L, limits.maxPages()))
-                throw ConversionWorkspace.limit("PAGE_LIMIT", "生成ページ数が上限を超えました。");
-            double next = Math.min(end, current + pageHeight);
-            if (next < end) {
-                int row = geometry.rowAt(next);
-                double rowBoundary = geometry.y(row);
-                if (rowBoundary > current + .00001) next = rowBoundary;
-                for (CellRangeAddress merge : sheet.getMergedRegions()) {
-                    if (merge.getLastColumn() < cells.getFirstColumn() || merge.getFirstColumn() > cells.getLastColumn()) continue;
-                    double top = geometry.y(merge.getFirstRow()), bottom = geometry.y(merge.getLastRow() + 1);
-                    if (top < next && bottom > next && top > current + .00001) next = top;
-                }
-                if (next <= current + .00001) next = Math.min(end, current + pageHeight);
-                for (CellRangeAddress merge : sheet.getMergedRegions()) {
-                    if (geometry.y(merge.getFirstRow()) < next && geometry.y(merge.getLastRow() + 1) > next)
-                        workspace.warning("MERGE_SPLIT_ACROSS_PAGES", sheet.getSheetName(), "ページより高い結合セルは縦方向の連続ページに分割しました。");
-                }
-                if (geometry.y(geometry.rowAt(next)) < next - .00001)
-                    workspace.warning("ROW_SPLIT_ACROSS_PAGES", sheet.getSheetName(), "ページより高い行は縦方向の連続ページに分割しました。");
+        // Image text cannot be measured here. Limit image-only shrinking to 50% of the configured resolution.
+        double readableScale = Double.isFinite(minimumFont)
+                ? policy.minTextPixels() / Math.max(1, minimumFont) : baseScale / 2;
+        double scale = Math.min(baseScale, Math.max(fitScale, readableScale));
+        if (Double.isFinite(minimumFont) && minimumFont * baseScale + 1e-6 < policy.minTextPixels()) {
+            scale = baseScale;
+            workspace.warning("TEXT_BELOW_MINIMUM", sheet.getSheetName(),
+                    "元の描画解像度でも最小文字サイズを下回る文字があります。拡大や追加の縮小をせず、設定された解像度で描画しました。");
+        }
+        if (scale < baseScale - .00001) workspace.warning("RANGE_SCALED", sheet.getSheetName(),
+                "文字サイズまたは画像の縮小下限を保つ倍率で縮小しました。横幅を超える部分はページに分割します。");
+
+        List<CellRangeAddress> merges = sheet.getMergedRegions().stream().filter(merge -> merge.intersects(cells)).toList();
+        List<Slice> columns = slices(x, x + width, cells.getFirstColumn(), cells.getLastColumn(),
+                policy.maxWidthPixels(), scale, false, geometry, merges, limits, workspace, sheet);
+        List<Slice> rows = slices(y, y + height, cells.getFirstRow(), cells.getLastRow(),
+                policy.maxHeightPixels(), scale, true, geometry, merges, limits, workspace, sheet);
+        long pageCount = (long) columns.size() * rows.size();
+        checkPageCount(pageCount, limits, workspace);
+        if (columns.size() > 1) workspace.warning("HORIZONTAL_PAGINATION", sheet.getSheetName(),
+                "文字や画像の縮小を抑え、列の境目を優先して横方向にも分割しました。ページ順は上段の左から右、その次の段の左から右です。");
+        if (pageCount > Integer.MAX_VALUE)
+            throw ConversionWorkspace.limit("PAGE_LIMIT", "扱える生成ページ数の上限を超えました。");
+        List<Page> pages = new ArrayList<>((int) pageCount);
+        for (Slice row : rows) {
+            for (Slice column : columns) {
+                double pageWidth = column.end - column.start, pageHeight = row.end - row.start;
+                int pixelWidth = positiveCeil(pageWidth * scale), pixelHeight = positiveCeil(pageHeight * scale);
+                if (pixelWidth > policy.maxWidthPixels() || pixelHeight > policy.maxHeightPixels() ||
+                        (long) pixelWidth * pixelHeight > limits.maxImagePixels())
+                    throw ConversionWorkspace.limit("IMAGE_PIXELS_LIMIT", "生成画像の寸法または画素数が上限を超えました。");
+                pages.add(new Page(column.start, row.start, pageWidth, pageHeight,
+                        row.first, row.last, column.first, column.last));
             }
-            pages.add(new Page(current, next - current, Math.max(cells.getFirstRow(), geometry.rowAt(current)),
-                    Math.min(cells.getLastRow(), geometry.rowAt(Math.nextDown(next)))));
+        }
+        return new Plan(cells, new Rectangle2D.Double(x, y, width, height), scale, List.copyOf(pages), null, null);
+    }
+
+    /** Both axes are continuous. Oversized cells use adjacent clipped windows rather than losing their remainder. */
+    private static List<Slice> slices(double start, double end, int first, int last, int maxPixels,
+                                      double scale, boolean vertical, SheetLayout geometry,
+                                      List<CellRangeAddress> merges, ConversionLimits limits,
+                                      ConversionWorkspace workspace, Sheet sheet) {
+        double capacity = maxPixels / scale;
+        List<Span> allMergedSpans = mergeSpans(merges, geometry, vertical, start, end, Double.POSITIVE_INFINITY);
+        List<Span> protectedSpans = mergeSpans(merges, geometry, vertical, start, end, capacity);
+        List<Slice> result = new ArrayList<>();
+        double current = start;
+        while (current < end) {
+            checkPageCount((long) result.size() + 1, limits, workspace);
+            double next = (end - current) * scale <= maxPixels + 1e-8 ? end : Math.min(end, current + capacity);
+            if (!(next > current))
+                throw ConversionWorkspace.limit("IMAGE_PIXELS_LIMIT", "指定された描画解像度ではページ境界を安全に計算できません。");
+            // Rounding a very large sheet coordinate must not create an image one pixel beyond the limit.
+            while ((next - current) * scale > maxPixels + 1e-8) {
+                next = Math.nextDown(next);
+                if (!(next > current))
+                    throw ConversionWorkspace.limit("IMAGE_PIXELS_LIMIT", "指定された描画解像度ではページ境界を安全に計算できません。");
+            }
+            if (next < end) {
+                int index = indexAt(geometry, next, vertical);
+                double natural = boundary(geometry, index, vertical);
+                if (natural > current) next = natural;
+                Span crossing = crossing(protectedSpans, next);
+                // Overlapping merge projections form a protected block. If it cannot fit, no common
+                // boundary can preserve all those merges; split continuously and report the approximation.
+                if (crossing != null && crossing.end - crossing.start <= capacity && crossing.start > current)
+                    next = crossing.start;
+                if (crossing(allMergedSpans, next) != null)
+                    workspace.warning("MERGE_SPLIT_ACROSS_PAGES", sheet.getSheetName(),
+                            "ページ境界をまたぐ結合セルは、シート座標を保った連続ページに分割しました。");
+                if (boundary(geometry, indexAt(geometry, next, vertical), vertical) < next) {
+                    workspace.warning(vertical ? "ROW_SPLIT_ACROSS_PAGES" : "COLUMN_SPLIT_ACROSS_PAGES", sheet.getSheetName(),
+                            vertical ? "ページより高い行は縦方向の連続ページに分割しました。"
+                                    : "ページより広い列は横方向の連続ページに分割しました。");
+                }
+            }
+            result.add(new Slice(current, next, Math.max(first, indexAt(geometry, current, vertical)),
+                    Math.min(last, indexAt(geometry, Math.nextDown(next), vertical))));
             current = next;
         }
-        return new Plan(cells, new Rectangle2D.Double(x, y, width, height), scale, pages, null, null);
+        return result;
+    }
+
+    /** Disjoint projected merge blocks let pagination avoid repeated scans or cyclic boundary adjustment. */
+    private static List<Span> mergeSpans(List<CellRangeAddress> merges, SheetLayout geometry, boolean vertical,
+                                        double selectedStart, double selectedEnd, double capacity) {
+        List<Span> spans = new ArrayList<>();
+        for (CellRangeAddress merge : merges) {
+            double start = boundary(geometry, vertical ? merge.getFirstRow() : merge.getFirstColumn(), vertical);
+            double end = boundary(geometry, (vertical ? merge.getLastRow() : merge.getLastColumn()) + 1, vertical);
+            start = Math.max(selectedStart, start); end = Math.min(selectedEnd, end);
+            // A title wider than one page must not prevent preserving smaller merged headers below it.
+            if (end > start && end - start <= capacity) spans.add(new Span(start, end));
+        }
+        spans.sort(Comparator.comparingDouble(Span::start));
+        List<Span> blocks = new ArrayList<>();
+        for (Span span : spans) {
+            if (blocks.isEmpty() || blocks.getLast().end <= span.start) blocks.add(span);
+            else {
+                Span previous = blocks.removeLast();
+                blocks.add(new Span(previous.start, Math.max(previous.end, span.end)));
+            }
+        }
+        return blocks;
+    }
+    private static Span crossing(List<Span> spans, double position) {
+        int lo = 0, hi = spans.size();
+        while (lo < hi) {
+            int mid = (lo + hi) >>> 1;
+            if (spans.get(mid).start < position) lo = mid + 1; else hi = mid;
+        }
+        if (lo == 0) return null;
+        Span span = spans.get(lo - 1);
+        return span.end > position ? span : null;
+    }
+    private static int indexAt(SheetLayout geometry, double point, boolean vertical) {
+        return vertical ? geometry.rowAt(point) : geometry.columnAt(point);
+    }
+    private static double boundary(SheetLayout geometry, int index, boolean vertical) {
+        return vertical ? geometry.y(index) : geometry.x(index);
+    }
+    private static void checkPageCount(long count, ConversionLimits limits, ConversionWorkspace workspace) {
+        if (ConversionLimits.exceeds(count + workspace.pageCount(), limits.maxPages()))
+            throw ConversionWorkspace.limit("PAGE_LIMIT", "生成ページ数が上限を超えました。");
     }
     private static Plan skip(CellRangeAddress cells, String code, String message) {
         return new Plan(cells, null, 0, List.of(), code, message);

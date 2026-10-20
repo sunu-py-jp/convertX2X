@@ -2,7 +2,7 @@
   "specVersion" : 1,
   "source" : {
     "filename" : "excel-layout-demo.xlsx",
-    "sha256" : "cd46f9a802094399720560819ad7f49d1ec7f40472d88ece14d68af4f97d04b8",
+    "sha256" : "636919bce691343b6e8c7578949ed28d04487f43707f421ae0fc7ec4aeeaee60",
     "format" : "xlsx"
   },
   "format" : "png",
@@ -11,10 +11,10 @@
     "sheet" : null,
     "range" : null
   },
-  "outcome" : "partial",
-  "pageCount" : 5,
+  "outcome" : "complete",
+  "pageCount" : 7,
   "sectionKind" : "sheet",
-  "sectionCount" : 3,
+  "sectionCount" : 4,
   "ranges" : [ {
     "sheet" : "画像付き業務フロー",
     "range" : "A1:L26",
@@ -22,10 +22,10 @@
     "status" : "rendered",
     "pixelsPerPoint" : 2.0,
     "sourceBoundsPoints" : {
+      "width" : 630.1529846191406,
       "height" : 624.0,
       "x" : 0.0,
-      "y" : 0.0,
-      "width" : 630.1529846191406
+      "y" : 0.0
     },
     "pages" : [ 1 ]
   }, {
@@ -35,10 +35,10 @@
     "status" : "rendered",
     "pixelsPerPoint" : 2.0,
     "sourceBoundsPoints" : {
+      "width" : 409.59946060180664,
       "height" : 288.0,
       "x" : 0.0,
-      "y" : 0.0,
-      "width" : 409.59946060180664
+      "y" : 0.0
     },
     "pages" : [ 2 ]
   }, {
@@ -48,10 +48,10 @@
     "status" : "rendered",
     "pixelsPerPoint" : 2.0,
     "sourceBoundsPoints" : {
+      "width" : 409.59946060180664,
       "height" : 288.0,
       "x" : 0.0,
-      "y" : 408.0,
-      "width" : 409.59946060180664
+      "y" : 408.0
     },
     "pages" : [ 3 ]
   }, {
@@ -61,20 +61,25 @@
     "status" : "rendered",
     "pixelsPerPoint" : 2.0,
     "sourceBoundsPoints" : {
+      "width" : 467.3634796142578,
       "height" : 2500.0,
       "x" : 0.0,
-      "y" : 0.0,
-      "width" : 467.3634796142578
+      "y" : 0.0
     },
     "pages" : [ 4, 5 ]
   }, {
     "sheet" : "横長マトリックス",
     "range" : "A1:AP12",
     "selection" : "occupied",
-    "status" : "skipped",
-    "reason" : "WIDTH_UNREADABLE",
-    "message" : "幅を収めると文字が最小可読サイズを下回るため、この範囲をスキップしました。",
-    "pages" : [ ]
+    "status" : "rendered",
+    "pixelsPerPoint" : 1.0909090909090908,
+    "sourceBoundsPoints" : {
+      "width" : 2646.6426315307617,
+      "height" : 288.0,
+      "x" : 0.0,
+      "y" : 0.0
+    },
+    "pages" : [ 6, 7 ]
   } ],
   "pages" : [ {
     "page" : 1,
@@ -84,13 +89,15 @@
     "widthPixels" : 1261,
     "heightPixels" : 1248,
     "sourceBoundsPoints" : {
+      "width" : 630.1529846191406,
       "height" : 624.0,
       "x" : 0.0,
-      "y" : 0.0,
-      "width" : 630.1529846191406
+      "y" : 0.0
     },
     "firstRow" : 1,
-    "lastRow" : 26
+    "lastRow" : 26,
+    "firstColumn" : 1,
+    "lastColumn" : 12
   }, {
     "page" : 2,
     "sheet" : "印刷範囲2つ",
@@ -99,13 +106,15 @@
     "widthPixels" : 820,
     "heightPixels" : 576,
     "sourceBoundsPoints" : {
+      "width" : 409.59946060180664,
       "height" : 288.0,
       "x" : 0.0,
-      "y" : 0.0,
-      "width" : 409.59946060180664
+      "y" : 0.0
     },
     "firstRow" : 1,
-    "lastRow" : 12
+    "lastRow" : 12,
+    "firstColumn" : 1,
+    "lastColumn" : 6
   }, {
     "page" : 3,
     "sheet" : "印刷範囲2つ",
@@ -114,13 +123,15 @@
     "widthPixels" : 820,
     "heightPixels" : 576,
     "sourceBoundsPoints" : {
+      "width" : 409.59946060180664,
       "height" : 288.0,
       "x" : 0.0,
-      "y" : 408.0,
-      "width" : 409.59946060180664
+      "y" : 408.0
     },
     "firstRow" : 18,
-    "lastRow" : 29
+    "lastRow" : 29,
+    "firstColumn" : 1,
+    "lastColumn" : 6
   }, {
     "page" : 4,
     "sheet" : "縦長一覧",
@@ -129,13 +140,15 @@
     "widthPixels" : 935,
     "heightPixels" : 2800,
     "sourceBoundsPoints" : {
+      "width" : 467.3634796142578,
       "height" : 1400.0,
       "x" : 0.0,
-      "y" : 0.0,
-      "width" : 467.3634796142578
+      "y" : 0.0
     },
     "firstRow" : 1,
-    "lastRow" : 70
+    "lastRow" : 70,
+    "firstColumn" : 1,
+    "lastColumn" : 6
   }, {
     "page" : 5,
     "sheet" : "縦長一覧",
@@ -144,15 +157,59 @@
     "widthPixels" : 935,
     "heightPixels" : 2200,
     "sourceBoundsPoints" : {
+      "width" : 467.3634796142578,
       "height" : 1100.0,
       "x" : 0.0,
-      "y" : 1400.0,
-      "width" : 467.3634796142578
+      "y" : 1400.0
     },
     "firstRow" : 71,
-    "lastRow" : 125
+    "lastRow" : 125,
+    "firstColumn" : 1,
+    "lastColumn" : 6
+  }, {
+    "page" : 6,
+    "sheet" : "横長マトリックス",
+    "range" : "A1:AP12",
+    "path" : "pages/page-006.png",
+    "widthPixels" : 1994,
+    "heightPixels" : 315,
+    "sourceBoundsPoints" : {
+      "width" : 1827.4437217712402,
+      "height" : 288.0,
+      "x" : 0.0,
+      "y" : 0.0
+    },
+    "firstRow" : 1,
+    "lastRow" : 12,
+    "firstColumn" : 1,
+    "lastColumn" : 29
+  }, {
+    "page" : 7,
+    "sheet" : "横長マトリックス",
+    "range" : "A1:AP12",
+    "path" : "pages/page-007.png",
+    "widthPixels" : 894,
+    "heightPixels" : 315,
+    "sourceBoundsPoints" : {
+      "width" : 819.1989097595215,
+      "height" : 288.0,
+      "x" : 1827.4437217712402,
+      "y" : 0.0
+    },
+    "firstRow" : 1,
+    "lastRow" : 12,
+    "firstColumn" : 30,
+    "lastColumn" : 42
   } ],
-  "warnings" : [ ],
+  "warnings" : [ {
+    "code" : "RANGE_SCALED",
+    "sheet" : "横長マトリックス",
+    "message" : "文字サイズまたは画像の縮小下限を保つ倍率で縮小しました。横幅を超える部分はページに分割します。"
+  }, {
+    "code" : "HORIZONTAL_PAGINATION",
+    "sheet" : "横長マトリックス",
+    "message" : "文字や画像の縮小を抑え、列の境目を優先して横方向にも分割しました。ページ順は上段の左から右、その次の段の左から右です。"
+  } ],
   "outputs" : [ {
     "sha256" : "fe3bdc00434e88294d6fd9446c93cf4744afa569b7ad2962c3288052a197936f",
     "sizeBytes" : 157872,
@@ -178,5 +235,15 @@
     "sizeBytes" : 368899,
     "contentType" : "image/png",
     "path" : "pages/page-005.png"
+  }, {
+    "sha256" : "15b69bf62ceb35b96afd70a4c08687592cb1d0dfc12263f3254a1b317afe4bb2",
+    "sizeBytes" : 28227,
+    "contentType" : "image/png",
+    "path" : "pages/page-006.png"
+  }, {
+    "sha256" : "5467bd240f25aa8481492a8bfd52907ede5e987cacf77f176307d62921e4c8cf",
+    "sizeBytes" : 14824,
+    "contentType" : "image/png",
+    "path" : "pages/page-007.png"
   } ]
 }

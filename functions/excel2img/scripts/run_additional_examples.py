@@ -17,6 +17,7 @@ from pathlib import Path, PurePosixPath
 import posixpath
 import re
 import stat
+import struct
 import time
 import urllib.error
 import urllib.parse
@@ -28,9 +29,9 @@ from datetime import datetime, timezone
 MODULE_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_FIXTURE_FOLDER = MODULE_ROOT.parents[1] / "docs/APIDocs/excel2img/examples/additional/inputs"
 SAMPLES = (
-    ("wide-table", "48列・可読性不足"),
+    ("wide-table", "48列・横分割"),
     ("embedded-images", None),
-    ("wide-with-images", "52列・可読性不足"),
+    ("wide-with-images", "52列・横分割"),
 )
 ALLOWED_ARTIFACT = re.compile(r"(?:report\.json|document\.pdf|pages/page-[0-9]{3,}\.png)\Z")
 NS = {
@@ -133,6 +134,8 @@ def picture_evidence(metadata: dict, report: dict) -> dict:
                 left, top, right, bottom = cells(page["range"])
                 top = max(top, page.get("firstRow", top + 1) - 1)
                 bottom = min(bottom, page.get("lastRow", bottom + 1) - 1)
+                left = max(left, page.get("firstColumn", left + 1) - 1)
+                right = min(right, page.get("lastColumn", right + 1) - 1)
                 if start["col"] <= right and end["col"] >= left and start["row"] <= bottom and end["row"] >= top:
                     pages.append(page["page"])
         evidence.append({"sheet": picture["sheet"], "mediaPart": picture["mediaPart"], "reportedPagesOverlappingAnchor": pages})
@@ -199,6 +202,7 @@ def extract_result(data: bytes, destination: Path, output_format: str, maximum: 
         if output_format == "png" and (len(seen) < 2 or "document.pdf" in seen):
             raise ValueError("PNG ZIP must contain pages and report.json")
         report = None
+        artifacts = {}
         for entry in entries:
             with archive.open(entry) as source:
                 content = source.read(min(entry.file_size, maximum) + 1)
@@ -211,10 +215,40 @@ def extract_result(data: bytes, destination: Path, output_format: str, maximum: 
             target = root.joinpath(*PurePosixPath(entry.filename).parts)
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(content)
+            artifacts[entry.filename] = {"sizeBytes": len(content), "sha256": hashlib.sha256(content).hexdigest()}
+            if entry.filename.endswith(".png"):
+                artifacts[entry.filename]["dimensions"] = struct.unpack(">II", content[16:24])
             if entry.filename == "report.json":
                 report = json.loads(content)
         if report is None or report.get("format") != output_format:
             raise ValueError("Report format does not match the request")
+        pages = report.get("pages", [])
+        page_count = report.get("pageCount", 0)
+        if page_count < 1 or len(pages) != page_count or [page.get("page") for page in pages] != list(range(1, page_count + 1)):
+            raise ValueError("Report page count or page sequence is inconsistent")
+        if output_format == "png":
+            expected_pages = {f"pages/page-{number:03d}.png" for number in range(1, page_count + 1)}
+            if seen != expected_pages | {"report.json"} or {page["path"] for page in pages} != expected_pages:
+                raise ValueError("PNG ZIP does not retain every reported page exactly once")
+            for page in pages:
+                if artifacts[page["path"]]["dimensions"] != (page["widthPixels"], page["heightPixels"]):
+                    raise ValueError("PNG dimensions do not match the report")
+        elif any(page.get("path") != "document.pdf" for page in pages):
+            raise ValueError("PDF page metadata references an unexpected artifact")
+        output_metadata = report.get("outputs", [])
+        if {item["path"] for item in output_metadata} != seen - {"report.json"}:
+            raise ValueError("Report output list differs from the ZIP artifacts")
+        for item in output_metadata:
+            actual = artifacts[item["path"]]
+            if item["sizeBytes"] != actual["sizeBytes"] or item["sha256"] != actual["sha256"]:
+                raise ValueError("Output checksum or size differs from the report")
+        # Remove only obsolete artifacts owned by earlier runs, so a rerun cannot leave stale pages.
+        for old in root.rglob("*"):
+            relative_name = old.relative_to(root).as_posix()
+            if ALLOWED_ARTIFACT.fullmatch(relative_name) and relative_name not in seen and old.is_file():
+                if not old.resolve().is_relative_to(root):
+                    raise ValueError("Existing artifact resolves outside the output directory")
+                old.unlink()
         return report
 
 
@@ -222,7 +256,9 @@ def summary(report: dict) -> dict:
     return {"pageCount": report.get("pageCount"), "sectionCount": report.get("sectionCount"),
             "warningCount": len(report.get("warnings", [])), "outcome": report.get("outcome"),
             "ranges": [{key: item[key] for key in ("sheet", "range", "selection", "status", "reason", "message", "pixelsPerPoint", "pages") if key in item}
-                       for item in report.get("ranges", [])]}
+                       for item in report.get("ranges", [])],
+            "pages": [{key: page[key] for key in ("page", "sheet", "range", "path", "widthPixels", "heightPixels", "firstRow", "lastRow", "firstColumn", "lastColumn", "sourceBoundsPoints") if key in page}
+                      for page in report.get("pages", [])]}
 
 
 def main() -> None:
@@ -250,7 +286,7 @@ def main() -> None:
     maximum = int(capabilities["maxOutputBytes"])
     runs = {"startedAt": datetime.now(timezone.utc).isoformat(), "transport": "real HTTP", "baseUrl": base,
             "capabilities": capabilities, "fixtures": {}, "requests": []}
-    for name, oversized in SAMPLES:
+    for name, wide_sheet in SAMPLES:
         source = fixture_folder / f"{name}.xlsx"
         data = source.read_bytes()
         metadata = picture_metadata(data)
@@ -258,45 +294,59 @@ def main() -> None:
             raise ValueError(f"{name} must contain embedded pictures")
         runs["fixtures"][name] = {"path": relative(source, run_path.parent), "bytes": len(data),
                                   "sha256": hashlib.sha256(data).hexdigest(), **metadata}
-        for output_format in ("png", "pdf"):
-            params = {"filename": source.name, "format": output_format}
-            url = base + "/convert?" + urllib.parse.urlencode(params)
-            status, headers, response, elapsed = request(url, data, args.timeout, maximum, key)
-            if status != 200:
-                raise RuntimeError(f"{name}/{output_format}: HTTP {status}: {response.decode('utf-8', 'replace')[:2000]}")
-            if "application/zip" not in headers.get("Content-Type", ""):
-                raise ValueError("Conversion response is not a ZIP")
-            destination = output_folder / name
-            report = extract_result(response, destination / output_format, output_format, maximum)
-            zip_path = destination / f"{output_format}.zip"
-            zip_path.write_bytes(response)
-            evidence = picture_evidence(metadata, report)
-            if name != "wide-table" and not any(item["reportedPagesOverlappingAnchor"] for item in evidence["pictures"]):
-                raise ValueError(f"{name} has no embedded picture anchor covered by any rendered page")
-            failed_drawings = {"DRAWING_RENDER_FAILED", "DRAWING_UNREADABLE", "IMAGE_UNREADABLE", "IMAGE_FORMAT_UNSUPPORTED", "IMAGE_SOURCE_PIXEL_LIMIT"}
-            if any(warning.get("code") in failed_drawings for warning in evidence["drawingWarnings"]):
-                raise ValueError(f"{name} contains a picture rendering failure in its report")
-            runs["requests"].append({"fixture": name, "method": "POST", "endpoint": "/convert", "parameters": params,
-                                     "httpStatus": status, "elapsedMs": elapsed, "responseBytes": len(response),
-                                     "zip": relative(zip_path, run_path.parent),
-                                     "report": relative(destination / output_format / "report.json", run_path.parent),
-                                     **summary(report), "pictureEvidence": evidence})
-            write_json(run_path, runs)
-            print(f"{name} {output_format}: HTTP {status}, {report['pageCount']} pages, {report['outcome']}, {elapsed} ms", flush=True)
-        if oversized:
-            params = {"filename": source.name, "format": "png", "sheet": oversized}
-            status, _, response, elapsed = request(base + "/convert?" + urllib.parse.urlencode(params), data, args.timeout, maximum, key)
-            error = json.loads(response)
-            if status != 422 or error.get("error", {}).get("code") != "NO_RENDERABLE_RANGE":
-                raise ValueError(f"{name}: expected safe NO_RENDERABLE_RANGE HTTP 422, received HTTP {status}")
-            path = output_folder / name / "oversized-error.json"
-            write_json(path, error)
-            runs["requests"].append({"fixture": name, "method": "POST", "endpoint": "/convert", "parameters": params,
-                                     "httpStatus": status, "elapsedMs": elapsed, "responseBytes": len(response),
-                                     "errorResponse": relative(path, run_path.parent), "errorCode": error["error"]["code"],
-                                     **summary(error["error"].get("details", {}))})
-            write_json(run_path, runs)
-            print(f"{name} oversized sheet: expected HTTP 422 NO_RENDERABLE_RANGE, {elapsed} ms", flush=True)
+        selections = [("workbook", None)]
+        if wide_sheet:
+            selections.append(("wide-sheet", wide_sheet))
+        for selection, sheet_name in selections:
+            for output_format in ("png", "pdf"):
+                params = {"filename": source.name, "format": output_format}
+                if sheet_name:
+                    params["sheet"] = sheet_name
+                url = base + "/convert?" + urllib.parse.urlencode(params)
+                status, headers, response, elapsed = request(url, data, args.timeout, maximum, key)
+                if status != 200:
+                    raise RuntimeError(f"{name}/{selection}/{output_format}: HTTP {status}: {response.decode('utf-8', 'replace')[:2000]}")
+                if "application/zip" not in headers.get("Content-Type", ""):
+                    raise ValueError("Conversion response is not a ZIP")
+                destination = output_folder / name
+                if sheet_name:
+                    destination /= "wide-sheet"
+                report = extract_result(response, destination / output_format, output_format, maximum)
+                if report.get("source", {}).get("sha256") != hashlib.sha256(data).hexdigest():
+                    raise ValueError("Report source checksum does not match the fixture")
+                if any(item.get("reason") == "WIDTH_UNREADABLE" for item in report.get("ranges", [])):
+                    raise ValueError("A wide fixture was skipped instead of horizontally paginated")
+                if any(item.get("status") != "rendered" for item in report.get("ranges", [])):
+                    raise ValueError(f"{name}: every fixture range must produce output pages")
+                if sheet_name:
+                    pages = report.get("pages", [])
+                    if report["pageCount"] < 2 or len({page.get("firstColumn") for page in pages}) < 2:
+                        raise ValueError(f"{name}: selected wide sheet must retain multiple horizontal pages")
+                    if any(page.get("sheet") != sheet_name for page in pages):
+                        raise ValueError("Selected-sheet response includes another sheet")
+                    if not any(warning.get("code") == "HORIZONTAL_PAGINATION" for warning in report.get("warnings", [])):
+                        raise ValueError("Selected wide sheet is missing its horizontal pagination warning")
+                zip_path = destination / f"{output_format}.zip"
+                zip_path.write_bytes(response)
+                selected_metadata = {**metadata, "pictures": [picture for picture in metadata["pictures"]
+                                                               if sheet_name is None or picture["sheet"] == sheet_name]}
+                selected_metadata["pictureCount"] = len(selected_metadata["pictures"])
+                evidence = picture_evidence(selected_metadata, report)
+                if evidence["inputPictureCount"] != evidence["picturesCoveredByReportedPages"]:
+                    raise ValueError(f"{name} has an embedded picture anchor not covered by any rendered page")
+                failed_drawings = {"DRAWING_RENDER_FAILED", "DRAWING_UNREADABLE", "IMAGE_UNREADABLE", "IMAGE_FORMAT_UNSUPPORTED", "IMAGE_SOURCE_PIXEL_LIMIT"}
+                if any(warning.get("code") in failed_drawings for warning in evidence["drawingWarnings"]):
+                    raise ValueError(f"{name} contains a picture rendering failure in its report")
+                runs["requests"].append({"fixture": name, "selection": selection, "method": "POST", "endpoint": "/convert", "parameters": params,
+                                         "httpStatus": status, "elapsedMs": elapsed, "responseBytes": len(response),
+                                         "zip": relative(zip_path, run_path.parent),
+                                         "report": relative(destination / output_format / "report.json", run_path.parent),
+                                         **summary(report), "pictureEvidence": evidence})
+                write_json(run_path, runs)
+                print(f"{name} {selection} {output_format}: HTTP {status}, {report['pageCount']} pages, {report['outcome']}, {elapsed} ms", flush=True)
+        old_error = output_folder / name / "oversized-error.json"
+        if wide_sheet and old_error.is_file():
+            old_error.unlink()
     runs["completedAt"] = datetime.now(timezone.utc).isoformat()
     write_json(run_path, runs)
     print(f"Recorded {len(runs['requests'])} real HTTP requests in {run_path}")

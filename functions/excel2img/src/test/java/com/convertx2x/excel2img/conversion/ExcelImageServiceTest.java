@@ -113,27 +113,89 @@ class ExcelImageServiceTest {
             }
         }
     }
-    @Test void unreadableRangeIsSkippedWhileUsefulSheetSurvives() throws Exception {
+    @Test void wideRangeIsShrunkAndPaginatedWithoutLosingTheSheet() throws Exception {
         try (var book = new XSSFWorkbook()) {
             Sheet first = book.createSheet("Good"); first.setColumnWidth(0, 18 * 256); value(first, 0, 0, "Useful");
-            Sheet second = book.createSheet("Wide"); value(second, 0, 0, "Left"); value(second, 0, 100, "Far right");
+            Sheet second = book.createSheet("Wide"); value(second, 0, 0, "Left"); value(second, 0, 100, "Right");
             try (var result = new ExcelImageService(DEFAULTS).convert(bytes(book), "wide.xlsx")) {
-                assertEquals(1, result.sectionCount()); assertEquals(1, result.pageCount());
-                JsonNode report = report(result); assertEquals("partial", report.path("outcome").asText());
-                assertEquals("WIDTH_UNREADABLE", report.path("ranges").get(1).path("reason").asText());
+                assertEquals(2, result.sectionCount()); assertTrue(result.pageCount() >= 3);
+                JsonNode report = report(result); assertEquals("complete", report.path("outcome").asText());
+                JsonNode wide = report.path("ranges").get(1);
+                assertEquals("rendered", wide.path("status").asText());
+                assertTrue(wide.path("pages").size() >= 2);
+                assertTrue(wide.path("pixelsPerPoint").asDouble() < RenderPolicy.defaults().pixelsPerPoint());
+                assertTrue(report.path("warnings").toString().contains("HORIZONTAL_PAGINATION"));
                 assertEquals(1, report.path("ranges").get(0).path("pages").size());
             }
         }
     }
     @Test void allSkippedCarriesActionableSafeReport() throws Exception {
-        RenderPolicy policy = new RenderPolicy(10, 200, 12, 2, 200_000, 20_000_000);
+        RenderPolicy policy = new RenderPolicy(2048, 2800, 12, 2, 1, 20_000_000);
         ConversionException failure = assertThrows(ConversionException.class,
-                () -> new ExcelImageService(DEFAULTS, policy).convert(simple(), "wide.xlsx"));
+                () -> new ExcelImageService(DEFAULTS, policy).convert(simple(), "cells.xlsx",
+                        new RenderOptions("png", "Main", "A1:B2")));
         assertEquals(422, failure.statusCode()); assertEquals("NO_RENDERABLE_RANGE", failure.code());
         JsonNode details = JSON.valueToTree(failure.details());
-        assertEquals("WIDTH_UNREADABLE", details.path("ranges").get(0).path("reason").asText());
+        assertEquals("CELL_LIMIT", details.path("ranges").get(0).path("reason").asText());
         assertEquals("partial", details.path("outcome").asText());
         assertThrows(UnsupportedOperationException.class, () -> failure.details().put("bad", true));
+    }
+    @Test void horizontalAndVerticalPagesKeepOffsetColumnsAndSearchTextWithinEachPdfPage() throws Exception {
+        try (var book = new XSSFWorkbook()) {
+            Sheet sheet = book.createSheet("Offset wide");
+            var font = book.createFont(); font.setFontName("BIZ UDPGothic"); font.setFontHeightInPoints((short) 11);
+            var style = book.createCellStyle(); style.setFont(font);
+            for (int row = 4; row < 12; row++) {
+                for (int col = 3; col < 19; col++) {
+                    sheet.setColumnWidth(col, 12 * 256);
+                    value(sheet, row, col, String.format("R%02dC%02d", row + 1, col + 1)).setCellStyle(style);
+                }
+                sheet.getRow(row).setHeightInPoints(30);
+            }
+            RenderPolicy policy = new RenderPolicy(300, 160, 12, 2, 200_000, 20_000_000);
+            byte[] input = bytes(book);
+            try (var png = new ExcelImageService(DEFAULTS, policy).convert(input, "offset-wide.xlsx");
+                 var pdf = new ExcelImageService(DEFAULTS, policy).convert(input, "offset-wide.xlsx",
+                         new RenderOptions("pdf", null, null));
+                 var loaded = Loader.loadPDF(pdf.pdfBytes())) {
+                JsonNode pages = report(pdf).path("pages");
+                assertTrue(pages.size() >= 4);
+                assertEquals(png.pageCount(), loaded.getNumberOfPages());
+                double lastY = -1, lastX = -1;
+                int coveredCells = 0;
+                for (int index = 0; index < pages.size(); index++) {
+                    JsonNode page = pages.get(index), pngPage = report(png).path("pages").get(index);
+                    assertEquals(pngPage.path("sourceBoundsPoints"), page.path("sourceBoundsPoints"));
+                    double x = page.path("sourceBoundsPoints").path("x").asDouble();
+                    double y = page.path("sourceBoundsPoints").path("y").asDouble();
+                    assertTrue(x > 0 && y > 0);
+                    assertTrue(y > lastY || y == lastY && x > lastX, "Pages must read across, then down");
+                    lastX = x; lastY = y;
+                    assertTrue(page.path("widthPixels").asInt() <= 300);
+                    assertTrue(page.path("heightPixels").asInt() <= 160);
+                    PDFTextStripper stripper = new PDFTextStripper();
+                    stripper.setStartPage(index + 1); stripper.setEndPage(index + 1);
+                    String pageText = stripper.getText(loaded);
+                    for (int row = page.path("firstRow").asInt(); row <= page.path("lastRow").asInt(); row++)
+                        for (int col = page.path("firstColumn").asInt(); col <= page.path("lastColumn").asInt(); col++) {
+                            assertTrue(pageText.contains(String.format("R%02dC%02d", row, col)), pageText);
+                            coveredCells++;
+                        }
+                    float pageWidth = loaded.getPage(index).getMediaBox().getWidth();
+                    float pageHeight = loaded.getPage(index).getMediaBox().getHeight();
+                    PDFTextStripper positioned = new PDFTextStripper() {
+                        @Override protected void processTextPosition(org.apache.pdfbox.text.TextPosition position) {
+                            assertTrue(position.getXDirAdj() >= -.5 && position.getXDirAdj() < pageWidth);
+                            assertTrue(position.getYDirAdj() >= -.5 && position.getYDirAdj() < pageHeight);
+                            super.processTextPosition(position);
+                        }
+                    };
+                    positioned.setStartPage(index + 1); positioned.setEndPage(index + 1);
+                    positioned.getText(loaded);
+                }
+                assertEquals(16 * 8, coveredCells);
+            }
+        }
     }
     @Test void cachedFormulasAreUsedAndMissingCacheNeverGetsEvaluated() throws Exception {
         try (var book = new XSSFWorkbook()) {

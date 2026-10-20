@@ -1,9 +1,9 @@
 {
   "specVersion" : 1,
   "source" : {
-    "sha256" : "a7624f058589d5cd8722d6bb0503096a872370d05d1fb26a565427536679446a",
-    "filename" : "wide-with-images.xlsx",
-    "format" : "xlsx"
+    "format" : "xlsx",
+    "sha256" : "e675018d7d337100144126f6f7c0be8b2fafde81707b1bd25794f549a631e26e",
+    "filename" : "wide-with-images.xlsx"
   },
   "format" : "png",
   "options" : {
@@ -12,9 +12,9 @@
     "range" : null
   },
   "outcome" : "partial",
-  "pageCount" : 1,
+  "pageCount" : 3,
   "sectionKind" : "sheet",
-  "sectionCount" : 1,
+  "sectionCount" : 2,
   "ranges" : [ {
     "sheet" : "横長一覧と画像",
     "range" : "A1:AA38",
@@ -22,20 +22,25 @@
     "status" : "rendered",
     "pixelsPerPoint" : 1.2037053056668976,
     "sourceBoundsPoints" : {
+      "width" : 1701.4131202697754,
       "y" : 0.0,
       "x" : 0.0,
-      "height" : 912.0,
-      "width" : 1701.4131202697754
+      "height" : 912.0
     },
     "pages" : [ 1 ]
   }, {
-    "sheet" : "52列・可読性不足",
+    "sheet" : "52列・横分割",
     "range" : "A1:AZ29",
     "selection" : "printArea",
-    "status" : "skipped",
-    "reason" : "WIDTH_UNREADABLE",
-    "message" : "幅を収めると文字が最小可読サイズを下回るため、この範囲をスキップしました。",
-    "pages" : [ ]
+    "status" : "rendered",
+    "pixelsPerPoint" : 1.0909090909090908,
+    "sourceBoundsPoints" : {
+      "width" : 3276.795639038086,
+      "y" : 0.0,
+      "x" : 0.0,
+      "height" : 696.0
+    },
+    "pages" : [ 2, 3 ]
   } ],
   "pages" : [ {
     "page" : 1,
@@ -45,23 +50,85 @@
     "widthPixels" : 2048,
     "heightPixels" : 1098,
     "sourceBoundsPoints" : {
+      "width" : 1701.4131202697754,
       "y" : 0.0,
       "x" : 0.0,
-      "height" : 912.0,
-      "width" : 1701.4131202697754
+      "height" : 912.0
     },
     "firstRow" : 1,
-    "lastRow" : 38
+    "lastRow" : 38,
+    "firstColumn" : 1,
+    "lastColumn" : 27
+  }, {
+    "page" : 2,
+    "sheet" : "52列・横分割",
+    "range" : "A1:AZ29",
+    "path" : "pages/page-002.png",
+    "widthPixels" : 1994,
+    "heightPixels" : 760,
+    "sourceBoundsPoints" : {
+      "width" : 1827.4437217712402,
+      "y" : 0.0,
+      "x" : 0.0,
+      "height" : 696.0
+    },
+    "firstRow" : 1,
+    "lastRow" : 29,
+    "firstColumn" : 1,
+    "lastColumn" : 29
+  }, {
+    "page" : 3,
+    "sheet" : "52列・横分割",
+    "range" : "A1:AZ29",
+    "path" : "pages/page-003.png",
+    "widthPixels" : 1582,
+    "heightPixels" : 760,
+    "sourceBoundsPoints" : {
+      "width" : 1449.3519172668457,
+      "y" : 0.0,
+      "x" : 1827.4437217712402,
+      "height" : 696.0
+    },
+    "firstRow" : 1,
+    "lastRow" : 29,
+    "firstColumn" : 30,
+    "lastColumn" : 52
   } ],
   "warnings" : [ {
     "code" : "RANGE_SCALED",
     "sheet" : "横長一覧と画像",
-    "message" : "横幅を上限に収めるため、文字の最小サイズを維持できる範囲で縮小しました。"
+    "message" : "文字サイズまたは画像の縮小下限を保つ倍率で縮小しました。横幅を超える部分はページに分割します。"
+  }, {
+    "code" : "RANGE_SCALED",
+    "sheet" : "52列・横分割",
+    "message" : "文字サイズまたは画像の縮小下限を保つ倍率で縮小しました。横幅を超える部分はページに分割します。"
+  }, {
+    "code" : "MERGE_SPLIT_ACROSS_PAGES",
+    "sheet" : "52列・横分割",
+    "message" : "ページ境界をまたぐ結合セルは、シート座標を保った連続ページに分割しました。"
+  }, {
+    "code" : "HORIZONTAL_PAGINATION",
+    "sheet" : "52列・横分割",
+    "message" : "文字や画像の縮小を抑え、列の境目を優先して横方向にも分割しました。ページ順は上段の左から右、その次の段の左から右です。"
+  }, {
+    "code" : "DRAWING_PAGINATION",
+    "sheet" : "52列・横分割",
+    "message" : "図形はシート座標のまま描画します。ページ境界にまたがる部分は次のページに続きます。"
   } ],
   "outputs" : [ {
+    "path" : "pages/page-001.png",
     "contentType" : "image/png",
-    "sizeBytes" : 295830,
-    "sha256" : "c6129a9a124b0a9b6f41e9f1a5840fc94716af845c99b77f18ddbfd3f1967e33",
-    "path" : "pages/page-001.png"
+    "sizeBytes" : 297266,
+    "sha256" : "9d86e681eac78f287d282c543af08d0ef8c3d350dd5f3b2e43e9ca03a3f19d3c"
+  }, {
+    "path" : "pages/page-002.png",
+    "contentType" : "image/png",
+    "sizeBytes" : 140998,
+    "sha256" : "c01c5107774f69705ab05d025cdc832d8ad87558c2e8d9301ba5fc9d6b91fc08"
+  }, {
+    "path" : "pages/page-003.png",
+    "contentType" : "image/png",
+    "sizeBytes" : 114149,
+    "sha256" : "ec78214fb904337f19f374e12048f70031210c76cce0313cf479eb9a6f0fef8f"
   } ]
 }

@@ -55,7 +55,7 @@ final class SearchablePdfWriter implements AutoCloseable {
                 if (nativeWidth <= 0) continue;
                 stream.setFont(font, size);
                 stream.setTextMatrix(new Matrix((float) (line.width() * factor / nativeWidth), 0, 0, 1,
-                        (float) ((line.x() - plan.bounds().getX()) * factor),
+                        (float) ((line.x() - source.x()) * factor),
                         height - (float) ((line.baseline() - source.y()) * factor)));
                 stream.showText(safe);
             }

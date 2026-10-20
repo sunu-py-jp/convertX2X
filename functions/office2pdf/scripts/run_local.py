@@ -21,6 +21,45 @@ AZURITE_CONNECTION = "UseDevelopmentStorage=true"
 AZURITE_PORTS = (10000, 10001)
 
 
+class AzuriteStartupError(OSError):
+    """Keep startup guidance separate from untrusted OS or subprocess messages."""
+
+    def __init__(self, code: str, *, returncode: int | None = None,
+                 cause: OSError | None = None):
+        npm = "npm.cmd" if WINDOWS else "npm"
+        azurite = "azurite.cmd" if WINDOWS else "azurite"
+        guidance = {
+            "AZURITE_NOT_FOUND": (
+                "Azurite was not found on PATH. Install Node.js/npm, then run "
+                f"`{npm} install -g azurite` and `{azurite} --version` in the same terminal. "
+                "Reopen the terminal after installing Node.js or changing PATH. "
+                "Alternatively, start Azurite Blob and Queue services separately."
+            ),
+            "AZURITE_LAUNCH_FAILED": (
+                f"Azurite could not be launched. Check `{azurite} --version`, "
+                "`node --version`, and the reported OS error code."
+            ),
+            "AZURITE_EXITED": (
+                "Azurite exited before Blob and Queue became ready. "
+                f"Run `{azurite} --disableTelemetry --skipApiVersionCheck` "
+                "in a separate terminal to see its error. Check Node.js/PATH and "
+                "whether ports 10000, 10001 or 10002 are already in use."
+            ),
+            "AZURITE_TIMEOUT": (
+                "Azurite did not become ready on ports 10000 and 10001 within 15 seconds. "
+                f"Run `{azurite} --disableTelemetry --skipApiVersionCheck` "
+                "in a separate terminal and check its output and local port access."
+            ),
+        }[code]
+        super().__init__(guidance)
+        self.code = code
+        self.guidance = guidance
+        self.returncode = returncode
+        if cause is not None:
+            self.errno = cause.errno
+            self.winerror = getattr(cause, "winerror", None)
+
+
 def find_tool(name: str) -> str | None:
     """Resolve Windows command shims explicitly."""
     candidates = (f"{name}.exe", f"{name}.cmd", name) if WINDOWS else (name,)
@@ -61,12 +100,13 @@ def ports_ready() -> bool:
 def wait_for_azurite(process: subprocess.Popen, timeout: float = 15) -> None:
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
+        returncode = process.poll()
+        if returncode is not None:
+            raise AzuriteStartupError("AZURITE_EXITED", returncode=returncode)
         if ports_ready():
             return
-        if process.poll() is not None:
-            break
         time.sleep(.1)
-    raise OSError("Azurite did not start on ports 10000 and 10001.")
+    raise AzuriteStartupError("AZURITE_TIMEOUT")
 
 
 def stop_process(process: subprocess.Popen | None) -> None:
@@ -98,13 +138,16 @@ def prepare_azurite(environment: dict[str, str], work: Path) -> subprocess.Popen
     if not ports_ready():
         executable = find_tool("azurite")
         if not executable:
-            raise OSError("Azurite is required when UseDevelopmentStorage=true.")
+            raise AzuriteStartupError("AZURITE_NOT_FOUND")
         log = work / "azurite.log"
         with log.open("w", encoding="utf-8") as output:
-            process = popen_command([executable, "--location", str(work / "data"), "--silent",
-                                     "--disableTelemetry", "--skipApiVersionCheck"],
-                                    cwd=ROOT, env=environment, stdout=output,
-                                    stderr=subprocess.STDOUT, start_new_session=not WINDOWS)
+            try:
+                process = popen_command([executable, "--location", str(work / "data"), "--silent",
+                                         "--disableTelemetry", "--skipApiVersionCheck"],
+                                        cwd=ROOT, env=environment, stdout=output,
+                                        stderr=subprocess.STDOUT, start_new_session=not WINDOWS)
+            except OSError as error:
+                raise AzuriteStartupError("AZURITE_LAUNCH_FAILED", cause=error) from None
         try:
             wait_for_azurite(process)
         except Exception:
@@ -119,6 +162,10 @@ def prepare_azurite(environment: dict[str, str], work: Path) -> subprocess.Popen
 def error_summary(error: Exception) -> str:
     """Show diagnostic codes without echoing commands, settings or exception payloads."""
     details = [type(error).__name__]
+    if isinstance(error, AzuriteStartupError):
+        details.append(error.code)
+        if error.returncode is not None:
+            details.append(f"exit code {error.returncode}")
     if isinstance(error, OSError):
         if getattr(error, "winerror", None) is not None:
             details.append(f"WinError {error.winerror}")
@@ -218,6 +265,8 @@ def main() -> int:
                 stop_process(azurite)
     except (OSError, ValueError, subprocess.CalledProcessError) as error:
         print(f"Local startup failed during {step} ({error_summary(error)}).", file=sys.stderr)
+        if isinstance(error, AzuriteStartupError):
+            print(error.guidance, file=sys.stderr)
         return 1
     except KeyboardInterrupt:
         return 130

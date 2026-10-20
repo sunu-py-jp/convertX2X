@@ -1,0 +1,94 @@
+{
+  "specVersion" : 1,
+  "source" : {
+    "format" : "xlsx",
+    "sha256" : "e675018d7d337100144126f6f7c0be8b2fafde81707b1bd25794f549a631e26e",
+    "filename" : "wide-with-images.xlsx"
+  },
+  "format" : "pdf",
+  "options" : {
+    "format" : "pdf",
+    "sheet" : "52列・横分割",
+    "range" : null
+  },
+  "outcome" : "partial",
+  "pageCount" : 2,
+  "sectionKind" : "sheet",
+  "sectionCount" : 1,
+  "ranges" : [ {
+    "sheet" : "52列・横分割",
+    "range" : "A1:AZ29",
+    "selection" : "printArea",
+    "status" : "rendered",
+    "pixelsPerPoint" : 1.0909090909090908,
+    "sourceBoundsPoints" : {
+      "width" : 3276.795639038086,
+      "y" : 0.0,
+      "x" : 0.0,
+      "height" : 696.0
+    },
+    "pages" : [ 1, 2 ]
+  } ],
+  "pages" : [ {
+    "page" : 1,
+    "sheet" : "52列・横分割",
+    "range" : "A1:AZ29",
+    "path" : "document.pdf",
+    "widthPixels" : 1994,
+    "heightPixels" : 760,
+    "sourceBoundsPoints" : {
+      "width" : 1827.4437217712402,
+      "y" : 0.0,
+      "x" : 0.0,
+      "height" : 696.0
+    },
+    "firstRow" : 1,
+    "lastRow" : 29,
+    "firstColumn" : 1,
+    "lastColumn" : 29
+  }, {
+    "page" : 2,
+    "sheet" : "52列・横分割",
+    "range" : "A1:AZ29",
+    "path" : "document.pdf",
+    "widthPixels" : 1582,
+    "heightPixels" : 760,
+    "sourceBoundsPoints" : {
+      "width" : 1449.3519172668457,
+      "y" : 0.0,
+      "x" : 1827.4437217712402,
+      "height" : 696.0
+    },
+    "firstRow" : 1,
+    "lastRow" : 29,
+    "firstColumn" : 30,
+    "lastColumn" : 52
+  } ],
+  "warnings" : [ {
+    "code" : "RANGE_SCALED",
+    "sheet" : "52列・横分割",
+    "message" : "文字サイズまたは画像の縮小下限を保つ倍率で縮小しました。横幅を超える部分はページに分割します。"
+  }, {
+    "code" : "MERGE_SPLIT_ACROSS_PAGES",
+    "sheet" : "52列・横分割",
+    "message" : "ページ境界をまたぐ結合セルは、シート座標を保った連続ページに分割しました。"
+  }, {
+    "code" : "HORIZONTAL_PAGINATION",
+    "sheet" : "52列・横分割",
+    "message" : "文字や画像の縮小を抑え、列の境目を優先して横方向にも分割しました。ページ順は上段の左から右、その次の段の左から右です。"
+  }, {
+    "code" : "DRAWING_PAGINATION",
+    "sheet" : "52列・横分割",
+    "message" : "図形はシート座標のまま描画します。ページ境界にまたがる部分は次のページに続きます。"
+  }, {
+    "code" : "PDF_TEXT_OVERLAPS_DRAWING",
+    "sheet" : "52列・横分割",
+    "message" : "図形と重なるセル文字は、画像に隠された内容を検索文字層に含めないため、PDF検索対象から除外しました。"
+  } ],
+  "outputs" : [ {
+    "path" : "document.pdf",
+    "contentType" : "application/pdf",
+    "sizeBytes" : 289250,
+    "sha256" : "6f66c994e99aa790495f3ceaad99a6ae3836da5b9d933dcd0ad6d2ec3d7940c9"
+  } ]
+}

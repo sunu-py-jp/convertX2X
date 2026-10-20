@@ -1,4 +1,3 @@
-import com.convertx2x.excel2img.conversion.ConversionException;
 import com.convertx2x.excel2img.conversion.ConversionLimits;
 import com.convertx2x.excel2img.conversion.ExcelImageService;
 import com.convertx2x.excel2img.conversion.RenderOptions;
@@ -57,17 +56,12 @@ public class CreateRenderDemo {
                         "elapsedMs", (System.nanoTime() - started) / 1_000_000));
             }
         }
-        try (var unexpected = service.convert(input, "excel-layout-demo.xlsx",
+        try (var wide = service.convert(input, "excel-layout-demo.xlsx",
                 new RenderOptions("png", "横長マトリックス", null))) {
-            throw new IllegalStateException("Wide matrix unexpectedly rendered");
-        } catch (ConversionException expected) {
-            if (!expected.code().equals("NO_RENDERABLE_RANGE")) throw expected;
-            var error = new LinkedHashMap<String, Object>();
-            error.put("code", expected.code());
-            error.put("message", expected.getMessage());
-            error.put("details", expected.details());
-            new ObjectMapper().writerWithDefaultPrettyPrinter().writeValue(output.resolve("wide-error.json").toFile(), error);
+            if (wide.pageCount() < 2) throw new IllegalStateException("Wide matrix must span horizontal pages");
+            runs.put("wideMatrix", java.util.Map.of("pages", wide.pageCount(), "warnings", wide.warningCount()));
         }
+        Files.deleteIfExists(output.resolve("wide-error.json"));
         new ObjectMapper().writerWithDefaultPrettyPrinter().writeValue(output.resolve("run.json").toFile(), runs);
         System.out.println(new ObjectMapper().writeValueAsString(runs));
     }

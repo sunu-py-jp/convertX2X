@@ -1,12 +1,16 @@
 {
   "png" : {
-    "pages" : 5,
-    "elapsedMs" : 1374,
-    "warnings" : 0
+    "pages" : 7,
+    "elapsedMs" : 1319,
+    "warnings" : 2
   },
   "pdf" : {
-    "pages" : 5,
-    "elapsedMs" : 760,
-    "warnings" : 0
+    "pages" : 7,
+    "elapsedMs" : 809,
+    "warnings" : 2
+  },
+  "wideMatrix" : {
+    "warnings" : 2,
+    "pages" : 2
   }
 }

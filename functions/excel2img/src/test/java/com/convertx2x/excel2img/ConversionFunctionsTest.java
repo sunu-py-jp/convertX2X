@@ -78,15 +78,17 @@ class ConversionFunctionsTest {
     }
 
     @Test void allSkippedHttpErrorIncludesRangeReasons() throws Exception {
-        var tiny = new RenderPolicy(100, 100, 1000, 2, 200000, 20000000);
+        var tiny = new RenderPolicy(2048, 2800, 12, 2, 1, 20000000);
         var functions = new ConversionFunctions(AppConfig.from(Map.of()), new ExcelImageService(ConversionLimits.defaults(), tiny),
                 () -> { throw new AssertionError("Storage must not initialize"); });
-        var response = functions.convert(request("/api/convert", workbook(), Map.of("filename", "book.xlsx"), Map.of()), context());
+        var response = functions.convert(request("/api/convert", workbook(),
+                Map.of("filename", "book.xlsx", "sheet", "売上", "range", "A1:B2"), Map.of()), context());
         assertEquals(422, response.getStatusCode());
         var error = new ObjectMapper().readTree(response.getBody().toString()).path("error");
         assertEquals("NO_RENDERABLE_RANGE", error.path("code").asText());
         assertTrue(error.path("details").isObject());
         assertFalse(error.path("details").isEmpty());
+        assertEquals("CELL_LIMIT", error.path("details").path("ranges").get(0).path("reason").asText());
     }
 
     @Test void disabledAndInvalidRequestsNeverInitializeStorage() {

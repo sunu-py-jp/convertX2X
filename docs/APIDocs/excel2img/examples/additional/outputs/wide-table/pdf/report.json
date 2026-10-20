@@ -1,9 +1,9 @@
 {
   "specVersion" : 1,
   "source" : {
-    "sha256" : "ecdce76d078a00c3ac8e8003f23c43e4a3c9e74f1a8debe8b653f8fcca32de16",
-    "filename" : "wide-table.xlsx",
-    "format" : "xlsx"
+    "format" : "xlsx",
+    "sha256" : "abc6aebf40cb028d4a748840612699fed02a03be187d26b962b6369016d37fb1",
+    "filename" : "wide-table.xlsx"
   },
   "format" : "pdf",
   "options" : {
@@ -12,9 +12,9 @@
     "range" : null
   },
   "outcome" : "partial",
-  "pageCount" : 1,
+  "pageCount" : 3,
   "sectionKind" : "sheet",
-  "sectionCount" : 1,
+  "sectionCount" : 2,
   "ranges" : [ {
     "sheet" : "24列の横長一覧",
     "range" : "A1:X29",
@@ -22,20 +22,25 @@
     "status" : "rendered",
     "pixelsPerPoint" : 1.1403524493416113,
     "sourceBoundsPoints" : {
+      "width" : 1795.9359855651855,
       "y" : 0.0,
       "x" : 0.0,
-      "height" : 690.0,
-      "width" : 1795.9359855651855
+      "height" : 690.0
     },
     "pages" : [ 1 ]
   }, {
-    "sheet" : "48列・可読性不足",
+    "sheet" : "48列・横分割",
     "range" : "A1:AV29",
     "selection" : "printArea",
-    "status" : "skipped",
-    "reason" : "WIDTH_UNREADABLE",
-    "message" : "幅を収めると文字が最小可読サイズを下回るため、この範囲をスキップしました。",
-    "pages" : [ ]
+    "status" : "rendered",
+    "pixelsPerPoint" : 1.0909090909090908,
+    "sourceBoundsPoints" : {
+      "width" : 3528.856658935547,
+      "y" : 0.0,
+      "x" : 0.0,
+      "height" : 696.0
+    },
+    "pages" : [ 2, 3 ]
   } ],
   "pages" : [ {
     "page" : 1,
@@ -45,23 +50,71 @@
     "widthPixels" : 2048,
     "heightPixels" : 787,
     "sourceBoundsPoints" : {
+      "width" : 1795.9359855651855,
       "y" : 0.0,
       "x" : 0.0,
-      "height" : 690.0,
-      "width" : 1795.9359855651855
+      "height" : 690.0
     },
     "firstRow" : 1,
-    "lastRow" : 29
+    "lastRow" : 29,
+    "firstColumn" : 1,
+    "lastColumn" : 24
+  }, {
+    "page" : 2,
+    "sheet" : "48列・横分割",
+    "range" : "A1:AV29",
+    "path" : "document.pdf",
+    "widthPixels" : 2006,
+    "heightPixels" : 760,
+    "sourceBoundsPoints" : {
+      "width" : 1837.9461765289307,
+      "y" : 0.0,
+      "x" : 0.0,
+      "height" : 696.0
+    },
+    "firstRow" : 1,
+    "lastRow" : 29,
+    "firstColumn" : 1,
+    "lastColumn" : 25
+  }, {
+    "page" : 3,
+    "sheet" : "48列・横分割",
+    "range" : "A1:AV29",
+    "path" : "document.pdf",
+    "widthPixels" : 1845,
+    "heightPixels" : 760,
+    "sourceBoundsPoints" : {
+      "width" : 1690.9104824066162,
+      "y" : 0.0,
+      "x" : 1837.9461765289307,
+      "height" : 696.0
+    },
+    "firstRow" : 1,
+    "lastRow" : 29,
+    "firstColumn" : 26,
+    "lastColumn" : 48
   } ],
   "warnings" : [ {
     "code" : "RANGE_SCALED",
     "sheet" : "24列の横長一覧",
-    "message" : "横幅を上限に収めるため、文字の最小サイズを維持できる範囲で縮小しました。"
+    "message" : "文字サイズまたは画像の縮小下限を保つ倍率で縮小しました。横幅を超える部分はページに分割します。"
+  }, {
+    "code" : "RANGE_SCALED",
+    "sheet" : "48列・横分割",
+    "message" : "文字サイズまたは画像の縮小下限を保つ倍率で縮小しました。横幅を超える部分はページに分割します。"
+  }, {
+    "code" : "MERGE_SPLIT_ACROSS_PAGES",
+    "sheet" : "48列・横分割",
+    "message" : "ページ境界をまたぐ結合セルは、シート座標を保った連続ページに分割しました。"
+  }, {
+    "code" : "HORIZONTAL_PAGINATION",
+    "sheet" : "48列・横分割",
+    "message" : "文字や画像の縮小を抑え、列の境目を優先して横方向にも分割しました。ページ順は上段の左から右、その次の段の左から右です。"
   } ],
   "outputs" : [ {
+    "path" : "document.pdf",
     "contentType" : "application/pdf",
-    "sizeBytes" : 228761,
-    "sha256" : "45887e4cebe6ea5e1d17b3fd36e5ab913dfb9034ccbda3e54611b2848b790e25",
-    "path" : "document.pdf"
+    "sizeBytes" : 453292,
+    "sha256" : "66d5d9c035c70d3377482fc8f2f3ef27b88685e0678447f57d7136a50be2b3b1"
   } ]
 }

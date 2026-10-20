@@ -1,0 +1,575 @@
+{
+  "specVersion" : 1,
+  "source" : {
+    "format" : "xlsx",
+    "sha256" : "41b4fe0b916c4c1ca9b94266d3091574702b9c67a67a170043ff00fff52db1eb",
+    "filename" : "large-120-columns-300-rows.xlsx"
+  },
+  "format" : "png",
+  "options" : {
+    "format" : "png",
+    "sheet" : null,
+    "range" : null
+  },
+  "outcome" : "complete",
+  "pageCount" : 24,
+  "sectionKind" : "sheet",
+  "sectionCount" : 1,
+  "ranges" : [ {
+    "sheet" : "120列300行の分割検証",
+    "range" : "A1:DP300",
+    "selection" : "printArea",
+    "status" : "rendered",
+    "pixelsPerPoint" : 1.0909090909090908,
+    "sourceBoundsPoints" : {
+      "width" : 8822.141647338867,
+      "y" : 0.0,
+      "x" : 0.0,
+      "height" : 7800.0
+    },
+    "pages" : [ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24 ]
+  } ],
+  "pages" : [ {
+    "page" : 1,
+    "sheet" : "120列300行の分割検証",
+    "range" : "A1:DP300",
+    "path" : "pages/page-001.png",
+    "widthPixels" : 1605,
+    "heightPixels" : 2780,
+    "sourceBoundsPoints" : {
+      "width" : 1470.3569412231445,
+      "y" : 0.0,
+      "x" : 0.0,
+      "height" : 2548.0
+    },
+    "firstRow" : 1,
+    "lastRow" : 98,
+    "firstColumn" : 1,
+    "lastColumn" : 20
+  }, {
+    "page" : 2,
+    "sheet" : "120列300行の分割検証",
+    "range" : "A1:DP300",
+    "path" : "pages/page-002.png",
+    "widthPixels" : 1605,
+    "heightPixels" : 2780,
+    "sourceBoundsPoints" : {
+      "width" : 1470.3569412231445,
+      "y" : 0.0,
+      "x" : 1470.3569412231445,
+      "height" : 2548.0
+    },
+    "firstRow" : 1,
+    "lastRow" : 98,
+    "firstColumn" : 21,
+    "lastColumn" : 40
+  }, {
+    "page" : 3,
+    "sheet" : "120列300行の分割検証",
+    "range" : "A1:DP300",
+    "path" : "pages/page-003.png",
+    "widthPixels" : 1605,
+    "heightPixels" : 2780,
+    "sourceBoundsPoints" : {
+      "width" : 1470.3569412231445,
+      "y" : 0.0,
+      "x" : 2940.713882446289,
+      "height" : 2548.0
+    },
+    "firstRow" : 1,
+    "lastRow" : 98,
+    "firstColumn" : 41,
+    "lastColumn" : 60
+  }, {
+    "page" : 4,
+    "sheet" : "120列300行の分割検証",
+    "range" : "A1:DP300",
+    "path" : "pages/page-004.png",
+    "widthPixels" : 1605,
+    "heightPixels" : 2780,
+    "sourceBoundsPoints" : {
+      "width" : 1470.3569412231445,
+      "y" : 0.0,
+      "x" : 4411.070823669434,
+      "height" : 2548.0
+    },
+    "firstRow" : 1,
+    "lastRow" : 98,
+    "firstColumn" : 61,
+    "lastColumn" : 80
+  }, {
+    "page" : 5,
+    "sheet" : "120列300行の分割検証",
+    "range" : "A1:DP300",
+    "path" : "pages/page-005.png",
+    "widthPixels" : 1605,
+    "heightPixels" : 2780,
+    "sourceBoundsPoints" : {
+      "width" : 1470.3569412231445,
+      "y" : 0.0,
+      "x" : 5881.427764892578,
+      "height" : 2548.0
+    },
+    "firstRow" : 1,
+    "lastRow" : 98,
+    "firstColumn" : 81,
+    "lastColumn" : 100
+  }, {
+    "page" : 6,
+    "sheet" : "120列300行の分割検証",
+    "range" : "A1:DP300",
+    "path" : "pages/page-006.png",
+    "widthPixels" : 1605,
+    "heightPixels" : 2780,
+    "sourceBoundsPoints" : {
+      "width" : 1470.3569412231445,
+      "y" : 0.0,
+      "x" : 7351.784706115723,
+      "height" : 2548.0
+    },
+    "firstRow" : 1,
+    "lastRow" : 98,
+    "firstColumn" : 101,
+    "lastColumn" : 120
+  }, {
+    "page" : 7,
+    "sheet" : "120列300行の分割検証",
+    "range" : "A1:DP300",
+    "path" : "pages/page-007.png",
+    "widthPixels" : 1605,
+    "heightPixels" : 2780,
+    "sourceBoundsPoints" : {
+      "width" : 1470.3569412231445,
+      "y" : 2548.0,
+      "x" : 0.0,
+      "height" : 2548.0
+    },
+    "firstRow" : 99,
+    "lastRow" : 196,
+    "firstColumn" : 1,
+    "lastColumn" : 20
+  }, {
+    "page" : 8,
+    "sheet" : "120列300行の分割検証",
+    "range" : "A1:DP300",
+    "path" : "pages/page-008.png",
+    "widthPixels" : 1605,
+    "heightPixels" : 2780,
+    "sourceBoundsPoints" : {
+      "width" : 1470.3569412231445,
+      "y" : 2548.0,
+      "x" : 1470.3569412231445,
+      "height" : 2548.0
+    },
+    "firstRow" : 99,
+    "lastRow" : 196,
+    "firstColumn" : 21,
+    "lastColumn" : 40
+  }, {
+    "page" : 9,
+    "sheet" : "120列300行の分割検証",
+    "range" : "A1:DP300",
+    "path" : "pages/page-009.png",
+    "widthPixels" : 1605,
+    "heightPixels" : 2780,
+    "sourceBoundsPoints" : {
+      "width" : 1470.3569412231445,
+      "y" : 2548.0,
+      "x" : 2940.713882446289,
+      "height" : 2548.0
+    },
+    "firstRow" : 99,
+    "lastRow" : 196,
+    "firstColumn" : 41,
+    "lastColumn" : 60
+  }, {
+    "page" : 10,
+    "sheet" : "120列300行の分割検証",
+    "range" : "A1:DP300",
+    "path" : "pages/page-010.png",
+    "widthPixels" : 1605,
+    "heightPixels" : 2780,
+    "sourceBoundsPoints" : {
+      "width" : 1470.3569412231445,
+      "y" : 2548.0,
+      "x" : 4411.070823669434,
+      "height" : 2548.0
+    },
+    "firstRow" : 99,
+    "lastRow" : 196,
+    "firstColumn" : 61,
+    "lastColumn" : 80
+  }, {
+    "page" : 11,
+    "sheet" : "120列300行の分割検証",
+    "range" : "A1:DP300",
+    "path" : "pages/page-011.png",
+    "widthPixels" : 1605,
+    "heightPixels" : 2780,
+    "sourceBoundsPoints" : {
+      "width" : 1470.3569412231445,
+      "y" : 2548.0,
+      "x" : 5881.427764892578,
+      "height" : 2548.0
+    },
+    "firstRow" : 99,
+    "lastRow" : 196,
+    "firstColumn" : 81,
+    "lastColumn" : 100
+  }, {
+    "page" : 12,
+    "sheet" : "120列300行の分割検証",
+    "range" : "A1:DP300",
+    "path" : "pages/page-012.png",
+    "widthPixels" : 1605,
+    "heightPixels" : 2780,
+    "sourceBoundsPoints" : {
+      "width" : 1470.3569412231445,
+      "y" : 2548.0,
+      "x" : 7351.784706115723,
+      "height" : 2548.0
+    },
+    "firstRow" : 99,
+    "lastRow" : 196,
+    "firstColumn" : 101,
+    "lastColumn" : 120
+  }, {
+    "page" : 13,
+    "sheet" : "120列300行の分割検証",
+    "range" : "A1:DP300",
+    "path" : "pages/page-013.png",
+    "widthPixels" : 1605,
+    "heightPixels" : 2780,
+    "sourceBoundsPoints" : {
+      "width" : 1470.3569412231445,
+      "y" : 5096.0,
+      "x" : 0.0,
+      "height" : 2548.0
+    },
+    "firstRow" : 197,
+    "lastRow" : 294,
+    "firstColumn" : 1,
+    "lastColumn" : 20
+  }, {
+    "page" : 14,
+    "sheet" : "120列300行の分割検証",
+    "range" : "A1:DP300",
+    "path" : "pages/page-014.png",
+    "widthPixels" : 1605,
+    "heightPixels" : 2780,
+    "sourceBoundsPoints" : {
+      "width" : 1470.3569412231445,
+      "y" : 5096.0,
+      "x" : 1470.3569412231445,
+      "height" : 2548.0
+    },
+    "firstRow" : 197,
+    "lastRow" : 294,
+    "firstColumn" : 21,
+    "lastColumn" : 40
+  }, {
+    "page" : 15,
+    "sheet" : "120列300行の分割検証",
+    "range" : "A1:DP300",
+    "path" : "pages/page-015.png",
+    "widthPixels" : 1605,
+    "heightPixels" : 2780,
+    "sourceBoundsPoints" : {
+      "width" : 1470.3569412231445,
+      "y" : 5096.0,
+      "x" : 2940.713882446289,
+      "height" : 2548.0
+    },
+    "firstRow" : 197,
+    "lastRow" : 294,
+    "firstColumn" : 41,
+    "lastColumn" : 60
+  }, {
+    "page" : 16,
+    "sheet" : "120列300行の分割検証",
+    "range" : "A1:DP300",
+    "path" : "pages/page-016.png",
+    "widthPixels" : 1605,
+    "heightPixels" : 2780,
+    "sourceBoundsPoints" : {
+      "width" : 1470.3569412231445,
+      "y" : 5096.0,
+      "x" : 4411.070823669434,
+      "height" : 2548.0
+    },
+    "firstRow" : 197,
+    "lastRow" : 294,
+    "firstColumn" : 61,
+    "lastColumn" : 80
+  }, {
+    "page" : 17,
+    "sheet" : "120列300行の分割検証",
+    "range" : "A1:DP300",
+    "path" : "pages/page-017.png",
+    "widthPixels" : 1605,
+    "heightPixels" : 2780,
+    "sourceBoundsPoints" : {
+      "width" : 1470.3569412231445,
+      "y" : 5096.0,
+      "x" : 5881.427764892578,
+      "height" : 2548.0
+    },
+    "firstRow" : 197,
+    "lastRow" : 294,
+    "firstColumn" : 81,
+    "lastColumn" : 100
+  }, {
+    "page" : 18,
+    "sheet" : "120列300行の分割検証",
+    "range" : "A1:DP300",
+    "path" : "pages/page-018.png",
+    "widthPixels" : 1605,
+    "heightPixels" : 2780,
+    "sourceBoundsPoints" : {
+      "width" : 1470.3569412231445,
+      "y" : 5096.0,
+      "x" : 7351.784706115723,
+      "height" : 2548.0
+    },
+    "firstRow" : 197,
+    "lastRow" : 294,
+    "firstColumn" : 101,
+    "lastColumn" : 120
+  }, {
+    "page" : 19,
+    "sheet" : "120列300行の分割検証",
+    "range" : "A1:DP300",
+    "path" : "pages/page-019.png",
+    "widthPixels" : 1605,
+    "heightPixels" : 171,
+    "sourceBoundsPoints" : {
+      "width" : 1470.3569412231445,
+      "y" : 7644.0,
+      "x" : 0.0,
+      "height" : 156.0
+    },
+    "firstRow" : 295,
+    "lastRow" : 300,
+    "firstColumn" : 1,
+    "lastColumn" : 20
+  }, {
+    "page" : 20,
+    "sheet" : "120列300行の分割検証",
+    "range" : "A1:DP300",
+    "path" : "pages/page-020.png",
+    "widthPixels" : 1605,
+    "heightPixels" : 171,
+    "sourceBoundsPoints" : {
+      "width" : 1470.3569412231445,
+      "y" : 7644.0,
+      "x" : 1470.3569412231445,
+      "height" : 156.0
+    },
+    "firstRow" : 295,
+    "lastRow" : 300,
+    "firstColumn" : 21,
+    "lastColumn" : 40
+  }, {
+    "page" : 21,
+    "sheet" : "120列300行の分割検証",
+    "range" : "A1:DP300",
+    "path" : "pages/page-021.png",
+    "widthPixels" : 1605,
+    "heightPixels" : 171,
+    "sourceBoundsPoints" : {
+      "width" : 1470.3569412231445,
+      "y" : 7644.0,
+      "x" : 2940.713882446289,
+      "height" : 156.0
+    },
+    "firstRow" : 295,
+    "lastRow" : 300,
+    "firstColumn" : 41,
+    "lastColumn" : 60
+  }, {
+    "page" : 22,
+    "sheet" : "120列300行の分割検証",
+    "range" : "A1:DP300",
+    "path" : "pages/page-022.png",
+    "widthPixels" : 1605,
+    "heightPixels" : 171,
+    "sourceBoundsPoints" : {
+      "width" : 1470.3569412231445,
+      "y" : 7644.0,
+      "x" : 4411.070823669434,
+      "height" : 156.0
+    },
+    "firstRow" : 295,
+    "lastRow" : 300,
+    "firstColumn" : 61,
+    "lastColumn" : 80
+  }, {
+    "page" : 23,
+    "sheet" : "120列300行の分割検証",
+    "range" : "A1:DP300",
+    "path" : "pages/page-023.png",
+    "widthPixels" : 1605,
+    "heightPixels" : 171,
+    "sourceBoundsPoints" : {
+      "width" : 1470.3569412231445,
+      "y" : 7644.0,
+      "x" : 5881.427764892578,
+      "height" : 156.0
+    },
+    "firstRow" : 295,
+    "lastRow" : 300,
+    "firstColumn" : 81,
+    "lastColumn" : 100
+  }, {
+    "page" : 24,
+    "sheet" : "120列300行の分割検証",
+    "range" : "A1:DP300",
+    "path" : "pages/page-024.png",
+    "widthPixels" : 1605,
+    "heightPixels" : 171,
+    "sourceBoundsPoints" : {
+      "width" : 1470.3569412231445,
+      "y" : 7644.0,
+      "x" : 7351.784706115723,
+      "height" : 156.0
+    },
+    "firstRow" : 295,
+    "lastRow" : 300,
+    "firstColumn" : 101,
+    "lastColumn" : 120
+  } ],
+  "warnings" : [ {
+    "code" : "RANGE_SCALED",
+    "sheet" : "120列300行の分割検証",
+    "message" : "文字サイズまたは画像の縮小下限を保つ倍率で縮小しました。横幅を超える部分はページに分割します。"
+  }, {
+    "code" : "HORIZONTAL_PAGINATION",
+    "sheet" : "120列300行の分割検証",
+    "message" : "文字や画像の縮小を抑え、列の境目を優先して横方向にも分割しました。ページ順は上段の左から右、その次の段の左から右です。"
+  }, {
+    "code" : "FONT_SUBSTITUTED",
+    "sheet" : "120列300行の分割検証",
+    "message" : "セルのフォントは同梱の BIZ UDPゴシックで代替しました。文字幅は原本と異なる場合があります。"
+  } ],
+  "outputs" : [ {
+    "path" : "pages/page-001.png",
+    "contentType" : "image/png",
+    "sizeBytes" : 1120110,
+    "sha256" : "b33fb99ef4608d8decdfd8cbeb8eb3ec22d1564c36a878d4ef0da8785780d76f"
+  }, {
+    "path" : "pages/page-002.png",
+    "contentType" : "image/png",
+    "sizeBytes" : 1143810,
+    "sha256" : "43155a6a40dfec5e3d17914d72cd78e3f7f2457e705ad0a24712f8a2ac7e46be"
+  }, {
+    "path" : "pages/page-003.png",
+    "contentType" : "image/png",
+    "sizeBytes" : 1138393,
+    "sha256" : "301288c1821b82eb9650052447d642f68a1ae4899d12ce522e9276611a870ab9"
+  }, {
+    "path" : "pages/page-004.png",
+    "contentType" : "image/png",
+    "sizeBytes" : 1135655,
+    "sha256" : "c892716594bce704920a9b3691b2d3e32d0f41c2ae49f24bb3f1b708f47ad4c9"
+  }, {
+    "path" : "pages/page-005.png",
+    "contentType" : "image/png",
+    "sizeBytes" : 1142397,
+    "sha256" : "c7f73cb3b71bbe515f4662d48a74b23f86a4e5df484a42f70e46e5ec247d1cfe"
+  }, {
+    "path" : "pages/page-006.png",
+    "contentType" : "image/png",
+    "sizeBytes" : 1131103,
+    "sha256" : "da701be1f40d1f1af445e7c20425bc9e71abe47ceb637fea2c81b129c0635acb"
+  }, {
+    "path" : "pages/page-007.png",
+    "contentType" : "image/png",
+    "sizeBytes" : 1128593,
+    "sha256" : "a2b8786122b20073d6f1b3e85374fb45441c8774677b3ca92c62fbf4ef8e273b"
+  }, {
+    "path" : "pages/page-008.png",
+    "contentType" : "image/png",
+    "sizeBytes" : 1155241,
+    "sha256" : "19d20c743d85ce20c9a5369ed5e8b71beb34739788987205b98a291d2f8f8edf"
+  }, {
+    "path" : "pages/page-009.png",
+    "contentType" : "image/png",
+    "sizeBytes" : 1145376,
+    "sha256" : "df2aa06bdffd223f84caf747560c6e33ebdfaa66787872333351e1389965dde7"
+  }, {
+    "path" : "pages/page-010.png",
+    "contentType" : "image/png",
+    "sizeBytes" : 1144914,
+    "sha256" : "5729c558ed212361b0e010ee48a1c7d39ae6a83e79f2365c2b601bfac00c76e1"
+  }, {
+    "path" : "pages/page-011.png",
+    "contentType" : "image/png",
+    "sizeBytes" : 1146941,
+    "sha256" : "b1ebbd631af117261fe8e232517696a199c4b06f3ec4eb8e2182e5cf7ee14ced"
+  }, {
+    "path" : "pages/page-012.png",
+    "contentType" : "image/png",
+    "sizeBytes" : 1100816,
+    "sha256" : "ce1d6375beb242e1708e1bf2a92c20ee5b17dec3ff07b1d765d0cce6caf69ae8"
+  }, {
+    "path" : "pages/page-013.png",
+    "contentType" : "image/png",
+    "sizeBytes" : 1138390,
+    "sha256" : "caadf7bd1900171f1b5d32c138a9cb9226bec5a8377173434995827ded0e9177"
+  }, {
+    "path" : "pages/page-014.png",
+    "contentType" : "image/png",
+    "sizeBytes" : 1167687,
+    "sha256" : "1e030634b41257b5dfca05a0e59b24048d836abdf6faa7935e1ce2dd19eae78d"
+  }, {
+    "path" : "pages/page-015.png",
+    "contentType" : "image/png",
+    "sizeBytes" : 1161945,
+    "sha256" : "ae74774e61b9ec843b61bf93a820a6446f24c17294e74eddc45ffb6fb6e103d2"
+  }, {
+    "path" : "pages/page-016.png",
+    "contentType" : "image/png",
+    "sizeBytes" : 1158063,
+    "sha256" : "cf22eb5040222fcf8dd35c64bdf4493177fb81dcd282765e5c0563e9fb947173"
+  }, {
+    "path" : "pages/page-017.png",
+    "contentType" : "image/png",
+    "sizeBytes" : 1161603,
+    "sha256" : "1ab39e21913e23db6d4f86c27f0ce22f0cde6f191b9b7987b88feabc284d5b05"
+  }, {
+    "path" : "pages/page-018.png",
+    "contentType" : "image/png",
+    "sizeBytes" : 1110864,
+    "sha256" : "a029371de4ebef06e6da5a1e61a040cabd4962e23fee34bd725987d7af72d498"
+  }, {
+    "path" : "pages/page-019.png",
+    "contentType" : "image/png",
+    "sizeBytes" : 70413,
+    "sha256" : "a322c4cbb86a375ec07b35de15ca522935df13ec932e4ada6de118d3cdb895dc"
+  }, {
+    "path" : "pages/page-020.png",
+    "contentType" : "image/png",
+    "sizeBytes" : 71464,
+    "sha256" : "560086a2909472ba2c74d1753e7067f2b58241fa53cfc15db888a0d34454cfe4"
+  }, {
+    "path" : "pages/page-021.png",
+    "contentType" : "image/png",
+    "sizeBytes" : 72262,
+    "sha256" : "540537aef489879724c0bc73972bb6e78e2de3726a8bc55b33393ddc14fc44dc"
+  }, {
+    "path" : "pages/page-022.png",
+    "contentType" : "image/png",
+    "sizeBytes" : 73463,
+    "sha256" : "414a3c1230fd6d3b8f7cd13fc8a69ea2802ea65d7bbdfa5871664416c43811f7"
+  }, {
+    "path" : "pages/page-023.png",
+    "contentType" : "image/png",
+    "sizeBytes" : 70417,
+    "sha256" : "6bd08a4a8c4ef48ba05483de7e5bd2b4f9d546dfdf96e8269df0e2448a64d8ad"
+  }, {
+    "path" : "pages/page-024.png",
+    "contentType" : "image/png",
+    "sizeBytes" : 69069,
+    "sha256" : "fe3ee1ce8627e2554eb73ec5ca1311143f961a91fdae4c4e4988633443dd0fae"
+  } ]
+}
