@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "converter": "html2pptx",
+  "slideCount": 2,
+  "width": 1280,
+  "height": 720,
+  "slides": [
+    {
+      "slide": 1,
+      "textBoxes": 23,
+      "shapes": 36,
+      "tables": 1,
+      "images": 0,
+      "convertedSvgCount": 7,
+      "svg": {
+        "shapes": 12,
+        "text": 0,
+        "gradients": 0,
+        "images": 0
+      }
+    },
+    {
+      "slide": 2,
+      "textBoxes": 23,
+      "shapes": 42,
+      "tables": 0,
+      "images": 0,
+      "convertedSvgCount": 7,
+      "svg": {
+        "shapes": 19,
+        "text": 12,
+        "gradients": 0,
+        "images": 0
+      }
+    }
+  ],
+  "elapsedMs": 4586,
+  "outputBytes": 23460,
+  "sha256": "eeb1ac6c89bfab375e180a68b359277d0c60cfaa95e740089c644c8b8e918d51",
+  "warnings": [
+    {
+      "code": "FONTS_NOT_EMBEDDED",
+      "message": "PPTXにはフォントを埋め込んでいません。閲覧環境のフォントにより表示が変わる場合があります。"
+    }
+  ],
+  "runtime": {
+    "node": "v24.2.0",
+    "chromium": "Chrome/156.0.8078.48"
+  },
+  "fontFamily": "Noto Sans JP",
+  "fontPolicy": "uniform",
+  "imagePolicy": "original-images-only",
+  "svgPolicy": "editable-native-shapes-and-text"
+}

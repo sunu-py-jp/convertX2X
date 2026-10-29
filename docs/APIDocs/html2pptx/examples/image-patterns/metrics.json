@@ -1,0 +1,773 @@
+{
+  "version": 1,
+  "sourceFile": "image-patterns-input.zip",
+  "sourceSha256": "45e9adff52f9446f39b21de32468e2d1c5d80990ee1a337a9fca7701bacc48cd",
+  "renderers": {
+    "source": "Chrome/156.0.8078.48",
+    "target": "LibreOffice Impress → PDF → PDFBox",
+    "fontConfig": "isolated bundled Noto Sans JP",
+    "runs": [
+      {
+        "target": "LibreOffice Impress → PDF → PDFBox",
+        "fontConfig": "isolated bundled Noto Sans JP",
+        "pdfFonts": [
+          "NotoSansJP-Bold",
+          "NotoSansJP-Regular"
+        ],
+        "fontsVerified": true
+      }
+    ]
+  },
+  "caveat": "This measures Chromium versus the selected renderer of the generated PPTX; LibreOffice uses an isolated bundled-font configuration. It is not a PowerPoint application screenshot or a guarantee of pixel equality.",
+  "threshold": 12,
+  "edgeThreshold": 40,
+  "metricDefinitions": {
+    "changedPixelRatio": "max(abs(R,G,B difference)) > threshold, divided by image pixels",
+    "meanAbsoluteChannelError": "mean absolute error across RGB channels, from 0 to 255",
+    "edgeMismatchRatio": "XOR of thresholded grayscale FIND_EDGES masks, divided by their union; no geometric registration"
+  },
+  "fullConversion": {
+    "ok": true,
+    "report": "report.json",
+    "pptx": "presentation.pptx"
+  },
+  "slides": [
+    {
+      "slide": 1,
+      "converted": true,
+      "rendered": true,
+      "title": "同じ画像を、配置に合わせて変える",
+      "metrics": {
+        "slide": 1,
+        "width": 1280,
+        "height": 720,
+        "pixels": 921600,
+        "changedPixels": 28969,
+        "changedPixelRatio": 0.03143337673611111,
+        "meanAbsoluteChannelError": 1.2414746093749998,
+        "rootMeanSquareChannelError": 6.934124163006176,
+        "maxChannelError": 205,
+        "sourceEdgePixels": 64874,
+        "pptxEdgePixels": 65749,
+        "edgeMismatchPixels": 17705,
+        "edgeMismatchRatio": 0.23872768459090665,
+        "missingSourceEdgeRatio": 0.12971298208835588,
+        "additionalPptxEdgePixels": 9290,
+        "regions": [
+          {
+            "id": "image-original",
+            "label": "元の縦横比 3:2",
+            "bounds": {
+              "x": 40,
+              "y": 140,
+              "width": 380,
+              "height": 242
+            },
+            "pixels": 91960,
+            "changedPixels": 2519,
+            "changedPixelRatio": 0.027392344497607655,
+            "meanAbsoluteChannelError": 1.2507358271712339,
+            "rootMeanSquareChannelError": 3.927487681665364,
+            "maxChannelError": 94,
+            "sourceEdgePixels": 10059,
+            "pptxEdgePixels": 10267,
+            "edgeMismatchPixels": 1856,
+            "edgeMismatchRatio": 0.167342890632044,
+            "missingSourceEdgeRatio": 0.08191669152003181,
+            "additionalPptxEdgePixels": 1032
+          },
+          {
+            "id": "image-scale",
+            "label": "縦横比を保って縮小",
+            "bounds": {
+              "x": 450,
+              "y": 140,
+              "width": 380,
+              "height": 242
+            },
+            "pixels": 91960,
+            "changedPixels": 1955,
+            "changedPixelRatio": 0.021259243149195303,
+            "meanAbsoluteChannelError": 0.7716035957662752,
+            "rootMeanSquareChannelError": 3.6746923383263277,
+            "maxChannelError": 91,
+            "sourceEdgePixels": 5681,
+            "pptxEdgePixels": 5802,
+            "edgeMismatchPixels": 1051,
+            "edgeMismatchRatio": 0.16770384554013085,
+            "missingSourceEdgeRatio": 0.08185178665727864,
+            "additionalPptxEdgePixels": 586
+          },
+          {
+            "id": "image-stretch-wide",
+            "label": "横方向へ伸縮",
+            "bounds": {
+              "x": 860,
+              "y": 140,
+              "width": 380,
+              "height": 242
+            },
+            "pixels": 91960,
+            "changedPixels": 4459,
+            "changedPixelRatio": 0.0484884732492388,
+            "meanAbsoluteChannelError": 1.5528418152820065,
+            "rootMeanSquareChannelError": 4.734959552126352,
+            "maxChannelError": 95,
+            "sourceEdgePixels": 9203,
+            "pptxEdgePixels": 9736,
+            "edgeMismatchPixels": 2501,
+            "edgeMismatchRatio": 0.23330223880597015,
+            "missingSourceEdgeRatio": 0.10692165598174508,
+            "additionalPptxEdgePixels": 1517
+          },
+          {
+            "id": "image-stretch-tall",
+            "label": "縦方向へ伸縮",
+            "bounds": {
+              "x": 40,
+              "y": 404,
+              "width": 380,
+              "height": 242
+            },
+            "pixels": 91960,
+            "changedPixels": 3996,
+            "changedPixelRatio": 0.04345367551109178,
+            "meanAbsoluteChannelError": 1.2546396984196027,
+            "rootMeanSquareChannelError": 4.8887203619003925,
+            "maxChannelError": 95,
+            "sourceEdgePixels": 5285,
+            "pptxEdgePixels": 6024,
+            "edgeMismatchPixels": 1935,
+            "edgeMismatchRatio": 0.2922077922077922,
+            "missingSourceEdgeRatio": 0.11315042573320719,
+            "additionalPptxEdgePixels": 1337
+          },
+          {
+            "id": "image-rotate-image",
+            "label": "画像を20°回転",
+            "bounds": {
+              "x": 450,
+              "y": 404,
+              "width": 380,
+              "height": 242
+            },
+            "pixels": 91960,
+            "changedPixels": 4685,
+            "changedPixelRatio": 0.05094606350587212,
+            "meanAbsoluteChannelError": 1.6223684210526317,
+            "rootMeanSquareChannelError": 5.0580761566294745,
+            "maxChannelError": 96,
+            "sourceEdgePixels": 8454,
+            "pptxEdgePixels": 7857,
+            "edgeMismatchPixels": 3257,
+            "edgeMismatchRatio": 0.3328904333605887,
+            "missingSourceEdgeRatio": 0.22793943695292168,
+            "additionalPptxEdgePixels": 1330
+          },
+          {
+            "id": "image-rotate-parent",
+            "label": "親要素を−16°回転",
+            "bounds": {
+              "x": 860,
+              "y": 404,
+              "width": 380,
+              "height": 242
+            },
+            "pixels": 91960,
+            "changedPixels": 4190,
+            "changedPixelRatio": 0.045563288386254897,
+            "meanAbsoluteChannelError": 1.6972669276497028,
+            "rootMeanSquareChannelError": 6.495007618697775,
+            "maxChannelError": 181,
+            "sourceEdgePixels": 9158,
+            "pptxEdgePixels": 9022,
+            "edgeMismatchPixels": 2556,
+            "edgeMismatchRatio": 0.2465277777777778,
+            "missingSourceEdgeRatio": 0.14697532212273423,
+            "additionalPptxEdgePixels": 1210
+          }
+        ],
+        "images": {
+          "source": "html-01.png",
+          "pptx": "pptx-01.png",
+          "difference": "diff-01.png",
+          "edgeDifference": "edge-diff-01.png",
+          "overlay": "overlay-01.png",
+          "comparison": "comparison-01.png"
+        }
+      }
+    },
+    {
+      "slide": 2,
+      "converted": true,
+      "rendered": true,
+      "title": "反転と、表示領域に合わせた切り抜き",
+      "metrics": {
+        "slide": 2,
+        "width": 1280,
+        "height": 720,
+        "pixels": 921600,
+        "changedPixels": 38476,
+        "changedPixelRatio": 0.04174913194444444,
+        "meanAbsoluteChannelError": 1.615516131365741,
+        "rootMeanSquareChannelError": 8.095883526714363,
+        "maxChannelError": 206,
+        "sourceEdgePixels": 73053,
+        "pptxEdgePixels": 71555,
+        "edgeMismatchPixels": 18844,
+        "edgeMismatchRatio": 0.23057533710202383,
+        "missingSourceEdgeRatio": 0.13922768401023913,
+        "additionalPptxEdgePixels": 8673,
+        "regions": [
+          {
+            "id": "image-flip-x",
+            "label": "左右反転 scaleX(−1)",
+            "bounds": {
+              "x": 40,
+              "y": 140,
+              "width": 380,
+              "height": 242
+            },
+            "pixels": 91960,
+            "changedPixels": 2964,
+            "changedPixelRatio": 0.032231404958677684,
+            "meanAbsoluteChannelError": 1.3620015948963318,
+            "rootMeanSquareChannelError": 4.377227058014396,
+            "maxChannelError": 125,
+            "sourceEdgePixels": 10270,
+            "pptxEdgePixels": 10491,
+            "edgeMismatchPixels": 1961,
+            "edgeMismatchRatio": 0.1726080450664554,
+            "missingSourceEdgeRatio": 0.08471275559883155,
+            "additionalPptxEdgePixels": 1091
+          },
+          {
+            "id": "image-flip-y",
+            "label": "上下反転 scaleY(−1)",
+            "bounds": {
+              "x": 450,
+              "y": 140,
+              "width": 380,
+              "height": 242
+            },
+            "pixels": 91960,
+            "changedPixels": 2900,
+            "changedPixelRatio": 0.03153545019573728,
+            "meanAbsoluteChannelError": 1.3748115122517035,
+            "rootMeanSquareChannelError": 4.406684342978469,
+            "maxChannelError": 130,
+            "sourceEdgePixels": 10235,
+            "pptxEdgePixels": 10382,
+            "edgeMismatchPixels": 2015,
+            "edgeMismatchRatio": 0.17806645457758927,
+            "missingSourceEdgeRatio": 0.09125549584758183,
+            "additionalPptxEdgePixels": 1081
+          },
+          {
+            "id": "image-cover-center",
+            "label": "cover / 中央を基準に切り抜く",
+            "bounds": {
+              "x": 860,
+              "y": 140,
+              "width": 380,
+              "height": 242
+            },
+            "pixels": 91960,
+            "changedPixels": 7865,
+            "changedPixelRatio": 0.08552631578947369,
+            "meanAbsoluteChannelError": 2.756502827316224,
+            "rootMeanSquareChannelError": 9.35491495481398,
+            "maxChannelError": 137,
+            "sourceEdgePixels": 9027,
+            "pptxEdgePixels": 8356,
+            "edgeMismatchPixels": 3019,
+            "edgeMismatchRatio": 0.2959513773159494,
+            "missingSourceEdgeRatio": 0.20438683948155534,
+            "additionalPptxEdgePixels": 1174
+          },
+          {
+            "id": "image-cover-left",
+            "label": "cover / 左側のトラックを残す",
+            "bounds": {
+              "x": 40,
+              "y": 404,
+              "width": 380,
+              "height": 242
+            },
+            "pixels": 91960,
+            "changedPixels": 7316,
+            "changedPixelRatio": 0.07955632883862548,
+            "meanAbsoluteChannelError": 2.5431491953023055,
+            "rootMeanSquareChannelError": 8.914874599550284,
+            "maxChannelError": 131,
+            "sourceEdgePixels": 8539,
+            "pptxEdgePixels": 7976,
+            "edgeMismatchPixels": 2861,
+            "edgeMismatchRatio": 0.2953137902559868,
+            "missingSourceEdgeRatio": 0.2004918608736386,
+            "additionalPptxEdgePixels": 1149
+          },
+          {
+            "id": "image-contain",
+            "label": "contain / 全体を収める",
+            "bounds": {
+              "x": 450,
+              "y": 404,
+              "width": 380,
+              "height": 242
+            },
+            "pixels": 91960,
+            "changedPixels": 2190,
+            "changedPixelRatio": 0.023814702044367118,
+            "meanAbsoluteChannelError": 0.9393323183993041,
+            "rootMeanSquareChannelError": 3.9004285351382544,
+            "maxChannelError": 103,
+            "sourceEdgePixels": 7591,
+            "pptxEdgePixels": 7681,
+            "edgeMismatchPixels": 1334,
+            "edgeMismatchRatio": 0.16066481994459833,
+            "missingSourceEdgeRatio": 0.08193913845343169,
+            "additionalPptxEdgePixels": 712
+          },
+          {
+            "id": "image-cover-top",
+            "label": "cover / 上側の倉庫を残す",
+            "bounds": {
+              "x": 860,
+              "y": 404,
+              "width": 380,
+              "height": 242
+            },
+            "pixels": 91960,
+            "changedPixels": 7670,
+            "changedPixelRatio": 0.08340582862113963,
+            "meanAbsoluteChannelError": 2.577635203711759,
+            "rootMeanSquareChannelError": 8.534411660925674,
+            "maxChannelError": 135,
+            "sourceEdgePixels": 9337,
+            "pptxEdgePixels": 8823,
+            "edgeMismatchPixels": 2598,
+            "edgeMismatchRatio": 0.25031313228634744,
+            "missingSourceEdgeRatio": 0.1666488165363607,
+            "additionalPptxEdgePixels": 1042
+          }
+        ],
+        "images": {
+          "source": "html-02.png",
+          "pptx": "pptx-02.png",
+          "difference": "diff-02.png",
+          "edgeDifference": "edge-diff-02.png",
+          "overlay": "overlay-02.png",
+          "comparison": "comparison-02.png"
+        }
+      }
+    },
+    {
+      "slide": 3,
+      "converted": true,
+      "rendered": true,
+      "title": "輪郭・透明度・重なりを保つ",
+      "metrics": {
+        "slide": 3,
+        "width": 1280,
+        "height": 720,
+        "pixels": 921600,
+        "changedPixels": 35130,
+        "changedPixelRatio": 0.03811848958333333,
+        "meanAbsoluteChannelError": 1.6003917100694445,
+        "rootMeanSquareChannelError": 7.889811014120786,
+        "maxChannelError": 211,
+        "sourceEdgePixels": 78658,
+        "pptxEdgePixels": 78295,
+        "edgeMismatchPixels": 19485,
+        "edgeMismatchRatio": 0.22087078747208652,
+        "missingSourceEdgeRatio": 0.1261664420656513,
+        "additionalPptxEdgePixels": 9561,
+        "regions": [
+          {
+            "id": "image-rounded",
+            "label": "角丸 border-radius:24px",
+            "bounds": {
+              "x": 40,
+              "y": 140,
+              "width": 380,
+              "height": 242
+            },
+            "pixels": 91960,
+            "changedPixels": 2832,
+            "changedPixelRatio": 0.030795998260113092,
+            "meanAbsoluteChannelError": 1.3635892416992894,
+            "rootMeanSquareChannelError": 4.447388303591559,
+            "maxChannelError": 114,
+            "sourceEdgePixels": 10323,
+            "pptxEdgePixels": 10535,
+            "edgeMismatchPixels": 1892,
+            "edgeMismatchRatio": 0.16632967032967033,
+            "missingSourceEdgeRatio": 0.08137169427492008,
+            "additionalPptxEdgePixels": 1052
+          },
+          {
+            "id": "image-circle",
+            "label": "円形の切り抜き",
+            "bounds": {
+              "x": 450,
+              "y": 140,
+              "width": 380,
+              "height": 242
+            },
+            "pixels": 91960,
+            "changedPixels": 7447,
+            "changedPixelRatio": 0.08098086124401914,
+            "meanAbsoluteChannelError": 2.547767145135566,
+            "rootMeanSquareChannelError": 9.061613483010104,
+            "maxChannelError": 138,
+            "sourceEdgePixels": 8243,
+            "pptxEdgePixels": 7601,
+            "edgeMismatchPixels": 2838,
+            "edgeMismatchRatio": 0.30382186061449523,
+            "missingSourceEdgeRatio": 0.2110881960451292,
+            "additionalPptxEdgePixels": 1098
+          },
+          {
+            "id": "image-opacity",
+            "label": "画像の透明度45%と背景",
+            "bounds": {
+              "x": 860,
+              "y": 140,
+              "width": 380,
+              "height": 242
+            },
+            "pixels": 91960,
+            "changedPixels": 973,
+            "changedPixelRatio": 0.010580687255328404,
+            "meanAbsoluteChannelError": 1.0837936784109032,
+            "rootMeanSquareChannelError": 4.041635295517023,
+            "maxChannelError": 118,
+            "sourceEdgePixels": 7723,
+            "pptxEdgePixels": 8103,
+            "edgeMismatchPixels": 1740,
+            "edgeMismatchRatio": 0.19810998519867926,
+            "missingSourceEdgeRatio": 0.08804868574388192,
+            "additionalPptxEdgePixels": 1060
+          },
+          {
+            "id": "image-overlap",
+            "label": "画像同士の重なりと順序",
+            "bounds": {
+              "x": 40,
+              "y": 404,
+              "width": 380,
+              "height": 242
+            },
+            "pixels": 91960,
+            "changedPixels": 10135,
+            "changedPixelRatio": 0.11021096128751631,
+            "meanAbsoluteChannelError": 3.7860917790343627,
+            "rootMeanSquareChannelError": 10.987265586790471,
+            "maxChannelError": 155,
+            "sourceEdgePixels": 13713,
+            "pptxEdgePixels": 13139,
+            "edgeMismatchPixels": 4438,
+            "edgeMismatchRatio": 0.283668903803132,
+            "missingSourceEdgeRatio": 0.1827462991322103,
+            "additionalPptxEdgePixels": 1932
+          },
+          {
+            "id": "image-editable-overlay",
+            "label": "写真の上に編集可能な文字と枠",
+            "bounds": {
+              "x": 450,
+              "y": 404,
+              "width": 380,
+              "height": 242
+            },
+            "pixels": 91960,
+            "changedPixels": 3611,
+            "changedPixelRatio": 0.03926707264027838,
+            "meanAbsoluteChannelError": 1.6888755980861243,
+            "rootMeanSquareChannelError": 6.144283683275965,
+            "maxChannelError": 115,
+            "sourceEdgePixels": 11410,
+            "pptxEdgePixels": 11579,
+            "edgeMismatchPixels": 2171,
+            "edgeMismatchRatio": 0.17257551669316376,
+            "missingSourceEdgeRatio": 0.08773006134969324,
+            "additionalPptxEdgePixels": 1170
+          },
+          {
+            "id": "image-editable-callout",
+            "label": "写真と図形・矢印の注釈",
+            "bounds": {
+              "x": 860,
+              "y": 404,
+              "width": 380,
+              "height": 242
+            },
+            "pixels": 91960,
+            "changedPixels": 3510,
+            "changedPixelRatio": 0.038168769030013046,
+            "meanAbsoluteChannelError": 1.6328439901406409,
+            "rootMeanSquareChannelError": 6.417322244783133,
+            "maxChannelError": 144,
+            "sourceEdgePixels": 10801,
+            "pptxEdgePixels": 10942,
+            "edgeMismatchPixels": 2101,
+            "edgeMismatchRatio": 0.1762288206676732,
+            "missingSourceEdgeRatio": 0.09073233959818536,
+            "additionalPptxEdgePixels": 1121
+          }
+        ],
+        "images": {
+          "source": "html-03.png",
+          "pptx": "pptx-03.png",
+          "difference": "diff-03.png",
+          "edgeDifference": "edge-diff-03.png",
+          "overlay": "overlay-03.png",
+          "comparison": "comparison-03.png"
+        }
+      }
+    },
+    {
+      "slide": 4,
+      "converted": true,
+      "rendered": true,
+      "title": "写真だけをぼかし、文字は鮮明に保つ",
+      "metrics": {
+        "slide": 4,
+        "width": 1280,
+        "height": 720,
+        "pixels": 921600,
+        "changedPixels": 13907,
+        "changedPixelRatio": 0.015090060763888889,
+        "meanAbsoluteChannelError": 0.9291579861111111,
+        "rootMeanSquareChannelError": 7.199494018357844,
+        "maxChannelError": 220,
+        "sourceEdgePixels": 37645,
+        "pptxEdgePixels": 37931,
+        "edgeMismatchPixels": 8734,
+        "edgeMismatchRatio": 0.2071877594591389,
+        "missingSourceEdgeRatio": 0.11220613627307743,
+        "additionalPptxEdgePixels": 4510,
+        "regions": [
+          {
+            "id": "image-blur-original",
+            "label": "原画像 / ぼかしなし",
+            "bounds": {
+              "x": 40,
+              "y": 140,
+              "width": 570,
+              "height": 242
+            },
+            "pixels": 137940,
+            "changedPixels": 2514,
+            "changedPixelRatio": 0.018225315354501958,
+            "meanAbsoluteChannelError": 0.8612561016867236,
+            "rootMeanSquareChannelError": 3.4079303358544495,
+            "maxChannelError": 103,
+            "sourceEdgePixels": 10584,
+            "pptxEdgePixels": 10766,
+            "edgeMismatchPixels": 1894,
+            "edgeMismatchRatio": 0.16296678712786095,
+            "missingSourceEdgeRatio": 0.08087679516250945,
+            "additionalPptxEdgePixels": 1038
+          },
+          {
+            "id": "image-blur-small",
+            "label": "弱いぼかし filter:blur(3px)",
+            "bounds": {
+              "x": 670,
+              "y": 140,
+              "width": 570,
+              "height": 242
+            },
+            "pixels": 137940,
+            "changedPixels": 803,
+            "changedPixelRatio": 0.005821371610845295,
+            "meanAbsoluteChannelError": 0.6100067662268619,
+            "rootMeanSquareChannelError": 3.634053293181465,
+            "maxChannelError": 140,
+            "sourceEdgePixels": 2583,
+            "pptxEdgePixels": 2625,
+            "edgeMismatchPixels": 294,
+            "edgeMismatchRatio": 0.10687022900763359,
+            "missingSourceEdgeRatio": 0.04878048780487805,
+            "additionalPptxEdgePixels": 168
+          },
+          {
+            "id": "image-blur-large",
+            "label": "強いぼかし filter:blur(8px)",
+            "bounds": {
+              "x": 40,
+              "y": 404,
+              "width": 570,
+              "height": 242
+            },
+            "pixels": 137940,
+            "changedPixels": 794,
+            "changedPixelRatio": 0.005756125851819632,
+            "meanAbsoluteChannelError": 0.5736987095838771,
+            "rootMeanSquareChannelError": 3.6821190995490927,
+            "maxChannelError": 141,
+            "sourceEdgePixels": 2583,
+            "pptxEdgePixels": 2623,
+            "edgeMismatchPixels": 306,
+            "edgeMismatchRatio": 0.11103047895500726,
+            "missingSourceEdgeRatio": 0.051490514905149054,
+            "additionalPptxEdgePixels": 173
+          },
+          {
+            "id": "image-blur-text-overlay",
+            "label": "ぼかした写真 + 鮮明な文字・枠",
+            "bounds": {
+              "x": 670,
+              "y": 404,
+              "width": 570,
+              "height": 242
+            },
+            "pixels": 137940,
+            "changedPixels": 2060,
+            "changedPixelRatio": 0.014934029288096274,
+            "meanAbsoluteChannelError": 1.0915422164225992,
+            "rootMeanSquareChannelError": 8.584551484455146,
+            "maxChannelError": 220,
+            "sourceEdgePixels": 4627,
+            "pptxEdgePixels": 4707,
+            "edgeMismatchPixels": 1146,
+            "edgeMismatchRatio": 0.21870229007633588,
+            "missingSourceEdgeRatio": 0.11519342986816512,
+            "additionalPptxEdgePixels": 613
+          }
+        ],
+        "images": {
+          "source": "html-04.png",
+          "pptx": "pptx-04.png",
+          "difference": "diff-04.png",
+          "edgeDifference": "edge-diff-04.png",
+          "overlay": "overlay-04.png",
+          "comparison": "comparison-04.png"
+        }
+      }
+    },
+    {
+      "slide": 5,
+      "converted": true,
+      "rendered": true,
+      "title": "重なり順は、DOMとz-indexで決まる",
+      "metrics": {
+        "slide": 5,
+        "width": 1280,
+        "height": 720,
+        "pixels": 921600,
+        "changedPixels": 22170,
+        "changedPixelRatio": 0.024055989583333333,
+        "meanAbsoluteChannelError": 1.234148582175926,
+        "rootMeanSquareChannelError": 8.358340083912196,
+        "maxChannelError": 225,
+        "sourceEdgePixels": 63076,
+        "pptxEdgePixels": 63558,
+        "edgeMismatchPixels": 14144,
+        "edgeMismatchRatio": 0.2009404878603191,
+        "missingSourceEdgeRatio": 0.10829792631111675,
+        "additionalPptxEdgePixels": 7313,
+        "regions": [
+          {
+            "id": "image-stack-dom",
+            "label": "DOM順：画像 → 図形 → 画像 → 枠 → 文字",
+            "bounds": {
+              "x": 40,
+              "y": 140,
+              "width": 570,
+              "height": 242
+            },
+            "pixels": 137940,
+            "changedPixels": 4204,
+            "changedPixelRatio": 0.030477018993765405,
+            "meanAbsoluteChannelError": 1.5683678894205209,
+            "rootMeanSquareChannelError": 8.211379640122583,
+            "maxChannelError": 156,
+            "sourceEdgePixels": 12481,
+            "pptxEdgePixels": 12880,
+            "edgeMismatchPixels": 3193,
+            "edgeMismatchRatio": 0.2236464243188345,
+            "missingSourceEdgeRatio": 0.11193013380338114,
+            "additionalPptxEdgePixels": 1796
+          },
+          {
+            "id": "image-stack-z-index",
+            "label": "DOM順よりz-indexを優先",
+            "bounds": {
+              "x": 670,
+              "y": 140,
+              "width": 570,
+              "height": 242
+            },
+            "pixels": 137940,
+            "changedPixels": 2478,
+            "changedPixelRatio": 0.017964332318399303,
+            "meanAbsoluteChannelError": 0.9196389734667246,
+            "rootMeanSquareChannelError": 6.150922536488064,
+            "maxChannelError": 195,
+            "sourceEdgePixels": 8429,
+            "pptxEdgePixels": 8568,
+            "edgeMismatchPixels": 1429,
+            "edgeMismatchRatio": 0.15510691414305872,
+            "missingSourceEdgeRatio": 0.07652153280341678,
+            "additionalPptxEdgePixels": 784
+          },
+          {
+            "id": "image-stack-parent",
+            "label": "親Bの2 ＞ 親Aの1（子が999でも）",
+            "bounds": {
+              "x": 40,
+              "y": 404,
+              "width": 570,
+              "height": 242
+            },
+            "pixels": 137940,
+            "changedPixels": 4234,
+            "changedPixelRatio": 0.030694504857184283,
+            "meanAbsoluteChannelError": 1.4084118698951233,
+            "rootMeanSquareChannelError": 8.161192769480309,
+            "maxChannelError": 212,
+            "sourceEdgePixels": 11890,
+            "pptxEdgePixels": 11879,
+            "edgeMismatchPixels": 2251,
+            "edgeMismatchRatio": 0.1730207532667179,
+            "missingSourceEdgeRatio": 0.0951219512195122,
+            "additionalPptxEdgePixels": 1120
+          },
+          {
+            "id": "image-stack-negative",
+            "label": "親z-index:0内の負値は、親背景より手前",
+            "bounds": {
+              "x": 670,
+              "y": 404,
+              "width": 570,
+              "height": 242
+            },
+            "pixels": 137940,
+            "changedPixels": 4343,
+            "changedPixelRatio": 0.031484703494272875,
+            "meanAbsoluteChannelError": 1.5742569232999852,
+            "rootMeanSquareChannelError": 8.7101280571432,
+            "maxChannelError": 225,
+            "sourceEdgePixels": 13688,
+            "pptxEdgePixels": 13826,
+            "edgeMismatchPixels": 2456,
+            "edgeMismatchRatio": 0.16389723056389724,
+            "missingSourceEdgeRatio": 0.08467270601987142,
+            "additionalPptxEdgePixels": 1297
+          }
+        ],
+        "images": {
+          "source": "html-05.png",
+          "pptx": "pptx-05.png",
+          "difference": "diff-05.png",
+          "edgeDifference": "edge-diff-05.png",
+          "overlay": "overlay-05.png",
+          "comparison": "comparison-05.png"
+        }
+      }
+    }
+  ]
+}

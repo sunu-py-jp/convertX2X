@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>機能概要・編集可能な要素 | html2pptx API</title><link rel="stylesheet" href="../assets/styles.css"><script src="../assets/app.js" defer></script></head>
+<body data-page="htmlpptx-overview"><a class="skip-link" href="#main-content">本文へ移動</a><div id="site-header"></div><aside id="sidebar" class="sidebar" aria-label="APIナビゲーション"></aside><div id="menu-overlay" class="menu-overlay" hidden></div><main id="main-content" class="main-content" tabindex="-1"><div class="page-layout"><article class="article">
+<p class="eyebrow">HTML → PowerPoint</p><h1>HTMLの資料を、編集できるPowerPointへ。</h1>
+<p class="lead">静的HTMLの配置をブラウザーで計算し、文字・表・図形をPowerPointの要素として出力します。SVGの体制図や構成図も、図形・線・文字へ分解します。元からPNG・JPEGで用意した素材は画像として保持します。</p>
+<div class="hero-meta"><span class="pill accent">HTML / HTM / ZIP</span><span class="pill">PPTX + report</span><span class="pill">同期HTTP / CLI</span><span class="pill">Flex Consumption · 4 GB</span></div>
+<h2 id="editable">何を編集できるか</h2>
+<p>変換処理は同じAzure Function App内で完結します。同梱したChromiumがHTMLの配置を計算し、その座標・文字・輪郭からPPTXを組み立てます。変換時にLLM、OCR、外部の変換サーバーは呼びません。比較画像の作成に使うLibreOffice等は開発用で、本番のFunctionsには必要ありません。</p>
+<div class="table-wrap"><table><thead><tr><th>入力の要素</th><th>PowerPointでの扱い</th></tr></thead><tbody>
+<tr><td>見出し・本文・部分装飾</td><td>編集可能なテキスト。日本語、太字、色、サイズ、改行を配置に反映</td></tr>
+<tr><td>HTMLの表</td><td>表のセルとして保持。結合見出しを含む例を掲載</td></tr>
+<tr><td>多角形・凹形・自由曲線・角丸</td><td>図形名の対応一覧に依存せず、輪郭を編集可能なパスへ変換。CSSで作った三角・星・円も対象</td></tr>
+<tr><td>直線・折れ線・曲線・矢印</td><td>編集可能な線・パス・矢印の図形。片方向・両方向の矢印、任意の点線・破線を扱う</td></tr>
+<tr><td>SVGの図中文字</td><td>編集可能なテキストとして出力。SVG全体の画像とは区別</td></tr>
+<tr><td>PNG / JPEG</td><td>元バイト列を共有して画像として保持。拡縮・回転・反転・切り抜き・角丸・透明度を反映</td></tr>
+<tr><td>画像自身のCSS blur(px)</td><td>その画像だけをぼかしたPNGとして保持。位置・サイズ・差し替えは編集可能、ぼかし量は固定</td></tr>
+</tbody></table></div>
+<p>ブラウザーのFlex/Gridによる配置は変換時の座標に固定します。PowerPointで編集した後に、HTMLと同じ自動レイアウトが働くわけではありません。矢印やSVGのパスは見た目の図形として編集できますが、PowerPointの自動接続や組織図の意味までは付与しません。</p>
+<p>親要素を含む2D変形を合成し、回転や図形の斜体変形を反映します。文字はブラウザーが確定した行と書式ごとのテキストとして配置します。空のCSS疑似要素で描いた矢印や装飾も変換します。</p><p>画像・図形・文字の前後関係はDOM順、<code>z-index</code>、親のスタッキングコンテキストを考慮します。ぼかした写真に重ねた文字や枠も別の編集可能な要素です。ぼかしを画像に反映した場合は、reportへ<code>IMAGE_BLUR_APPLIED</code>を記録します。</p><h2 id="input">HTMLの入力とスライド区切り</h2>
+<p>UTF-8の<code>.html / .htm</code>を送ります。CSSや画像を別ファイルにする場合は、ルートに<code>index.html</code>または<code>index.htm</code>を1つ置いたZIPへまとめます。複数スライドは<code>data-slide</code>を付けた要素ごとに作成します。</p>
+<pre><code class="language-html">&lt;meta name="pptx-slide-width" content="1280"&gt;
+&lt;meta name="pptx-slide-height" content="720"&gt;
+&lt;section data-slide&gt;
+  &lt;h1&gt;上期の業績&lt;/h1&gt;
+  &lt;p&gt;売上高は前年同期比12.6%増加しました。&lt;/p&gt;
+&lt;/section&gt;
+&lt;section data-slide&gt;
+  &lt;h1&gt;下期の重点施策&lt;/h1&gt;
+&lt;/section&gt;</code></pre>
+<p>区切りがなければ本文全体を1枚にします。既定寸法は1280×720 CSS px。寸法を変える場合は幅・高さのmetaを両方指定します。自動で文章を要約したり、長いページを複数スライドへ分割したりはしません。はみ出しがあれば入力を調整してください。</p>
+<h2 id="limits">対応範囲と未対応の表現</h2>
+<p>JavaScript・イベント属性・外部URLの取得・Webフォント取得・iframe・動画などは受け付けません。React等の実行前のソースではなく、表示内容を静的HTMLにして送ります。外部サイトのURLを渡して変換するAPIではありません。</p>
+<p>SVGフィルター、マスク、複雑なクリッピング、3D変形などの未対応表現はエラーで返します。未対応の文字や図解を画像へ置き換えて成功扱いにはしません。一部の細かな描画差はreportの警告で確認できます。</p>
+<p>画像のskew・3D変形・clip-path・影、親による切り抜きやfilter、blur以外のfilter、重なる子要素を親のopacityでまとめて透過する表示には対応しません。詳細と指定方法は<a href="../../../functions/html2pptx/docs/usage.md#画像の変形と重なり">画像の変形と重なり</a>を参照してください。</p>
+<div class="callout warning"><strong>表示の完全一致は保証しません。</strong><br>HTML・SVGの文字はNoto Sans JPに統一して計測・変換します。フォントはPPTXへ埋め込まないため、閲覧端末のフォントで表示が変わることがあります。SVGの文字や図形が編集可能なことと、PowerPointでの表示がブラウザーと完全に一致することは別です。</div>
+<h2 id="output">出力と呼び出し方式</h2>
+<pre><code>result.zip
+├── presentation.pptx
+└── report.json</code></pre>
+<p>同期HTTPでは既定でZIPを返します。<code>format=pptx</code>を指定するとPPTX本体だけを返します。reportにはスライド数、出力した要素、警告、出力のハッシュなどを記録します。現在は同期HTTPとCLIに対応し、非同期HTTP・Queueからの直接依頼は未実装です。</p>
+<div class="cards"><a class="card" href="examples.html"><h3>実務資料の変換例</h3><p>企業発表・決算・体制図などに、図形と生成画像の比較を加えた7資料・20スライド。</p></a><a class="card" href="http.html"><h3>同期HTTP・設定</h3><p>ファイルを送り、PPTXとreportを受け取る。入力形式と上限を確認。</p></a></div>
+<footer class="page-footer"><span>2026-10-30 · Node.js 24 / Chromium / DrawingML</span><a href="../../../functions/html2pptx/docs/usage.md">利用・運用ガイド</a></footer>
+</article><aside class="toc"><p class="toc-title">このページの内容</p><nav id="page-toc"></nav></aside></div></main></body></html>

@@ -12,6 +12,7 @@ APIの呼び出し方は [HTML APIリファレンス](APIDocs/index.html) を参
 | Office → PDF | [利用ガイド](../functions/office2pdf/docs/usage.md) | [依頼形式](../functions/office2pdf/docs/direct-queue.md) | [開発者ガイド](office2pdf.md) |
 | Markdown → PDF | [利用ガイド](../functions/md2pdf/docs/usage.md) | [依頼形式](../functions/md2pdf/docs/direct-queue.md) | [開発者ガイド](md2pdf.md) |
 | Movie → Audio | [利用ガイド](../functions/movie2audio/docs/usage.md) | [依頼形式](../functions/movie2audio/docs/direct-queue.md) | [開発者ガイド](movie2audio.md) |
+| HTML → PowerPoint | [利用ガイド](../functions/html2pptx/docs/usage.md) | 未対応（同期HTTP・CLI） | [開発者ガイド](html2pptx.md) |
 
 Office → PDFの[PowerPoint検索対応の変更記録](office2pdf.md#searchable-powerpoint-change)には、
 変更前後の違い、文字埋め込みの仕組み、対応範囲、ビューアーでの検証結果をまとめています。
@@ -27,4 +28,4 @@ Office → Markdownの[画像・図形・テキストボックスの合成対応
 - [機能追加・変更のルール](../CONTRIBUTING.md)
 - [API資料の表示方法](APIDocs/README.md)と[更新手順](APIDocs/maintenance.md)
 
-[Officeの初期設計メモ](designs/office2md.md)は検討経緯、[HTML → PowerPointの設計案](designs/html2pptx.md)は未実装の参考資料です。現在の仕様は上記のAPI資料・利用ガイドを基準にしてください。
+[Officeの初期設計メモ](designs/office2md.md)と[HTML → PowerPointの設計・検証記録](designs/html2pptx.md)は検討経緯を含む資料です。現在の仕様は上記のAPI資料・利用ガイドを基準にしてください。

@@ -1,0 +1,116 @@
+{
+  "schemaVersion": 1,
+  "wrapperPackage": "@sparticuz/chromium",
+  "wrapperVersion": "153.0.0",
+  "chromiumVersion": "153.0.8010.0",
+  "chromiumRevision": "1681091",
+  "licenseCoverage": "Official Linux headless_shell full credits for the same version/revision, plus the separately bundled AL2023 NSS/NSPR/Expat libraries, Open Sans fonts and wrapper license. Build-specific source references are preserved.",
+  "documents": [
+    {
+      "path": "third-party/chromium/LICENSE.headless_shell",
+      "kind": "license",
+      "source": "https://storage.googleapis.com/chrome-for-testing-public/153.0.8010.0/linux64/chrome-headless-shell-linux64.zip",
+      "archiveMember": "chrome-headless-shell-linux64/LICENSE.headless_shell",
+      "sha256": "b92247f7a44c14627ef5cbbe0aa6dcca4e4422b7c05e6f2c660054061a5e3da7"
+    },
+    {
+      "path": "third-party/chromium/LICENSE.chromium",
+      "kind": "license",
+      "source": "https://raw.githubusercontent.com/chromium/chromium/153.0.8010.0/LICENSE",
+      "sha256": "368cca1106be99d39ecd32a38d8305585d802a475effb66380b91ffc9bcf709b"
+    },
+    {
+      "path": "third-party/chromium/NSS-COPYING",
+      "kind": "license",
+      "source": "https://raw.githubusercontent.com/nss-dev/nss/NSS_3_112_RTM/COPYING",
+      "sha256": "a20c1a32d1f8102432360b42e932869f7c11c7cdbacf9cac554c422132af47f4"
+    },
+    {
+      "path": "third-party/chromium/NSPR-LICENSE",
+      "kind": "license",
+      "source": "https://hg.mozilla.org/projects/nspr/raw-file/NSPR_4_36_RTM/LICENSE",
+      "sha256": "fab3dd6bdab226f1c08630b1dd917e11fcb4ec5e1e020e2c16f83a0a13863e85"
+    },
+    {
+      "path": "third-party/chromium/Expat-COPYING",
+      "kind": "license",
+      "source": "https://raw.githubusercontent.com/libexpat/libexpat/R_2_6_3/expat/COPYING",
+      "sha256": "122f2c27000472a201d337b9b31f7eb2b52d091b02857061a8880371612d9534"
+    },
+    {
+      "path": "third-party/chromium/OpenSans-OFL.txt",
+      "kind": "license",
+      "source": "https://raw.githubusercontent.com/googlefonts/opensans/fd7a645281f775d013d64829a284068f83fc3b2b/OFL.txt",
+      "sha256": "01cd5ffb3a528c219a86e49a814c6c53bd8a69b9a3c305dd237074ba1c811af7"
+    },
+    {
+      "path": "third-party/chromium/Sparticuz-LICENSE",
+      "kind": "license",
+      "source": "https://raw.githubusercontent.com/Sparticuz/chromium/v153.0.0/LICENSE",
+      "sha256": "3569040c1b042820ece7d85760a7f12b4ce8e66fa5b10f44252a923a46af5e2b"
+    },
+    {
+      "path": "third-party/chromium/build-x64.sh",
+      "kind": "build",
+      "source": "https://raw.githubusercontent.com/Sparticuz/chromium/v153.0.0/_/ec2/build-x64.sh",
+      "sha256": "728e281da261e8407c9bd69b6a31c0c8726b7bfbba57bad1204f4b3aa2fdd197"
+    },
+    {
+      "path": "third-party/chromium/args-x64.gn",
+      "kind": "build",
+      "source": "https://raw.githubusercontent.com/Sparticuz/chromium/v153.0.0/_/ec2/args-x64.gn",
+      "sha256": "957e4f6f67c626e942f7f4d722210d90d279bdd12356398d8a677e59e6912113"
+    },
+    {
+      "path": "third-party/chromium/revision.txt",
+      "kind": "build",
+      "source": "https://raw.githubusercontent.com/Sparticuz/chromium/v153.0.0/_/ec2/revision.txt",
+      "sha256": "444a98c76f1aa44a2034444c554ecdcd3075448135ed0305ba52756cda5dc5da"
+    }
+  ],
+  "archives": [
+    {
+      "path": "node_modules/@sparticuz/chromium/bin/al2023.tar.br",
+      "sha256": "a166168dd3e3e9d8743689fff543c5cadb3025c1816c6a154c90dc68a59edd0a",
+      "bytes": 1208350
+    },
+    {
+      "path": "node_modules/@sparticuz/chromium/bin/chromium.br",
+      "sha256": "38e1e1649db20fa4ea644bf5987688ce81a4c9eb10e7eae8380b74fc0d699fea",
+      "bytes": 67016039
+    },
+    {
+      "path": "node_modules/@sparticuz/chromium/bin/fonts.tar.br",
+      "sha256": "c1307fe5cd607092f0426742b4ab93755eec9a9b7752e47c56408c2bcf3e515b",
+      "bytes": 183738
+    },
+    {
+      "path": "node_modules/@sparticuz/chromium/bin/swiftshader.tar.br",
+      "sha256": "b680e40a33235ecc6ad4c6897a168b70ce5164f0d62d2a64d675320d51614631",
+      "bytes": 1637479
+    }
+  ],
+  "sources": [
+    {
+      "component": "Chromium and SwiftShader/Vulkan dependencies",
+      "url": "https://chromium.googlesource.com/chromium/src/+/153.0.8010.0",
+      "build": "https://github.com/Sparticuz/chromium/tree/v153.0.0/_/ec2"
+    },
+    {
+      "component": "NSS 3.112.0 and NSPR 4.36 with Amazon Linux patches",
+      "url": "https://cdn.amazonlinux.com/al2023/blobstore/b7f98739c4db8d9f22d5b5716a38c10f7fe6c367b99cfb29d6ae4aa3a6a9dfb9/nss-3.112.0-8.amzn2023.0.2.src.rpm",
+      "sha256": "b7f98739c4db8d9f22d5b5716a38c10f7fe6c367b99cfb29d6ae4aa3a6a9dfb9",
+      "verification": "Downloaded and SHA-256 checked. Embedded GNU build-id/debug metadata identifies nss-3.112.0-8.amzn2023.0.2."
+    },
+    {
+      "component": "Expat 2.6.3 with Amazon Linux patches",
+      "url": "https://cdn.amazonlinux.com/al2023/blobstore/093e302fe4238ed44134bb3fc2adb5ae4c6832529b389774c7f7347c38bd35d4/expat-2.6.3-1.amzn2023.0.6.src.rpm",
+      "sha256": "093e302fe4238ed44134bb3fc2adb5ae4c6832529b389774c7f7347c38bd35d4",
+      "verification": "Downloaded and SHA-256 checked. Embedded binary package metadata identifies expat-2.6.3-1.amzn2023.0.6."
+    },
+    {
+      "component": "Open Sans 3.003 (font name table confirmed)",
+      "url": "https://github.com/googlefonts/opensans"
+    }
+  ]
+}

@@ -1,0 +1,111 @@
+{
+  "version": 1,
+  "converter": "html2pptx",
+  "slideCount": 5,
+  "width": 1280,
+  "height": 720,
+  "slides": [
+    {
+      "slide": 1,
+      "textBoxes": 11,
+      "shapes": 26,
+      "tables": 0,
+      "images": 6,
+      "convertedSvgCount": 9,
+      "svg": {
+        "shapes": 15,
+        "text": 0,
+        "gradients": 0,
+        "images": 0
+      }
+    },
+    {
+      "slide": 2,
+      "textBoxes": 10,
+      "shapes": 25,
+      "tables": 0,
+      "images": 6,
+      "convertedSvgCount": 9,
+      "svg": {
+        "shapes": 15,
+        "text": 0,
+        "gradients": 0,
+        "images": 0
+      }
+    },
+    {
+      "slide": 3,
+      "textBoxes": 12,
+      "shapes": 32,
+      "tables": 0,
+      "images": 7,
+      "convertedSvgCount": 12,
+      "svg": {
+        "shapes": 20,
+        "text": 1,
+        "gradients": 0,
+        "images": 0
+      }
+    },
+    {
+      "slide": 4,
+      "textBoxes": 9,
+      "shapes": 21,
+      "tables": 0,
+      "images": 4,
+      "convertedSvgCount": 7,
+      "svg": {
+        "shapes": 12,
+        "text": 0,
+        "gradients": 0,
+        "images": 0
+      }
+    },
+    {
+      "slide": 5,
+      "textBoxes": 13,
+      "shapes": 36,
+      "tables": 0,
+      "images": 5,
+      "convertedSvgCount": 17,
+      "svg": {
+        "shapes": 23,
+        "text": 0,
+        "gradients": 0,
+        "images": 0
+      }
+    }
+  ],
+  "elapsedMs": 8860,
+  "outputBytes": 2627215,
+  "sha256": "e7f617fe95f9b9309782dcd4bae8414b33e14e24325e37fdb3af0cf59eb1e8b7",
+  "warnings": [
+    {
+      "code": "IMAGE_BLUR_APPLIED",
+      "slide": 4,
+      "message": "画像のぼかしをPNGに反映しました。PPTX上でぼかし量を変更することはできません。"
+    },
+    {
+      "code": "IMAGE_BLUR_APPLIED",
+      "slide": 4,
+      "message": "画像のぼかしをPNGに反映しました。PPTX上でぼかし量を変更することはできません。"
+    },
+    {
+      "code": "IMAGE_BLUR_APPLIED",
+      "slide": 4,
+      "message": "画像のぼかしをPNGに反映しました。PPTX上でぼかし量を変更することはできません。"
+    },
+    {
+      "code": "FONTS_NOT_EMBEDDED",
+      "message": "PPTXにはフォントを埋め込んでいません。閲覧環境のフォントにより表示が変わる場合があります。"
+    }
+  ],
+  "runtime": {
+    "node": "v24.2.0",
+    "chromium": "Chrome/156.0.8078.48"
+  },
+  "fontFamily": "Noto Sans JP",
+  "fontPolicy": "uniform",
+  "imagePolicy": "original-images-only",
+  "svgPolicy": "editable-native-shapes-and-text"
+}

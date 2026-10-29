@@ -12,10 +12,11 @@
 | Office → PDF | Excel・Word・PowerPoint → Document Intelligence向けPDF | [API資料](docs/APIDocs/office2pdf/index.html) |
 | Markdown → PDF | Markdown・画像入りZIP → 検索可能な日本語PDF | [API資料](docs/APIDocs/md2pdf/index.html) |
 | Movie → Audio | 動画ファイル・URL・Blob → AAC音声をコピーしたM4A | [API資料](docs/APIDocs/movie2audio/index.html) |
+| HTML → PowerPoint | 静的HTML・素材入りZIP → 編集可能な文字・表・SVG図形を持つPPTX | [API資料](docs/APIDocs/html2pptx/index.html) |
 
-画像・Office・Markdown変換はJava 21、Movie → AudioはNode.js 22 / 24と同梱FFmpegで実装しています。各機能に簡易Playgroundがあります。Movie → Audioは、書き込み用SASで指定したBlobへの保存にも対応します。
+画像・Office・Markdown変換はJava 21、Movie → AudioはNode.js 22 / 24と同梱FFmpeg、HTML → PowerPointはNode.js 24と同梱Chromiumで実装しています。各機能に簡易Playgroundがあります。Movie → Audioは、書き込み用SASで指定したBlobへの保存にも対応します。
 
-非同期は `CONVERSION_STORAGE_CONNECTION_STRING` 設定時に有効になります。外部システムからQueueへ直接依頼でき、入力・出力に別のStorageアカウントを登録することもできます。
+非同期対応の機能は `CONVERSION_STORAGE_CONNECTION_STRING` 設定時に有効になります。外部システムからQueueへ直接依頼でき、入力・出力に別のStorageアカウントを登録することもできます。HTML → PowerPointは現在、同期HTTPとCLIに対応しています。
 
 ## ドキュメント
 
@@ -24,7 +25,7 @@
 - [利用・開発ガイド](docs/README.md)：機能別の使い方、構成、起動・設定・検証・デプロイ
 - [開発への参加](CONTRIBUTING.md)：機能追加・変更のルール
 
-実装と配布物は `functions/ppt-pdf-to-images/`、`functions/office2md/`、`functions/office2pdf/`、`functions/md2pdf/`、`functions/excel2img/`、`functions/movie2audio/` で個別に管理します。
+実装と配布物は `functions/ppt-pdf-to-images/`、`functions/office2md/`、`functions/office2pdf/`、`functions/md2pdf/`、`functions/excel2img/`、`functions/movie2audio/`、`functions/html2pptx/` で個別に管理します。
 
 ## ライセンス
 

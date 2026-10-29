@@ -1,0 +1,32 @@
+{
+  "name": "@convertx2x/html2pptx",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.js",
+  "engines": {
+    "node": "24.x"
+  },
+  "license": "MIT",
+  "scripts": {
+    "test": "node --test --test-concurrency=1 test/*.test.js",
+    "convert": "node scripts/convert.mjs",
+    "start": "func start --port 7077",
+    "package": "node scripts/package.mjs"
+  },
+  "dependencies": {
+    "@azure/functions": "4.16.2",
+    "@puppeteer/browsers": "3.2.6",
+    "@sparticuz/chromium": "153.0.0",
+    "@xmldom/xmldom": "0.9.12",
+    "css-tree": "3.1.0",
+    "dom-to-pptx": "2.1.2",
+    "image-size": "2.0.2",
+    "jszip": "3.10.1",
+    "parse5": "8.0.0",
+    "polygon-clipping": "0.15.7",
+    "puppeteer-core": "25.16.0",
+    "svgpath": "2.6.0",
+    "yauzl": "3.4.0"
+  }
+}

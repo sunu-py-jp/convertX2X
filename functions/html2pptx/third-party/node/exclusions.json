@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "exclusions": [
+    {
+      "path": "node_modules/https",
+      "name": "https",
+      "version": "1.0.0",
+      "packageIntegrity": "sha512-4EC57ddXrkaF0x83Oj8sM6SLQHAWXw90Skqu2M4AEWENZ3F02dFJE/GARA8igO79tcgYqGrD7ae4f5L3um2lgg==",
+      "packageJsonSha256": "30cc493ed51f008e9e1d0d0730759183294f9d1b39798032ee341dc6a17399f7",
+      "reason": "This npm package contains only package.json (no implementation and no license text). It is not shipped. Node resolves https to its built-in module; the PPTX exporter needs no npm https package."
+    }
+  ]
+}

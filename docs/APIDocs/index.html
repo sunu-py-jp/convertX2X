@@ -19,12 +19,13 @@
         <noscript>本文はJavaScriptなしでも読めます。機能別の資料へは下のリンクから移動できます。左メニュー・検索・コピーにはJavaScriptを有効にしてください。</noscript>
         <p class="eyebrow">Developer reference</p>
         <h1>ファイル変換を、APIから。</h1>
-        <p class="lead">PowerPoint・PDFを画像へ。Office文書をMarkdownまたはPDFへ。動画をAAC音声へ。<br>Excelのセルと画像を、配置を保ったPNG・PDFへ。用途に合うAPIを選び、ファイル変換を実行できます。</p>
-        <div class="hero-meta"><span class="pill accent">6つの変換機能</span><span class="pill">同期HTTP / 非同期HTTP / 直接Queue</span><span class="pill">Java 21 / Node.js 22・24</span></div>
+        <p class="lead">PowerPoint・PDFを画像へ。Office文書をMarkdownまたはPDFへ。動画をAAC音声へ。<br>Excelを配置を保ったPNG・PDFへ。HTMLを編集可能なPowerPointへ。用途に合うAPIを選び、ファイル変換を実行できます。</p>
+        <div class="hero-meta"><span class="pill accent">7つの変換機能</span><span class="pill">同期HTTP / 非同期HTTP / 直接Queue</span><span class="pill">Java 21 / Node.js 22・24</span></div>
 
         <h2 id="features">変換機能を選ぶ</h2>
         <p>各機能は独立したFunction Appです。利用する機能のベースURLへリクエストを送ります。</p>
         <div class="cards">
+          <div class="card"><h3>HTML → PowerPoint</h3><p class="card-label">html2pptx</p><p>静的HTML・SVG図解を編集可能な文字・図形・表へ。元画像は画像として保持します。</p><div class="tags"><span>HTML / ZIP</span><span>PPTX</span><span>同期HTTP / CLI</span></div><a class="card-link" href="html2pptx/index.html">HTML変換のAPIを見る</a><a class="card-link examples-link" href="html2pptx/examples.html">体制図・決算・API構成などの実例</a></div>
           <div class="card">
             <span class="card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8" cy="8" r="1.5"/><path d="m3 18 5-6 4 4 4-7 5 7"/></svg></span>
             <h3>PowerPoint / PDF → 画像</h3>
@@ -90,7 +91,7 @@ python3 scripts/run_local.py</code></pre></li>
         <div class="callout"><strong><code>/api/convert</code> の入力は生のファイルデータです。</strong><br><code>Content-Type: application/octet-stream</code> と <code>--data-binary</code> を使います。Movie → AudioのURL入力は専用の <code>/api/convert-url</code> へJSONを送ります。<a href="movie2audio/storage.html">Blob保存API <code>/api/convert-to-blob</code></a> は、動画URLのJSONまたは動画と設定JSONのmultipartに対応します。Base64ファイル入力は提供していません。</div>
 
         <h2 id="invocation">呼び出し方を選ぶ</h2>
-        <p>全機能が同期HTTP・非同期HTTP・直接Queueに対応します。Movie → AudioはファイルまたはURLを受け付け、非同期では完成したM4AをBlobへ保存します。同期APIではM4AのダウンロードまたはSAS指定先への保存を選べます。</p>
+        <p>HTML → PowerPointは同期HTTP・CLI、その他の機能は同期HTTP・非同期HTTP・直接Queueに対応します。Movie → AudioはファイルまたはURLを受け付け、非同期では完成したM4AをBlobへ保存します。同期APIではM4AのダウンロードまたはSAS指定先への保存を選べます。</p>
         <div class="table-wrap"><table><thead><tr><th>方法</th><th>使い方</th><th>アプリ用Storage</th></tr></thead><tbody>
           <tr><td>同期HTTP</td><td>ファイルを送信し、同じリクエストのレスポンスで成果物を受け取る</td><td>不要</td></tr>
           <tr><td><a href="movie2audio/storage.html">Movie → AudioのBlob保存</a></td><td>動画と保存先SASを送り、保存完了後に結果JSONを受け取る</td><td>保存先のSASと許可ホスト設定</td></tr>
@@ -98,11 +99,12 @@ python3 scripts/run_local.py</code></pre></li>
           <tr><td>直接Queue</td><td>入力をBlobへ保存し、参照を含むJSONをQueueへ送る</td><td>必要</td></tr>
         </tbody></table></div>
         <div class="flow" aria-label="直接Queueの処理の流れ"><span>入力Blob</span><b aria-hidden="true">→</b><span>依頼JSONをQueueへ</span><b aria-hidden="true">→</b><span>共通の変換処理</span><b aria-hidden="true">→</b><span>成果物Blob</span></div>
-        <p>各機能の非同期は、制御用Storageの接続文字列またはManaged IdentityのBlob/Queue設定が揃った場合に有効になります。外部システムから直接Queueへ依頼でき、Playgroundを使う必要はありません。</p>
+        <p>非同期対応の機能は、制御用Storageの接続文字列またはManaged IdentityのBlob/Queue設定が揃った場合に有効になります。外部システムから直接Queueへ依頼でき、Playgroundを使う必要はありません。</p>
         <p class="small"><a href="ppt-pdf-to-images/jobs.html">画像変換の非同期HTTP</a> · <a href="office2md/jobs.html">Markdown変換の非同期HTTP</a> · <a href="movie2audio/jobs.html">音声抽出の非同期HTTP</a></p>
 
         <h2 id="authentication">ベースURLと認証</h2>
         <div class="table-wrap"><table><thead><tr><th>機能</th><th>ローカルのベースURL</th><th>Queue名</th></tr></thead><tbody>
+          <tr><td>HTML → PowerPoint</td><td><code>http://localhost:7077</code></td><td>未対応</td></tr>
           <tr><td>PowerPoint / PDF → 画像</td><td><code>http://localhost:7071</code></td><td><code>conversion-jobs</code></td></tr>
           <tr><td>Office → Markdown</td><td><code>http://localhost:7072</code></td><td><code>office2md-jobs</code></td></tr>
           <tr><td>Excel → 画像・PDF</td><td><code>http://localhost:7076</code></td><td><code>excel2img-jobs</code></td></tr>

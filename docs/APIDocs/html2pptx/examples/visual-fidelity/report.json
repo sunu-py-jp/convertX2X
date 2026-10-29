@@ -1,0 +1,101 @@
+{
+  "version": 1,
+  "converter": "html2pptx",
+  "slideCount": 5,
+  "width": 1280,
+  "height": 720,
+  "slides": [
+    {
+      "slide": 1,
+      "textBoxes": 11,
+      "shapes": 36,
+      "tables": 0,
+      "images": 0,
+      "convertedSvgCount": 15,
+      "svg": {
+        "shapes": 25,
+        "text": 0,
+        "gradients": 0,
+        "images": 0
+      }
+    },
+    {
+      "slide": 2,
+      "textBoxes": 13,
+      "shapes": 42,
+      "tables": 0,
+      "images": 0,
+      "convertedSvgCount": 14,
+      "svg": {
+        "shapes": 29,
+        "text": 3,
+        "gradients": 0,
+        "images": 0
+      }
+    },
+    {
+      "slide": 3,
+      "textBoxes": 10,
+      "shapes": 30,
+      "tables": 0,
+      "images": 0,
+      "convertedSvgCount": 14,
+      "svg": {
+        "shapes": 20,
+        "text": 0,
+        "gradients": 0,
+        "images": 0
+      }
+    },
+    {
+      "slide": 4,
+      "textBoxes": 10,
+      "shapes": 30,
+      "tables": 0,
+      "images": 0,
+      "convertedSvgCount": 14,
+      "svg": {
+        "shapes": 20,
+        "text": 0,
+        "gradients": 1,
+        "images": 0
+      }
+    },
+    {
+      "slide": 5,
+      "textBoxes": 13,
+      "shapes": 31,
+      "tables": 0,
+      "images": 3,
+      "convertedSvgCount": 12,
+      "svg": {
+        "shapes": 18,
+        "text": 0,
+        "gradients": 1,
+        "images": 0
+      }
+    }
+  ],
+  "elapsedMs": 4236,
+  "outputBytes": 63300,
+  "sha256": "aaa56c2e4b1399b2233921f640c2a88bc2bff6e84cd36b303fc8dfddfcba1f09",
+  "warnings": [
+    {
+      "code": "SVG_EVENODD_FILL",
+      "message": "SVG evenodd fill is represented using DrawingML nonzero fill; overlapping subpaths may differ.",
+      "slide": 3
+    },
+    {
+      "code": "FONTS_NOT_EMBEDDED",
+      "message": "PPTXにはフォントを埋め込んでいません。閲覧環境のフォントにより表示が変わる場合があります。"
+    }
+  ],
+  "runtime": {
+    "node": "v24.2.0",
+    "chromium": "Chrome/156.0.8078.48"
+  },
+  "fontFamily": "Noto Sans JP",
+  "fontPolicy": "uniform",
+  "imagePolicy": "original-images-only",
+  "svgPolicy": "editable-native-shapes-and-text"
+}

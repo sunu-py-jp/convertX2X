@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "overrides": [
+    {
+      "name": "@puppeteer/browsers",
+      "version": "3.2.6",
+      "license": "Apache-2.0",
+      "packageIntegrity": "sha512-MJP29gVoHznmqmwhH1tlZqzfeQ3aylTpSSa6WKZXtkwYUH02i9imBmWGTyZrbnAou5paX78SE4jMAUqnEPf8ug==",
+      "packageSource": "https://registry.npmjs.org/@puppeteer/browsers/-/browsers-3.2.6.tgz",
+      "upstreamCommit": "a207faf527ce4305b33a6c0f9706b090c21c115e",
+      "source": "https://raw.githubusercontent.com/puppeteer/puppeteer/a207faf527ce4305b33a6c0f9706b090c21c115e/LICENSE",
+      "file": "third-party/node/licenses/puppeteer-a207faf5-LICENSE",
+      "sha256": "a27ca07269b3518550b2e83aed13eadd7d14d924b5864e14889b40cf227530ca",
+      "reason": "The published archive omits a standalone LICENSE file. This unchanged upstream document contains the full license text at the exact npm gitHead."
+    },
+    {
+      "name": "puppeteer",
+      "version": "25.16.0",
+      "license": "Apache-2.0",
+      "packageIntegrity": "sha512-LOr3reYnxAYYfQkpopz1fQnL0LdvqhpR5U2Fu+QnwzTX2gpVTHsn91UETo5NNC1md2/oC54Zu1ChBXgZDNSP1A==",
+      "packageSource": "https://registry.npmjs.org/puppeteer/-/puppeteer-25.16.0.tgz",
+      "upstreamCommit": "a207faf527ce4305b33a6c0f9706b090c21c115e",
+      "source": "https://raw.githubusercontent.com/puppeteer/puppeteer/a207faf527ce4305b33a6c0f9706b090c21c115e/LICENSE",
+      "file": "third-party/node/licenses/puppeteer-a207faf5-LICENSE",
+      "sha256": "a27ca07269b3518550b2e83aed13eadd7d14d924b5864e14889b40cf227530ca",
+      "reason": "The published archive omits a standalone LICENSE file. This unchanged upstream document contains the full license text at the exact npm gitHead."
+    },
+    {
+      "name": "puppeteer-core",
+      "version": "25.16.0",
+      "license": "Apache-2.0",
+      "packageIntegrity": "sha512-VA5Pf54N8shfopNkZZXCdiiwfnnY8ZJYAMqFQRhlH5mGUhfwf53Ar770GPtdpTDLUqvQeYpIBtC9/G2Jij2IJw==",
+      "packageSource": "https://registry.npmjs.org/puppeteer-core/-/puppeteer-core-25.16.0.tgz",
+      "upstreamCommit": "a207faf527ce4305b33a6c0f9706b090c21c115e",
+      "source": "https://raw.githubusercontent.com/puppeteer/puppeteer/a207faf527ce4305b33a6c0f9706b090c21c115e/LICENSE",
+      "file": "third-party/node/licenses/puppeteer-a207faf5-LICENSE",
+      "sha256": "a27ca07269b3518550b2e83aed13eadd7d14d924b5864e14889b40cf227530ca",
+      "reason": "The published archive omits a standalone LICENSE file. This unchanged upstream document contains the full license text at the exact npm gitHead."
+    },
+    {
+      "name": "isarray",
+      "version": "1.0.0",
+      "license": "MIT",
+      "packageIntegrity": "sha512-VLghIWNM6ELQzo7zwmcg0NmTVyWKYjvIeM83yjp0wRDTmUnrM678fQbcKBo6n2CJEF0szoG//ytg+TKla89ALQ==",
+      "packageSource": "https://registry.npmjs.org/isarray/-/isarray-1.0.0.tgz",
+      "upstreamCommit": "2a23a281f369e9ae06394c0fb4d2381355a6ba33",
+      "source": "https://raw.githubusercontent.com/juliangruber/isarray/2a23a281f369e9ae06394c0fb4d2381355a6ba33/README.md",
+      "file": "third-party/node/licenses/isarray-1.0.0-README.md",
+      "sha256": "ff138e683771b187f3629c383db72ee7d632009010a36d08e18e8d2a34222ec7",
+      "reason": "The published archive omits a standalone LICENSE file. This unchanged upstream document contains the full license text at the exact npm gitHead."
+    },
+    {
+      "name": "splaytree",
+      "version": "3.2.3",
+      "license": "MIT",
+      "packageIntegrity": "sha512-7OXrNWzy6CK+r7Ch9OLPBDTKfB6XlWHjX4P0RU5B3IgFuWPeYN0XtRtlexGRjgbQxpfaUve6jTAwBGWuGntz/w==",
+      "packageSource": "https://registry.npmjs.org/splaytree/-/splaytree-3.2.3.tgz",
+      "upstreamCommit": "0f3602340f9d7eec6c4af846126ed72249d2b0d4",
+      "source": "https://raw.githubusercontent.com/w8r/splay-tree/0f3602340f9d7eec6c4af846126ed72249d2b0d4/Readme.md",
+      "file": "third-party/node/licenses/splaytree-3.2.3-Readme.md",
+      "sha256": "ba6a09ed78a28536852d504086e7dd0e1f9c090a27c460bc9f301ee5783927dd",
+      "reason": "The published archive omits a standalone LICENSE file. Unchanged README contains the full license at the exact npm gitHead."
+    }
+  ]
+}

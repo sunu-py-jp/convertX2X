@@ -1,0 +1,9 @@
+{
+  "target": "LibreOffice Impress → PDF → PDFBox",
+  "fontConfig": "isolated bundled Noto Sans JP",
+  "pdfFonts": [
+    "NotoSansJP-Bold",
+    "NotoSansJP-Regular"
+  ],
+  "fontsVerified": true
+}

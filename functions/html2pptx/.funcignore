@@ -1,0 +1,8 @@
+local.settings.json
+local.settings.example.json
+node_modules/.cache/
+test/
+examples/
+output/
+dist/
+.git*

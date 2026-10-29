@@ -3,7 +3,7 @@
 convertX2Xは、変換機能ごとに利用できるAzure Functionsプロジェクトのコレクションです。
 変更するときは、対象機能のREADMEからDocsへ進み、利用ガイドと開発者ガイドの手順で動作を確認してください。
 
-初めて作業する場合は [開発者マニュアル](docs/README.md) から進めてください。[共通の作業手順](docs/development.md) と、[Office → Markdown](docs/office2md.md) / [Office → PDF](docs/office2pdf.md) / [Markdown → PDF](docs/md2pdf.md) / [Excel → 画像・PDF](docs/excel2img.md) / [PowerPoint・PDF](docs/ppt-pdf-to-images.md) / [Movie → AAC](docs/movie2audio.md) の実装・変更箇所を案内しています。
+初めて作業する場合は [開発者マニュアル](docs/README.md) から進めてください。[共通の作業手順](docs/development.md) と、[Office → Markdown](docs/office2md.md) / [Office → PDF](docs/office2pdf.md) / [Markdown → PDF](docs/md2pdf.md) / [Excel → 画像・PDF](docs/excel2img.md) / [PowerPoint・PDF](docs/ppt-pdf-to-images.md) / [Movie → AAC](docs/movie2audio.md) / [HTML → PowerPoint](docs/html2pptx.md) の実装・変更箇所を案内しています。
 
 ## 機能の置き場所
 
@@ -18,6 +18,7 @@ convertX2Xは、変換機能ごとに利用できるAzure Functionsプロジェ�
 - Excelのセル・画像・基本図形を配置を保って描画する機能は `functions/excel2img/` にあり、`ExcelImageService` をHTTP・Queueから共有します。印刷範囲・可読性による見送り・PNG/PDF出力を扱います。
 - Markdownから検索可能なPDFへの変換は `functions/md2pdf/` にあり、純Javaの `MarkdownPdfService` をHTTP・Queueから共有します。
 - 動画からAAC音声の抽出は `functions/movie2audio/` にあり、Node.jsで実装した `src/ffmpeg.js` の抽出処理を同期HTTPとQueueワーカーから共有します。入力・出力はストリームで扱い、完成したM4Aを返すかBlobへ保存します。非同期HTTPは入力をBlobへ保存して同じQueueへ登録します。同梱FFmpegの出典・ライセンス・ビルド方法も機能内で管理します。
+- HTMLの資料から編集可能なPowerPointを作る機能は `functions/html2pptx/` にあり、Node.js 24・Chromiumを使う同期HTTPとCLIを提供します。図形の種類別テンプレートではなく、CSS/SVGの輪郭・変形をネイティブ図形へ変換し、元のPNG/JPEGを画像として保持します。描画比較に使うLibreOffice・Java・Pythonは開発用であり、Functions本番の依存ではありません。
 - 各機能で対応する入力形式は、そのプロジェクト内の形式別コンバーターで実装します。
 - 提供予定だけのディレクトリや、変換を行わないstubは追加しません。
 

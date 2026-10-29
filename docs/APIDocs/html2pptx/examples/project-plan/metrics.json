@@ -1,0 +1,100 @@
+{
+  "version": 1,
+  "sourceFile": "project-plan.html",
+  "sourceSha256": "3dbfe03d181beedf7f024e6f7a93180a4bf114253437d48bad2be68833572a58",
+  "renderers": {
+    "source": "Chrome/156.0.8078.48",
+    "target": "LibreOffice Impress → PDF → PDFBox",
+    "fontConfig": "isolated bundled Noto Sans JP",
+    "runs": [
+      {
+        "target": "LibreOffice Impress → PDF → PDFBox",
+        "fontConfig": "isolated bundled Noto Sans JP",
+        "pdfFonts": [
+          "NotoSansJP-Bold",
+          "NotoSansJP-Regular"
+        ],
+        "fontsVerified": true
+      }
+    ]
+  },
+  "caveat": "This measures Chromium versus the selected renderer of the generated PPTX; LibreOffice uses an isolated bundled-font configuration. It is not a PowerPoint application screenshot or a guarantee of pixel equality.",
+  "threshold": 12,
+  "edgeThreshold": 40,
+  "metricDefinitions": {
+    "changedPixelRatio": "max(abs(R,G,B difference)) > threshold, divided by image pixels",
+    "meanAbsoluteChannelError": "mean absolute error across RGB channels, from 0 to 255",
+    "edgeMismatchRatio": "XOR of thresholded grayscale FIND_EDGES masks, divided by their union; no geometric registration"
+  },
+  "fullConversion": {
+    "ok": true,
+    "report": "report.json",
+    "pptx": "presentation.pptx"
+  },
+  "slides": [
+    {
+      "slide": 1,
+      "converted": true,
+      "rendered": true,
+      "title": "Slide 1",
+      "metrics": {
+        "slide": 1,
+        "width": 1280,
+        "height": 720,
+        "pixels": 921600,
+        "changedPixels": 19229,
+        "changedPixelRatio": 0.020864800347222223,
+        "meanAbsoluteChannelError": 1.4161176215277778,
+        "rootMeanSquareChannelError": 12.234603508225032,
+        "maxChannelError": 227,
+        "sourceEdgePixels": 24063,
+        "pptxEdgePixels": 24251,
+        "edgeMismatchPixels": 12410,
+        "edgeMismatchRatio": 0.4087346024636058,
+        "missingSourceEdgeRatio": 0.2539583593068196,
+        "additionalPptxEdgePixels": 6299,
+        "regions": [],
+        "images": {
+          "source": "html-01.png",
+          "pptx": "pptx-01.png",
+          "difference": "diff-01.png",
+          "edgeDifference": "edge-diff-01.png",
+          "overlay": "overlay-01.png",
+          "comparison": "comparison-01.png"
+        }
+      }
+    },
+    {
+      "slide": 2,
+      "converted": true,
+      "rendered": true,
+      "title": "Slide 2",
+      "metrics": {
+        "slide": 2,
+        "width": 1280,
+        "height": 720,
+        "pixels": 921600,
+        "changedPixels": 59331,
+        "changedPixelRatio": 0.06437825520833333,
+        "meanAbsoluteChannelError": 4.589362340856481,
+        "rootMeanSquareChannelError": 23.412005416299717,
+        "maxChannelError": 235,
+        "sourceEdgePixels": 58700,
+        "pptxEdgePixels": 54912,
+        "edgeMismatchPixels": 53292,
+        "edgeMismatchRatio": 0.6385946412308872,
+        "missingSourceEdgeRatio": 0.4862010221465077,
+        "additionalPptxEdgePixels": 24752,
+        "regions": [],
+        "images": {
+          "source": "html-02.png",
+          "pptx": "pptx-02.png",
+          "difference": "diff-02.png",
+          "edgeDifference": "edge-diff-02.png",
+          "overlay": "overlay-02.png",
+          "comparison": "comparison-02.png"
+        }
+      }
+    }
+  ]
+}

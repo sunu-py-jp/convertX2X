@@ -1,0 +1,6 @@
+{
+  "version": "2.0",
+  "functionTimeout": "00:04:00",
+  "logging": {"logLevel": {"default": "Warning", "Host.Results": "Information"}},
+  "extensions": {"http": {"routePrefix": "api"}}
+}

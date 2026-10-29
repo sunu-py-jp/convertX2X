@@ -16,6 +16,11 @@
   };
   const svg = (name, cls = '') => `<svg class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name]}</svg>`;
   const groups = [
+    {id: 'htmlpptx', title: 'HTML → PowerPoint', subtitle: 'HTML · ZIP · PPTX', icon: 'office', folder: 'html2pptx', items: [
+      ['overview', '概要・編集可能な要素', 'index.html', 'html css svg 図形 矢印 テキスト 編集 pptx'],
+      ['examples', '実際の変換例', 'examples.html', '体制図 決算 API 構成図 プロジェクト ガント 画像 サンプル'],
+      ['http', '同期HTTP・設定・エラー', 'http.html', 'post convert zip pptx 環境変数 制限 playground']
+    ]},
     {id: 'images', title: 'PowerPoint / PDF → 画像', subtitle: 'PPTX · PPT · PDF', icon: 'image', folder: 'ppt-pdf-to-images', items: [
       ['overview', '機能概要・出力形式', 'index.html', 'png jpeg zip ページ スライド 画像'],
       ['examples', '実際の変換例', 'examples.html', 'サンプル スクリーンショット 変換結果 複雑 日本語 pptx pdf ダウンロード'],

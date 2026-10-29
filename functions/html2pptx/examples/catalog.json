@@ -1,0 +1,140 @@
+{
+  "title": "HTML → PowerPoint 実務資料サンプル",
+  "synthetic": true,
+  "description": "企業名、数値、システム名、画面、体制は検証用に新規作成した架空の内容です。",
+  "examples": [
+    {
+      "id": "enterprise-announcement",
+      "title": "新サービス発表・段階導入",
+      "filename": "enterprise-announcement.html",
+      "slides": 2,
+      "patterns": [
+        "CSS Grid/Flex",
+        "日本語・部分太字",
+        "角丸カード",
+        "PNG画像",
+        "SVGの工程図"
+      ],
+      "expectedSVGNativeText": [
+        "事前準備",
+        "先行導入",
+        "横展開",
+        "定着・改善"
+      ],
+      "expectedOriginalImageCount": 1
+    },
+    {
+      "id": "financial-results",
+      "title": "上期決算・利益増減分析",
+      "filename": "financial-results.html",
+      "slides": 2,
+      "patterns": [
+        "KPIカード",
+        "複数段・結合表見出し",
+        "SVGウォーターフォール",
+        "正負の数値",
+        "下線・破線"
+      ],
+      "expectedSVGNativeText": [
+        "前年営業利益",
+        "売上増",
+        "生産性改善",
+        "採用・開発投資",
+        "当年営業利益"
+      ],
+      "expectedOriginalImageCount": 0
+    },
+    {
+      "id": "organization-governance",
+      "title": "複雑な体制図・意思決定",
+      "filename": "organization-governance.html",
+      "slides": 2,
+      "patterns": [
+        "30ノード・多段の体制図",
+        "横断支援の破線",
+        "曲線のフィードバック",
+        "丸・楕円・ひし形",
+        "角丸四角",
+        "双方向矢印"
+      ],
+      "expectedSVGNativeText": [
+        "代表執行役社長",
+        "監査・コンプライアンス委員会",
+        "サステナビリティ",
+        "カスタマー成功",
+        "投資判断",
+        "本部長",
+        "変革PMO",
+        "経営会議"
+      ],
+      "expectedOriginalImageCount": 0,
+      "organizationNodes": 30
+    },
+    {
+      "id": "api-architecture",
+      "title": "APIアーキテクチャ・処理シーケンス",
+      "filename": "api-architecture.html",
+      "slides": 2,
+      "patterns": [
+        "4層の構成図",
+        "双方向通信",
+        "折れ線・曲線",
+        "外部連携",
+        "シーケンス図",
+        "破線ライフライン"
+      ],
+      "expectedSVGNativeText": [
+        "API Gateway",
+        "受注サービス",
+        "在庫サービス",
+        "配送・会計システム",
+        "POST /v1/orders",
+        "OrderCreated を発行"
+      ],
+      "expectedOriginalImageCount": 0
+    },
+    {
+      "id": "project-plan",
+      "title": "プロジェクト計画・課題と稼働基準",
+      "filename": "project-plan.html",
+      "slides": 2,
+      "patterns": [
+        "SVGガントチャート",
+        "ひし形マイルストーン",
+        "複数列の表",
+        "複数段落",
+        "判定基準カード"
+      ],
+      "expectedSVGNativeText": [
+        "業務整理・要件確定",
+        "共通基盤・権限設計",
+        "移行・総合テスト",
+        "設計凍結",
+        "移行判定"
+      ],
+      "expectedOriginalImageCount": 0
+    },
+    {
+      "id": "image-patterns",
+      "title": "生成画像の変形・切り抜き・重なり",
+      "filename": "image-patterns-input.zip",
+      "sourceFilename": "image-patterns.html",
+      "slides": 5,
+      "patterns": [
+        "5枚・26パネル",
+        "画像の拡縮・反転・回転",
+        "cover / contain",
+        "角丸・円形",
+        "透過・重なり",
+        "ぼかし・編集可能な注釈",
+        "重なり順・z-index"
+      ],
+      "expectedSVGNativeText": [
+        "新しい搬入動線"
+      ],
+      "expectedOriginalImageCount": 28,
+      "inputFormat": "zip",
+      "imageFilename": "image-pattern-photo.png"
+    }
+  ]
+}
