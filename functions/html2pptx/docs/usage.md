@@ -2,7 +2,7 @@
 
 ## 対応範囲
 
-静的HTMLの配置をChromiumで計算し、PowerPointの文字・図形・表へ変換します。
+HTMLの配置をChromiumで計算し、PowerPointの文字・図形・表へ変換します。CSSアニメーションは対応する動きをPowerPointのアニメーションへ変換し、対応できない動きは固定した状態と警告を出力します。
 HTMLの本文、Flex/Grid配置、単色背景・罫線、PNG/JPEG、SVGの図形・線・文字を扱います。
 図形名の一覧で判定するのではなく、輪郭・線・塗り・座標変換から編集可能なパスを生成します。SVGの任意の多角形・凹形・自由曲線、矢印、点線・破線を扱います。CSSのborderで作る三角形、clip-pathのpolygon/circle/ellipse/inset/path、角丸、回転、図形のskew、空の::before/::after装飾も同じベクター処理へ渡します。
 SVGは親要素を含む回転・拡縮とviewBoxの配置を反映します。HTML本文はブラウザーの行・書式区間を計測し、編集可能なテキストとして配置します。編集後もHTMLの自動レイアウトが維持されるわけではありません。
@@ -77,6 +77,45 @@ ZIPにはHTML・CSS・PNG・JPEG・SVGのみを含め、暗号化・シンボリ
 - 画像のskew・3D変形・`clip-path`・影、親による切り抜き・filter、blur以外や複数を組み合わせたfilterは未対応です。切り抜きは `object-fit`、角丸は画像自身の `border-radius` を使います。ぼかす画像の背景や枠は別要素にし、ぼかしの余白が親で切り取られないようにします。
 - 重なる複数の子要素を親の `opacity` でまとめて透過する表示は未対応です。各要素に個別の `opacity` を指定してください。画像自身の背景もまとめて透過する場合は、背景を別要素に分けます。
 
+### CSSアニメーション
+
+`@keyframes` と通常の `animation` 指定を読み取ります。専用のクラス名・効果名・属性は不要です。
+同期HTTP・CLIとも自動判定します。入力JavaScriptやイベント属性は引き続き実行・許可しません。
+
+```html
+<style>
+  @keyframes revealCard {
+    from { opacity: 0; transform: translateY(40px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .card { animation: revealCard 1.2s .3s linear both; }
+</style>
+<div class="card">段階的にサービスを展開</div>
+```
+
+| 入力 | 出力 |
+| --- | --- |
+| フェードイン、2Dの移動・拡大縮小・回転 | 安全に対応付けできる場合、編集可能な要素へPowerPointのアニメーションを付与 |
+| `animation-delay`・`animation-duration` | スライド開始からの遅延・再生時間として反映。クリック待ちには変換しない |
+| 同じ要素の背景・枠・文字・子要素 | 前後関係を変えずにまとめられる場合、一緒に動かす |
+| 色・角丸・複雑な変形など、未対応の有限アニメーション | 終端の見た目を固定し、`ANIMATION_STATIC_FALLBACK` と理由をreportへ記録 |
+| 無限ループ | 最初の1回分（1 iteration）の終端で固定。`ANIMATION_STATIC_FALLBACK` の `infinite-animation` として報告 |
+| `transition`、ホバー・クリック・スクロール依存 | 利用者の操作や変更先を推測しない。自動的に操作して完成状態を作る機能ではない |
+
+ネイティブ変換の対象は、原則として1要素に1つ、1回再生の有限アニメーションです。通常・逆方向再生を扱い、透明度は0から1へ単調に増える登場を対象にします。2D変形は中心を基準とするものを対象とし、変形済みの親・アニメーションの入れ子・複数の同時指定などは固定出力へ切り替えます。退場して透明になる動きも固定対象です。最終状態が透明なら、その要素は出力されません。
+
+固定する「終端」は、再生方向を考慮した最後のフレームです。`animation-fill-mode: none` でも、元のスタイルに戻す前の終端を保持します。無限ループは最初の1回分（1 iteration）だけを計算して終端で固定します。`alternate` は最初の往路の終端、`reverse` / `alternate-reverse` は最初の逆方向再生の終端です。終端が開始状態と同じなら同じ見た目になり、終端の透明度が0なら非表示になります。有限・無限とも、実際の再生秒数だけ待って変換するわけではありません。追加の環境変数やAPIオプションは不要です。
+
+CSSの加減速を含む動きは、ブラウザーで既定33時点とキーフレームの境界を計測して近似します。最大65時点に収まらないものは固定出力へ切り替えます。全フレームのピクセル一致は保証しません。PowerPointの再生・編集は利用予定のビューアで確認してください。未対応の動きを固定しても、その静止状態に未対応の3D・マスク・filter等が残れば、従来どおり描画エラーになります。画像へ焼き込んで成功扱いにはしません。
+
+`animations.nativeEffects[].sampling` には `method: "computed-css-timing"`、`sampleCount`、`easingApproximation: true` を記録します。
+
+アニメーションは最大1,000件、1件のキーフレームは最大1,000件です。有限の再生時間（繰り返しを含む）と遅延の絶対値はそれぞれ1時間以内です。これらの固定上限を超えた場合はHTTP 422の `UNSUPPORTED_ANIMATION` を返します。
+
+`report.json` の `animations.policy` は `native-or-static`、`animations.nativeEffects` はネイティブ化した動き、`animations.staticEffects` は固定した動きと理由の一覧です。警告にもスライド、対象、理由を記録します。`format=pptx` ではreportを受け取れないため、固定への切り替えを確認する用途では既定のZIP出力を使ってください。`TRANSITION_STATIC_FALLBACK` はCSSのtransitionを静止状態で扱ったことを示します。
+
+サンプルは `examples/css-animations.html` です。文字・背景・枠が連動するカード、元画像とSVG、固定出力になる色・角丸・無限ループを3スライドにまとめています。
+
 ### 制約
 
 JavaScript、イベント属性、React等の実行前のHTML、iframe、object/embed、動画、フォームは非対応です。
@@ -89,6 +128,8 @@ SVGルート自身のCSS背景・枠線・paddingは、外側のHTML要素へ指
 フォントとしてNoto Sans JP（Regular/Bold）を同梱します。HTML/CSSの指定にかかわらず、HTML・SVGの文字をこのフォントに統一して計測・変換します。PPTXへフォント自体は埋め込まないため、閲覧端末に
 対応フォントがない場合は代替表示となり、文字幅や改行に差が出る場合があります。
 PowerPointでの表示・編集も含め、利用予定の資料で確認してください。
+
+macOSのQuick Lookで、編集可能な自由形状が表示されない例を確認しています。単純なCSSの四角・角丸四角・円はPowerPointの標準図形として保存し、表示互換性を改善しています。複雑な自由曲線やSVG由来のパスはQuick Lookで欠落する場合があります。見た目の確認には掲載PDFまたはPowerPointを使用してください。Quick Lookでの静止表示の確認は、PowerPoint・iOSでのアニメーション再生の確認とは別です。
 
 ## ローカルで変換する
 
@@ -116,7 +157,7 @@ output/organization/
 └── html-02.png
 ```
 
-`html-*.png` は入力HTMLの描画です。PPTXを開いた画像ではありません。
+`html-*.png` は変換時に採用したHTMLの静止状態です。アニメーションを含む場合も動きを再生するプレビューではなく、PPTXを開いた画像ではありません。
 `result.zip` にはPPTXとreportを含め、プレビューPNGは含めません。
 
 ## PlaygroundとHTTP
@@ -194,7 +235,7 @@ Chromiumと共有ライブラリは機能の依存パッケージに含めます
 
 ## 検証用の資料
 
-[実際の変換例](../../../docs/APIDocs/html2pptx/examples.html) に、7資料・20スライドを掲載しています。
+[実際の変換例](../../../docs/APIDocs/html2pptx/examples.html) に、8資料・23スライドを掲載しています。
 企業名・数値・画面画像は架空の内容です。画像の変形例には、この検証用にAIで生成した写真を使用しています。
 
 | 入力 | 主なパターン |
@@ -206,6 +247,7 @@ Chromiumと共有ライブラリは機能の依存パッケージに含めます
 | `examples/project-plan.html` | 工程表、マイルストーン、課題表、稼働基準 |
 | `examples/visual-fidelity.html` | 5枚・30項目の図形・線・文字の比較 |
 | `examples/image-patterns-input.zip` | 5枚・26パネル、同じ写真28配置。変形・ぼかし・重なり順 |
+| `examples/css-animations.html` | 3枚。CSSによる登場・移動・回転・拡大と、固定出力への切り替え |
 
 画像例のHTMLは同梱PNGを相対参照するため、API・CLIへは `image-patterns-input.zip` を送ります。元画像と生成プロンプトも実例ページで確認できます。
 

@@ -5,6 +5,7 @@ import { createHash } from 'node:crypto';
 import { nativeSvgGroup } from './svg-native.js';
 import { ConversionError } from './errors.js';
 import { FONT_FAMILY } from './fonts.js';
+import { applyNativeAnimations } from './pptx-animations.js';
 
 const P='http://schemas.openxmlformats.org/presentationml/2006/main';
 const A='http://schemas.openxmlformats.org/drawingml/2006/main';
@@ -41,15 +42,29 @@ function pictureGeometry(doc,clip){
   return doc.importNode(parse(`<a:custGeom xmlns:a="${A}"><a:avLst/><a:gdLst/><a:ahLst/><a:cxnLst/><a:rect l="0" t="0" r="r" b="b"/><a:pathLst><a:path w="${Math.max(1,Math.round(clip.width*9525))}" h="${Math.max(1,Math.round(clip.height*9525))}" stroke="0">${commands}${points.length?'<a:close/>':''}</a:path></a:pathLst></a:custGeom>`).documentElement,true);
 }
 
-export async function finalizePptx(buffer,page,{layouts,imageSources=[],limits}) {
+export async function finalizePptx(buffer,page,{layouts,imageSources=[],limits,animationEffects=[],animationOrders=[],width,height}) {
   const zip=await JSZip.loadAsync(buffer,{checkCRC32:true});
   const names=Object.keys(zip.files).filter(n=>/^ppt\/slides\/slide\d+\.xml$/.test(n)).sort((a,b)=>Number(a.match(/(\d+)\.xml$/)[1])-Number(b.match(/(\d+)\.xml$/)[1]));
   if(names.length!==layouts.length) fail('OUTPUT_INVALID','スライド数が入力と一致しません。');
-  const report=[],warnings=[];
+  const report=[],warnings=[],nativeEffects=[],fallbackEffects=[];
   const originalMedia=new Map();
   let totalShapes=0;
   for(const [index,name] of names.entries()) {
     const doc=parse(await zip.file(name).async('string'));
+    const effects=animationEffects.filter(effect=>effect.slide===index+1);
+    const targets=new Map(effects.map(effect=>[effect.id,[]]));
+    // Read exporter ownership before SVGs become native groups and pictures are
+    // renamed. IDs are not stable yet: retain object references, never old IDs.
+    if(effects.length){
+      const tree=list(doc,P,'spTree')[0];
+      for(const object of Array.from(tree.childNodes).filter(n=>n.nodeType===1&&['sp','pic','graphicFrame','grpSp','cxnSp'].includes(n.localName))){
+        const property=list(object,P,'cNvPr')[0],name=property?.getAttribute('name')||'';
+        const raw=name.match(/__dom_(\d+)__type_/),clean=name.match(/^(?:TextBox|Picture|Table|Line|Shape) (\d+)$/);
+        const order=raw?Number(raw[1]):clean?Number(clean[1])-1:null;
+        if(order===null)continue;
+        for(const effect of effects)if(animationOrders[index]?.[effect.id]?.includes(order))targets.get(effect.id).push(object);
+      }
+    }
     const backgroundColor=layouts[index].backgroundColor;
     if(/^[A-F0-9]{6}$/.test(backgroundColor||'')){
       const slide=list(doc,P,'cSld')[0];
@@ -84,7 +99,9 @@ export async function finalizePptx(buffer,page,{layouts,imageSources=[],limits})
       if(!group) fail('OUTPUT_INVALID','SVGの図形を生成できませんでした。');
       const outerTransform=list(group,A,'xfrm')[0];
       for(const attribute of ['rot','flipH','flipV']) if(transform.hasAttribute(attribute)) outerTransform.setAttribute(attribute,transform.getAttribute(attribute));
-      pic.parentNode.replaceChild(doc.importNode(group,true),pic);
+      const replacement=doc.importNode(group,true);
+      pic.parentNode.replaceChild(replacement,pic);
+      for(const objects of targets.values()){const at=objects.indexOf(pic);if(at>=0)objects[at]=replacement;}
       nextId=result.nextId; convertedSvgCount++;
       warnings.push(...(result.warnings||[]).map(w=>({...w,slide:index+1})));
       for(const [key,value] of Object.entries(result.counts||{})) svgCounts[key]=(svgCounts[key]||0)+value;
@@ -179,11 +196,14 @@ export async function finalizePptx(buffer,page,{layouts,imageSources=[],limits})
       if(duplicates.has(old)||!mappings.has(old))fail('OUTPUT_INVALID','接続先の図形IDを確定できません。');
       connection.setAttribute('id',mappings.get(old));
     }
-    // Output is intentionally static even if a library interprets CSS class names as animations.
+    // Ignore upstream class-name guesses. Only validated browser animation plans
+    // may create timing, using final IDs after every geometry replacement.
     for(const node of [...list(doc,P,'timing'),...list(doc,P,'transition')])node.parentNode.removeChild(node);
+    const motion=applyNativeAnimations({document:doc,effects,targets,slideWidthPx:width,slideHeightPx:height});
+    nativeEffects.push(...motion.nativeEffects);fallbackEffects.push(...motion.fallbackEffects);warnings.push(...motion.warnings);
     const count={slide:index+1,textBoxes:list(doc,P,'txBody').length,shapes:list(doc,P,'sp').length,
       tables:tables.length,images:remainingPictures,convertedSvgCount,svg:svgCounts};
-    totalShapes+=count.shapes+count.tables+count.images;
+    totalShapes+=count.shapes+count.tables+count.images+motion.groupsCreated;
     if(totalShapes>limits.maxShapes) fail('OUTPUT_LIMIT','生成する要素数が上限を超えています。');
     report.push(count);
     const xml=serialize(doc);
@@ -207,6 +227,15 @@ export async function finalizePptx(buffer,page,{layouts,imageSources=[],limits})
   }
   for(const name of Object.keys(zip.files).filter(n=>n.startsWith('ppt/media/')&&!zip.files[n].dir)) if(!usedMedia.has(name)) zip.remove(name);
   if(Object.keys(zip.files).some(n=>/^ppt\/media\/.*\.svg$/i.test(n))) fail('OUTPUT_INVALID','編集不能なSVG画像が残っています。');
+  // The upstream package places notesMasterIdLst after sldIdLst, contrary to
+  // PresentationML's child sequence. Keep the complete package schema-valid.
+  const presentation=parse(await zip.file('ppt/presentation.xml').async('string'));
+  const notes=list(presentation,P,'notesMasterIdLst')[0];
+  if(notes){
+    const following=Array.from(presentation.documentElement.childNodes).find(n=>n.nodeType===1&&['handoutMasterIdLst','sldIdLst','sldSz','notesSz'].includes(n.localName));
+    presentation.documentElement.insertBefore(notes,following||null);
+    zip.file('ppt/presentation.xml',serialize(presentation));
+  }
   // Measurement already uses the bundled font. Also align theme/master defaults
   // so table text and new text entered during editing do not fall back to Arial.
   for(const name of Object.keys(zip.files).filter(n=>n.startsWith('ppt/')&&n.endsWith('.xml'))) {
@@ -218,5 +247,5 @@ export async function finalizePptx(buffer,page,{layouts,imageSources=[],limits})
   }
   const output=await zip.generateAsync({type:'nodebuffer',compression:'DEFLATE',compressionOptions:{level:6}});
   if(output.length>limits.maxOutputBytes) fail('OUTPUT_LIMIT','PPTXのサイズが上限を超えています。');
-  return {pptx:output,slides:report,warnings};
+  return {pptx:output,slides:report,warnings,nativeEffects,fallbackEffects};
 }

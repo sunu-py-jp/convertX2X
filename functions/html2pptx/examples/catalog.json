@@ -135,6 +135,25 @@
       "expectedOriginalImageCount": 28,
       "inputFormat": "zip",
       "imageFilename": "image-pattern-photo.png"
+    },
+    {
+      "id": "css-animations",
+      "title": "CSSアニメーション・固定出力",
+      "filename": "css-animations.html",
+      "slides": 3,
+      "patterns": [
+        "時間差で登場するカード",
+        "背景・枠・文字の連動",
+        "元画像の移動・回転",
+        "SVG図解の拡大",
+        "未対応の有限アニメーションを終端で固定",
+        "無限ループを1周期の終端で固定"
+      ],
+      "expectedSVGNativeText": [
+        "受注データ",
+        "業務へつなぐ"
+      ],
+      "expectedOriginalImageCount": 1
     }
   ]
 }

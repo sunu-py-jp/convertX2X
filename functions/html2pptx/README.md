@@ -1,6 +1,6 @@
 # HTML → PowerPoint（HTML2PPTX）
 
-静的HTMLの見た目を基に、編集可能な文字・表・図形を持つPowerPointを生成するAzure Functionsです。SVGの体制図・構成図も図形・線・文字へ変換し、元のPNG・JPEGは画像として保持します。
+HTMLの見た目を基に、編集可能な文字・表・図形を持つPowerPointを生成するAzure Functionsです。基本的なCSSアニメーションはPowerPointの動きへ変換し、対応できない動きは固定状態と警告を出力します。SVGの体制図・構成図も図形・線・文字へ変換し、元のPNG・JPEGは画像として保持します。
 
 Node.js 24で実装し、Azure Functions Flex Consumption・4GB向けにChromiumと必要なライブラリを同梱します。同期HTTPとCLIに対応します。非同期HTTP・直接Queueは未実装です。
 

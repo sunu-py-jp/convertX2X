@@ -25,7 +25,7 @@ const SVG = 'http://www.w3.org/2000/svg';
 const HTML_TAGS = new Set(('html head title meta style link body div section article header footer main aside nav span p h1 h2 h3 h4 h5 h6 a strong b em i u s del small sub sup br hr ul ol li dl dt dd blockquote pre code figure figcaption img table thead tbody tfoot tr td th colgroup col abbr bdi bdo cite q time address wbr mark kbd samp var').split(' '));
 const SVG_TAGS = new Set(('svg g defs rect circle ellipse line polyline polygon path text tspan linearGradient radialGradient stop marker use clipPath title desc style').split(' '));
 const LINK_PROTOCOLS = new Set(['https:', 'http:', 'mailto:']);
-const CSS_AT_RULES = new Set(['media', 'supports', 'layer', 'container', 'page', 'charset']);
+const CSS_AT_RULES = new Set(['media', 'supports', 'layer', 'container', 'page', 'charset', 'keyframes', '-webkit-keyframes']);
 const CSS_UNSAFE_FUNCTIONS = new Set(['expression', 'paint', 'image', 'image-set', '-webkit-image-set', 'cross-fade', '-webkit-cross-fade', 'element', '-moz-element', '-webkit-canvas', 'src']);
 const CSS_URL_ATTRIBUTES = new Set(['fill', 'stroke', 'marker', 'marker-start', 'marker-mid', 'marker-end', 'clip-path', 'cursor']);
 const ACTIVE_ATTRIBUTES = new Set(['srcdoc', 'srcset', 'imagesrcset', 'ping', 'background', 'action', 'formaction', 'form', 'manifest', 'codebase', 'archive', 'data', 'poster']);
@@ -168,9 +168,9 @@ function css(source, context, base, state, countBytes = true) {
   catch (error) { if (error instanceof ConversionError) throw error; return fail('INVALID_CSS', 'CSSを構文解析できません。', 400); }
   cssTree.walk(tree, node => {
     if (node.type === 'Raw') fail('UNSUPPORTED_CSS', '構文解析できないCSS指定があります。');
-    if (node.type === 'Atrule' && !CSS_AT_RULES.has(node.name.toLowerCase())) fail('UNSUPPORTED_CSS', '外部CSSの読み込み・Webフォント・アニメーション用のCSS規則は使用できません。');
+    if (node.type === 'Atrule' && !CSS_AT_RULES.has(node.name.toLowerCase())) fail('UNSUPPORTED_CSS', '外部CSSの読み込み・Webフォントなど、未対応のCSS規則は使用できません。');
     if (node.type === 'Function' && (node.name.includes('\\') || CSS_UNSAFE_FUNCTIONS.has(node.name.toLowerCase()))) fail('UNSUPPORTED_CSS', '対応していないCSS関数が含まれています。');
-    if (node.type === 'Declaration' && (node.property.includes('\\') || /^(?:behavior|-moz-binding|animation(?:-.+)?|transition(?:-.+)?)$/iu.test(node.property))) fail('UNSUPPORTED_CSS', '動的なCSS指定は使用できません。');
+    if (node.type === 'Declaration' && (node.property.includes('\\') || /^(?:behavior|-moz-binding)$/iu.test(node.property))) fail('UNSUPPORTED_CSS', '動的なCSS指定は使用できません。');
     if (node.type === 'Url') {
       if (/^#[A-Za-z_][\w:.-]*$/u.test(node.value)) return;
       node.value = imageResource(node.value, base, state).dataUri;

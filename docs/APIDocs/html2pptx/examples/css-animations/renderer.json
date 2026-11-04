@@ -1,0 +1,23 @@
+{
+  "renderer": "LibreOffice Impress → PDF → PDFium",
+  "fontConfig": "isolated bundled Noto Sans JP",
+  "slides": 3,
+  "width": 1280,
+  "height": 720,
+  "isPowerPointAppScreenshot": false,
+  "animationPlaybackVerified": false,
+  "applePreviewVerified": true,
+  "applePreviewPlatform": "macOS Quick Look",
+  "applePreviewSlides": [
+    1,
+    3
+  ],
+  "applePreviewNotes": "Static preview only; PowerPoint and iOS playback not verified. Font fallback may differ from the primary LibreOffice render.",
+  "formatValidation": {
+    "tool": "Open XML SDK",
+    "version": "3.1.1",
+    "target": "Office 2016",
+    "errors": 0,
+    "sha256": "a1592e86db1ba421a104b502492c3811cd897829ce5775ede7f52861ac365d5d"
+  }
+}

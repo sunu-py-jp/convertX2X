@@ -40,6 +40,17 @@ await writeFile('presentation.pptx', new Uint8Array(await response.arrayBuffer()
 <pre><code class="language-html">&lt;link rel=&quot;stylesheet&quot; href=&quot;styles.css&quot;&gt;
 &lt;img src=&quot;assets/product.png&quot; alt=&quot;製品の画面&quot;&gt;
 &lt;img src=&quot;assets/diagram.svg&quot; alt=&quot;システム構成&quot;&gt;</code></pre>
+<h2 id="animations">アニメーション付きHTML</h2>
+<p>リクエスト形式・クエリーの追加指定は不要です。HTMLに含まれる<code>@keyframes</code>と<code>animation</code>を解析し、対応する動きをPowerPointのアニメーションへ変換します。対応範囲と固定出力の規則は<a href="index.html#animations">機能概要</a>を参照してください。PowerPointのクリック待ちを推測せず、CSSの遅延・時間をスライド開始からの時間として扱います。</p>
+<pre><code class="language-html">&lt;style&gt;
+  @keyframes revealCard {
+    from { opacity: 0; transform: translateY(40px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .card { animation: revealCard 1.2s .3s linear both; }
+&lt;/style&gt;
+&lt;div class="card"&gt;段階的にサービスを展開&lt;/div&gt;</code></pre>
+<p>未対応の有限の動きは終端で固定し、<code>ANIMATION_STATIC_FALLBACK</code>と機械判定用の理由をreportへ記録します。無限ループは最初の1回分の終端で固定します。<code>alternate</code>は最初の往路、<code>reverse</code>は逆方向再生の終端を採用します。開始と同じ見た目や透明になる終端も、そのまま保持します。追加オプションは不要です。CSSのtransitionを静止状態で扱う場合は<code>TRANSITION_STATIC_FALLBACK</code>を記録します。警告を確認する用途では<code>format=zip</code>を使用してください。入力JavaScript・イベント属性・外部参照の制約は変わりません。</p>
 <h2 id="authentication">Azureでの認証</h2>
 <p>Azure上の変換APIは<code>x-functions-key</code>ヘッダーを付けます。キーはURLに含めず、呼び出し側で管理してください。ローカルCore Toolsでは通常キーは不要です。</p>
 <pre><code class="language-shell">curl --fail-with-body \
@@ -50,6 +61,7 @@ await writeFile('presentation.pptx', new Uint8Array(await response.arrayBuffer()
   --output presentation.pptx</code></pre>
 <h2 id="response">成功レスポンス</h2>
 <table><thead><tr><th>指定</th><th>HTTP</th><th>Content-Type</th><th>ファイル</th></tr></thead><tbody><tr><td><code>format=zip</code></td><td>200</td><td><code>application/zip</code></td><td><code>result.zip</code>。内部に<code>presentation.pptx</code>と<code>report.json</code></td></tr><tr><td><code>format=pptx</code></td><td>200</td><td><code>application/vnd.openxmlformats-officedocument.presentationml.presentation</code></td><td><code>presentation.pptx</code>のみ。警告を確認する場合はZIPを使用</td></tr></tbody></table>
+<p><code>report.json</code>の<code>animations.policy</code>は<code>native-or-static</code>です。<code>animations.nativeEffects</code>にPowerPointの動きへ変換した項目、<code>animations.staticEffects</code>に固定した項目と<code>reason</code>を記録します。警告にも<code>ANIMATION_STATIC_FALLBACK</code>などを含めます。対象の特定には項目の<code>id</code>とスライド情報を使用します。ネイティブ項目の<code>sampling</code>には、<code>method: "computed-css-timing"</code>、<code>sampleCount</code>、<code>easingApproximation: true</code>を記録します。</p>
 <p><code>report.json</code>の<code>fontFamily</code>は<code>Noto Sans JP</code>、<code>fontPolicy</code>は<code>uniform</code>です。入力のフォント指定にかかわらず、配置計算から出力まで統一します。フォントファイルはPPTXへ埋め込まないため、<code>FONTS_NOT_EMBEDDED</code>の警告は残ります。</p>
 <h2 id="discovery">Playgroundと対応情報</h2>
 <table><thead><tr><th>入口</th><th>内容</th></tr></thead><tbody><tr><td><code>GET /api/playground</code></td><td>ファイルを選んで変換する簡易画面</td></tr><tr><td><code>GET /api/capabilities</code></td><td>入力形式、出力形式、上限値、非同期対応の有無</td></tr></tbody></table>
@@ -66,6 +78,6 @@ await writeFile('presentation.pptx', new Uint8Array(await response.arrayBuffer()
   }
 }</code></pre>
 <p>上はエラー構造の例です。具体的なmessageは原因に応じて変わるため、呼び出し側では<code>code</code>で判定します。</p>
-<div class="table-wrap"><table><thead><tr><th>HTTP</th><th>主なcode</th><th>対応</th></tr></thead><tbody><tr><td>400</td><td><code>EMPTY_INPUT / INVALID_OPTION / INVALID_UTF8 / INVALID_ZIP</code></td><td>本文・format・文字コード・ZIP構造を確認</td></tr><tr><td>413</td><td><code>INPUT_LIMIT / INPUT_LIMIT_EXCEEDED / OUTPUT_LIMIT</code></td><td>容量や要素数を減らすか、管理者が上限を調整</td></tr><tr><td>415</td><td><code>UNSUPPORTED_INPUT</code></td><td>HTML・HTM・ZIPを使用</td></tr><tr><td>422</td><td><code>UNSUPPORTED_HTML / UNSUPPORTED_SVG / UNSUPPORTED_LAYOUT / SLIDE_OVERFLOW</code></td><td>非対応要素を修正し、スライド内へ収める</td></tr><tr><td>422</td><td><code>EXTERNAL_RESOURCE_FORBIDDEN / ACTIVE_CONTENT_FORBIDDEN</code></td><td>素材を同梱し、JavaScriptや動的な属性を除く</td></tr><tr><td>429</td><td><code>BUSY</code></td><td><code>Retry-After</code>に従って再試行</td></tr><tr><td>503 / 504</td><td><code>WORKER_FAILED / CONVERSION_TIMEOUT</code></td><td>起動環境を確認するか、入力を分割して再試行</td></tr></tbody></table></div>
-<footer class="page-footer"><span>2026-10-30 · Node.js 24 / Chromium / DrawingML</span><a href="../../../functions/html2pptx/docs/usage.md">利用・運用ガイド</a></footer>
+<div class="table-wrap"><table><thead><tr><th>HTTP</th><th>主なcode</th><th>対応</th></tr></thead><tbody><tr><td>400</td><td><code>EMPTY_INPUT / INVALID_OPTION / INVALID_UTF8 / INVALID_ZIP</code></td><td>本文・format・文字コード・ZIP構造を確認</td></tr><tr><td>413</td><td><code>INPUT_LIMIT / INPUT_LIMIT_EXCEEDED / OUTPUT_LIMIT</code></td><td>容量や要素数を減らすか、管理者が上限を調整</td></tr><tr><td>415</td><td><code>UNSUPPORTED_INPUT</code></td><td>HTML・HTM・ZIPを使用</td></tr><tr><td>422</td><td><code>UNSUPPORTED_HTML / UNSUPPORTED_SVG / UNSUPPORTED_LAYOUT / SLIDE_OVERFLOW</code></td><td>非対応要素を修正し、スライド内へ収める</td></tr><tr><td>422</td><td><code>EXTERNAL_RESOURCE_FORBIDDEN / ACTIVE_CONTENT_FORBIDDEN</code></td><td>素材を同梱し、JavaScriptや動的な属性を除く</td></tr><tr><td>422</td><td><code>UNSUPPORTED_ANIMATION</code></td><td>アニメーション数（1,000件）、キーフレーム数（1効果あたり1,000個）、時間指定（有限の総再生時間・遅延は各1時間以内）などを確認</td></tr><tr><td>429</td><td><code>BUSY</code></td><td><code>Retry-After</code>に従って再試行</td></tr><tr><td>503 / 504</td><td><code>WORKER_FAILED / CONVERSION_TIMEOUT</code></td><td>起動環境を確認するか、入力を分割して再試行</td></tr></tbody></table></div>
+<footer class="page-footer"><span>2026-11-05 · Node.js 24 / Chromium / DrawingML</span><a href="../../../functions/html2pptx/docs/usage.md">利用・運用ガイド</a></footer>
 </article><aside class="toc"><p class="toc-title">このページの内容</p><nav id="page-toc"></nav></aside></div></main></body></html>

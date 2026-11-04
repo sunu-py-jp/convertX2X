@@ -50,3 +50,39 @@ test('raster picture inherits parent rotation and retains original image bytes',
   const rid=all(pic,'blip')[0].getAttribute('r:embed'),rel=all(rels,'Relationship').find(r=>r.getAttribute('Id')===rid);
   assert.ok(rel);assert.deepEqual(await zip.file('ppt/'+rel.getAttribute('Target').replace('../','')).async('nodebuffer'),png);
 });
+
+test('CSS rectangles, round cards, circles and ellipses preserve native preset geometry',{skip,timeout:30000},async()=>{
+  const html=`<style>.box{position:absolute;top:100px;width:180px;height:120px;box-sizing:border-box}
+    .plain{left:40px;background:#112233}.card{left:260px;background:#cceee1;border:3px solid #123456;border-radius:18px}
+    .pill{left:480px;width:240px;background:#775599;border-radius:999px}.circle{left:760px;width:120px;background:#2675c9;border-radius:50%}
+    .ellipse{left:920px;width:240px;background:#bb6633;border-radius:50%}.gradient{left:40px;top:300px;background:linear-gradient(90deg,#123,#9cd);border-radius:24px}
+    .double{left:300px;top:300px;background:#eeddcc;border:9px double #663322;border-radius:20px}
+    .circle-border{left:560px;top:300px;width:120px;border:4px solid #448866;border-radius:50%}
+  </style><section data-slide><div class="box plain"></div><div class="box card"></div><div class="box pill"></div><div class="box circle"></div><div class="box ellipse"></div><div class="box gradient"></div><div class="box double"></div><div class="box circle-border"></div></section>`;
+  const result=await convertHtml(Buffer.from(html),{executablePath:browser}),zip=await JSZip.loadAsync(result.pptx),doc=parse(await zip.file('ppt/slides/slide1.xml').async('string'));
+  const shapes=all(doc,'sp');
+  const byFill=color=>shapes.find(shape=>{
+    const properties=[...shape.childNodes].find(n=>n.localName==='spPr');
+    const fill=[...properties.childNodes].find(n=>n.localName==='solidFill');
+    return fill&&all(fill,'srgbClr')[0]?.getAttribute('val')===color;
+  });
+  for(const [color,preset]of [['112233','rect'],['CCEEE1','roundRect'],['775599','roundRect'],['2675C9','ellipse'],['BB6633','ellipse'],['EEDDCC','roundRect']]){
+    const shape=byFill(color);assert.ok(shape,color);
+    assert.equal(all(shape,'prstGeom')[0]?.getAttribute('prst'),preset,color);
+  }
+  assert.equal(all(doc,'custGeom').length,0,'simple CSS contours should not become custom geometry that disappears in Apple previews');
+  assert.equal(all(doc,'pic').length,0,'backgrounds and borders must remain editable');
+  assert.equal(all(doc,'gradFill').length,1);
+  const strokes=all(doc,'ln').filter(line=>all(line,'srgbClr').length);
+  assert.ok(strokes.some(line=>line.getAttribute('w')==='28575'&&all(line,'srgbClr')[0].getAttribute('val')==='123456'));
+  assert.equal(strokes.filter(line=>all(line,'srgbClr')[0].getAttribute('val')==='663322').length,2,'double border keeps both strokes');
+  assert.ok(shapes.some(shape=>all(shape,'prstGeom')[0]?.getAttribute('prst')==='ellipse'&&all(shape,'srgbClr').some(color=>color.getAttribute('val')==='448866')));
+});
+
+test('unequal CSS corners and arbitrary clipping still retain exact custom paths',{skip,timeout:30000},async()=>{
+  const result=await convertHtml(Buffer.from('<section data-slide><div style="position:absolute;left:100px;top:100px;width:240px;height:160px;background:#1677aa;border-radius:10px 35px 70px 0"></div><div style="position:absolute;left:450px;top:100px;width:240px;height:160px;background:#aa6611;clip-path:polygon(50% 0,100% 40%,80% 100%,0 80%)"></div></section>'),{executablePath:browser});
+  const zip=await JSZip.loadAsync(result.pptx),doc=parse(await zip.file('ppt/slides/slide1.xml').async('string'));
+  assert.equal(all(doc,'custGeom').length,2);
+  assert.ok(all(doc,'cubicBezTo').length>=2);
+  assert.equal(all(doc,'pic').length,0);
+});

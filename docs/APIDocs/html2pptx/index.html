@@ -2,7 +2,7 @@
 <html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>機能概要・編集可能な要素 | html2pptx API</title><link rel="stylesheet" href="../assets/styles.css"><script src="../assets/app.js" defer></script></head>
 <body data-page="htmlpptx-overview"><a class="skip-link" href="#main-content">本文へ移動</a><div id="site-header"></div><aside id="sidebar" class="sidebar" aria-label="APIナビゲーション"></aside><div id="menu-overlay" class="menu-overlay" hidden></div><main id="main-content" class="main-content" tabindex="-1"><div class="page-layout"><article class="article">
 <p class="eyebrow">HTML → PowerPoint</p><h1>HTMLの資料を、編集できるPowerPointへ。</h1>
-<p class="lead">静的HTMLの配置をブラウザーで計算し、文字・表・図形をPowerPointの要素として出力します。SVGの体制図や構成図も、図形・線・文字へ分解します。元からPNG・JPEGで用意した素材は画像として保持します。</p>
+<p class="lead">HTMLの配置をブラウザーで計算し、文字・表・図形をPowerPointの要素として出力します。対応するCSSアニメーションもPowerPointの動きへ変換します。SVGの体制図や構成図も、図形・線・文字へ分解します。元からPNG・JPEGで用意した素材は画像として保持します。</p>
 <div class="hero-meta"><span class="pill accent">HTML / HTM / ZIP</span><span class="pill">PPTX + report</span><span class="pill">同期HTTP / CLI</span><span class="pill">Flex Consumption · 4 GB</span></div>
 <h2 id="editable">何を編集できるか</h2>
 <p>変換処理は同じAzure Function App内で完結します。同梱したChromiumがHTMLの配置を計算し、その座標・文字・輪郭からPPTXを組み立てます。変換時にLLM、OCR、外部の変換サーバーは呼びません。比較画像の作成に使うLibreOffice等は開発用で、本番のFunctionsには必要ありません。</p>
@@ -28,16 +28,21 @@
   &lt;h1&gt;下期の重点施策&lt;/h1&gt;
 &lt;/section&gt;</code></pre>
 <p>区切りがなければ本文全体を1枚にします。既定寸法は1280×720 CSS px。寸法を変える場合は幅・高さのmetaを両方指定します。自動で文章を要約したり、長いページを複数スライドへ分割したりはしません。はみ出しがあれば入力を調整してください。</p>
+<h2 id="animations">CSSアニメーション</h2>
+<p>通常の<code>@keyframes</code>と<code>animation</code>を解析します。アニメーション名は自由で、変換専用のクラスや属性は不要です。安全に再現できるフェードイン・2Dの移動・拡大縮小・回転を、編集可能な文字・図形・画像のPowerPointアニメーションへ変換します。開始までの遅延と再生時間はスライド開始を基準に反映します。</p>
+<p>原則は1要素に1つ、1回再生の有限アニメーションです。透明度0から1への登場や、中心を基準とする2D変形を対象とします。背景・枠・文字は前後関係を保って一緒に動かせる場合にまとめます。複雑な合成・入れ子・退場などは終端の見た目で固定し、reportの<code>ANIMATION_STATIC_FALLBACK</code>と理由で通知します。無限ループは最初の1回分の終端を採用します。往復指定の<code>alternate</code>は最初の往路まで、逆方向指定は逆方向の終端です。終端が開始と同じ見た目や非表示になる場合も、その状態を保持します。</p>
+<p>ホバー・クリック・スクロールによる利用者の操作は推測しません。入力JavaScriptも実行しません。固定後の見た目に未対応の表現が残れば描画エラーになります。詳しい範囲は<a href="../../../functions/html2pptx/docs/usage.md#cssアニメーション">利用ガイド</a>、入力例は<a href="examples.html#css-animations">3スライドのサンプル</a>を参照してください。</p>
 <h2 id="limits">対応範囲と未対応の表現</h2>
 <p>JavaScript・イベント属性・外部URLの取得・Webフォント取得・iframe・動画などは受け付けません。React等の実行前のソースではなく、表示内容を静的HTMLにして送ります。外部サイトのURLを渡して変換するAPIではありません。</p>
 <p>SVGフィルター、マスク、複雑なクリッピング、3D変形などの未対応表現はエラーで返します。未対応の文字や図解を画像へ置き換えて成功扱いにはしません。一部の細かな描画差はreportの警告で確認できます。</p>
 <p>画像のskew・3D変形・clip-path・影、親による切り抜きやfilter、blur以外のfilter、重なる子要素を親のopacityでまとめて透過する表示には対応しません。詳細と指定方法は<a href="../../../functions/html2pptx/docs/usage.md#画像の変形と重なり">画像の変形と重なり</a>を参照してください。</p>
 <div class="callout warning"><strong>表示の完全一致は保証しません。</strong><br>HTML・SVGの文字はNoto Sans JPに統一して計測・変換します。フォントはPPTXへ埋め込まないため、閲覧端末のフォントで表示が変わることがあります。SVGの文字や図形が編集可能なことと、PowerPointでの表示がブラウザーと完全に一致することは別です。</div>
+<p>macOSのQuick Lookでは、複雑な自由形状が表示されない場合があります。単純なCSSの四角・角丸四角・円はPowerPointの標準図形として保存し、表示互換性を改善しています。見た目は<a href="examples.html#css-animations">掲載PDF・比較画像</a>またはPowerPointで確認してください。</p>
 <h2 id="output">出力と呼び出し方式</h2>
 <pre><code>result.zip
 ├── presentation.pptx
 └── report.json</code></pre>
 <p>同期HTTPでは既定でZIPを返します。<code>format=pptx</code>を指定するとPPTX本体だけを返します。reportにはスライド数、出力した要素、警告、出力のハッシュなどを記録します。現在は同期HTTPとCLIに対応し、非同期HTTP・Queueからの直接依頼は未実装です。</p>
-<div class="cards"><a class="card" href="examples.html"><h3>実務資料の変換例</h3><p>企業発表・決算・体制図などに、図形と生成画像の比較を加えた7資料・20スライド。</p></a><a class="card" href="http.html"><h3>同期HTTP・設定</h3><p>ファイルを送り、PPTXとreportを受け取る。入力形式と上限を確認。</p></a></div>
-<footer class="page-footer"><span>2026-10-30 · Node.js 24 / Chromium / DrawingML</span><a href="../../../functions/html2pptx/docs/usage.md">利用・運用ガイド</a></footer>
+<div class="cards"><a class="card" href="examples.html"><h3>実務資料の変換例</h3><p>企業発表・決算・体制図などに、図形・生成画像・CSSアニメーションを加えた8資料・23スライド。</p></a><a class="card" href="http.html"><h3>同期HTTP・設定</h3><p>ファイルを送り、PPTXとreportを受け取る。入力形式と上限を確認。</p></a></div>
+<footer class="page-footer"><span>2026-11-05 · Node.js 24 / Chromium / DrawingML</span><a href="../../../functions/html2pptx/docs/usage.md">利用・運用ガイド</a></footer>
 </article><aside class="toc"><p class="toc-title">このページの内容</p><nav id="page-toc"></nav></aside></div></main></body></html>

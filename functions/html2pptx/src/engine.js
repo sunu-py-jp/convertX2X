@@ -11,6 +11,8 @@ import { installTextLayoutHook } from './text-layout.js';
 import { installSvgPlacementHook } from './svg-placement.js';
 import { FONT_FAMILY, normalizeDocumentFonts } from './fonts.js';
 import { poolDocumentImages, restoreDocumentImages } from './image-sources.js';
+import { prepareAnimations, freezeAnimations } from './animations.js';
+import { installAnimationMappingHook } from './animation-mapping.js';
 
 const CSP="default-src 'none'; script-src 'none'; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; frame-src about: data: blob:; connect-src 'none'; base-uri 'none'; form-action 'none'";
 
@@ -23,7 +25,7 @@ export async function convertInWorker(input,{filename,limits,scratch,executableP
     onBrowser?.(browser.process()?.pid);
     const page=await securedPage(browser,prepared.width,prepared.height);
     const fonts=await trustedFontCss();
-    const trusted=`<meta http-equiv="Content-Security-Policy" content="${CSP}"><style>${fonts}html,body{margin:0;padding:0}html{background:white;color-scheme:light}body{font-family:'${FONT_FAMILY}',sans-serif}[data-slide]{box-sizing:border-box;width:${prepared.width}px!important;height:${prepared.height}px!important;position:relative;flex-shrink:0}*,*::before,*::after{animation:none!important;transition:none!important;caret-color:transparent!important}</style>`;
+    const trusted=`<meta http-equiv="Content-Security-Policy" content="${CSP}"><style>@layer convertX2XAnimationHold{*,*::before,*::after{animation-play-state:paused!important;transition-property:none!important}}${fonts}html,body{margin:0;padding:0}html{background:white;color-scheme:light}body{font-family:'${FONT_FAMILY}',sans-serif}[data-slide]{box-sizing:border-box;width:${prepared.width}px!important;height:${prepared.height}px!important;position:relative;flex-shrink:0}*,*::before,*::after{caret-color:transparent!important}</style>`;
     // Insert through the HTML parser: head attributes and quoted '>' must not bypass CSP/fonts.
     const document=prepared.document||parse5.parse(prepared.html);
     // A reused 3MB picture can otherwise produce a 100MB CDP HTML command. Keep
@@ -38,15 +40,21 @@ export async function convertInWorker(input,{filename,limits,scratch,executableP
     await page.evaluate(restoreDocumentImages,sourceImages);
     await page.evaluate(normalizeDocumentFonts, FONT_FAMILY);
     await page.evaluate(async()=>{await document.fonts.ready;await Promise.all([...document.images].map(image=>image.decode().catch(()=>{})));});
+    const animations=await page.evaluate(prepareAnimations).catch(error=>{
+      if(error.message?.startsWith('UNSUPPORTED_ANIMATION:'))throw new ConversionError('UNSUPPORTED_ANIMATION',error.message.split('\n')[0].replace(/^UNSUPPORTED_ANIMATION:\s*/,''),422);
+      throw error;
+    });
     const previews=[];
     if(captureHtml)for(const root of await page.$$('[data-slide]'))previews.push(Buffer.from(await root.screenshot({type:'png'})));
     await page.evaluate(materializePseudoElements).catch(error=>{
       if(error.message?.startsWith('UNSUPPORTED_LAYOUT:'))throw new ConversionError('UNSUPPORTED_LAYOUT',error.message.split('\n')[0].slice(20,500),422);
       throw error;
     });
+    await page.evaluate(freezeAnimations);
     await page.evaluate(installCssNativeHook);
     await page.evaluate(installSvgPlacementHook);
     await page.evaluate(installTextLayoutHook);
+    await page.evaluate(installAnimationMappingHook);
     const scan=await page.evaluate((imageLimits)=>{
       const slides=[...document.querySelectorAll('[data-slide]')];
       const issues=[],imageWarnings=[];
@@ -181,11 +189,14 @@ export async function convertInWorker(input,{filename,limits,scratch,executableP
       throw error;
     });
     if(!raw) throw new ConversionError('OUTPUT_LIMIT','PPTXのサイズが上限を超えています。',413);
-    const result=await finalizePptx(Buffer.from(raw,'base64'),page,{layouts:scan.layouts,imageSources:scan.imageSources,limits});
+    const animationOrders=await page.evaluate(()=>globalThis.__convertX2XAnimationOrders||[]);
+    const result=await finalizePptx(Buffer.from(raw,'base64'),page,{layouts:scan.layouts,imageSources:scan.imageSources,limits,
+      animationEffects:animations.effects,animationOrders,width:prepared.width,height:prepared.height});
     return {pptx:result.pptx,previews,report:{version:1,converter:'html2pptx',slideCount:result.slides.length,
       width:prepared.width,height:prepared.height,slides:result.slides,elapsedMs:Date.now()-started,
       outputBytes:result.pptx.length,sha256:createHash('sha256').update(result.pptx).digest('hex'),
-      warnings:[...prepared.warnings,...result.warnings,...scan.imageWarnings,{code:'FONTS_NOT_EMBEDDED',message:'PPTXにはフォントを埋め込んでいません。閲覧環境のフォントにより表示が変わる場合があります。'}],
+      animations:{policy:'native-or-static',nativeEffects:result.nativeEffects,staticEffects:[...(animations.staticEffects||[]),...result.fallbackEffects]},
+      warnings:[...prepared.warnings,...animations.warnings,...result.warnings,...scan.imageWarnings,{code:'FONTS_NOT_EMBEDDED',message:'PPTXにはフォントを埋め込んでいません。閲覧環境のフォントにより表示が変わる場合があります。'}],
       runtime:{node:process.version,chromium:await browser.version()},
       fontFamily:FONT_FAMILY,fontPolicy:'uniform',imagePolicy:'original-images-only',svgPolicy:'editable-native-shapes-and-text'}};
   } finally {await closeBrowser(browser);}

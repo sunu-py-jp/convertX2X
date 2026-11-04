@@ -1,0 +1,234 @@
+{
+  "version": 1,
+  "converter": "html2pptx",
+  "slideCount": 3,
+  "width": 1280,
+  "height": 720,
+  "slides": [
+    {
+      "slide": 1,
+      "textBoxes": 18,
+      "shapes": 26,
+      "tables": 0,
+      "images": 0,
+      "convertedSvgCount": 5,
+      "svg": {
+        "shapes": 8,
+        "text": 0,
+        "gradients": 0,
+        "images": 0
+      }
+    },
+    {
+      "slide": 2,
+      "textBoxes": 9,
+      "shapes": 16,
+      "tables": 0,
+      "images": 1,
+      "convertedSvgCount": 3,
+      "svg": {
+        "shapes": 7,
+        "text": 2,
+        "gradients": 0,
+        "images": 0
+      }
+    },
+    {
+      "slide": 3,
+      "textBoxes": 10,
+      "shapes": 14,
+      "tables": 0,
+      "images": 0,
+      "convertedSvgCount": 4,
+      "svg": {
+        "shapes": 4,
+        "text": 0,
+        "gradients": 0,
+        "images": 0
+      }
+    }
+  ],
+  "elapsedMs": 3322,
+  "outputBytes": 75275,
+  "sha256": "a1592e86db1ba421a104b502492c3811cd897829ce5775ede7f52861ac365d5d",
+  "animations": {
+    "policy": "native-or-static",
+    "nativeEffects": [
+      {
+        "id": "animation-1",
+        "slide": 1,
+        "animationName": "cardArrival",
+        "element": {
+          "tag": "div",
+          "id": ""
+        },
+        "sampling": {
+          "method": "computed-css-timing",
+          "sampleCount": 33,
+          "easingApproximation": true
+        },
+        "status": "native",
+        "targetShapeId": "33",
+        "channels": [
+          "opacity",
+          "y"
+        ],
+        "durationMs": 1200,
+        "delayMs": 0,
+        "keyframeCount": 33
+      },
+      {
+        "id": "animation-2",
+        "slide": 1,
+        "animationName": "cardArrival",
+        "element": {
+          "tag": "div",
+          "id": ""
+        },
+        "sampling": {
+          "method": "computed-css-timing",
+          "sampleCount": 33,
+          "easingApproximation": true
+        },
+        "status": "native",
+        "targetShapeId": "34",
+        "channels": [
+          "opacity",
+          "y"
+        ],
+        "durationMs": 1200,
+        "delayMs": 300,
+        "keyframeCount": 33
+      },
+      {
+        "id": "animation-3",
+        "slide": 1,
+        "animationName": "cardArrival",
+        "element": {
+          "tag": "div",
+          "id": ""
+        },
+        "sampling": {
+          "method": "computed-css-timing",
+          "sampleCount": 33,
+          "easingApproximation": true
+        },
+        "status": "native",
+        "targetShapeId": "35",
+        "channels": [
+          "opacity",
+          "y"
+        ],
+        "durationMs": 1200,
+        "delayMs": 600,
+        "keyframeCount": 33
+      },
+      {
+        "id": "animation-4",
+        "slide": 2,
+        "animationName": "screenArrival",
+        "element": {
+          "tag": "img",
+          "id": ""
+        },
+        "sampling": {
+          "method": "computed-css-timing",
+          "sampleCount": 33,
+          "easingApproximation": true
+        },
+        "status": "native",
+        "targetShapeId": "22",
+        "channels": [
+          "x",
+          "rotation"
+        ],
+        "durationMs": 1400,
+        "delayMs": 0,
+        "keyframeCount": 33
+      },
+      {
+        "id": "animation-5",
+        "slide": 2,
+        "animationName": "flowArrival",
+        "element": {
+          "tag": "div",
+          "id": ""
+        },
+        "sampling": {
+          "method": "computed-css-timing",
+          "sampleCount": 33,
+          "easingApproximation": true
+        },
+        "status": "native",
+        "targetShapeId": "23",
+        "channels": [
+          "scaleX",
+          "scaleY"
+        ],
+        "durationMs": 1000,
+        "delayMs": 400,
+        "keyframeCount": 33
+      }
+    ],
+    "staticEffects": [
+      {
+        "id": "animation-6",
+        "reason": "unsupported-properties",
+        "slide": 3,
+        "element": {
+          "tag": "div",
+          "id": ""
+        },
+        "animationName": "approvalStatus"
+      },
+      {
+        "id": "animation-7",
+        "reason": "infinite-animation",
+        "slide": 3,
+        "element": {
+          "tag": "div",
+          "id": ""
+        },
+        "animationName": "decorativeFloat"
+      }
+    ]
+  },
+  "warnings": [
+    {
+      "code": "ANIMATION_STATIC_FALLBACK",
+      "id": "animation-6",
+      "reason": "unsupported-properties",
+      "slide": 3,
+      "element": {
+        "tag": "div",
+        "id": ""
+      },
+      "animationName": "approvalStatus",
+      "message": "PPTXのアニメーションに変換できないCSSプロパティを含むため、終端の見た目で固定しました。"
+    },
+    {
+      "code": "ANIMATION_STATIC_FALLBACK",
+      "id": "animation-7",
+      "reason": "infinite-animation",
+      "slide": 3,
+      "element": {
+        "tag": "div",
+        "id": ""
+      },
+      "animationName": "decorativeFloat",
+      "message": "無限アニメーションは、再生方向を考慮した1回分の終端の見た目で固定しました。"
+    },
+    {
+      "code": "FONTS_NOT_EMBEDDED",
+      "message": "PPTXにはフォントを埋め込んでいません。閲覧環境のフォントにより表示が変わる場合があります。"
+    }
+  ],
+  "runtime": {
+    "node": "v24.2.0",
+    "chromium": "Chrome/156.0.8078.80"
+  },
+  "fontFamily": "Noto Sans JP",
+  "fontPolicy": "uniform",
+  "imagePolicy": "original-images-only",
+  "svgPolicy": "editable-native-shapes-and-text"
+}

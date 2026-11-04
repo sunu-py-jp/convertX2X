@@ -1,4 +1,4 @@
-/** Trusted browser hook: turn CSS geometry into generic SVG paths before native DrawingML export. */
+/** Trusted browser hook: preserve CSS primitives and paths for native DrawingML export. */
 export function installCssNativeHook() {
   const ns='http://www.w3.org/2000/svg';
   const esc=v=>String(v).replaceAll('&','&amp;').replaceAll('"','&quot;').replaceAll('<','&lt;');
@@ -210,8 +210,23 @@ export function installCssNativeHook() {
       }
     }
     if(!bg&&!hasBorder&&!hasGradient||s.boxShadow!=='none')return null;
-    const local=rounded(0,0,w,h,r);let content=bg?`<path d="${esc(clip?.path||local)}" fill="${esc(s.backgroundColor)}" fill-rule="${clip?.rule||'nonzero'}"/>`:'';
-    if(hasGradient)content+=gradient(s.backgroundImage,w,h)+`<path d="${esc(clip?.path||local)}" fill="url(#css-fill)" fill-rule="${clip?.rule||'nonzero'}"/>`;
+    // Keep the primitive when CSS describes one. Apple previews omit some valid
+    // custom DrawingML paths, whereas rect/roundRect/ellipse remain visible.
+    // Unequal corners, clipping and other general contours still use exact paths.
+    const outline=(x,y,width,height,corners,attributes)=>{
+      const [rx,ry]=corners[0],uniform=corners.every(pair=>Math.abs(pair[0]-rx)<1e-6&&Math.abs(pair[1]-ry)<1e-6);
+      if(uniform&&width>0&&height>0){
+        if(rx<=0||ry<=0)return `<rect x="${x}" y="${y}" width="${width}" height="${height}" ${attributes}/>`;
+        // A dashed ellipse starts at a different point than a rounded box.
+        // Preserve that dash phase with rect/path geometry for dashed outlines.
+        if(Math.abs(rx-width/2)<1e-6&&Math.abs(ry-height/2)<1e-6&&!attributes.includes('stroke-dasharray'))return `<ellipse cx="${x+width/2}" cy="${y+height/2}" rx="${width/2}" ry="${height/2}" ${attributes}/>`;
+        return `<rect x="${x}" y="${y}" width="${width}" height="${height}" rx="${rx}" ry="${ry}" ${attributes}/>`;
+      }
+      return `<path d="${esc(rounded(x,y,width,height,corners))}" ${attributes}/>`;
+    };
+    const background=fill=>clip?`<path d="${esc(clip.path)}" fill="${esc(fill)}" fill-rule="${clip.rule}"/>`:outline(0,0,w,h,r,`fill="${esc(fill)}"`);
+    let content=bg?background(s.backgroundColor):'';
+    if(hasGradient)content+=gradient(s.backgroundImage,w,h)+background('url(#css-fill)');
     if(hasBorder){
       const uniform=sides.every(b=>b.width===sides[0].width&&b.color===sides[0].color&&b.style===sides[0].style);
       if(uniform){
@@ -220,8 +235,8 @@ export function installCssNativeHook() {
         const dash=dashPattern(b.style,b.width,pathLength(d),true);
         if(!['solid','dashed','dotted','double'].includes(b.style))fail('立体的なCSS枠線には対応していません。');
         if(b.style==='double'){
-          for(const inset of [b.width/6,b.width*5/6])content+=`<path d="${esc(rounded(inset,inset,w-2*inset,h-2*inset,r.map(p=>p.map(v=>Math.max(0,v-inset)))))}" fill="none" stroke="${esc(b.color)}" stroke-width="${b.width/3}"/>`;
-        }else content+=`<path d="${esc(d)}" fill="none" stroke="${esc(b.color)}" stroke-width="${b.width}" ${dash}/>`;
+          for(const inset of [b.width/6,b.width*5/6])content+=outline(inset,inset,w-2*inset,h-2*inset,r.map(p=>p.map(v=>Math.max(0,v-inset))),`fill="none" stroke="${esc(b.color)}" stroke-width="${b.width/3}"`);
+        }else content+=outline(half,half,Math.max(0,w-b.width),Math.max(0,h-b.width),inner,`fill="none" stroke="${esc(b.color)}" stroke-width="${b.width}" ${dash}`);
       }else{
         if(r.some(p=>p.some(v=>v>0)))fail('角丸と辺ごとに異なる枠線の組合せには対応していません。');
         const [t,rr,b,l]=sides.map(b=>b.width);

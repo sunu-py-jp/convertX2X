@@ -83,8 +83,8 @@ for (const [name, source, code] of [
   ['escaped CSS URL function', '<style>.x{background:u\\72l("https://example.com/a.png")}</style>', 'UNSUPPORTED_CSS'],
   ['custom property network request', '<style>:root{--image:url(https://example.com/a.png)}.x{background:var(--image)}</style>', 'EXTERNAL_RESOURCE_FORBIDDEN'],
   ['external font', '<style>@font-face{font-family:x;src:url(font.ttf)}</style>', 'UNSUPPORTED_CSS'],
-  ['animation', '<div style="animation:spin 1s">x</div>', 'UNSUPPORTED_CSS'],
-  ['transition', '<div style="transition:color 1s">x</div>', 'UNSUPPORTED_CSS'],
+  ['animation resource URL', '<style>@keyframes x{to{background:url(https://example.com/x.png)}}</style>', 'EXTERNAL_RESOURCE_FORBIDDEN'],
+  ['animation unsafe function', '<style>@keyframes x{to{width:expression(alert(1))}}</style>', 'UNSUPPORTED_CSS'],
   ['SVG external use', '<svg><use href="https://example.com/a.svg#x"/></svg>', 'EXTERNAL_RESOURCE_FORBIDDEN'],
   ['SVG foreignObject', '<svg><foreignObject><div>content</div></foreignObject></svg>', 'UNSUPPORTED_SVG'],
   ['SVG image reference', `<svg><image href="${PNG_URI}"/></svg>`, 'UNSUPPORTED_SVG'],
@@ -94,6 +94,13 @@ for (const [name, source, code] of [
 ]) {
   test(`rejects ${name}`, async () => rejects(prepareInput(html(source)), code));
 }
+
+test('finite CSS keyframes and transitions are validated without allowing scripts or external resources',async()=>{
+  const result=await prepareInput(html('<style>@keyframes arbitrary-name{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:none}}.x{animation:arbitrary-name 1s .2s both;transition:color .3s}</style><p class="x">本文</p>'));
+  assert.match(result.html,/@keyframes arbitrary-name/);
+  assert.match(result.html,/animation:arbitrary-name/);
+  assert.match(result.html,/transition:color/);
+});
 
 test('CSS embedded from ZIP cannot break out of its style element', async () => {
   const input = await zip({ 'index.html': '<link rel="stylesheet" href="x.css"><div>安全な本文</div>', 'x.css': '.x:before{content:"</style><img src=https://example.com/pixel.png><script>alert(1)</script>"}' });
