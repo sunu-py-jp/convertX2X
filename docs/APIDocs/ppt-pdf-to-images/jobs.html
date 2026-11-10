@@ -23,7 +23,7 @@
 
       <h2 id="prerequisites">利用条件と処理の流れ</h2>
       <ol class="steps">
-        <li>管理者が <code>CONVERSION_STORAGE_CONNECTION_STRING</code> とQueueトリガーの派生設定を用意する。</li>
+        <li>管理者が制御用Storageの接続文字列、またはManaged Identity用のBlob・Queue両方のURIと、Queueトリガーの派生設定を用意する。</li>
         <li><code>POST /api/jobs</code> でファイルを登録する。</li>
         <li>返された <code>statusUrl</code> を <code>Retry-After</code> に従って確認する。</li>
         <li><code>succeeded</code> になったら <code>resultUrl</code> を取得する。</li>
@@ -143,7 +143,7 @@ curl --fail-with-body \
       <p>キャンセル・削除・Webhook通知のAPIはありません。Playgroundで待機を停止しても、受付済みの処理は継続します。再試行と保持期間については<a href="queue.html#retry">Queueの運用</a>を参照してください。</p>
 
       <footer class="page-footer">
-        <p>最終確認：2026-09-13。READMEとHTTP・設定・変換・ジョブ処理の実装を照合しています。</p>
+        <p>資料照合：2026-11-09。READMEとHTTP・設定・変換・ジョブ処理の実装を照合しています。</p>
         <p><a href="../../../functions/ppt-pdf-to-images/docs/usage.md">利用ガイド</a> · <a href="../../ppt-pdf-to-images.md">開発者ガイド</a></p>
       </footer>
     </article>

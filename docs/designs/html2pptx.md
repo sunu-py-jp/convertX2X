@@ -1,6 +1,6 @@
 # html2pptx 設計
 
-2026-10-30更新。静的HTML/CSSの見た目をできるだけ保ち、文字・図形・表をPowerPoint上で編集できる形へ変換する。元のPNG/JPEGは画像として保持し、文字・図形をスライド画像へ置き換えることで代替しない。
+2026-11-09更新。HTML/CSSの見た目をできるだけ保ち、文字・図形・表をPowerPoint上で編集できる形へ変換する。対応するCSSアニメーションは動きを残し、未対応の動きは終端で固定する。元のPNG/JPEGは画像として保持し、文字・図形をスライド画像へ置き換えることで代替しない。日付付きのAzure検証は当時の記録として残す。
 
 現行実装は独立した `functions/html2pptx/` のNode.js 24アプリで、同期HTTP・CLIに対応する。Azure Functions Flex Consumption・4096 MBを配置先とする。非同期HTTP・直接Queueは未実装。API・設定値は [利用ガイド](../../functions/html2pptx/docs/usage.md)、ファイルの役割と検証手順は [開発者ガイド](../html2pptx.md) を参照する。
 
@@ -14,6 +14,7 @@
 | 寸法 | 既定1280×720 CSS px。幅・高さのmetaを両方指定して変更可能 |
 | 編集対象 | HTML/SVGの文字、対応する装飾、表、CSS/SVGの輪郭・線・塗り |
 | 元画像 | PPTXへ画像として埋め込み。移動・サイズ変更・差し替え可能 |
+| アニメーション | 対応するCSS keyframesをPowerPointの動きへ変換。同じ要素の複数指定はすべて対応できる場合のみ合成し、未対応を含めば要素全体を終端で固定 |
 | 出力 | `presentation.pptx` と `report.json` のZIP。HTTPの `format=pptx` でPPTX本体も返せる |
 | 入口 | `POST /api/convert`、軽量Playground、capabilities、CLI |
 | 外部取得・実行 | URLからのHTML・素材取得、入力JavaScript、イベント属性は受け付けない |
@@ -28,14 +29,24 @@ flowchart LR
     V --> B[同梱Chromiumで配置を計算]
     B --> T[文字の行・書式区間を計測]
     B --> G[CSS・SVGの輪郭と変形を正規化]
+    B --> A[CSSアニメーションの計測・合成と終端の固定]
     T --> P[編集可能なPPTXを生成]
     G --> P
+    A --> P
     P --> R[出力検査・report生成]
 ```
 
 Puppeteer Core＋Chromiumで実際のCSS配置を計算し、固定バージョンのdom-to-pptx／PptxGenJSによる出力を補正する。dom-to-pptxがSVGを画像オブジェクトとして出す部分は、そのまま成果物に残さず、DrawingMLの図形・文字へ置換する。変換器へのフックは元バンドルのSHA-256と挿入位置を確認してから適用し、依存更新時に無条件で継続しない。
 
 Java/POIは本番の変換エンジンとして使用しない。検証用PPTX描画に使うPOI/PDFBoxは開発ツールであり、Functionsの実行依存とは分離する。
+
+### アニメーション
+
+CSS `@keyframes` のフェードイン・2D移動・拡縮・回転をブラウザーで計測し、遅延・時間とともにネイティブのタイムラインへ変換する。同じ要素への複数指定はCSSの合成規則に従って1つの動きにまとめ、未対応の指定・合成結果があれば全体を固定する。固定した場合に対応する動きだけを残すことはしない。
+
+有限の動きは方向を考慮した終端、無限ループは最初の1回分の終端へ固定する。元のfill-modeがnoneでも終端を保持し、透明な終端は非表示になる。実時間の経過を待たず、transitionや操作依存の完成状態を推測しない。固定した静止状態も既存の描画検査に通す。
+
+reportの `animations.nativeEffects`・`staticEffects` と警告に判定を記録する。複数指定の由来は `sourceAnimations`、ブラウザー側で複数指定をまとめて固定した原因は `groupId`・`causeAnimationId`・`reason` で追跡できる。実装とテストの分担は[開発者ガイド](../html2pptx.md#cssアニメーションの変換)、入力の詳細は[利用ガイド](../../functions/html2pptx/docs/usage.md#cssアニメーション)を参照する。
 
 ### CSS・SVGの図形
 
@@ -104,7 +115,7 @@ HTML/CSSはparse5・css-treeで構文解析する。ZIPは展開中の実バイ�
 
 Azure上の変換APIはFunctionsキーで認証する。同一ワーカーの別のHTTP変換が処理中なら429と `Retry-After: 10` を返す。ワーカー内の制御は全インスタンスを通じた直列実行やFIFOを保証するものではない。
 
-reportのversionは1。スライド数・寸法、スライド別の文字／図形／表／画像数、SVG変換数、警告、変換時間、出力サイズ・SHA-256、Node/Chromiumのバージョン等を含む。HTML全文や資格情報を診断へ転記しない。
+reportのversionは1。スライド数・寸法、スライド別の文字／図形／表／画像数、SVG変換数、アニメーションの変換・固定結果、警告、変換時間、出力サイズ・SHA-256、Node/Chromiumのバージョン等を含む。HTML全文や資格情報を診断へ転記しない。
 
 上限は [利用ガイドの設定表](../../functions/html2pptx/docs/usage.md#設定と上限) を正とし、入力から引き上げられない。入力20MiB・展開100MiB・50枚等の既定値は、あらゆる入力が4GBで処理できる保証ではない。Node、Chromium、Functionsホスト、入力・HTTP応答のバッファは同じインスタンスのメモリーを使う。
 
@@ -116,9 +127,9 @@ reportのversionは1。スライド数・寸法、スライド別の文字／図
 
 ## 検証と配布
 
-企業発表、決算、30ノードの体制図、API構成、プロジェクト計画の5資料に、図形比較5枚と生成画像の比較5枚を加え、7資料・20スライドを掲載する。画像例は同じ写真を28配置し、ぼかしと重なり順を含む26パネルを実変換・比較した。作業結果は `functions/html2pptx/output/final/`、参照用資料は [実際の変換例](../APIDocs/html2pptx/examples.html) に置く。
+企業発表、決算、30ノードの体制図、API構成、プロジェクト計画の5資料に、図形比較5枚・生成画像の比較5枚・CSSアニメーション4枚を加え、8資料・24スライドを掲載する。`functions/html2pptx/examples/catalog.json` の7資料・19スライドに、`examples/visual-fidelity.html` の図形比較5枚を加えた構成である。画像例は同じ写真を28配置し、ぼかしと重なり順を含む26パネルを実変換・比較した。アニメーション例は複数指定の合成と全体固定も含む。参照用資料は [実際の変換例](../APIDocs/html2pptx/examples.html) に置く。
 
-文字・元画像の欠落、SVG画像の残存、表行高、IDの一意性、親子の変形、疑似要素、入力境界、タイムアウト等を検査する。生成PPTXのXMLに編集可能な要素が存在することと、PowerPoint本体の表示・編集を確認することは区別する。
+文字・元画像の欠落、SVG画像の残存、表行高、IDの一意性、親子の変形、疑似要素、アニメーションのXMLと固定理由、入力境界、タイムアウト等を検査する。生成PPTXのXMLに編集可能な要素が存在すること、静止描画、PowerPoint本体の表示・編集・再生の確認は区別する。Quick Lookで自由形状が欠落する場合もあり、静止プレビューだけで変換失敗や動きの再現性を判定しない。
 
 ピクセル比較はChromiumの入力描画と、LibreOffice→PDF→PDFBoxによるPPTX描画を同解像度で比較する。POIは副比較。差分・重ね合わせ・誤差指標を保存し、使用フォントとレンダラーを明記する。Microsoft PowerPoint本体のスクリーンショットではなく、フォント描画やアンチエイリアスの差も含む。
 

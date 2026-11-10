@@ -84,7 +84,7 @@ curl --fail-with-body \
 `UseDevelopmentStorage=true` の場合、起動スクリプトはBlob `10000`、Queue `10001` を
 確認し、Azuriteが停止中なら起動します。既存プロセスがあればそのまま使います。
 Functions起動前に `md2pdf-jobs` コンテナー、処理Queue、毒Queueを作成します。
-非同期設定が空ならQueue関数と保守タイマーを無効化して同期HTTPだけ起動します。
+制御用Storageの接続文字列もMI用のBlob/Queue設定もない場合は、Queue関数と保守タイマーを無効化して同期HTTPだけ起動します。
 
 ## HTTP API
 
@@ -128,7 +128,26 @@ Linux / Java 21の従量課金Function Appを作成して配置します。
 
 接続文字列の代わりに `CONVERSION_STORAGE__blobServiceUri` と
 `CONVERSION_STORAGE__queueServiceUri` を設定するとManaged Identityを使えます。
-別Storage・結果通知の設定は[直接Queueガイド](direct-queue.md)を参照してください。
+同じ登録で接続文字列とMI設定を混在させません。どちらの認証方式も未設定なら非同期は無効です。
+
+Queueトリガーの接続名は `CONVERSION_QUEUE_CONNECTION_STRING` です。接続文字列方式では
+制御用と同じ値を設定し、MI方式ではその接頭辞へ `__queueServiceUri`・
+`__credential=managedidentity`・任意の `__clientId` を設定して単一キーを削除します。
+Queue関数と保守タイマーの有効/無効設定もホスト起動前に必要です。
+
+既存Function Appへこれらを設定するには、制御用Storageの設定をシェルの環境変数へ
+用意し、次の配置補助を実行します。`local.settings.json` は読みません。
+
+```shell
+python3 scripts/configure_azure_async.py --resource-group '<resource-group>' --name '<function-app-name>'
+```
+
+補助は接続設定と `AzureWebJobs.ProcessConversion.Disabled`・
+`AzureWebJobs.PoisonConversion.Disabled`・`AzureWebJobs.MaintainConversions.Disabled` を
+導出します。制御用設定を渡さない場合は非同期を無効にします。ホスト用の
+`AzureWebJobsStorage` またはそのIdentity設定は別途用意してください。
+別Storage・結果通知・Base64送信は[直接Queueガイド](direct-queue.md)、
+MIの権限・ネットワークは[共通の配置手順](../../../docs/development.md#8-managed-identity閉域storage結果通知)を参照してください。
 
 ## ライセンス
 

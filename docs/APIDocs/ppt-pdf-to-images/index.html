@@ -28,7 +28,7 @@
         <a class="card" href="jobs.html#submit-job"><h3>非同期HTTP</h3><p>ファイルをPOSTしてジョブIDを受け取り、状態と結果を別のAPIで取得します。</p></a>
         <a class="card" href="queue.html#request-json"><h3>直接Queue</h3><p>入力をBlobへ保存し、JSONで依頼します。入出力Storageと、ZIP／個別画像の保存を指定できます。</p></a>
       </div>
-      <p>非同期HTTPと直接Queueには <code>CONVERSION_STORAGE_CONNECTION_STRING</code> の設定が必要です。Playgroundを使わずに、外部システムだけで連携できます。</p>
+      <p>非同期HTTPと直接Queueには、制御用Storageの接続文字列、またはManaged Identity用のBlob・Queue両方のURIと、Queueトリガーの設定が必要です。<a href="settings.html#async-switch">非同期の有効化</a>を参照してください。Playgroundを使わずに、外部システムだけで連携できます。</p>
 
       <h2 id="supported-input">対応するファイル</h2>
       <div class="table-wrap"><table>
@@ -94,7 +94,7 @@
       <p>この機能に <code>/api/capabilities</code> はありません。公開設定はすべての上限や対応形式を列挙するAPIではありません。</p>
 
       <footer class="page-footer">
-        <p>最終確認：2026-09-13。READMEとHTTP・設定・変換・ジョブ処理の実装を照合しています。</p>
+        <p>資料照合：2026-11-09。READMEとHTTP・設定・変換・ジョブ処理の実装を照合しています。</p>
         <p><a href="../../../functions/ppt-pdf-to-images/docs/usage.md">利用ガイド</a> · <a href="../../ppt-pdf-to-images.md">開発者ガイド</a></p>
       </footer>
     </article>

@@ -27,7 +27,7 @@
         <li>制御用StorageのQueue <code>conversion-jobs</code> へ、次のversion付きJSONを送信する。</li>
         <li>ワーカーが作成する状態を確認し、成功した試行の結果を取得する。</li>
       </ol>
-      <p>入力・出力が別アカウントでも、Queueと状態Blobは <code>CONVERSION_STORAGE_CONNECTION_STRING</code> の制御用Storageに置きます。ファイル本体やBase64化した文書データをQueueへ含めません。</p>
+      <p>入力・出力が別アカウントでも、Queueと状態Blobは接続文字列またはManaged Identityで設定した制御用Storageに置きます。<a href="settings.html#async-switch">非同期の有効化</a>を参照してください。ファイル本体やBase64化した文書データをQueueへ含めません。</p>
 
       <h2 id="request-json">依頼JSON</h2>
       <p>次は、既定のStorageで全ページを個別PNGへ保存する例です。UUID、入力パス、コンテナー名は依頼ごとに用意します。</p>
@@ -161,7 +161,7 @@ queue.sendMessage(json); // jsonはUTF-8の依頼JSON文字列</code></pre>
         </tbody>
       </table></div>
       <p>JSONの登録名は <code>[a-z][a-z0-9_]{0,31}</code>、環境変数の接尾辞はその大文字表記です。<code>default</code> は予約名です。入力専用の登録は出力へ流用できず、逆も同様です。</p>
-      <p>登録はアカウント単位で、コンテナー単位の許可リストではありません。登録名の役割分離はStorage自体の権限を狭めません。入力の読み取り、出力の書き込み・コンテナー作成、結果APIを使う場合は出力の読み取り権限を、実際の接続にも付与します。</p>
+      <p>登録はアカウント単位で、コンテナー単位の許可リストではありません。登録名の役割分離はStorage自体の権限を狭めません。入力の読み取り、出力の書き込み、結果APIを使う場合は出力の読み取り権限を、実際の接続にも付与します。既定の<code>CONVERSION_CREATE_RESOURCES=true</code>ではコンテナー・Queueの作成権限も必要です。<code>false</code>では必要なリソースを事前作成し、ワーカーによる作成を省略するため、その作成操作の権限は不要です。</p>
 
       <h2 id="retry">重複配送・再試行・保持期間</h2>
       <ul>
@@ -207,7 +207,7 @@ queue.sendMessage(json); // jsonはUTF-8の依頼JSON文字列</code></pre>
 <p>結果と状態の保持期間は既定では無期限です。保持設定を有効にすると、アプリが所有するファイルだけを清掃します。清掃済みの結果取得は<code>410 JOB_RESULT_EXPIRED</code>です。状態を削除した後は同じjobIdの重複判定も終了します。</p>
 <p>設定・権限・Private Endpoint・保持運用は<a href="../../development.md#8-managed-identity閉域storage結果通知">共通の配置・運用手順</a>、詳細な契約は<a href="../../../functions/ppt-pdf-to-images/docs/direct-queue.md#version-2入力版付加情報結果通知">直接Queueガイド</a>を参照してください。未登録の入力・出力・通知先は使用できません。</p>
 <footer class="page-footer">
-        <p>最終確認：2026-09-13。READMEとHTTP・設定・変換・ジョブ処理の実装を照合しています。</p>
+        <p>資料照合：2026-11-09。READMEとHTTP・設定・変換・ジョブ処理の実装を照合しています。</p>
         <p><a href="../../../functions/ppt-pdf-to-images/docs/usage.md">利用ガイド</a> · <a href="../../ppt-pdf-to-images.md">開発者ガイド</a></p>
       </footer>
     </article>

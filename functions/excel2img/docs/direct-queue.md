@@ -1,7 +1,11 @@
 # excel2img 直接Queue連携
 
-入力をBlobへ保存してから、`excel2img-jobs` QueueへUTF-8 JSONを送ります。
+入力をBlobへ保存してから、`excel2img-jobs` QueueへUTF-8 JSONをBase64で1回エンコードして送ります。
 ファイル本体・SAS・接続文字列はメッセージへ入れません。
+
+デコード後のJSONは最大48KiBです。Java SDKでは `QueueMessageEncoding.BASE64` を設定し、
+JSON文字列をそのまま `sendMessage` へ渡します。`host.json` の `messageEncoding: "base64"` により、
+Functionsホストがデコードしてワーカーへ渡します。自分でBase64化した文字列をSDKで再度エンコードしないでください。
 
 ```json
 {
@@ -55,5 +59,10 @@ Storageは `default` または事前登録した別名だけを指定します�
 - 出力：`CONVERSION_OUTPUT_STORAGE_<ALIAS>` または `__blobServiceUri`
 - 結果Queue：`CONVERSION_RESULT_QUEUE_<ALIAS>__queueName` と接続設定
 
+制御用Storageは `CONVERSION_STORAGE_CONNECTION_STRING`、またはManaged Identity用の
+`CONVERSION_STORAGE__blobServiceUri` と `CONVERSION_STORAGE__queueServiceUri` の両方で設定します。
+同じ接続で接続文字列とManaged Identity設定を混在させません。Queueトリガー用の派生設定も必要です。
 Managed Identity利用時は対象StorageのBlob/Queueデータ権限が必要です。
+`CONVERSION_CREATE_RESOURCES=false` では必要なコンテナー・Queueを事前作成し、アプリによる作成を省略します。
+この場合、リソース作成のための権限は不要ですが、入力・状態・結果・通知に必要な読み書き権限は必要です。
 詳細は [利用ガイド](usage.md) と [共通の配置手順](../../../docs/development.md) を参照してください。

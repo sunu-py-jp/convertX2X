@@ -19,11 +19,11 @@
 <h1>設定・上限・エラー</h1>
 <p class="lead">接続設定、11種類の変換上限、ホストの同時実行設定と、失敗時の確認方法をまとめます。</p>
 <h2 id="configuration">設定の読み込み</h2>
-<p>AzureではFunction Appのアプリ設定、ローカルでは起動スクリプトと <code>local.settings.json</code> のValuesを使います。上限は未設定・空白なら既定値です。指定する場合は正の整数にし、件数のint項目はJavaのint範囲内に収めます。不正な設定値は起動・設定読み込み時のエラーになり、既定値へ黙って戻りません。</p>
+<p>AzureではFunction Appのアプリ設定、ローカルでは起動スクリプトと <code>local.settings.json</code> のValuesを使います。上限は未設定・空白なら既定値です。容量・画素数・深さは正の整数、任意の件数上限は0以上にし、件数のint項目はJavaのint範囲内に収めます。不正な設定値は起動・設定読み込み時のエラーになり、既定値へ黙って戻りません。</p>
 <h2 id="storage">接続・実行環境の設定</h2>
-<div class="table-wrap"><table><thead><tr><th scope="col">設定</th><th scope="col">未設定時／用途</th></tr></thead><tbody><tr><td><code>CONVERSION_STORAGE_CONNECTION_STRING</code></td><td>未設定・空白で非同期無効。制御Queue・状態Blob・default入出力の接続文字列</td></tr><tr><td><code>CONVERSION_QUEUE_CONNECTION_STRING</code></td><td>ホストのQueueトリガーが読む派生設定。有効時は上記接続、無効時は形式検証用 <code>UseDevelopmentStorage=true</code></td></tr><tr><td><code>AzureWebJobs.ProcessConversion.Disabled</code></td><td>非同期無効時 <code>true</code>、有効時 <code>false</code></td></tr><tr><td><code>AzureWebJobs.PoisonConversion.Disabled</code></td><td>上と同じ。poison用リスナーを切り替える</td></tr><tr><td><code>CONVERSION_INPUT_STORAGE_&lt;ALIAS&gt;</code></td><td>入力専用の別Storage接続。未設定・空白は未登録</td></tr><tr><td><code>CONVERSION_OUTPUT_STORAGE_&lt;ALIAS&gt;</code></td><td>出力専用の別Storage接続。未設定・空白は未登録</td></tr><tr><td><code>AzureWebJobsStorage</code></td><td>Functionsホスト用Storage。Azureでは別途有効な設定が必要</td></tr><tr><td><code>FUNCTIONS_WORKER_RUNTIME</code></td><td><code>java</code></td></tr><tr><td><code>JAVA_OPTS</code></td><td><code>-Djava.awt.headless=true</code> を設定。既存オプションがあれば保持する</td></tr></tbody></table></div>
+<div class="table-wrap"><table><thead><tr><th scope="col">設定</th><th scope="col">未設定時／用途</th></tr></thead><tbody><tr><td><code>CONVERSION_STORAGE_CONNECTION_STRING</code></td><td>制御Queue・状態Blob・default入出力の接続文字列。これとManaged IdentityのBlob・Queue接続がともに未設定なら非同期無効</td></tr><tr><td><code>CONVERSION_QUEUE_CONNECTION_STRING</code></td><td>ホストのQueueトリガーが読む派生設定。接続文字列方式では上記接続、無効時は形式検証用 <code>UseDevelopmentStorage=true</code>。Managed Identityではこの設定名を削除し、下記の接続プレフィックスを使う</td></tr><tr><td><code>AzureWebJobs.ProcessConversion.Disabled</code></td><td>非同期無効時 <code>true</code>、有効時 <code>false</code></td></tr><tr><td><code>AzureWebJobs.PoisonConversion.Disabled</code></td><td>上と同じ。poison用リスナーを切り替える</td></tr><tr><td><code>AzureWebJobs.MaintainConversions.Disabled</code></td><td>非同期が有効かつ通知先または保持設定がある場合は <code>false</code>、それ以外は <code>true</code></td></tr><tr><td><code>CONVERSION_INPUT_STORAGE_&lt;ALIAS&gt;</code></td><td>入力専用の別Storage接続。未設定・空白は未登録</td></tr><tr><td><code>CONVERSION_OUTPUT_STORAGE_&lt;ALIAS&gt;</code></td><td>出力専用の別Storage接続。未設定・空白は未登録</td></tr><tr><td><code>AzureWebJobsStorage</code></td><td>Functionsホスト用Storage。Azureでは別途有効な設定が必要</td></tr><tr><td><code>FUNCTIONS_WORKER_RUNTIME</code></td><td><code>java</code></td></tr><tr><td><code>JAVA_OPTS</code></td><td><code>-Djava.awt.headless=true</code> を設定。既存オプションがあれば保持する</td></tr></tbody></table></div>
 <p>ALIASの接尾辞は <code>[A-Z][A-Z0-9_]{0,31}</code>、DEFAULT以外です。JSONでは小文字名を使います。入力・出力の追加登録だけでは非同期は有効になりません。制御用の接続設定が必要です。</p>
-<div class="callout"><p>JavaのasyncEnabled判定だけでは、Java起動前に初期化されるQueueトリガーを止められません。接続を追加・削除するときは、Queue用別名と2つのDisabled設定も同時に更新します。</p>
+<div class="callout"><p>JavaのasyncEnabled判定だけでは、Java起動前に初期化されるQueueトリガーを止められません。接続を追加・削除するときは、Queue用接続と処理・poisonのDisabled設定、通知・保持に応じた保守のDisabled設定も同時に更新します。</p>
 </div>
 <h2 id="ocr">Document Intelligenceの画像OCR設定</h2>
 <div class="table-wrap"><table><thead><tr><th scope="col">環境変数</th><th scope="col">既定・用途</th></tr></thead><tbody><tr><td><code>DOCUMENT_INTELLIGENCE_ENDPOINT</code></td><td>未設定。HTTPSのリソースエンドポイント。パス・クエリ・資格情報を含めない</td></tr><tr><td><code>DOCUMENT_INTELLIGENCE_KEY</code></td><td>未設定。Document IntelligenceのAPIキー</td></tr><tr><td><code>DOCUMENT_INTELLIGENCE_TIMEOUT_SECONDS</code></td><td>60。画像1件の送信・ポーリング・再試行を合わせた制限時間。1〜180の整数</td></tr></tbody></table></div>
@@ -37,11 +37,11 @@ cp local.settings.example.json local.settings.json
 python3 scripts/run_local.py</code></pre>
 <p>起動スクリプトが派生設定を生成します。ローカルのAzureWebJobsStorageが空なら非同期用接続をホスト用にも使用します。Azuriteを使う場合は先に起動し、CONVERSION_STORAGE_CONNECTION_STRINGをUseDevelopmentStorage=trueにします。Playgroundは <code>http://localhost:7072/api/playground</code> です。</p>
 <h2 id="azure-settings">既存Azureアプリへの設定反映</h2>
-<p>作業ディレクトリは <code>functions/office2md</code>。Azure CLIを用意し、<code>az login</code> で対象アプリの設定を変更できるアカウントにログインします。非同期を有効にする場合は、実行するプロセスの環境変数 <code>CONVERSION_STORAGE_CONNECTION_STRING</code> に制御Storage接続を設定して実行します。未設定・空白なら非同期を無効にする操作になります。</p>
+<p>作業ディレクトリは <code>functions/office2md</code>。Azure CLIを用意し、<code>az login</code> で対象アプリの設定を変更できるアカウントにログインします。非同期を有効にする場合は、実行するプロセスの環境変数に制御Storageの接続文字列、または <code>CONVERSION_STORAGE__blobServiceUri / __queueServiceUri</code> と任意の <code>__clientId</code> を設定します。接続文字列とManaged Identity設定を混在させません。どちらも未設定・空白なら非同期を無効にする操作になります。</p>
 <pre><code>python3 scripts/configure_azure_async.py \
   --resource-group YOUR_RESOURCE_GROUP \
   --name YOUR_FUNCTION_APP</code></pre>
-<p>このスクリプトはプロセスの環境変数を読み、<code>local.settings.json</code> は読みません。制御接続・Queue別名・2つの無効化設定だけを更新し、無関係なApp Settingsを保持します。別Storage登録と上限は別途設定してください。リソース作成やコードのデプロイは行いません。</p>
+<p>このスクリプトはプロセスの環境変数を読み、<code>local.settings.json</code> は読みません。プロセスで指定した <code>CONVERSION_*</code>、制御接続・Queueの派生設定、処理・poison・保守の3つの無効化フラグを反映し、無関係なApp Settingsを保持します。既存の通知・保持設定も読んで保守フラグを導出し、認証方式の切替で競合するQueue設定は削除します。別Storageや上限も環境変数で渡せます。リソース作成やコードのデプロイは行いません。</p>
 <h2 id="limits">環境変数で変更できる全上限</h2>
 <p>シート・スライド数、読み取り項目数、表セル数、画像配置数、図形数は既定で無制限です。これら5種類は <code>0</code> で制限なし、正の整数で上限を指定できます。既存の環境変数や <code>local.settings.json</code> に正の値があれば適用されます。解除する場合は設定を削除するか <code>0</code> に変更し、再起動してください。旧名の設定も対象です。</p>
 <p>件数は実際の処理負荷を正確に表さないため、通常の資料を件数だけで拒否しません。容量・展開後の画像画素数・極端な入れ子・1図形の過大な文字レイアウトを止める保護は残します。空セルだけで出力容量を超える表も展開前に停止します。詳細は<a href="../../../functions/office2md/docs/usage.md#上限">利用ガイド</a>を参照してください。</p>
@@ -72,7 +72,7 @@ python3 scripts/run_local.py</code></pre>
 <h2 id="warnings">警告とエラーを区別する</h2>
 <p>成功した変換のwarnings / informationはreportに記録します。例として <code>FORMULA_CACHE_MISSING</code>、<code>BORDER_NOT_TABLE</code>、<code>DRAWING_TEXT_APPROXIMATED</code>、<code>IMAGE_FORMAT_ATTACHMENT</code>、<code>CHART_UNSUPPORTED</code> があります。警告がある200レスポンスを失敗と同一視せず、用途に必要な要素が保持されているかを確認してください。</p>
 
-<p>OCR失敗は画像参照を保持した部分成功として警告に記録します。<code>OCR_TIMEOUT</code>、<code>OCR_AUTHENTICATION_FAILED</code>、<code>OCR_RATE_LIMITED</code>、<code>OCR_SERVICE_UNAVAILABLE</code>、<code>OCR_IMAGE_UNSUPPORTED</code> などを <code>blocks[].ocr.status / code</code> とともに確認してください。設定がないままOCRを依頼した場合は、この部分成功ではなく上記503です。</p>
+<p>OCR失敗は画像参照を保持した部分成功として警告に記録します。<code>OCR_TIMEOUT</code>、<code>OCR_AUTHENTICATION_FAILED</code>、<code>OCR_RATE_LIMITED</code>、<code>OCR_SERVICE_UNAVAILABLE</code>、<code>OCR_IMAGE_UNSUPPORTED</code> などを単独画像の <code>blocks[].ocr.status / code</code>、合成画像の <code>blocks[].sourceImages[].ocr.status / code</code> とともに確認してください。設定がないままOCRを依頼した場合は、この部分成功ではなく上記503です。</p>
 <h2 id="identity-and-retention">Managed Identity・通知・保持</h2>
 <p>接続文字列に加え、<code>CONVERSION_STORAGE__blobServiceUri</code>と<code>CONVERSION_STORAGE__queueServiceUri</code>でMI認証を選択できます。ユーザー割り当てMIは<code>CONVERSION_STORAGE__clientId</code>を追加します。入力・出力のエイリアスにも同様のBlob URI設定を使えます。</p>
 <p>Queueトリガー用の<code>CONVERSION_QUEUE_CONNECTION_STRING__queueServiceUri</code>・<code>__credential=managedidentity</code>と、ホスト用Storageの設定も必要です。ワーカーの起動後に設定してもホストの接続には反映できません。</p>
@@ -84,7 +84,7 @@ python3 scripts/run_local.py</code></pre>
 </tbody></table></div>
 <p>通知先または保持を設定すると5分ごとの定期処理が動きます。未設定では無効です。入力版不一致は<code>409 INPUT_VERSION_MISMATCH</code>、未登録の通知先は<code>400 UNKNOWN_RESULT_QUEUE</code>、清掃済みの結果は<code>410 JOB_RESULT_EXPIRED</code>です。</p>
 <p>RBAC・閉域ネットワーク・ホスト認証・配置先での確認は<a href="../../development.md#8-managed-identity閉域storage結果通知">共通の配置・運用手順</a>を参照してください。実AzureのMI・Private Endpoint接続はローカルテストとは別に検証が必要です。</p>
-<footer class="page-footer"><p>最終確認：2026-10-05。<a href="../../../functions/office2md/docs/usage.md">利用ガイド</a>と<a href="../../../functions/office2md/src/main/java/com/convertx2x/office2md/ConversionFunctions.java">HTTP実装</a>に基づく資料です。</p></footer>
+<footer class="page-footer"><p>資料照合：2026-11-09。<a href="../../../functions/office2md/docs/usage.md">利用ガイド</a>と<a href="../../../functions/office2md/src/main/java/com/convertx2x/office2md/ConversionFunctions.java">HTTP実装</a>に基づく資料です。</p></footer>
 </article>
 <aside class="toc" aria-label="このページの目次"><p class="toc-title">このページの内容</p><nav id="page-toc"></nav></aside>
 </div>

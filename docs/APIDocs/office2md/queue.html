@@ -52,7 +52,7 @@
 queue.sendMessage(requestJson);</code></pre>
 <p>このコードは設定例の抜粋です。JSONを手動でBase64化してからSDKでもエンコードすると二重になり、処理できません。実行可能な送信例は <a href="../../../functions/office2md/examples/QueueProducer.java">QueueProducer.java</a>、準備と実行手順は <a href="../../../functions/office2md/docs/direct-queue.md">元の直接Queueガイド</a>を参照してください。</p>
 <h2 id="storage">Storageと認証の境界</h2>
-<div class="table-wrap"><table><thead><tr><th scope="col">用途</th><th scope="col">設定・使用場所</th></tr></thead><tbody><tr><td>制御Storage</td><td><code>CONVERSION_STORAGE_CONNECTION_STRING</code>。Queueと状態Blobの保存先</td></tr><tr><td>既定の入力・出力</td><td><code>storage: &quot;default&quot;</code>。制御Storageを利用</td></tr><tr><td>別Storageの入力</td><td><code>CONVERSION_INPUT_STORAGE_SOURCE</code> に接続文字列を登録し、<code>input.storage: &quot;source&quot;</code></td></tr><tr><td>別Storageの出力</td><td><code>CONVERSION_OUTPUT_STORAGE_ARCHIVE</code> に接続文字列を登録し、<code>output.storage: &quot;archive&quot;</code></td></tr></tbody></table></div>
+<div class="table-wrap"><table><thead><tr><th scope="col">用途</th><th scope="col">設定・使用場所</th></tr></thead><tbody><tr><td>制御Storage</td><td>接続文字列またはManaged IdentityのBlob・Queue接続。Queueと状態Blobの保存先</td></tr><tr><td>既定の入力・出力</td><td><code>storage: &quot;default&quot;</code>。制御Storageを利用</td></tr><tr><td>別Storageの入力</td><td><code>CONVERSION_INPUT_STORAGE_SOURCE</code> に接続文字列を登録し、<code>input.storage: &quot;source&quot;</code></td></tr><tr><td>別Storageの出力</td><td><code>CONVERSION_OUTPUT_STORAGE_ARCHIVE</code> に接続文字列を登録し、<code>output.storage: &quot;archive&quot;</code></td></tr></tbody></table></div>
 <p>入力と出力の登録は別々です。出力専用に登録したStorageを入力として指定できません。環境変数の接尾辞は大文字、JSONの登録名は小文字です。DEFAULTは追加登録できません。登録名はアプリの参照先制限であり、アカウントキーそのものの権限を細分化するものではありません。</p>
 <p>送信側には入力Blobの書き込みとQueueへの送信権限、ワーカーには入力Blobの読み取りと制御Storageの状態・Queue操作権限が必要です。出力側はコンテナー作成・Blob書き込みに加えて、HTTP結果取得・ZIP化用の読み取り権限も必要です。接続設定は<a href="settings.html#storage">設定ページ</a>を参照してください。</p>
 <h2 id="locations">状態と成果物の保存先</h2>
@@ -103,14 +103,14 @@ result:  storage, container, sectionCount, warningCount,
     &quot;queue&quot;: &quot;completed&quot;
   }
 }</code></pre>
-<p><code>imageMode</code> は任意で <code>ignore</code>（既定）または <code>ocr</code> です。どちらも画像ファイルとMarkdown参照を残し、ocrだけ画像内の文字を補います。version 1はOCRしません。OCRは<a href="settings.html#ocr">サーバーの接続設定</a>が必要で、未設定のocr指定は <code>OCR_NOT_CONFIGURED</code> です。画像単位の失敗・スキップは参照と警告を残して変換を継続します。</p>
+<p><code>imageMode</code> は任意で <code>ignore</code>（既定）または <code>ocr</code> です。どちらも単独画像または合成画像のファイルとMarkdown参照を残します。合成元の独立ファイル・参照は出力せず、ocrだけ合成前の元画像の可視領域から文字を補います。version 1はOCRしません。OCRは<a href="settings.html#ocr">サーバーの接続設定</a>が必要で、未設定のocr指定は <code>OCR_NOT_CONFIGURED</code> です。画像単位の失敗・スキップは参照と警告を残して変換を継続します。OCRの確認先は単独画像の <code>blocks[].ocr.status</code>、合成画像の <code>blocks[].sourceImages[].ocr.status</code> です。<code>sourceImages[]</code> はダウンロードパスではなく、画像取得には <code>assets[].path</code> を使います。</p>
 <p>Office2MDのPDF出力は廃止しました。旧 <code>outputFormat: &quot;pdf&quot;</code> は受け付けません。<a href="jobs.html#result">/result</a> はMarkdown、archive ZIPはMarkdown・report・画像一式です。</p>
 <p><code>input.expectedETag</code>で原本の版を固定し、不一致は<code>INPUT_VERSION_MISMATCH</code>です。<code>metadata</code>は最大16項目の文字列マップ（キー64文字・値512文字・合計8KiB以下）、<code>notification.queue</code>は登録済み結果Queueのエイリアスです。metadataは認可情報ではありません。</p>
 <p>Officeの成果物にはMarkdown・report・画像一式と、それらの参照・サイズ・SHA-256を持つManifestがあります。通知には大量の画像一覧を埋め込まず、確定した成果物の参照を返します。</p>
-<p>通知は<code>eventId</code>・<code>jobId</code>・終端の<code>status</code>・入力版・metadata・結果参照・固定エラーを含みます。受信側でeventIdによる重複排除と最新revisionの照合を行ってください。通知失敗は送信待ちから再送し、変換はやり直しません。</p>
+<p>通知は<code>eventId</code>・<code>jobId</code>・終端の<code>status</code>・入力版・metadata・結果参照・固定エラーを含みます。通知JSONにもBase64を1回適用します。受信側は1回デコードし、SDKが自動デコードする場合は手動で重ねてデコードしません。eventIdによる重複排除と最新revisionの照合も行ってください。通知失敗は送信待ちから再送し、変換はやり直しません。</p>
 <p>結果と状態の保持期間は既定では無期限です。保持設定を有効にすると、アプリが所有するファイルだけを清掃します。清掃済みの結果取得は<code>410 JOB_RESULT_EXPIRED</code>です。状態を削除した後は同じjobIdの重複判定も終了します。</p>
 <p>設定・権限・Private Endpoint・保持運用は<a href="../../development.md#8-managed-identity閉域storage結果通知">共通の配置・運用手順</a>、詳細な契約は<a href="../../../functions/office2md/docs/direct-queue.md#version-2画像ocr入力版付加情報結果通知">直接Queueガイド</a>を参照してください。未登録の入力・出力・通知先は使用できません。</p>
-<footer class="page-footer"><p>最終確認：2026-10-05。<a href="../../../functions/office2md/docs/usage.md">利用ガイド</a>と<a href="../../../functions/office2md/src/main/java/com/convertx2x/office2md/ConversionFunctions.java">HTTP実装</a>に基づく資料です。</p></footer>
+<footer class="page-footer"><p>資料照合：2026-11-09。<a href="../../../functions/office2md/docs/usage.md">利用ガイド</a>と<a href="../../../functions/office2md/src/main/java/com/convertx2x/office2md/ConversionFunctions.java">HTTP実装</a>に基づく資料です。</p></footer>
 </article>
 <aside class="toc" aria-label="このページの目次"><p class="toc-title">このページの内容</p><nav id="page-toc"></nav></aside>
 </div>

@@ -1,6 +1,6 @@
 # Movie → Audio（Movie2Audio）
 
-動画の最初の音声トラックからAACを再エンコードせずに抽出し、`audio.m4a`（`audio/mp4`）として返すAzure Functionsです。Node.jsのFunctions v4モデルで実装し、FFmpeg・FFprobeを同梱しています。他のJava製変換機能とは別のFunction Appへ配置します。
+動画の最初の音声トラックをM4AまたはWAVとして返すAzure Functionsです。既定ではAACを再エンコードせずに抽出し、`audio.m4a`（`audio/mp4`）を返します。Node.jsのFunctions v4モデルで実装し、FFmpeg・FFprobeを同梱しています。他のJava製変換機能とは別のFunction Appへ配置します。
 
 入力には動画ストリームが必要です。既定はAACコピーですが、明示的なtranscodeでOpus・MP3・PCMなどをM4A/AACまたはWAV/16bit PCMへ変換できます。既定の入出力上限は各100MiB、処理期限は180秒です。環境変数で変更できます。
 
@@ -8,14 +8,14 @@
 
 | 方式 | 入口・出力 |
 | --- | --- |
-| 同期HTTP | `/api/convert`・`/api/convert-url` でファイルまたはURLを受け付け、M4Aを返す |
+| 同期HTTP | `/api/convert`・`/api/convert-url` でファイルまたはURLを受け付け、選択したM4A/WAVを返す |
 | 同期SAS保存 | `/api/convert-to-blob` で指定Blobへ保存し、保存結果を返す |
 | 非同期HTTP | `/api/jobs`・`/api/jobs-url` で受け付け、状態確認・結果取得APIを使う |
 | 直接Queue | `movie2audio-jobs` にBlob参照JSONを送り、登録済みStorageへ保存する |
 
-すべて共通の抽出処理を使います。非同期は `CONVERSION_STORAGE_CONNECTION_STRING` 設定時に有効です。URL入力と同期SAS保存は、それぞれ許可ホストを設定して有効にします。
+すべて共通の抽出処理を使います。非同期は制御用Storageの接続文字列、またはManaged IdentityのBlob/Queue設定が揃っている場合に有効です。Queueトリガー用の設定もホスト起動前に用意します。[設定手順](docs/usage.md#非同期機能を有効にする)を参照してください。URL入力と同期SAS保存は、それぞれ許可ホストを設定して有効にします。
 
-HTTPは入力を一時ディスクへ保存し、抽出を完了したM4Aをストリームで返します。抽出途中から配信する方式ではありません。再生・保存・Azure Speechなどへの送信は利用側が行います。
+HTTPは入力を一時ディスクへ保存し、変換を完了したM4A/WAVをストリームで返します。抽出途中から配信する方式ではありません。再生・保存・Azure Speechなどへの送信は利用側が行います。
 
 ## ドキュメント
 

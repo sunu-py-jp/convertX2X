@@ -117,7 +117,8 @@ export function applyNativeAnimations({ document: doc, effects = [], targets, sl
   const el = nodeFactory(doc);
   const fallback = (effect, reason) => {
     const entry = { id: effect?.id ?? null, slide: effect?.slide, animationName: effect?.animationName,
-      element: effect?.element, sampling: effect?.sampling, status: 'static', reason };
+      element: effect?.element, sampling: effect?.sampling,
+      ...(effect?.sourceAnimations ? {sourceAnimations: effect.sourceAnimations} : {}), status: 'static', reason };
     result.fallbackEffects.push(entry);
     warnings.push({ code: 'ANIMATION_STATIC_FALLBACK', slide: effect?.slide, animationId: effect?.id,
       reason, message: 'このアニメーションは静止した最終状態で出力しました。' });
@@ -196,7 +197,8 @@ export function applyNativeAnimations({ document: doc, effects = [], targets, sl
     automaticEffects.push(el('p:par', {}, [effectTime]));
     buildTargets.push(targetId);
     result.nativeEffects.push({ id: effect.id, slide: effect.slide, animationName: effect.animationName,
-      element: effect.element, sampling: effect.sampling, status: 'native', targetShapeId: String(targetId), channels,
+      element: effect.element, sampling: effect.sampling,
+      ...(effect.sourceAnimations ? {sourceAnimations: effect.sourceAnimations} : {}), status: 'native', targetShapeId: String(targetId), channels,
       durationMs: duration, delayMs: delay, keyframeCount: frames.length, ...(timingQuantized ? { timingQuantized: true, timingResolutionMs: 1 } : {}) });
     if (timingQuantized) warnings.push({ code: 'ANIMATION_TIMING_QUANTIZED', slide: effect.slide, animationId: effect.id,
       reason: 'sub_millisecond_keyframes', message: '回転の中間状態を1ミリ秒単位にまとめました。開始角度と最終角度は保持しています。' });

@@ -145,7 +145,7 @@ JSON のエイリアスは小文字で、`[a-z][a-z0-9_]{0,31}` の形式です�
 
 登録はアカウント単位で、コンテナー単位の許可リストではありません。Queueへの送信権限は、登録済み入力からの変換と登録済み出力への保存を許可するシステムに限定してください。接続に与える権限でアクセス範囲を制限し、既存の出力コンテナーは運用側で非公開に設定します。既存コンテナーの公開設定をワーカーが変更することはありません。
 
-現在のワーカーは出力保存時に `createIfNotExists()` を呼びます。出力接続には Blob の書き込みに加えてコンテナー作成操作を許可する権限が必要です。HTTP 経由で結果を取得する場合は、Functions の出力接続にも読み取り権限が必要です。Java の送信例も入力コンテナーと Queue の作成操作を行います。[コンテナー作成の認証・権限](https://learn.microsoft.com/en-us/rest/api/storageservices/create-container#authorization)を参照してください。
+既定の `CONVERSION_CREATE_RESOURCES=true` では、ワーカーは出力保存時に `createIfNotExists()` を呼ぶため、出力接続には Blob の書き込みに加えてコンテナー作成操作を許可する権限が必要です。`false` では必要なコンテナー・Queueを事前作成し、ワーカーによる作成を省略するため、その作成操作の権限は不要です。HTTP 経由で結果を取得する場合は、Functions の出力接続にも読み取り権限が必要です。Java の送信例はアプリのこの設定とは別に入力コンテナーと Queue の作成操作を行います。[コンテナー作成の認証・権限](https://learn.microsoft.com/en-us/rest/api/storageservices/create-container#authorization)を参照してください。
 
 ## ローカルで検証する
 

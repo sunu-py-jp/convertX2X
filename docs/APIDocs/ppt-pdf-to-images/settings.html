@@ -45,15 +45,16 @@
 
       <h2 id="async-switch">非同期のオン・オフ</h2>
       <div class="table-wrap"><table>
-        <thead><tr><th>設定</th><th>制御用接続なし</th><th>制御用接続あり</th></tr></thead>
+        <thead><tr><th>設定</th><th>制御用Storage未設定</th><th>接続文字列方式</th><th>Managed Identity方式</th></tr></thead>
         <tbody>
-          <tr><td><code>CONVERSION_STORAGE_CONNECTION_STRING</code></td><td>空・未設定：同期だけ有効</td><td>Blob・Queueを利用できる接続設定</td></tr>
-          <tr><td><code>CONVERSION_QUEUE_CONNECTION_STRING</code></td><td><code>UseDevelopmentStorage=true</code></td><td>制御用接続と同じ値</td></tr>
-          <tr><td><code>AzureWebJobs.ProcessConversion.Disabled</code></td><td><code>true</code></td><td><code>false</code></td></tr>
-          <tr><td><code>AzureWebJobs.PoisonConversion.Disabled</code></td><td><code>true</code></td><td><code>false</code></td></tr>
+          <tr><td><code>CONVERSION_STORAGE_CONNECTION_STRING</code></td><td>空・未設定</td><td>Blob・Queueを利用できる接続設定</td><td>未設定</td></tr>
+          <tr><td><code>CONVERSION_STORAGE__blobServiceUri</code> / <code>__queueServiceUri</code></td><td>未設定</td><td>未設定</td><td>制御用StorageのBlob・Queue URIを両方設定</td></tr>
+          <tr><td><code>CONVERSION_QUEUE_CONNECTION_STRING</code></td><td><code>UseDevelopmentStorage=true</code></td><td>制御用接続と同じ値</td><td>未設定。<code>CONVERSION_QUEUE_CONNECTION_STRING__queueServiceUri</code>と<code>__credential=managedidentity</code>を設定</td></tr>
+          <tr><td><code>AzureWebJobs.ProcessConversion.Disabled</code></td><td><code>true</code></td><td><code>false</code></td><td><code>false</code></td></tr>
+          <tr><td><code>AzureWebJobs.PoisonConversion.Disabled</code></td><td><code>true</code></td><td><code>false</code></td><td><code>false</code></td></tr>
         </tbody>
       </table></div>
-      <p>制御用接続の空白を除いた値が空でなければ、アプリの非同期機能は有効になります。接続できるかを検証してから有効にする方式ではないため、設定誤りや権限不足は実際のStorage操作でエラーになります。</p>
+      <p>制御用接続文字列の空白を除いた値が空でない場合、またはMI用のBlob・Queue URIを両方設定した場合に、アプリの非同期機能は有効になります。同じ接続で接続文字列とMI設定を混在させません。どちらの設定もなければ同期だけが有効です。ユーザー割り当てMIのclientIdは<a href="#identity-and-retention">MIの設定</a>を参照してください。接続できるかを検証してから有効にする方式ではないため、設定誤りや権限不足は実際のStorage操作でエラーになります。</p>
       <p>QueueバインドはJava起動前に初期化されます。無効時のエミュレーター形式の値は、バインドを構築できるようにするためのもので、無効化フラグと組み合わせてリスナーを止めます。</p>
       <p>ローカルの <code>scripts/run_local.py</code> とAzure向けの <code>scripts/configure_azure_async.py</code> が、この派生設定を生成します。Azureで制御用接続だけを追加・削除して終わらせず、派生設定も一緒に更新してください。<a href="../../../functions/ppt-pdf-to-images/docs/usage.md">設定スクリプトの使い方</a>を参照してください。</p>
 
@@ -149,10 +150,10 @@ python3 scripts/run_local.py</code></pre>
       <p>Blobの自動清掃は既定で無効です。保持設定で、アプリが所有する入力コピー・結果・試行出力を清掃できます。原本と過去の未管理成果物は運用側で管理します。</p>
 
       <h2 id="identity-and-retention">Managed Identity・通知・保持</h2>
-<p>接続文字列に加え、<code>CONVERSION_STORAGE__blobServiceUri</code>と<code>CONVERSION_STORAGE__queueServiceUri</code>でMI認証を選択できます。ユーザー割り当てMIは<code>CONVERSION_STORAGE__clientId</code>を追加します。入力・出力のエイリアスにも同様のBlob URI設定を使えます。</p>
+<p>接続文字列の代わりに、<code>CONVERSION_STORAGE__blobServiceUri</code>と<code>CONVERSION_STORAGE__queueServiceUri</code>の両方でMI認証を選択できます。ユーザー割り当てMIは<code>CONVERSION_STORAGE__clientId</code>とQueueトリガー用の<code>CONVERSION_QUEUE_CONNECTION_STRING__clientId</code>に同じclientIdを設定します。入力・出力のエイリアスにも同様のBlob URI設定を使えます。</p>
 <p>Queueトリガー用の<code>CONVERSION_QUEUE_CONNECTION_STRING__queueServiceUri</code>・<code>__credential=managedidentity</code>と、ホスト用Storageの設定も必要です。ワーカーの起動後に設定してもホストの接続には反映できません。</p>
 <div class="table-wrap"><table><thead><tr><th>設定</th><th>既定・動作</th></tr></thead><tbody>
-<tr><td><code>CONVERSION_CREATE_RESOURCES</code></td><td>true。falseでは必要なコンテナー・Queueを事前作成</td></tr>
+<tr><td><code>CONVERSION_CREATE_RESOURCES</code></td><td>true。falseでは必要なコンテナー・Queueを事前作成し、アプリによる作成を省略するため、その作成権限は不要。各リソースへの読み書き権限は必要</td></tr>
 <tr><td><code>CONVERSION_RESULT_QUEUE_&lt;ALIAS&gt;__queueName</code></td><td>通知先の登録。__connectionString、または__queueServiceUriと任意の__clientIdも必要</td></tr>
 <tr><td><code>CONVERSION_RESULT_RETENTION_DAYS</code></td><td>0（清掃無効）。正の整数で所有成果物を期限後に清掃</td></tr>
 <tr><td><code>CONVERSION_STATE_RETENTION_DAYS</code></td><td>0（状態保持）。有効化時は結果保持より長い日数が必要</td></tr>
@@ -160,7 +161,7 @@ python3 scripts/run_local.py</code></pre>
 <p>通知先または保持を設定すると5分ごとの定期処理が動きます。未設定では無効です。入力版不一致は<code>409 INPUT_VERSION_MISMATCH</code>、未登録の通知先は<code>400 UNKNOWN_RESULT_QUEUE</code>、清掃済みの結果は<code>410 JOB_RESULT_EXPIRED</code>です。</p>
 <p>RBAC・閉域ネットワーク・ホスト認証・配置先での確認は<a href="../../development.md#8-managed-identity閉域storage結果通知">共通の配置・運用手順</a>を参照してください。実AzureのMI・Private Endpoint接続はローカルテストとは別に検証が必要です。</p>
 <footer class="page-footer">
-        <p>最終確認：2026-09-13。READMEとHTTP・設定・変換・ジョブ処理の実装を照合しています。</p>
+        <p>資料照合：2026-11-09。READMEとHTTP・設定・変換・ジョブ処理の実装を照合しています。</p>
         <p><a href="../../../functions/ppt-pdf-to-images/docs/usage.md">利用ガイド</a> · <a href="../../ppt-pdf-to-images.md">開発者ガイド</a></p>
       </footer>
     </article>

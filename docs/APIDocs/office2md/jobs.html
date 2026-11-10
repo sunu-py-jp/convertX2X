@@ -83,7 +83,7 @@ Cache-Control: no-store
 <p>完成した <code>document.md</code> を <code>Content-Type: text/markdown; charset=utf-8</code> で返します。ZIPではありません。Office2MDのPDF出力は廃止し、旧 <code>output=pdf</code> は受け付けません。</p>
 <h2 id="report">GET /api/jobs/{id}/report</h2>
 <div class="endpoint"><span class="method get">GET</span><code>/api/jobs/{id}/report</code></div>
-<p>完成した <code>report.json</code> を <code>application/json; charset=utf-8</code> で返します。<code>imageMode</code>、画像ブロックの <code>ocr.status</code>、画像アセットの <code>sourceKind</code> と警告を確認できます。OCRだけが失敗した画像は参照を保持し、Office変換を継続します。<a href="index.html#report">reportのフィールド</a>を参照してください。画像を取得する場合はassets配列のpathを使います。</p>
+<p>完成した <code>report.json</code> を <code>application/json; charset=utf-8</code> で返します。<code>imageMode</code>、単独画像の <code>blocks[].ocr.status</code>、合成画像の <code>blocks[].sourceImages[].ocr.status</code>、画像アセットの <code>sourceKind</code> と警告を確認できます。OCRだけが失敗した画像は参照を保持し、Office変換を継続します。<a href="index.html#report">reportのフィールド</a>を参照してください。画像を取得する場合は <code>assets[].path</code> を使います。合成した元画像の独立ファイルはなく、<code>sourceImages[]</code> はダウンロードパスを持ちません。</p>
 <h2 id="asset">GET /api/jobs/{id}/images/{assetName}</h2>
 <div class="endpoint"><span class="method get">GET</span><code>/api/jobs/{id}/images/{assetName}</code></div>
 <p>完成結果の画像・添付ファイルを1件取得します。例えば <code>assets[].path = images/diagram-0001.png</code> なら、<code>assetsBaseUrl</code> に <code>diagram-0001.png</code> を連結します。成功結果の一覧に含まれないファイルは取得できません。</p>
@@ -97,10 +97,10 @@ Cache-Control: no-store
 <p><code>X-Section-Count / X-Warning-Count</code> は同期変換だけのレスポンスヘッダーです。非同期では状態JSONの <code>job.sectionCount / job.warningCount</code>、またはreportを参照します。</p>
 <p>保存時から変更された成果物は <code>409 RESULT_CHANGED</code> になります。出力Blobを編集せず、新しいジョブで変換してください。変換が成功していても、ZIP化や取得時の容量上限で413になる場合があります。</p>
 <h2 id="retry">再送・キャンセル・保持期間</h2>
-<p>POST /jobsにはクライアント指定IDや冪等キーがありません。同じファイルを再POSTすると別ジョブになるため、応答を受け取ったらIDを保存してください。ジョブのキャンセル・削除APIはありません。Playgroundの待機停止もサーバー処理を取り消しません。入力・状態・成果物・失敗試行の清掃は運用側で行います。</p>
+<p>POST /jobsにはクライアント指定IDや冪等キーがありません。同じファイルを再POSTすると別ジョブになるため、応答を受け取ったらIDを保存してください。ジョブのキャンセル・削除APIはありません。Playgroundの待機停止もサーバー処理を取り消しません。自動清掃は既定で無効です。<a href="settings.html#identity-and-retention">保持設定</a>を有効にすると所有する入力コピー・状態・成果物・試行出力を清掃し、清掃済みの結果取得は <code>410 JOB_RESULT_EXPIRED</code> になります。外部入力原本など、所有記録にないファイルは運用側で管理します。</p>
 <p>ワーカーの一時的な失敗はQueueの再試行に従います。アプリ側の継続できない変換エラーはfailedとなり、以後の同一依頼配送で再変換しません。<a href="queue.html#retries">直接Queueの再送契約</a>も参照してください。</p>
 
-<footer class="page-footer"><p>最終確認：2026-10-05。<a href="../../../functions/office2md/docs/usage.md">利用ガイド</a>と<a href="../../../functions/office2md/src/main/java/com/convertx2x/office2md/ConversionFunctions.java">HTTP実装</a>に基づく資料です。</p></footer>
+<footer class="page-footer"><p>資料照合：2026-11-09。<a href="../../../functions/office2md/docs/usage.md">利用ガイド</a>と<a href="../../../functions/office2md/src/main/java/com/convertx2x/office2md/ConversionFunctions.java">HTTP実装</a>に基づく資料です。</p></footer>
 </article>
 <aside class="toc" aria-label="このページの目次"><p class="toc-title">このページの内容</p><nav id="page-toc"></nav></aside>
 </div>

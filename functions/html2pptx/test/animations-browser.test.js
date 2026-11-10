@@ -25,6 +25,37 @@ const state = page => page.$eval('#target', element => {
   return {opacity: Number(style.opacity), transform: style.transform, background: style.backgroundColor,
     x: rect.x, y: rect.y, width: rect.width, height: rect.height, animations: document.getAnimations().length};
 });
+async function assertTrajectoryMatchesBrowser(page, original, effect) {
+  await page.setContent(original);
+  const reference = await page.evaluate(({times}) => {
+    const element = document.getElementById('target');
+    const animations = document.getAnimations().filter(animation => animation.effect.target === element).map(animation => {
+      animation.pause();
+      return {animation, timing: animation.effect.getTiming()};
+    });
+    return times.map((time, index) => {
+      for (const {animation, timing} of animations) {
+        const terminal = index === times.length - 1;
+        animation.effect.updateTiming({fill: terminal ? 'both' : timing.fill});
+        animation.currentTime = terminal ? timing.delay + Number(timing.duration) * timing.iterations : time;
+      }
+      const style = getComputedStyle(element), rect = element.getBoundingClientRect();
+      const matrix = new DOMMatrix(style.transform === 'none' ? undefined : style.transform);
+      return {x: rect.x + rect.width / 2, y: rect.y + rect.height / 2, opacity: Number(style.opacity),
+        scaleX: Math.hypot(matrix.a, matrix.b), scaleY: Math.hypot(matrix.c, matrix.d),
+        rotation: Math.atan2(matrix.b, matrix.a) * 180 / Math.PI};
+    });
+  }, {times: effect.keyframes.map(frame => effect.delayMs + effect.durationMs * frame.offset)});
+  const final = reference.at(-1);
+  for (const [index, frame] of effect.keyframes.entries()) {
+    const actual = reference[index];
+    for (const channel of ['x', 'y', 'rotation']) assert.ok(Math.abs(frame[channel] - (actual[channel] - final[channel])) < .005,
+      `${channel} differs at offset ${frame.offset}: ${frame[channel]} versus ${actual[channel] - final[channel]}`);
+    for (const channel of ['scaleX', 'scaleY']) assert.ok(Math.abs(frame[channel] - actual[channel] / final[channel]) < .0001,
+      `${channel} differs at offset ${frame.offset}`);
+    assert.ok(Math.abs(frame.opacity - actual.opacity) < .0001, `opacity differs at offset ${frame.offset}`);
+  }
+}
 
 test('finite fade and translation seek immediately to terminal frame even with fill none', {skip, timeout: 15000}, async t => {
   const page = await pageFor(t, '@keyframes enter{from{opacity:0;transform:translate(80px,40px)}to{opacity:1;transform:none}}#target{animation:enter 10s 20s linear}');
@@ -102,14 +133,14 @@ test('rotation and scale trajectories are relative to the exported final geometr
   assert.ok(Math.abs(effects[0].bounds.width - 180) < .001);
   assert.ok(Math.abs(effects[0].origin.x - 160) < .001);
 });
-test('nested, concurrent, noncenter, exit and stepped effects are explicitly static', {skip, timeout: 15000}, async t => {
+test('nested, noncenter, exit and stepped effects are explicitly static', {skip, timeout: 15000}, async t => {
   const page = await pageFor(t, `@keyframes move{from{transform:translateX(10px)}to{transform:none}}@keyframes fade{from{opacity:1}to{opacity:0}}
     #target{animation:move 2s}#nested{animation:move 1s}#multi{animation:move 1s,fade 1s}#exit{animation:fade 1s}
     #pivot{animation:move 1s;transform-origin:0 0}#step{animation:move 1s steps(3)}`,
     '<div id="target" class="box"><span id="nested">Nested</span></div><div id="multi" class="box"></div><div id="exit" class="box"></div><div id="pivot" class="box"></div><div id="step" class="box"></div>');
   const result = await page.evaluate(prepareAnimations), reasons = result.warnings.map(warning => warning.reason);
   assert.equal(result.effects.length, 0);
-  for (const reason of ['nested-animations', 'multiple-animations', 'exit-animation', 'non-centered-transform-origin', 'unsupported-easing']) assert.ok(reasons.includes(reason), reason);
+  for (const reason of ['nested-animations', 'exit-animation', 'non-centered-transform-origin', 'unsupported-easing']) assert.ok(reasons.includes(reason), reason);
   assert.equal(await page.$eval('#exit', element => getComputedStyle(element).opacity), '0');
 });
 test('animated pseudo decorations keep the terminal style through materialization', {skip, timeout: 15000}, async t => {
@@ -192,4 +223,124 @@ test('anisotropic scale on a rotated final base falls back while uniform scale r
   const result = await page.evaluate(prepareAnimations);
   assert.equal(result.effects.length, 0);
   assert.equal(result.staticEffects[0].reason, 'unsupported-transform');
+});
+
+test('same-element opacity and motion with different timing become one browser-composed effect', {skip, timeout: 15000}, async t => {
+  const page = await pageFor(t, '@keyframes enter{from{opacity:0}to{opacity:1}}@keyframes move{from{transform:translateX(60px)}to{transform:none}}#target{animation:enter 800ms 200ms linear both,move 1500ms 500ms linear both}');
+  const original = await page.content(), result = await page.evaluate(prepareAnimations);
+  assert.equal(result.animationCount, 2); assert.equal(result.nativeCount, 1); assert.equal(result.staticCount, 0);
+  assert.equal(result.effects.length, 1); assert.equal(result.staticEffects.length, 0);
+  const effect = result.effects[0];
+  assert.equal(effect.id, 'animation-1');
+  assert.deepEqual(effect.sourceAnimations, [
+    {id: 'animation-1', animationName: 'enter', durationMs: 800, delayMs: 200},
+    {id: 'animation-2', animationName: 'move', durationMs: 1500, delayMs: 500}
+  ]);
+  assert.deepEqual(await page.$eval('#target', element => globalThis.__convertX2XAnimationTargets.get(element)), [effect.id]);
+  assert.equal((await state(page)).x, 100); assert.equal((await state(page)).opacity, 1);
+  await assertTrajectoryMatchesBrowser(page, original, effect);
+});
+test('a short source keeps its own sampling grid inside a much longer combined timeline', {skip, timeout: 15000}, async t => {
+  const page = await pageFor(t, '@keyframes enter{from{opacity:0}to{opacity:1}}@keyframes move{from{transform:translateX(40px)}to{transform:none}}#target{animation:enter 50ms linear both,move 2s linear both}');
+  const original = await page.content(), result = await page.evaluate(prepareAnimations), effect = result.effects[0];
+  assert.equal(result.effects.length, 1);
+  const middle = effect.keyframes.find(frame => Math.abs(effect.delayMs + frame.offset * effect.durationMs - 25) < .0001);
+  assert.ok(middle, 'the 25ms midpoint of the short fade must not disappear inside the 2s motion');
+  assert.ok(Math.abs(middle.opacity - .5) < .0001);
+  assert.ok(effect.keyframes.filter(frame => frame.offset * effect.durationMs > 0 && frame.offset * effect.durationMs < 50).length >= 20);
+  await assertTrajectoryMatchesBrowser(page, original, effect);
+});
+test('combined sampling respects replacement order for overlapping transform animations', {skip, timeout: 15000}, async t => {
+  const page = await pageFor(t, '');
+  for (const order of ['horizontal 2s linear both,vertical 1s linear both', 'vertical 1s linear both,horizontal 2s linear both']) {
+    await page.setContent(`${base}<style>@keyframes horizontal{from{transform:translateX(80px)}to{transform:none}}@keyframes vertical{from{transform:translateY(40px)}to{transform:none}}#target{animation:${order}}</style><section data-slide><div id="target" class="box"></div></section>`);
+    const original = await page.content(), result = await page.evaluate(prepareAnimations), effect = result.effects[0];
+    assert.equal(result.effects.length, 1, order);
+    const first = effect.keyframes[0];
+    assert.equal(first.x, order.startsWith('horizontal') ? 0 : 80);
+    assert.equal(first.y, order.startsWith('horizontal') ? 40 : 0);
+    await assertTrajectoryMatchesBrowser(page, original, effect);
+  }
+});
+test('safe additive and accumulated transform animations use the browser composed trajectory', {skip, timeout: 15000}, async t => {
+  const page = await pageFor(t, '');
+  for (const composition of ['add', 'accumulate']) {
+    await page.setContent(`${base}<style>@keyframes horizontal{from{transform:translateX(40px)}to{transform:none}}@keyframes vertical{from{transform:translateY(30px)}to{transform:none}}#target{animation:horizontal 2s linear both,vertical 1s linear both;animation-composition:replace,${composition}}</style><section data-slide><div id="target" class="box"></div></section>`);
+    const original = await page.content(), result = await page.evaluate(prepareAnimations), effect = result.effects[0];
+    assert.equal(result.effects.length, 1, composition);
+    assert.equal(effect.keyframes[0].x, 40); assert.equal(effect.keyframes[0].y, 30);
+    await assertTrajectoryMatchesBrowser(page, original, effect);
+  }
+});
+test('combined reverse timing follows each source direction independently', {skip, timeout: 15000}, async t => {
+  const page = await pageFor(t, '@keyframes enter{from{opacity:0}to{opacity:1}}@keyframes move{from{transform:none}to{transform:translateX(70px)}}#target{animation:enter 1s linear both,move 2s linear reverse both}');
+  const original = await page.content(), result = await page.evaluate(prepareAnimations), effect = result.effects[0];
+  assert.equal(result.effects.length, 1);
+  assert.equal(effect.keyframes[0].x, 70); assert.equal(effect.keyframes[0].opacity, 0);
+  assert.equal(effect.keyframes.at(-1).x, 0); assert.equal(effect.keyframes.at(-1).opacity, 1);
+  await assertTrajectoryMatchesBrowser(page, original, effect);
+});
+test('a delayed no-fill jump falls back while backwards-filled composition stays native', {skip, timeout: 15000}, async t => {
+  const page = await pageFor(t, '');
+  for (const fill of ['none', 'both']) {
+    await page.setContent(`${base}<style>@keyframes enter{from{opacity:0}to{opacity:1}}@keyframes move{from{transform:translateX(40px)}to{transform:none}}#target{animation:enter 2s linear both,move 1s 1s linear ${fill}}</style><section data-slide><div id="target" class="box"></div></section>`);
+    const original = await page.content(), result = await page.evaluate(prepareAnimations), effect = result.effects[0];
+    if (fill === 'none') {
+      assert.equal(result.effects.length, 0);
+      assert.equal(result.staticEffects.length, 2);
+      assert.ok(result.staticEffects.every(source => source.reason === 'discontinuous-composition'));
+      assert.equal((await state(page)).x, 100);
+    } else {
+      assert.equal(result.effects.length, 1);
+      assert.equal(effect.keyframes[0].x, 40);
+      assert.equal(effect.keyframes.at(-1).x, 0);
+      await assertTrajectoryMatchesBrowser(page, original, effect);
+    }
+  }
+});
+test('an early source reverting after its end cannot become a partial native combined effect', {skip, timeout: 15000}, async t => {
+  const page = await pageFor(t, '@keyframes enter{from{opacity:0}to{opacity:1}}@keyframes move{from{transform:none}to{transform:translateX(40px)}}#target{animation:enter 2s linear both,move 1s linear none}');
+  const result = await page.evaluate(prepareAnimations);
+  assert.equal(result.effects.length, 0);
+  assert.equal(result.staticEffects.length, 2);
+  assert.ok(result.staticEffects.every(source => source.reason === 'discontinuous-composition'));
+  assert.ok(result.staticEffects.every(source => source.causeAnimationId === null), 'a combined-timeline limitation must not blame an individual source');
+  assert.equal((await state(page)).x, 140, 'static output holds the requested terminal state, including the short source');
+});
+test('a no-fill jump at the first positive start delay makes the whole element static', {skip, timeout: 15000}, async t => {
+  const page = await pageFor(t, '@keyframes enter{from{opacity:0}to{opacity:1}}@keyframes move{from{transform:translateX(40px)}to{transform:none}}#target{animation:enter 1s 200ms linear none,move 1s 500ms linear none}');
+  const result = await page.evaluate(prepareAnimations);
+  assert.equal(result.effects.length, 0);
+  assert.equal(result.staticEffects.length, 2);
+  assert.ok(result.staticEffects.every(source => source.reason === 'discontinuous-composition'));
+  assert.equal((await state(page)).opacity, 1);
+  assert.equal((await state(page)).x, 100);
+});
+test('any unsupported source makes its whole element static while unrelated elements remain native', {skip, timeout: 20000}, async t => {
+  const page = await pageFor(t, '');
+  const keyframes = '@keyframes move{from{transform:translateX(40px)}to{transform:none}}@keyframes palette{from{background:red}to{background:blue}}@keyframes loop{from{transform:translateX(30px)}to{transform:translateX(60px)}}@keyframes enter{from{opacity:0}to{opacity:1}}@keyframes exit{from{opacity:1}to{opacity:0}}';
+  for (const [animation, reason, sourceCount] of [
+    ['move 1s linear both,palette 1s linear both', 'unsupported-properties', 2],
+    ['move 1s linear both,loop 2s linear infinite', 'infinite-animation', 2],
+    ['move 1s steps(3) both,loop 2s linear both', 'unsupported-easing', 2],
+    ['move 1s linear both,exit 1s linear both,enter 1s linear both', 'exit-animation', 3]
+  ]) {
+    await page.setContent(`${base}<style>${keyframes}#target{animation:${animation}}#other{left:400px;animation:enter 1s linear both}</style><section data-slide><div id="target" class="box"></div><div id="other" class="box"></div></section>`);
+    const result = await page.evaluate(prepareAnimations), group = result.staticEffects.filter(effect => effect.element.id === 'target');
+    assert.equal(result.nativeCount, 1, reason); assert.equal(result.effects[0].element.id, 'other', reason);
+    assert.equal(result.animationCount, sourceCount + 1, reason);
+    assert.equal(result.staticCount, sourceCount, reason); assert.equal(group.length, sourceCount, reason);
+    assert.ok(group.every(effect => effect.reason === reason), JSON.stringify(group));
+    assert.equal(new Set(group.map(effect => effect.id)).size, sourceCount);
+    assert.ok(group.every(effect => effect.animationName), reason);
+    assert.equal(new Set(group.map(effect => effect.groupId)).size, 1);
+    assert.equal(group[0].groupId, group[0].id);
+    assert.ok(group.every(effect => group.some(source => source.id === effect.causeAnimationId)), reason);
+    assert.ok(group.every(effect => Number.isFinite(effect.durationMs) && Number.isFinite(effect.delayMs)), reason);
+    assert.equal(await page.$eval('#target', element => globalThis.__convertX2XAnimationTargets.has(element)), false, reason);
+    assert.equal((await state(page)).animations, 0);
+    if (reason === 'unsupported-properties') assert.equal((await state(page)).background, 'rgb(0, 0, 255)');
+    if (reason === 'infinite-animation') assert.equal((await state(page)).x, 160);
+    if (reason === 'exit-animation') assert.equal((await state(page)).opacity, 1, 'later enter masks exit visually but must not enable a partial native group');
+  }
 });

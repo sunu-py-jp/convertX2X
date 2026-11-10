@@ -1,6 +1,6 @@
 # 開発環境と作業手順
 
-[マニュアルの入口](README.md) · [Office → Markdownの実装](office2md.md) · [Office → PDFの実装](office2pdf.md) · [Markdown → PDFの実装](md2pdf.md) · [Excel → 画像・PDFの実装](excel2img.md) · [PowerPoint / PDFの実装](ppt-pdf-to-images.md) · [Movie → Audioの実装](movie2audio.md)
+[マニュアルの入口](README.md) · [Office → Markdownの実装](office2md.md) · [Office → PDFの実装](office2pdf.md) · [Markdown → PDFの実装](md2pdf.md) · [Excel → 画像・PDFの実装](excel2img.md) · [PowerPoint / PDFの実装](ppt-pdf-to-images.md) · [Movie → Audioの実装](movie2audio.md) · [HTML → PowerPointの実装](html2pptx.md)
 
 PowerShellと明記した箇所以外のシェルコマンドはmacOS/Linux向けです。変換機能のディレクトリを作業場所にします。リポジトリ直下に共通の `pom.xml` はありません。
 
@@ -10,14 +10,15 @@ PowerShellと明記した箇所以外のシェルコマンドはmacOS/Linux向�
 | --- | --- |
 | JDK 21 | 画像・Office・Markdown変換のJavaコードのビルド・テスト・実行。`JAVA_HOME` も同じJDKに合わせる |
 | 同梱Maven Wrapper（`./mvnw`） | 画像・Office・Markdown変換でMavenを実行。Mavenの別途インストールは不要 |
-| Node.js 22または24・npm | Movie → Audioの実行・テスト・パッケージ作成、およびAzurite CLIの導入・実行。`.nvmrc` は24 |
+| Node.js・npm | Movie → Audioは22または24、HTML → PowerPointは24。実行・テスト・パッケージ作成、およびAzurite CLIの導入・実行。`.nvmrc` は24 |
+| Chromium系ブラウザー | HTML → PowerPointのローカル変換・ブラウザーテスト。macOS/WindowsはChrome/Edge、Linux x64は実行パス未指定時に同梱Chromiumを使用 |
 | Python 3.10以上 | 起動・設定・E2Eスクリプト |
 | Azure Functions Core Tools v4（`func`） | ローカルFunctionsホスト、Azureへの配置 |
 | Azurite CLI | Blob・Queueを使うローカル検証。ホスト用Storageが `UseDevelopmentStorage=true` の場合も必要 |
 | Node.js・Playwright・対応Chromium | ブラウザーテストを実行するとき |
 | Azure CLI（`az`） | 既存Azureアプリの接続設定・スケール設定を変更するとき |
 
-初回は対象機能のMavenまたはnpm依存とFunctionsの拡張を取得するため、ネットワーク接続が必要です。Playgroundは配布済みHTML/CSS/JavaScriptで、フロントエンドビルド・CDNは不要です。Movie → AudioのサーバーはNode.jsで動作します。
+初回は対象機能のMavenまたはnpm依存とFunctionsの拡張を取得するため、ネットワーク接続が必要です。Playgroundは配布済みHTML/CSS/JavaScriptで、フロントエンドビルド・CDNは不要です。Movie → AudioとHTML → PowerPointのサーバーはNode.jsで動作します。
 
 Azurite CLIは `npm install -g azurite` で導入します。WindowsのPowerShellでは
 `npm.cmd install -g azurite` を使い、`azurite.cmd --version` で確認してください。
@@ -65,6 +66,17 @@ npm ci
 npm start
 ```
 
+HTML → PowerPointはNode.js 24で起動します。macOS/WindowsではChrome/Edgeを使用し、Linux x64では実行パスを指定しなければ同梱Chromiumを使います。設定ファイルは初回だけexampleからコピーしてください。既存の設定を上書きする必要はありません。
+
+```sh
+cd functions/html2pptx
+npm ci --ignore-scripts --no-audit --no-fund
+# 初回のみ: cp local.settings.example.json local.settings.json
+npm start
+```
+
+CLIだけで使う場合は `npm run convert -- examples/organization-governance.html output/organization` で変換でき、FunctionsホストやAzuriteは不要です。[利用ガイド](../functions/html2pptx/docs/usage.md)を参照してください。
+
 | 機能 | Playground | 対応する入力経路 |
 | --- | --- | --- |
 | PowerPoint / PDF → 画像 | <http://localhost:7071/api/playground> | 同期HTTP・非同期HTTP・直接Queue |
@@ -72,7 +84,8 @@ npm start
 | Excel → 画像・PDF | <http://localhost:7076/api/playground> | 同期HTTP・非同期HTTP・直接Queue |
 | Office → PDF | <http://localhost:7074/api/playground> | 同期HTTP・非同期HTTP・直接Queue |
 | Markdown → PDF | <http://localhost:7075/api/playground> | 同期HTTP・非同期HTTP・直接Queue |
-| Movie → Audio | <http://localhost:7073/api/playground> | 同期HTTPのファイル入力・許可済みHTTPS URL入力 |
+| Movie → Audio | <http://localhost:7073/api/playground> | 同期HTTP・非同期HTTP・直接Queue。HTTPではファイル・許可済みHTTPS URLを受付 |
+| HTML → PowerPoint | <http://localhost:7077/api/playground> | 同期HTTP・CLI。非同期HTTP・直接Queueは未対応 |
 
 画像・Office・Markdown変換の起動スクリプトはビルド・Javaテスト・パッケージ生成後にホストを起動します。Movie → Audioは `npm start` がPythonの起動スクリプトを呼び、依存のSDK互換修正を確認してソースから起動します。従来の `python3 scripts/run_local.py` も使え、通常はnpm依存をインストールしてから起動します。停止はそのターミナルで `Ctrl+C` を使います。Movie → AudioのURL入力は `CONVERSION_URL_ALLOWED_HOSTS` の設定時だけ有効です。
 
@@ -92,11 +105,11 @@ python3 scripts/run_local.py --skip-build
 cp local.settings.example.json local.settings.json
 ```
 
-設定は `Values` に記載します。同じ設定の環境変数があればそちらを優先します。`local.settings.json`、`.env`、`target/`、Movie → Audioの `dist/`・`node_modules/` はGit管理対象外です。実キーをexampleや成果物の説明文へ転記しないでください。
+設定は `Values` に記載します。Pythonの起動スクリプトでは同じ設定の環境変数があればそちらを優先します。上記のexample自動読み込みも、このスクリプトを使う6機能の動作です。HTML → PowerPointの `npm start` はCore Toolsを直接起動するため、最初に `local.settings.json` を用意します。`local.settings.json`、`.env`、`target/`、Node.js機能の `dist/`・`node_modules/` はGit管理対象外です。実キーをexampleや成果物の説明文へ転記しないでください。
 
 ## 3. QueueとBlobを使って動かす
 
-各機能とも `CONVERSION_STORAGE_CONNECTION_STRING`、または後述のManaged Identity用Blob/Queue設定が揃っている場合に、非同期HTTPと直接Queueを利用できます。
+HTML → PowerPoint以外の6機能は `CONVERSION_STORAGE_CONNECTION_STRING`、または後述のManaged Identity用Blob/Queue設定が揃っている場合に、非同期HTTPと直接Queueを利用できます。HTML → PowerPointはStorage設定を追加しても非同期にはなりません。
 
 Office → PDF・Markdown → PDF・Excel → 画像・PDFの起動スクリプトは、
 `UseDevelopmentStorage=true` を選んだ場合、Blob 10000・Queue 10001の起動済みAzuriteを再利用し、
@@ -122,14 +135,15 @@ python3 scripts/run_local.py
 | `CONVERSION_QUEUE_CONNECTION_STRING` | 形式上有効なエミュレーター接続 | 制御用Storageと同じ接続 |
 | `AzureWebJobs.ProcessConversion.Disabled` | `true` | `false` |
 | `AzureWebJobs.PoisonConversion.Disabled` | `true` | `false` |
+| `AzureWebJobs.MaintainConversions.Disabled`（Java） | `true` | 通知先・保持設定があれば `false`、なければ `true` |
 
 ローカルの `AzureWebJobsStorage` が空なら制御用Storageで補完します。非同期が無効でも、明示的に設定されたホスト用Storageまで無効になるわけではありません。Azure上のホスト用StorageはFunction App側で別途有効に設定します。
 
-外部システムから直接依頼する流れは「入力Blobを保存 → 参照JSONをQueueへ送信 → 状態確認 → 成果物取得」です。JSONはBase64を1回だけ適用し、ファイル本体や接続文字列を含めません。Java SDKはエンコード設定を使い、Node.jsの送信例は明示的に1回エンコードします。形式・保存先・権限・送信例は [Office → Markdown](../functions/office2md/docs/direct-queue.md) / [Office → PDF](../functions/office2pdf/docs/direct-queue.md) / [Markdown → PDF](../functions/md2pdf/docs/direct-queue.md) / [PowerPoint・PDF](../functions/ppt-pdf-to-images/docs/direct-queue.md) / [Movie → Audio](../functions/movie2audio/docs/direct-queue.md) の直接Queueガイドを使います。
+外部システムから直接依頼する流れは「入力Blobを保存 → 参照JSONをQueueへ送信 → 状態確認 → 成果物取得」です。JSONはBase64を1回だけ適用し、ファイル本体や接続文字列を含めません。Java SDKはエンコード設定を使い、Node.jsの送信例は明示的に1回エンコードします。SDK側の自動処理と手動処理を併用して二重にエンコードしないでください。形式・保存先・権限・送信例は [Office → Markdown](../functions/office2md/docs/direct-queue.md) / [Office → PDF](../functions/office2pdf/docs/direct-queue.md) / [Markdown → PDF](../functions/md2pdf/docs/direct-queue.md) / [Excel → 画像・PDF](../functions/excel2img/docs/direct-queue.md) / [PowerPoint・PDF](../functions/ppt-pdf-to-images/docs/direct-queue.md) / [Movie → Audio](../functions/movie2audio/docs/direct-queue.md) の直接Queueガイドを使います。
 
 ## 4. 変更に合った検証をする
 
-画像・Office・Markdown変換では、対象機能のディレクトリでJavaと設定スクリプトを確認します。Movie → Audioは後述のnpmコマンドを使います。
+画像・Office・Markdown変換では、対象機能のディレクトリでJavaと設定スクリプトを確認します。Node.jsの2機能は後述のnpmコマンドを使います。
 
 ```sh
 ./mvnw test
@@ -145,7 +159,7 @@ python3 -m unittest discover -s scripts -p 'test_*.py'
 | Queue・Blob・再試行・保存形式 | 専用Azuriteを使う非同期E2E |
 | Playground・成果物の取得URL | ブラウザーテスト、ダウンロード・プレビュー |
 | 環境変数や上限 | 読み込み処理、example、利用ガイド、API資料、Python設定テストを揃える |
-| 文書のみ | ファイル・リンク・コマンド・既定値を実装と照合する |
+| 文書・スキルのみ | ファイル・リンク・コマンド・既定値を実装と照合し、[API資料の更新手順](APIDocs/maintenance.md)で共通資料も確認する |
 
 ### Office → Markdownの実変換と非同期
 
@@ -209,6 +223,8 @@ HTTP受付、Queueからの実抽出、M4A取得、重複・失敗・poisonを�
 
 ### ブラウザー
 
+HTML → PowerPointは `functions/html2pptx` で `npm test` を実行します。入力検証・ブラウザー計測・PPTXの構造・CSSアニメーションのネイティブ変換と固定理由を確認します。詳細とピクセル比較の手順は[開発者ガイド](html2pptx.md#検証)を参照してください。以下のPlaywright手順とは別の、PuppeteerとChromium系ブラウザーを使うテストです。
+
 Node.jsから `playwright` を読み込め、Chromiumを起動できる環境を用意します。画像・Office・Markdown変換のブラウザーテスト用にPlaywrightの `package.json` やロックファイルは同梱していないため、開発環境側でPlaywrightを用意し、利用したバージョンを検証結果に残します。既存のChromeを使う場合は `PLAYWRIGHT_CHANNEL=chrome` を指定できます。モジュールの置き場所が別なら `NODE_PATH` を設定します。
 
 Office → Markdownでは `functions/office2md` で実行します。
@@ -268,12 +284,14 @@ Node.js依存の補完原文を更新する場合は、`third-party/node/overrid
 
 配置先は機能ごとの既存Function Appです。Azure CLIにログインし、対象のサブスクリプション・リソースグループ・アプリ名を確認してから進めます。画像・Office・Markdown変換はLinux・Java 21・Functions v4を前提に、有効なホスト用Storageと `JAVA_OPTS=-Djava.awt.headless=true` を設定します。既存のJavaオプションがある場合は保持して追加します。Movie → AudioはLinux x64・Node.js 24・Functions v4の独立したアプリへ配置し、`FUNCTIONS_WORKER_RUNTIME=node` を設定します。Java機能と同じFunction Appには混在させません。
 
-1. 対象機能のテストを実行し、Java機能は `./mvnw package`、Movie → Audioは `npm run package` で配布物を作る。
+HTML → PowerPointはLinux x64・Node.js 24の独立したFunction Appへ配置します。同梱Chromiumと共有ライブラリの展開を含むため、[利用ガイドの配置手順](../functions/html2pptx/docs/usage.md#azureで実行する)を使い、HTTP入口と変換の両方を確認してください。JavaやLibreOfficeを本番環境へ追加する必要はありません。
+
+1. 対象機能のテストを実行し、Java機能は `./mvnw package`、Node.jsの2機能は `npm run package` で配布物を作る。
 2. 配置先のランタイム・上限・ホスト用Storageを揃え、非同期を使う場合はStorage接続を設定する。Queueトリガー用の派生設定も設定する。
 3. 配布ディレクトリからCore Toolsで公開する。
 4. Azure上で小さな実ファイルを変換し、非同期を使う場合はジョブと成果物取得も確認する。
 
-各機能の非同期設定を更新するコマンドは、対象機能のディレクトリから実行します。制御用接続を環境変数へ設定してから使用してください。空・未設定で実行すると非同期を無効化します。
+非同期に対応する6機能の設定を更新するコマンドは、対象機能のディレクトリから実行します。制御用の接続文字列、またはManaged IdentityのBlob/Queue両URIを環境変数へ設定してから使用してください。制御用設定がいずれも空・未設定で実行すると、配置先に設定が残っていても非同期を無効化します。
 
 ```sh
 python3 scripts/configure_azure_async.py --resource-group YOUR_RESOURCE_GROUP --name YOUR_FUNCTION_APP
@@ -304,7 +322,7 @@ Movie → Audioにも `python3 scripts/configure_azure_async.py --resource-group
 
 ## 6. 実装を拡張するときに守ること
 
-- **変換処理は入力経路で共有する。** 全機能でHTTPとQueueが共通コアを使う。入口に別の変換実装を追加せず、対応する各経路の成果物を確認する。
+- **変換処理は入力経路で共有する。** 非同期に対応する機能はHTTPとQueue、HTML → PowerPointはHTTPとCLIが共通コアを使う。入口に別の変換実装を追加せず、対応する各経路の成果物を確認する。
 - **Excelの数式は一切評価しない。** `IMPORTRANGE`、`WEBSERVICE`、未知・入れ子の式も保存済み値だけを読み、キャッシュ欠落を外部取得で補完しない。関数名の禁止リストに依存しない。[外部数式テスト](../functions/office2md/src/test/java/com/convertx2x/office2md/conversion/ExternalFormulaIsolationTest.java)を維持する。
 - **入力の文字列と実行対象を分ける。** Markdown/HTMLのエスケープ、リンクのスキーム検証、成果物に限定した画像表示を維持する。Playgroundに任意URLからの画像取得を追加しない。
 - **Storageは管理者が登録した接続を使う。** Queueへ任意URL・SAS・接続文字列を追加しない。重複配送、リース、ETag、成果物公開の順序を変更するときは競合・失敗時も確認する。
@@ -416,7 +434,7 @@ CONVERSION_RESULT_QUEUE_COMPLETED__queueServiceUri=https://RESULTS.queue.core.wi
 
 通知はBase64を1回適用したJSONです。利用側は `eventId` で重複を除外してください。送信後・送信済み記録前の停止で、同じイベントが再送されることがあります。通知送信待ちは永続状態から再処理するため、通知障害だけを理由に変換をやり直しません。ジョブを特定できない不正JSONについては通知を保証せず、poison Queueと監視で調査します。未登録の通知エイリアスや権限不備で送信できない場合は、状態Blobの送信待ちを監視し、管理者が登録・権限を修正します。未送信のままでは保持清掃も保護されるため、通知障害を放置しないでください。
 
-結果通知先または保持機能を設定したアプリは、5分ごとのメンテナンス処理を使います。これによりアイドル時も短い定期実行が発生します。両方未設定の場合、この定期処理は無効です。Javaの2機能では配置補助が `AzureWebJobs.MaintainConversions.Disabled` を導出します。補助を使わず直接配置する場合、通知・保持なしなら明示的にtrue、有効にする場合はfalseを設定してください。この設定なしにTimer関数だけを配置すると、処理本体が何もしなくてもホストの定期起動は発生します。Node.js版は設定に応じてTimer自体を登録します。Queueの重複配送や水平スケールを前提とし、定期処理と変換はジョブのリースで調整します。
+結果通知先または保持機能を設定したアプリは、5分ごとのメンテナンス処理を使います。これによりアイドル時も短い定期実行が発生します。両方未設定の場合、この定期処理は無効です。Javaの5機能では配置補助が `AzureWebJobs.MaintainConversions.Disabled` を導出します。補助を使わず直接配置する場合、通知・保持なしなら明示的にtrue、有効にする場合はfalseを設定してください。この設定なしにTimer関数だけを配置すると、処理本体が何もしなくてもホストの定期起動は発生します。Movie → Audioは設定に応じてTimer自体を登録します。HTML → PowerPointにはこのTimerはありません。Queueの重複配送や水平スケールを前提とし、定期処理と変換はジョブのリースで調整します。
 
 ## 9. 結果の採用・保存期限・受入確認
 

@@ -31,7 +31,7 @@ export async function prepareAnimations({maxAnimations = 1000, maxSamples = 33} 
     'infinite-animation': '無限アニメーションは、再生方向を考慮した1回分の終端の見た目で固定しました。',
     'scroll-driven-animation': 'スクロール連動アニメーションは、アニメーションを適用しない静止状態にしました。',
     'unsupported-properties': 'PPTXのアニメーションに変換できないCSSプロパティを含むため、終端の見た目で固定しました。',
-    'multiple-animations': '同じ要素に複数のアニメーションがあるため、合成した終端の見た目で固定しました。',
+    'discontinuous-composition': '複数アニメーションの切り替わりに不連続な変化があるため、要素全体を合成した終端の見た目で固定しました。',
     'nested-animations': '親子要素のアニメーションが重なるため、終端の見た目で固定しました。',
     'unsupported-timing': '繰り返し・交互再生・負の遅延などを含むため、終端の見た目で固定しました。',
     'unsupported-easing': '段階的な変化を含むタイミング関数のため、終端の見た目で固定しました。',
@@ -47,9 +47,11 @@ export async function prepareAnimations({maxAnimations = 1000, maxSamples = 33} 
     'too-many-keyframes': 'キーフレームを安全にサンプリングできる数を超えるため、終端の見た目で固定しました。',
     'transition': 'CSSトランジションは、変化後の静止状態で固定しました。'
   };
-  const warn = (record, reason) => {
+  const warn = (record, reason, combination) => {
     const detail = {id: record.id, reason, slide: slideOf(record.element) || undefined,
-      element: info(record.element), animationName: record.name};
+      element: info(record.element), animationName: record.name, ...(combination ? {
+        ...combination, durationMs: record.duration, delayMs: record.delay
+      } : {})};
     staticEffects.push(detail);
     warnings.push({code: 'ANIMATION_STATIC_FALLBACK', ...detail, message: descriptions[reason]});
   };
@@ -76,9 +78,10 @@ export async function prepareAnimations({maxAnimations = 1000, maxSamples = 33} 
 
   // Pause every effect before sampling any one of them. This also makes composed
   // terminal states independent of wall-clock timing and document size.
-  for (const record of records) {
+  const setTerminal = record => {
     const {animation, effect, scroll, delay, duration, iterations} = record;
-    if (scroll) { animation.cancel(); continue; }
+    if (scroll) { animation.cancel(); return; }
+    if (animation.effect !== effect) animation.effect = effect;
     animation.pause();
     // Cap an infinite effect before seeking its exact endpoint. Seeking to one
     // duration on an infinite timeline would instead select the next iteration.
@@ -87,7 +90,8 @@ export async function prepareAnimations({maxAnimations = 1000, maxSamples = 33} 
     // With a large negative delay the effect has already finished at t=0.
     // A negative currentTime can fall into the before phase in Chromium.
     animation.currentTime = Math.max(0, delay + duration * resolvedIterations);
-  }
+  };
+  for (const record of records) setTerminal(record);
   const read = record => getComputedStyle(record.element, record.pseudo || null);
   const borderBox = element => {
     const style = getComputedStyle(element);
@@ -138,12 +142,13 @@ export async function prepareAnimations({maxAnimations = 1000, maxSamples = 33} 
     if (record.transition) return 'transition';
     if (record.pseudo) return 'pseudo-element';
     if (!slideOf(element)) return 'outside-slide';
-    if (records.some(other => other !== record && other.element === element)) return 'multiple-animations';
-    if (records.some(other => other !== record && (other.element.contains(element) || element.contains(other.element)))) return 'nested-animations';
+    if (records.some(other => other.element !== element && (other.element.contains(element) || element.contains(other.element)))) return 'nested-animations';
     if (iterations !== 1 || duration <= 0 || delay < 0 || number(timing.iterationStart) !== 0 || number(timing.endDelay) !== 0 ||
-        !['normal', 'reverse'].includes(timing.direction) || timing.composite && timing.composite !== 'replace') return 'unsupported-timing';
+        !['normal', 'reverse'].includes(timing.direction)) return 'unsupported-timing';
     if ([timing.easing, ...frames.map(frame => frame.easing)].some(easing => /steps\(|step-start|step-end/.test(easing || ''))) return 'unsupported-easing';
-    if (properties.some(property => !supported.has(property)) || frames.some(frame => frame.composite && !['auto', 'replace'].includes(frame.composite))) return 'unsupported-properties';
+    if (properties.some(property => !supported.has(property)) ||
+        !['replace', 'add', 'accumulate'].includes(record.effect.composite || 'replace') ||
+        frames.some(frame => frame.composite && !['auto', 'replace', 'add', 'accumulate'].includes(frame.composite))) return 'unsupported-properties';
     // Matrix decomposition loses whole turns. Bound authored rotation so adjacent
     // samples cannot silently select the opposite rotation direction.
     const angleBudget = Math.min(1440, 90 * (maxSamples - 1));
@@ -174,57 +179,152 @@ export async function prepareAnimations({maxAnimations = 1000, maxSamples = 33} 
     }
     return null;
   };
+  const offsetsFor = record => [...new Set([
+    ...Array.from({length: maxSamples}, (_, index) => index / (maxSamples - 1)),
+    ...record.frames.map(frame => record.timing.direction === 'reverse' ? 1 - frame.computedOffset : frame.computedOffset)
+  ])].sort((a, b) => a - b);
+  const appendSample = (samples, record, offset) => {
+    const value = sample(record);
+    if (!value) return false;
+    if (samples.length) {
+      const previous = samples[samples.length - 1].rotation;
+      while (value.rotation - previous > 180) value.rotation -= 360;
+      while (value.rotation - previous < -180) value.rotation += 360;
+    }
+    samples.push({offset, ...value});
+    return true;
+  };
+  const trajectoryReason = (samples, allowConstant = false) => {
+    const first = samples[0], last = samples[samples.length - 1];
+    const finalAngle = ((last.rotation % 360) + 360) % 360;
+    if (Math.min(finalAngle, 360 - finalAngle) > .001 && samples.some(value =>
+      Math.abs(value.scaleX / last.scaleX - value.scaleY / last.scaleY) > .0001)) return 'unsupported-transform';
+    if (last.opacity <= .0001) return 'exit-animation';
+    if (!samples.every(value => Math.abs(value.opacity - 1) < .0001) &&
+        !(first.opacity <= .0001 && Math.abs(last.opacity - 1) < .0001 &&
+          samples.every((value, i) => i === 0 || value.opacity >= samples[i - 1].opacity - .0001))) return 'unsupported-opacity';
+    const changes = ['x', 'y', 'scaleX', 'scaleY', 'rotation', 'opacity'].some(property =>
+      samples.some(value => Math.abs(value[property] - last[property]) > .0001));
+    return !allowConstant && !changes ? 'no-visible-change' : null;
+  };
+  const sourceInfo = record => ({id: record.id, animationName: record.name, durationMs: record.duration, delayMs: record.delay});
+  const groups = new Map();
   for (const record of records) {
-    let reason = nativeReason(record), samples;
-    if (!reason) {
-      // Preserve authored keyframe boundaries in addition to a regular grid.
-      // A brief intermediate state must not disappear between uniform samples.
-      const offsets = [...new Set([
-        ...Array.from({length: maxSamples}, (_, index) => index / (maxSamples - 1)),
-        ...record.frames.map(frame => record.timing.direction === 'reverse' ? 1 - frame.computedOffset : frame.computedOffset)
-      ])].sort((a, b) => a - b);
-      if (offsets.length > 65) reason = 'too-many-keyframes';
-      samples = [];
-      for (const offset of reason ? [] : offsets) {
-        record.animation.currentTime = record.delay + record.duration * offset;
-        const value = sample(record);
-        if (!value) { reason = 'unsupported-transform'; break; }
-        if (samples.length) {
-          const previous = samples[samples.length - 1].rotation;
-          while (value.rotation - previous > 180) value.rotation -= 360;
-          while (value.rotation - previous < -180) value.rotation += 360;
+    const group = groups.get(record.element) || [];
+    group.push(record); groups.set(record.element, group);
+  }
+  for (const group of groups.values()) {
+    const record = group[0], combined = group.length > 1, isolated = new Map();
+    let reason, cause, samples, duration = record.duration, delay = record.delay;
+    // Validate each source independently. A later replacement must not hide an
+    // unsupported exit, 3D transform, color change, etc. from this decision.
+    try {
+      if (combined) for (const member of group) member.animation.effect = null;
+      for (const member of group) {
+        setTerminal(member);
+        reason = nativeReason(member);
+        const offsets = offsetsFor(member), values = [];
+        if (!reason && offsets.length > 65) reason = 'too-many-keyframes';
+        for (const offset of reason ? [] : offsets) {
+          member.animation.currentTime = member.delay + member.duration * offset;
+          if (!appendSample(values, member, offset)) { reason = 'unsupported-transform'; break; }
         }
-        samples.push({offset, ...value});
+        if (!reason) reason = trajectoryReason(values, combined);
+        isolated.set(member, values);
+        if (combined) member.animation.effect = null;
+        if (reason) { cause = member; break; }
       }
-      record.animation.currentTime = record.delay + record.duration * record.iterations;
-      if (!reason) {
-        const first = samples[0], last = samples[samples.length - 1];
-        const finalAngle = ((last.rotation % 360) + 360) % 360;
-        if (Math.min(finalAngle, 360 - finalAngle) > .001 && samples.some(value =>
-          Math.abs(value.scaleX / last.scaleX - value.scaleY / last.scaleY) > .0001)) reason = 'unsupported-transform';
-        if (!reason && last.opacity <= .0001) reason = 'exit-animation';
-        else if (!reason && !samples.every(value => Math.abs(value.opacity - 1) < .0001) &&
-            !(first.opacity <= .0001 && Math.abs(last.opacity - 1) < .0001 &&
-              samples.every((value, i) => i === 0 || value.opacity >= samples[i - 1].opacity - .0001))) reason = 'unsupported-opacity';
-        const changes = ['x', 'y', 'scaleX', 'scaleY', 'rotation', 'opacity'].some(property =>
-          samples.some(value => Math.abs(value[property] - last[property]) > .0001));
-        if (!reason && !changes) reason = 'no-visible-change';
-        if (!reason) {
-          const rootRect = record.element.closest('[data-slide]').getBoundingClientRect(), box = borderBox(record.element);
-          const width = box.width * last.scaleX, height = box.height * last.scaleY;
-          effects.push({id: record.id, slide: slideOf(record.element), element: info(record.element), animationName: record.name,
-            durationMs: record.duration, delayMs: record.delay, base: 'final',
-            sampling: {method: 'computed-css-timing', sampleCount: samples.length, easingApproximation: true},
-            bounds: {x: last.x - rootRect.x - width / 2, y: last.y - rootRect.y - height / 2, width, height},
-            origin: {x: last.x - rootRect.x, y: last.y - rootRect.y},
-            keyframes: samples.map(value => ({offset: value.offset, opacity: value.opacity,
-              x: value.x - last.x, y: value.y - last.y, scaleX: value.scaleX / last.scaleX,
-              scaleY: value.scaleY / last.scaleY, rotation: value.rotation - last.rotation}))});
-          targets.set(record.element, [record.id]);
+    } finally {
+      for (const member of group) setTerminal(member);
+    }
+    if (!reason && !combined) samples = isolated.get(record);
+    if (!reason && combined) {
+      delay = Math.min(...group.map(member => member.delay));
+      const end = Math.max(...group.map(member => member.delay + member.duration));
+      duration = end - delay;
+      const times = [...new Set(group.flatMap(member => isolated.get(member).map(value =>
+        member.delay + member.duration * value.offset)))].sort((a, b) => a - b)
+        .filter((value, i, all) => !i || value - all[i - 1] > 1e-7);
+      if (duration > 3600000) reason = 'unsupported-timing';
+      else if (times.length > 257) reason = 'too-many-keyframes';
+      // Use every source's regular samples, not just one global grid: a short
+      // rotation must not disappear inside a much longer companion animation.
+      if (!reason) for (let i = 1; i < times.length; i++) {
+        let angularTravel = 0;
+        for (const member of group) {
+          const values = isolated.get(member);
+          for (let j = 1; j < values.length; j++) {
+            const a = member.delay + member.duration * values[j - 1].offset;
+            const b = member.delay + member.duration * values[j].offset;
+            const overlap = Math.max(0, Math.min(b, times[i]) - Math.max(a, times[i - 1]));
+            angularTravel += Math.abs(values[j].rotation - values[j - 1].rotation) * overlap / (b - a);
+          }
         }
+        if (angularTravel > 90 + .001) { reason = 'unsupported-transform'; break; }
+      }
+      const seek = time => {
+        for (const member of group) member.animation.currentTime = time;
+        return sample(record);
+      };
+      const continuous = (a, b) => a && b &&
+        Math.abs(a.x - b.x) < .05 && Math.abs(a.y - b.y) < .05 &&
+        Math.abs(a.scaleX - b.scaleX) < .0001 && Math.abs(a.scaleY - b.scaleY) < .0001 &&
+        Math.abs(a.opacity - b.opacity) < .0001 &&
+        Math.abs(((a.rotation - b.rotation + 540) % 360) - 180) < .05;
+      const boundaryLimit = (near, far) => near && far && ({
+        ...Object.fromEntries(['x', 'y', 'scaleX', 'scaleY', 'opacity'].map(key => [key, 2 * near[key] - far[key]])),
+        rotation: near.rotation + ((near.rotation - far.rotation + 540) % 360) - 180
+      });
+      try {
+        if (!reason) {
+          const terminal = sample(record);
+          // Sampling honors original fill and CSS replacement/addition order.
+          // Forcing backwards/forwards fill throughout would change ownership.
+          for (const member of group) member.effect.updateTiming({fill: member.timing.fill});
+          const boundaries = [...new Set(group.flatMap(member => [member.delay, member.delay + member.duration]))]
+            .filter(time => time > 0 && time >= delay && time <= end).sort((a, b) => a - b)
+            .filter((value, i, all) => !i || value - all[i - 1] > 1e-7);
+          for (let i = 0; i < boundaries.length; i++) {
+            const time = boundaries[i], before = i ? boundaries[i - 1] : 0;
+            const after = boundaries[i + 1] ?? end;
+            // Chromium may treat sub-microsecond offsets as the boundary itself.
+            // Probe clearly inside each phase, then extrapolate its limit to
+            // distinguish a real jump from continuous fast motion.
+            const epsilon = Math.min(.01, (time - before) / 4, time < end ? (after - time) / 4 : Infinity);
+            if (epsilon < .001) { reason = 'discontinuous-composition'; break; }
+            const left = boundaryLimit(seek(time - epsilon), seek(time - 2 * epsilon));
+            const at = time === end ? terminal : seek(time);
+            const right = time === end ? terminal : boundaryLimit(seek(time + epsilon), seek(time + 2 * epsilon));
+            if (!continuous(left, at) || !continuous(at, right)) { reason = 'discontinuous-composition'; break; }
+          }
+          samples = [];
+          for (const time of reason ? [] : times) {
+            if (time === end) for (const member of group) setTerminal(member);
+            else seek(time);
+            if (!appendSample(samples, record, (time - delay) / duration)) { reason = 'unsupported-transform'; break; }
+          }
+          if (!reason) reason = trajectoryReason(samples);
+        }
+      } finally {
+        for (const member of group) setTerminal(member);
       }
     }
-    if (reason) warn(record, reason);
+    if (reason) {
+      for (const member of group) warn(member, reason, combined ? {groupId: record.id, causeAnimationId: cause?.id ?? null} : undefined);
+      continue;
+    }
+    const last = samples.at(-1), rootRect = record.element.closest('[data-slide]').getBoundingClientRect(), box = borderBox(record.element);
+    const width = box.width * last.scaleX, height = box.height * last.scaleY;
+    effects.push({id: record.id, slide: slideOf(record.element), element: info(record.element), animationName: record.name,
+      ...(combined ? {sourceAnimations: group.map(sourceInfo)} : {}),
+      durationMs: duration, delayMs: delay, base: 'final',
+      sampling: {method: 'computed-css-timing', sampleCount: samples.length, easingApproximation: true},
+      bounds: {x: last.x - rootRect.x - width / 2, y: last.y - rootRect.y - height / 2, width, height},
+      origin: {x: last.x - rootRect.x, y: last.y - rootRect.y},
+      keyframes: samples.map(value => ({offset: value.offset, opacity: value.opacity,
+        x: value.x - last.x, y: value.y - last.y, scaleX: value.scaleX / last.scaleX,
+        scaleY: value.scaleY / last.scaleY, rotation: value.rotation - last.rotation}))});
+    targets.set(record.element, [record.id]);
   }
 
   // Capture all selected states before cancelling one effect: siblings may share
@@ -261,7 +361,7 @@ export async function prepareAnimations({maxAnimations = 1000, maxSamples = 33} 
     message: 'CSSトランジションの変化先は自動推測せず、現在の静止状態で出力しました。'});
   if (transitionTargets.length > maxAnimations) fail('CSSトランジションの数が上限を超えています。');
   return {effects, staticEffects, warnings, animationCount: records.length, nativeCount: effects.length,
-    staticCount: records.length - effects.length, transitionCount: transitionTargets.length};
+    staticCount: staticEffects.length, transitionCount: transitionTargets.length};
 }
 
 /** Run after pseudo-element materialization so no copied effect can restart. */

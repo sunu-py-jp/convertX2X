@@ -18,11 +18,11 @@
 <article class="article">
 <p class="eyebrow">Movie → Audio</p>
 <h1>ファイルを送って抽出</h1>
-<p class="lead">動画ファイルのバイト列をPOSTし、最初のAAC音声トラックをaudio.m4aとして受け取ります。</p>
+<p class="lead">動画ファイルのバイト列をPOSTし、最初の音声トラックをM4AまたはWAVとして受け取ります。既定ではAACをコピーしてaudio.m4aを返します。</p>
 
 <h2 id="convert">POST /api/convert</h2>
 <div class="endpoint"><span class="method post">POST</span><code>/api/convert</code></div>
-<p>動画をHTTPのボディに直接入れます。ファイル名・抽出範囲・音声トラック番号・出力形式を指定するパラメーターはありません。</p>
+<p>動画をHTTPのボディに直接入れます。音声形式・モード・サンプリングレート・チャンネル数は<a href="#audio-options">音声オプション</a>で指定できます。ファイル名・抽出範囲・音声トラック番号を指定するパラメーターはありません。</p>
 <div class="table-wrap"><table><thead><tr><th scope="col">項目</th><th scope="col">指定</th></tr></thead><tbody><tr><td>ボディ</td><td>空でない動画の生バイト列。既定上限100MiB</td></tr><tr><td><code>Content-Type</code></td><td><code>application/octet-stream</code> を推奨</td></tr><tr><td><code>x-functions-key</code></td><td>AzureではFunction認証キーが必要。複数APIを使う場合はアプリのホストキー</td></tr></tbody></table></div>
 <p><code>multipart/*</code> と <code>application/json</code>は <code>415 RAW_BODY_REQUIRED</code> です。ファイルは <code>application/octet-stream</code>、URLのJSONは <a href="url.html">/convert-url</a> を使います。Base64文字列は動画ファイルの代わりにはなりません。<code>filename</code> など未知のクエリは処理に利用しません。</p>
 <h2 id="example">curl の例</h2>
@@ -51,8 +51,8 @@ Cache-Control: no-store
 &lt;M4Aのバイト列&gt;</code></pre>
 <p><code>X-Audio-Codec: aac</code> は出力音声のコーデック、<code>X-Audio-Mode: copy</code> は再エンコードを行わなかったことを示します。元の動画のファイル名に関係なく、既定の出力名は<code>audio.m4a</code>です。WAVを選ぶと<code>audio.wav</code>になります。</p>
 <h2 id="streaming">ストリーミングの範囲</h2>
-<p>動画のアップロードは上限付きストリームで一時ディスクへ保存します。FFmpegが音声を抽出し、M4A全体を検証した後、完成したファイルを読み取りストリームで返します。入力動画・出力音声の全体をアプリのメモリーへ読み込む必要はありません。</p>
-<p>音声の抽出中から応答するライブ変換ではありません。元のAACを保持した通常のM4Aに <code>faststart</code> を適用し、抽出が完了してから送信します。受信側はHTTP本文をストリームとして読み、保存・再生・次の処理へ渡せます。</p>
+<p>動画のアップロードは上限付きストリームで一時ディスクへ保存します。FFmpegが音声を変換し、M4A/WAV全体を検証した後、完成したファイルを読み取りストリームで返します。入力動画・出力音声の全体をアプリのメモリーへ読み込む必要はありません。</p>
+<p>音声の抽出中から応答するライブ変換ではありません。既定のcopyは元のAACを保持します。M4A出力には <code>faststart</code> を適用し、どちらの形式も変換が完了してから送信します。受信側はHTTP本文をストリームとして読み、保存・再生・次の処理へ渡せます。</p>
 <p>アプリは <code>Content-Length</code> を付けません。出力ファイルの読み出し中の期限超過やエラーはストリームを中断し、開始済みの応答をJSONエラーへ差し替えません。転送中のキャンセルはアプリへ伝搬した時点で処理します。利用側ではステータスだけでなく、本文の読み取りが正常終了したことを確認してください。</p>
 <h2 id="audio-options">音声形式を選ぶ</h2>
 <p>既定はAACの無劣化コピーです。<code>audioMode=transcode</code>を明示すると、AAC・Opus・MP3・一般的なPCMからM4A/AACまたはWAV/16bit PCMへ変換できます。</p>
@@ -90,11 +90,11 @@ Cache-Control: no-store
 }</code></pre>
 <p>上の例は送信開始前のHTTP 422です。アプリのエラーコードで判定し、音声ファイルとして保存しないでください。<a href="settings.html#errors">設定・エラー一覧</a>にサイズ超過・同時実行・タイムアウトもまとめています。</p>
 <h2 id="storage">保存場所と返却方法</h2>
-<p>一時ディスクへ入力と出力を保存し、完成済みM4Aを読み取りストリームで送信します。ファイル全体をメモリーへ載せませんが、ストリームのバッファとFFmpegは同じインスタンスのメモリーを使います。</p>
+<p>一時ディスクへ入力と出力を保存し、完成済みM4A/WAVを読み取りストリームで送信します。ファイル全体をメモリーへ載せませんが、ストリームのバッファとFFmpegは同じインスタンスのメモリーを使います。</p>
 <p>出力ファイルの読み取りストリームが正常終了・エラー・伝搬したキャンセル・期限超過で閉じたら、作業ファイルを削除します。このAPIではBlobへ保存しません。出力先SASを渡して保存する場合は、<a href="storage.html">/convert-to-blob</a> を使います。1つのNode.jsプロセスで入力受信からこの読み取りストリームが閉じるまで1件ずつ処理し、競合は <code>503 CONVERSION_BUSY</code> です。<a href="settings.html#runtime">実行・同時処理の設定</a>を参照してください。</p>
 
 <p>ジョブIDを受け取って後から結果を取得する場合は <a href="jobs.html">非同期HTTP</a>、他システムから登録済みBlobを処理する場合は <a href="queue.html">直接Queue</a> を使います。SAS保存APIは同期専用です。</p>
-<footer class="page-footer"><p>最終確認：2026-09-15。<a href="../../../functions/movie2audio/docs/usage.md">利用ガイド</a> · <a href="../../movie2audio.md">開発者向け実装ガイド</a></p></footer>
+<footer class="page-footer"><p>資料照合：2026-11-09。<a href="../../../functions/movie2audio/docs/usage.md">利用ガイド</a> · <a href="../../movie2audio.md">開発者向け実装ガイド</a></p></footer>
 </article>
 <aside class="toc" aria-label="このページの目次"><p class="toc-title">このページの内容</p><nav id="page-toc"></nav></aside>
 </div>

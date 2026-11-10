@@ -9,11 +9,14 @@ PDFはAzure AI Document Intelligenceへの中間入力です。Officeの印刷�
 - Excel: 表示シートごとに、値のある行・列を一つの表へまとめます。空列を挟んだ
   左右の補足表も同じ表に入ります。数式は再計算せず保存済み値を使います。
 - Word: 本文、見出し、箇条書き、表、対応画像を本文順に配置します。
-- PowerPoint: 表示スライドをPOIのJava2D描画で1スライド1ページにします。
+- PowerPoint: 変換対象のスライドをPOIのJava2D描画で1スライド1ページにします。
   スライド画像に検索用の非表示テキストを重ねるため、見た目を保ちながら
   PDFビューアーで日本語も検索できます。対象はPOIが文字として描画する
   テキストボックス、図形、グループ内の図形、表です。POIが描画できない
   SmartArt・グラフなどの文字は検索対象にならない場合があります。
+
+`.pptx` の非表示スライドは除外します。旧形式 `.ppt` の非表示スライド除外は
+未対応のため、非表示スライドもPDFの表示と検索用テキストに含まれます。
 
 PowerPointの検索用テキストは同期HTTP・非同期HTTP・直接Queueで既定で付与され、
 追加オプションは不要です。画像内の文字のOCRは行わないため、その文字は検索できません。
@@ -113,7 +116,8 @@ Flex Consumptionなどの従量課金Function Appを作成し、必要ならStor
 追加します。接続文字列の代わりに
 `CONVERSION_STORAGE__blobServiceUri` と
 `CONVERSION_STORAGE__queueServiceUri` を設定するとManaged Identityを使えます。
-詳細な別Storage・結果通知・保持設定は[直接Queueガイド](direct-queue.md)を参照してください。
+別Storage・結果通知・保持設定は[直接Queueガイド](direct-queue.md#通知先と保持期間の設定)、
+権限・ホスト設定・閉域接続は[共通の配置・運用手順](../../../docs/development.md#8-managed-identity閉域storage結果通知)を参照してください。
 
 ## ライセンス
 

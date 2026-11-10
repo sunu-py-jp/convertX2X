@@ -13,6 +13,7 @@
 | `src/service.js` / `worker.js` | 資格情報を引き継がない別プロセス、時間・ヒープ上限、ブラウザーと一時領域の後片付け |
 | `src/browser.js` | ローカルChrome/EdgeまたはLinux同梱Chromium、共有ライブラリ・日本語フォント、通信制御 |
 | `src/fonts.js` | Noto Sans JPの共通定義、計測前にHTML・SVG・疑似要素のフォントを統一、通常・太字の読込確認 |
+| `src/animations.js` | CSSアニメーションの計測、同じ要素の複数指定の合成、ネイティブ変換可否、固定時の終端状態と理由 |
 | `src/css-native.js` / `exporter.js` | CSSの輪郭・枠線・累積変形を汎用SVGへ渡す、固定ハッシュで確認した変換器フック |
 | `src/pseudo-elements.js` | 空のCSS疑似要素を座標検査付きで通常要素へ置換（スタイル展開32MiB制限） |
 | `src/text-layout.js` | ブラウザーで文字の行・書式区間・位置を計測し、折り返しと親の回転・等倍比の拡縮を編集可能な文字へ反映 |
@@ -20,6 +21,7 @@
 | `src/engine.js` | スライド境界、配置検査、変換器の実行、レポート |
 | `src/svg-native.js` | SVG計測・座標変換、編集可能な図形・文字・曲線・矢印・線形グラデーション |
 | `src/pptx.js` | SVG画像の置換、描画順、表の行高・余白・行間、ID一意化、画像の配置・切り抜き・透明度・実体共有、未使用画像の除去、出力検査 |
+| `src/pptx-animations.js` | 最終的な図形IDに対するグループ化とPowerPointの再生タイムライン、対象を安全にまとめられない場合の固定出力 |
 | `src/handlers.js` / `index.js` | 同期HTTP・同時実行制限・Function認証・ダウンロード |
 | `src/config.js` | 環境変数と上限。入力から上限を変更できない |
 | `src/playground.js` | 入力HTMLを実行せず送信する軽量画面 |
@@ -39,10 +41,22 @@ SVGはグループ化されるため、PowerPointでグループ内の要素を�
 
 表はブラウザーで行高・セル余白・行間を計測し、結合セルとともに反映します。PPTXの行高は最小値として扱われるため、行高だけでなく余白と行間も補正し、表が縦へ膨らむ差を抑えています。
 
-非対応のCSS/SVGは明示的なエラー、保持できない線の細部等はレポート警告になります。
+静止状態でも描画できないCSS/SVGは明示的なエラー、保持できない線の細部等はレポート警告になります。CSSアニメーションの未対応は、次節の静止状態への固定を先に判定します。
 フォント埋め込み・長文の自動改ページ・SVGの自動接続・JavaScript実行は行いません。
 
 現在同梱する日本語フォントはNoto Sans JP（Regular/Bold、OFL）です。HTML/CSSのフォント指定にかかわらず、HTML・SVGの文字をNoto Sans JPに統一して計測・変換します。検証用の描画でも同じフォントを使いますが、PPTXへフォントファイルは埋め込みません。閲覧環境に同じフォントがない場合の置換・改行差は残ります。reportの `FONTS_NOT_EMBEDDED` はこの制約を示すもので、各端末の代替フォントを検出した結果ではありません。
+
+### CSSアニメーションの変換
+
+`animations.js` はブラウザーが計算したCSSの `@keyframes` を計測します。フェードイン・2D移動・拡縮・回転を安全に対応付けできる場合、`pptx-animations.js` が編集可能な要素へPowerPointの動きを付与します。遅延はスライド開始基準で、クリック待ちへ変換しません。HTTPとCLIで同じ自動判定を使い、入力JavaScriptを実行する必要はありません。
+
+同じ要素に指定された複数アニメーションは、個々の指定と合成結果の両方を検査します。CSSの置き換え・加算・累積、開始時刻・時間・fill-modeを考慮して1つの時間軸にまとめます。未対応の指定が1つでもある場合、または境界で不連続な動き等を安全に近似できない場合は、要素全体を終端で固定します。対応する指定だけを残す部分変換は行いません。
+
+固定時は、有限アニメーションは再生方向を考慮した終端、無限アニメーションは最初の1回分の終端を採用します。fill-modeがnoneでも元のスタイルへ戻る前の終端を保持し、終端が透明なら非表示です。実際の再生時間だけ待ちません。transitionや操作依存の変化は、ホバー・クリック等を推測せず静止状態として扱います。固定後も未対応の3D・filter等が残れば描画エラーになります。
+
+reportの `animations.policy` は `native-or-static` です。`nativeEffects` と `staticEffects`、警告 `ANIMATION_STATIC_FALLBACK` で結果を確認します。複数指定のネイティブ項目は `sourceAnimations` に元の指定を保持します。ブラウザー側で複数指定を固定した各項目には `groupId`・`causeAnimationId`・`reason` を記録し、合成結果が原因なら `causeAnimationId` はnullです。PPTX組み立て段階の固定では合成した1項目と `sourceAnimations` に記録します。`format=pptx` ではreportを返さないため、診断には既定のZIP出力を使います。
+
+サンプリング上限、対応範囲、例は[利用ガイドのCSSアニメーション](../functions/html2pptx/docs/usage.md#cssアニメーション)を参照してください。開発時は `test/animations-browser.test.js`、`test/pptx-animations.test.js`、`test/animation-conversion.test.js` で、計測・XML・実変換とレポートを確認します。
 
 ## 入力境界とリソース制限
 
@@ -67,13 +81,14 @@ npm test
 npm run convert -- examples/organization-governance.html output/organization
 ```
 
-ブラウザーテストにはChrome/Edgeが必要です。`HTML2PPTX_CHROMIUM_PATH` で実行ファイルを指定できます。
+ブラウザーテストにはChromium系ブラウザーが必要です。macOS/WindowsではChrome/Edgeを使用し、Linux x64では実行パスを指定しなければ同梱Chromiumを使います。`HTML2PPTX_CHROMIUM_PATH` で実行ファイルを指定できます。
 SVG単体テストで明示する場合は `HTML2PPTX_TEST_BROWSER` を指定します。
-企業発表・決算・体制図・API構成・プロジェクト計画の5資料に、図形の比較と画像の比較を加えた7資料・20スライドを用意しています。文字の欠落、画像数、SVG画像が残らないこと、表行高、ID一意性を確認します。画像例は5スライド・28配置で、拡縮・反転・切り抜き・角丸・透過・ぼかし・重なり順を比較します。
+企業発表・決算・体制図・API構成・プロジェクト計画の5資料に、図形・画像・CSSアニメーションの比較を加えた8資料・24スライドを用意しています。`examples/catalog.json` の7資料・19スライドに、`examples/visual-fidelity.html` の図形比較5枚を加えた構成です。文字の欠落、画像数、SVG画像が残らないこと、表行高、ID一意性を確認します。画像例は5スライド・28配置で、拡縮・反転・切り抜き・角丸・透過・ぼかし・重なり順を比較します。アニメーション例は4スライドで、複数指定の合成と要素全体の固定も確認します。
 外部参照、実行コード、ZIP逸脱、上限、未対応描画、タイムアウトは別のテストで確認します。
-2026-10-30の最終確認では119テストが成功し、失敗・スキップはありませんでした。作業用の結果は `functions/html2pptx/output/final/`、公開用の例はAPI資料に置きます。
+2026-10-30時点の確認では119テストが成功し、失敗・スキップはありませんでした。これはアニメーション追加前の検証記録です。現在の検証対象は上記のテストと `npm test` の結果で確認します。当時の作業用結果は `functions/html2pptx/output/final/`、公開用の例はAPI資料に置きます。
 
 実例ページのPPTXプレビューは生成ファイルを外部レンダラーで描画し、使用したソフトを各ページに明記します。ピクセル比較はLibreOffice→PDF→PDFBoxを主比較、POIを副比較とします。HTMLのスクリーンショットとは区別します。PowerPoint本体の表示・編集を直接検証したことにはなりません。
+静止画像やPDFではアニメーションの再生を確認できません。macOSのQuick Lookには自由形状の表示差があり、単純なCSSの四角・角丸・円は標準図形で保存します。複雑なパスはQuick Lookで欠落する場合があります。XMLの構造検証・静止描画・PowerPoint本体の再生を別々に記録してください。
 Azureでの確認結果とローカルの時間・メモリーは混同しないでください。
 
 ### Azure HTTP入口の確認（2026-10-30）

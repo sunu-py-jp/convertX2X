@@ -12,6 +12,6 @@
 <h2 id="status">状態確認</h2><div class="endpoint"><span class="method get">GET</span><code>/api/jobs/{id}</code></div>
 <p>状態は<code>queued / running / succeeded / failed</code>です。成功時は<code>resultUrl / reportUrl / archiveUrl</code>を返します。失敗時は<code>errorCode / errorMessage</code>を確認します。</p>
 <h2 id="download">成果物</h2><div class="table-wrap"><table><thead><tr><th>パス</th><th>内容</th></tr></thead><tbody><tr><td><code>/api/jobs/{id}/result</code></td><td><code>document.pdf</code></td></tr><tr><td><code>/api/jobs/{id}/report</code></td><td><code>report.json</code></td></tr><tr><td><code>/api/jobs/{id}/archive</code></td><td>PDFとreportを含むZIP</td></tr></tbody></table></div>
-<p>未完了は<code>409 JOB_NOT_READY</code>、存在しないIDは<code>404 JOB_NOT_FOUND</code>です。保持期間を有効にし、成果物が削除済みなら<code>410 JOB_RESULT_EXPIRED</code>を返します。</p>
+<p>未完了は<code>409 JOB_NOT_READY</code>、存在しないIDは<code>404 JOB_NOT_FOUND</code>です。<a href="settings.html#notification-and-retention">保持期間</a>を有効にし、成果物が削除済みなら<code>410 JOB_RESULT_EXPIRED</code>を返します。</p>
 <h2 id="behavior">再試行と公開</h2><p>Queueメッセージは再配送されてもジョブIDで直列化します。PDFとreportをすべて保存してから成功状態を公開し、途中の試行は成果物URLに採用しません。</p>
 </article><aside class="toc"><p class="toc-title">このページの内容</p><nav id="page-toc"></nav></aside></div></main></body></html>

@@ -22,7 +22,7 @@
 <div class="endpoint"><span class="method post">POST</span><code>/api/convert?filename=sample.docx</code></div>
 <p>ファイル本体をリクエストの生バイト列として送ります。処理が完了すると <code>document.zip</code> を返します。変換用のStorage接続は不要です。AzureのFunctionsホスト用Storageは<a href="settings.html#storage">別途設定</a>します。</p>
 <h2 id="request">リクエスト</h2>
-<div class="table-wrap"><table><thead><tr><th scope="col">項目</th><th scope="col">必須</th><th scope="col">指定内容</th></tr></thead><tbody><tr><td>ボディ</td><td>必須</td><td>空でないOfficeファイルの生バイト列。Base64・JSON・multipartではない</td></tr><tr><td><code>filename</code></td><td>指定を推奨</td><td>クエリに実際の拡張子を含む名前。<code>.xlsx / .xls / .docx / .pptx</code></td></tr><tr><td><code>imageMode</code></td><td>任意</td><td><code>ignore</code>（既定）または <code>ocr</code>。どちらも元画像のファイルとMarkdown参照を残す。ocrだけ画像内の文字を追加</td></tr><tr><td><code>x-file-name</code></td><td>代替</td><td>filenameクエリが存在しない場合のファイル名ヘッダー</td></tr><tr><td><code>Content-Type</code></td><td>推奨</td><td><code>application/octet-stream</code></td></tr><tr><td><code>x-functions-key</code></td><td>Azure上で必須</td><td>Function認証用キー。非同期も使う場合はアプリ共通のホストキー</td></tr></tbody></table></div>
+<div class="table-wrap"><table><thead><tr><th scope="col">項目</th><th scope="col">必須</th><th scope="col">指定内容</th></tr></thead><tbody><tr><td>ボディ</td><td>必須</td><td>空でないOfficeファイルの生バイト列。Base64・JSON・multipartではない</td></tr><tr><td><code>filename</code></td><td>指定を推奨</td><td>クエリに実際の拡張子を含む名前。<code>.xlsx / .xls / .docx / .pptx</code></td></tr><tr><td><code>imageMode</code></td><td>任意</td><td><code>ignore</code>（既定）または <code>ocr</code>。どちらも単独画像または合成画像のファイルとMarkdown参照を残す。合成元の独立ファイル・参照は出力しない。ocrだけ元画像の可視領域から文字を追加</td></tr><tr><td><code>x-file-name</code></td><td>代替</td><td>filenameクエリが存在しない場合のファイル名ヘッダー</td></tr><tr><td><code>Content-Type</code></td><td>推奨</td><td><code>application/octet-stream</code></td></tr><tr><td><code>x-functions-key</code></td><td>Azure上で必須</td><td>Function認証用キー。非同期も使う場合はアプリ共通のホストキー</td></tr></tbody></table></div>
 <div class="callout warning"><p>filenameを省略し、代替ヘッダーもなければ <code>workbook.xlsx</code> として扱います。Word・PowerPointは実際の拡張子を必ず指定してください。</p>
 </div>
 <p>ファイル名はパス部分を除いた末尾名を使います。HTTP受付では200文字以内で、制御文字や <code>.</code> / <code>..</code> は受け付けません。クエリにfilenameがあればヘッダーより優先し、空値の場合は既定名へ戻ります。</p>
@@ -59,7 +59,7 @@ Cache-Control: no-store
 &lt;ZIPのバイト列&gt;</code></pre>
 <div class="table-wrap"><table><thead><tr><th scope="col">ヘッダー</th><th scope="col">意味</th></tr></thead><tbody><tr><td><code>X-Section-Count</code></td><td>含まれるシート・スライド数、Wordは文書数</td></tr><tr><td><code>X-Warning-Count</code></td><td>reportのwarnings件数。informationの件数は含まない</td></tr><tr><td><code>Content-Disposition</code></td><td>ダウンロードファイル名はdocument.zip</td></tr></tbody></table></div>
 <p>ZIPには <code>document.md</code>、<code>report.json</code>、必要な <code>images/...</code> が入ります。<a href="index.html#artifacts">成果物の説明</a>を参照してください。警告があっても変換が成功すれば200です。警告とHTTPエラーを区別してください。</p>
-<p>Office2MDのPDF出力は廃止しました。旧 <code>output=pdf</code> は受け付けません。画像OCRが一部失敗しても画像参照と警告を残して変換を継続します。<code>report.json</code> の <a href="index.html#image-ocr"><code>blocks[].ocr.status</code></a> で補完できた画像を確認してください。</p>
+<p>Office2MDのPDF出力は廃止しました。旧 <code>output=pdf</code> は受け付けません。画像OCRが一部失敗しても画像参照と警告を残して変換を継続します。<code>report.json</code> の 単独画像の <code>blocks[].ocr.status</code>、合成画像の <code>blocks[].sourceImages[].ocr.status</code> で補完できた画像を確認してください。<a href="index.html#image-ocr">画像OCRの状態</a>も参照してください。</p>
 <h2 id="errors">失敗レスポンス</h2>
 <pre><code>HTTP/1.1 415 Unsupported Media Type
 Content-Type: application/json; charset=utf-8
@@ -108,7 +108,7 @@ Content-Type: application/json; charset=utf-8
 <div class="table-wrap"><table><thead><tr><th scope="col">GETパス</th><th scope="col">内容</th></tr></thead><tbody><tr><td><code>/api/playground</code></td><td>匿名のPlayground画面。末尾スラッシュ付きは正規パスへ302</td></tr><tr><td><code>/api/playground/config</code></td><td>上のcapabilitiesと同じ公開設定</td></tr><tr><td><code>/api/playground/assets/app.js</code></td><td>画面のJavaScript</td></tr><tr><td><code>/api/playground/assets/style.css</code></td><td>画面のCSS</td></tr></tbody></table></div>
 <p>上記以外の画面アセット名は404です。APIの既定ルート接頭辞は <code>/api</code> です。ホスト設定を変更した場合は、変更後の接頭辞を使います。</p>
 
-<footer class="page-footer"><p>最終確認：2026-10-05。<a href="../../../functions/office2md/docs/usage.md">利用ガイド</a>と<a href="../../../functions/office2md/src/main/java/com/convertx2x/office2md/ConversionFunctions.java">HTTP実装</a>に基づく資料です。</p></footer>
+<footer class="page-footer"><p>資料照合：2026-11-09。<a href="../../../functions/office2md/docs/usage.md">利用ガイド</a>と<a href="../../../functions/office2md/src/main/java/com/convertx2x/office2md/ConversionFunctions.java">HTTP実装</a>に基づく資料です。</p></footer>
 </article>
 <aside class="toc" aria-label="このページの目次"><p class="toc-title">このページの内容</p><nav id="page-toc"></nav></aside>
 </div>

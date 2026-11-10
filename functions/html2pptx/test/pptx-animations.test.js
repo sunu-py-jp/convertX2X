@@ -73,12 +73,14 @@ test('sampled paths, scale and rotation preserve timing relative to exported fin
 
 test('interleaved fragments never reorder unrelated shapes to make an animation group', () => {
   const doc = fixture(), [a, middle, b] = shapes(doc), before = xml(doc);
-  const result = run(doc, [effect('unsafe')], new Map([['unsafe', [a, b]]]));
+  const sourceAnimations = [{id:'fade',animationName:'fade',durationMs:500,delayMs:0},{id:'move',animationName:'move',durationMs:1000,delayMs:0}];
+  const result = run(doc, [effect('unsafe', {sourceAnimations})], new Map([['unsafe', [a, b]]]));
   assert.equal(result.nativeEffects.length, 0);
   assert.equal(result.fallbackEffects[0].reason, 'interleaved_target');
   assert.equal(xml(doc), before);
   assert.equal(middle.parentNode.localName, 'spTree');
   assert.equal(result.warnings[0].code, 'ANIMATION_STATIC_FALLBACK');
+  assert.deepEqual(result.fallbackEffects[0].sourceAnimations, sourceAnimations, 'all combined sources must remain traceable after writer-level fallback');
 });
 
 test('shared targets fall back for every owner and cannot depend on iteration order', () => {

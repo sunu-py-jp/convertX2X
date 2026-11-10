@@ -1,10 +1,12 @@
 # Movie2Audioを直接Queueから実行する
 
-動画ファイルをBlobへ保存し、`movie2audio-jobs` Queueへ入出力の参照をJSONで送ります。HTTP受付やPlaygroundを経由せず、同じAAC抽出処理を利用できます。既定の成果物は `audio.m4a` です。version 2では `audio.wav` も選択でき、ZIPにはしません。
+動画ファイルをBlobへ保存し、`movie2audio-jobs` Queueへ入出力の参照をJSONで送ります。HTTP受付やPlaygroundを経由せず、同じ音声変換処理を利用できます。既定の成果物は `audio.m4a` です。version 2では `audio.wav` も選択でき、ZIPにはしません。
 
 ## 接続設定と役割
 
-Functions側で `CONVERSION_STORAGE_CONNECTION_STRING` を設定すると、非同期HTTPとQueueワーカーを有効にします。Queueと状態コンテナーは、この制御用Storageの `movie2audio-jobs` です。`AzureWebJobsStorage` はFunctionsホスト用の別設定です。制御用設定が未設定・空値の場合、Queueトリガーを登録しません。
+Functions側で制御用Storageの接続文字列 `CONVERSION_STORAGE_CONNECTION_STRING`、またはMI用の `CONVERSION_STORAGE__blobServiceUri` と `CONVERSION_STORAGE__queueServiceUri` の両方を設定すると、非同期HTTPとQueueワーカーを有効にします。どちらの認証方式も未設定ならQueueトリガーを登録しません。Queueと状態コンテナーは、この制御用Storageの `movie2audio-jobs` です。
+
+Queueトリガーの接続名は `CONVERSION_QUEUE_CONNECTION_STRING` です。接続文字列方式では制御用と同じ値を設定し、MI方式では `__queueServiceUri`・`__credential=managedidentity`・任意の `__clientId` をその接頭辞へ設定して単一キーを削除します。ローカル起動スクリプトと `scripts/configure_azure_async.py` が導出します。Functionsホストが起動前に読むため、手動配置でも設定が必要です。`AzureWebJobsStorage` またはそのIdentity設定はホスト用の別設定です。[共通の配置手順](../../../docs/development.md#8-managed-identity閉域storage結果通知)も参照してください。
 
 入力と出力は既定の制御用Storageを使うか、次のように登録を分けます。
 
@@ -42,7 +44,7 @@ Functions側で `CONVERSION_STORAGE_CONNECTION_STRING` を設定すると、非�
 }
 ```
 
-必須項目は整数の `version: 1`、UUIDの `jobId`、`input.container`・`input.blobName`、`output.container` です。`storage` の省略時は `default`、`prefix` の省略時は空です。`filename` は任意の表示名で、出力名やFFmpegの引数には使いません。version 1では `options` を受け付けません。version 2の音声オプションは末尾を参照してください。`output.mode` は両バージョンとも使用しません。
+上のversion 1の例の必須項目は整数の `version: 1`、UUIDの `jobId`、`input.container`・`input.blobName`、`output.container` です。`storage` の省略時は `default`、`prefix` の省略時は空です。`filename` は任意の表示名で、出力名やFFmpegの引数には使いません。version 1では `options` を受け付けません。version 2の音声オプションは末尾を参照してください。`output.mode` は両バージョンとも使用しません。
 
 Base64デコード後のJSONは正しいUTF-8で最大48KiBです。重複キー、未知のキー、末尾の追加JSON、不正な型を拒否します。コンテナー名は3〜63文字の小文字英数字・単独ハイフンで先頭末尾は英数字です。Blob名とprefixには制御文字や `.` / `..` のパス区間などを指定できません。ファイル本体をJSONへ含めないでください。
 
@@ -107,7 +109,7 @@ curl --fail-with-body \
   "https://YOUR_FUNCTION_APP.azurewebsites.net/api/jobs/$JOB_ID"
 ```
 
-`job.status` が `succeeded` になると `resultUrl` が返ります。そのAPIを同じキーで呼び、M4Aを取得できます。`failed` なら `job.errorCode`・`job.errorMessage` を確認します。HTTP状態応答が200でも、変換成功とは限りません。
+`job.status` が `succeeded` になると `resultUrl` が返ります。そのAPIを同じキーで呼び、選択したM4A/WAVを取得できます。以下は既定のM4Aの例です。`failed` なら `job.errorCode`・`job.errorMessage` を確認します。HTTP状態応答が200でも、変換成功とは限りません。
 
 ```bash
 curl --fail-with-body \
@@ -116,7 +118,7 @@ curl --fail-with-body \
   --output audio.m4a
 ```
 
-Storageから直接読む場合、成功状態の `result.storage`・`container`・`blobName` を使います。出力先の構造は次の通りです。prefixが空なら先頭の `{prefix}/` は付きません。
+Storageから直接読む場合、成功状態の `result.storage`・`container`・`blobName` を使います。既定のM4A出力先は次の通りです。WAVでは末尾が `audio.wav` になります。prefixが空なら先頭の `{prefix}/` は付きません。
 
 ```text
 {output.prefix}/{jobId}/results/{attemptUUID}/audio.m4a

@@ -30,8 +30,8 @@
 <p>区切りがなければ本文全体を1枚にします。既定寸法は1280×720 CSS px。寸法を変える場合は幅・高さのmetaを両方指定します。自動で文章を要約したり、長いページを複数スライドへ分割したりはしません。はみ出しがあれば入力を調整してください。</p>
 <h2 id="animations">CSSアニメーション</h2>
 <p>通常の<code>@keyframes</code>と<code>animation</code>を解析します。アニメーション名は自由で、変換専用のクラスや属性は不要です。安全に再現できるフェードイン・2Dの移動・拡大縮小・回転を、編集可能な文字・図形・画像のPowerPointアニメーションへ変換します。開始までの遅延と再生時間はスライド開始を基準に反映します。</p>
-<p>原則は1要素に1つ、1回再生の有限アニメーションです。透明度0から1への登場や、中心を基準とする2D変形を対象とします。背景・枠・文字は前後関係を保って一緒に動かせる場合にまとめます。複雑な合成・入れ子・退場などは終端の見た目で固定し、reportの<code>ANIMATION_STATIC_FALLBACK</code>と理由で通知します。無限ループは最初の1回分の終端を採用します。往復指定の<code>alternate</code>は最初の往路まで、逆方向指定は逆方向の終端です。終端が開始と同じ見た目や非表示になる場合も、その状態を保持します。</p>
-<p>ホバー・クリック・スクロールによる利用者の操作は推測しません。入力JavaScriptも実行しません。固定後の見た目に未対応の表現が残れば描画エラーになります。詳しい範囲は<a href="../../../functions/html2pptx/docs/usage.md#cssアニメーション">利用ガイド</a>、入力例は<a href="examples.html#css-animations">3スライドのサンプル</a>を参照してください。</p>
+<p>原則は各指定が1回再生の有限アニメーションです。同じ要素に複数指定した場合も、開始時刻・時間・CSSの合成規則を計算し、すべて対応範囲内ならまとめて動きを残します。未対応の指定が1つでもあれば、その要素全体を終端で固定します。透明度0から1への登場や、中心を基準とする2D変形を対象とします。背景・枠・文字は前後関係を保って一緒に動かせる場合にまとめます。再現できない合成結果・親子の入れ子・退場などは終端の見た目で固定し、reportの<code>ANIMATION_STATIC_FALLBACK</code>と理由で通知します。無限ループは最初の1回分の終端を採用します。往復指定の<code>alternate</code>は最初の往路まで、逆方向指定は逆方向の終端です。終端が開始と同じ見た目や非表示になる場合も、その状態を保持します。</p>
+<p>ホバー・クリック・スクロールによる利用者の操作は推測しません。入力JavaScriptも実行しません。固定後の見た目に未対応の表現が残れば描画エラーになります。詳しい範囲は<a href="../../../functions/html2pptx/docs/usage.md#cssアニメーション">利用ガイド</a>、入力例は<a href="examples.html#css-animations">4スライドのサンプル</a>を参照してください。</p>
 <h2 id="limits">対応範囲と未対応の表現</h2>
 <p>JavaScript・イベント属性・外部URLの取得・Webフォント取得・iframe・動画などは受け付けません。React等の実行前のソースではなく、表示内容を静的HTMLにして送ります。外部サイトのURLを渡して変換するAPIではありません。</p>
 <p>SVGフィルター、マスク、複雑なクリッピング、3D変形などの未対応表現はエラーで返します。未対応の文字や図解を画像へ置き換えて成功扱いにはしません。一部の細かな描画差はreportの警告で確認できます。</p>
@@ -43,6 +43,6 @@
 ├── presentation.pptx
 └── report.json</code></pre>
 <p>同期HTTPでは既定でZIPを返します。<code>format=pptx</code>を指定するとPPTX本体だけを返します。reportにはスライド数、出力した要素、警告、出力のハッシュなどを記録します。現在は同期HTTPとCLIに対応し、非同期HTTP・Queueからの直接依頼は未実装です。</p>
-<div class="cards"><a class="card" href="examples.html"><h3>実務資料の変換例</h3><p>企業発表・決算・体制図などに、図形・生成画像・CSSアニメーションを加えた8資料・23スライド。</p></a><a class="card" href="http.html"><h3>同期HTTP・設定</h3><p>ファイルを送り、PPTXとreportを受け取る。入力形式と上限を確認。</p></a></div>
+<div class="cards"><a class="card" href="examples.html"><h3>実務資料の変換例</h3><p>企業発表・決算・体制図などに、図形・生成画像・CSSアニメーションを加えた8資料・24スライド。</p></a><a class="card" href="http.html"><h3>同期HTTP・設定</h3><p>ファイルを送り、PPTXとreportを受け取る。入力形式と上限を確認。</p></a></div>
 <footer class="page-footer"><span>2026-11-05 · Node.js 24 / Chromium / DrawingML</span><a href="../../../functions/html2pptx/docs/usage.md">利用・運用ガイド</a></footer>
 </article><aside class="toc"><p class="toc-title">このページの内容</p><nav id="page-toc"></nav></aside></div></main></body></html>

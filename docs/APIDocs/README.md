@@ -10,6 +10,7 @@
 | Office → PDF | [概要・同期HTTP・非同期HTTP・直接Queue](office2pdf/index.html)・[変換例](office2pdf/examples.html) |
 | Markdown → PDF | [概要・同期HTTP・非同期HTTP・直接Queue](md2pdf/index.html)・[変換例](md2pdf/examples.html) |
 | Movie → Audio | [概要](movie2audio/index.html)・[非同期HTTP](movie2audio/jobs.html)・[直接Queue](movie2audio/queue.html)・[SAS保存](movie2audio/storage.html)・[変換例](movie2audio/examples.html) |
+| HTML → PowerPoint | [概要](html2pptx/index.html)・[同期HTTP・CLI](html2pptx/http.html)・[変換例](html2pptx/examples.html)。非同期HTTP・Queueは未対応 |
 
 `file://` で直接表示するか、リポジトリルートから静的サーバーを起動します。
 

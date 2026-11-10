@@ -73,3 +73,45 @@ test('preset-looking class names alone never create animation',{skip:!canRun,tim
   assert.equal(result.report.animations.nativeEffects.length,0);
   assert.equal(nodes(await documentOf(result),'timing').length,0);
 });
+
+test('same-element fade and motion become one native editable owner with both source animations',{skip:!canRun,timeout:60000},async()=>{
+  const css='.card{position:absolute;left:80px;top:120px;width:400px;height:180px;background:#dceaff;border:2px solid #245;border-radius:12px;padding:20px;box-sizing:border-box}.card h1{font-size:28px}.card p{font-size:18px}';
+  const contents='<h1>複数の動きをまとめる</h1><p>背景・枠・文字が同じ対象として動く</p>';
+  const keyframes='@keyframes enter{from{opacity:0}to{opacity:1}}@keyframes move{from{transform:translateY(40px)}to{transform:none}}';
+  const result=await convert(`<style>${css}${keyframes}.card{animation:enter 800ms 200ms linear both,move 1500ms 500ms linear both}</style><section data-slide><div class="card">${contents}</div></section>`);
+  assert.equal(result.report.animations.nativeEffects.length,1);
+  assert.equal(result.report.animations.staticEffects.length,0);
+  const effect=result.report.animations.nativeEffects[0];
+  assert.deepEqual(effect.sourceAnimations,[
+    {id:'animation-1',animationName:'enter',durationMs:800,delayMs:200},
+    {id:'animation-2',animationName:'move',durationMs:1500,delayMs:500}
+  ]);
+  assert.equal(effect.id,'animation-1');
+  const doc=await documentOf(result),owners=nodes(doc,'cNvPr').filter(node=>node.getAttribute('name').startsWith('CSS animation '));
+  assert.equal(owners.length,1);
+  assert.equal(owners[0].getAttribute('id'),effect.targetShapeId);
+  assert.ok(nodes(owners[0].parentNode.parentNode,'sp').length>1,'background and editable text must share the one animation owner');
+  assert.deepEqual([...new Set(nodes(doc,'spTgt').map(node=>node.getAttribute('spid')))],[effect.targetShapeId]);
+  assert.equal(nodes(doc,'timing').length,1);
+  assert.equal(nodes(doc,'animEffect').length,1);
+  assert.ok(nodes(doc,'anim').length>0);
+  assert.equal(nodes(doc,'pic').length,0);
+  const reference=await convert(`<style>${css}</style><section data-slide><div class="card">${contents}</div></section>`);
+  assert.deepEqual(result.previews[0],reference.previews[0]);
+});
+
+test('one unsupported member prevents all native motion on that element and preserves the final screenshot',{skip:!canRun,timeout:60000},async()=>{
+  const css='.card{position:absolute;left:80px;top:120px;width:400px;height:180px;background:red;border-radius:12px;padding:20px;box-sizing:border-box}.card h1{font-size:28px}.card p{font-size:18px}';
+  const contents='<h1>静止状態へまとめて切り替え</h1><p>移動だけを部分的に残さない</p>';
+  const result=await convert(`<style>${css}@keyframes move{from{transform:translateX(40px)}to{transform:none}}@keyframes palette{from{background:red}to{background:blue}}.card{animation:move 1s linear both,palette 2s linear both}</style><section data-slide><div class="card">${contents}</div></section>`);
+  assert.equal(result.report.animations.nativeEffects.length,0);
+  assert.equal(result.report.animations.staticEffects.length,2);
+  assert.ok(result.report.animations.staticEffects.every(effect=>effect.reason==='unsupported-properties'));
+  assert.deepEqual(result.report.animations.staticEffects.map(effect=>effect.animationName),['move','palette']);
+  const doc=await documentOf(result);
+  assert.equal(nodes(doc,'timing').length,0);
+  assert.equal(nodes(doc,'cNvPr').filter(node=>node.getAttribute('name').startsWith('CSS animation ')).length,0);
+  assert.ok(nodes(doc,'srgbClr').some(node=>node.getAttribute('val')?.toUpperCase()==='0000FF'));
+  const reference=await convert(`<style>${css}.card{background:blue}</style><section data-slide><div class="card">${contents}</div></section>`);
+  assert.deepEqual(result.previews[0],reference.previews[0]);
+});

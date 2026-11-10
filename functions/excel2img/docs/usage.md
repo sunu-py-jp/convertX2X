@@ -113,7 +113,10 @@ reportには処理範囲、ページとの対応、見送った理由、警告�
 
 ## 非同期HTTP・直接Queue
 
-制御用Storageの接続文字列、またはManaged Identity設定が揃うと有効になります。
+制御用Storageの `CONVERSION_STORAGE_CONNECTION_STRING`、またはManaged Identity用の
+`CONVERSION_STORAGE__blobServiceUri` と `CONVERSION_STORAGE__queueServiceUri` の両方があると有効になります。
+ユーザー割り当てMIは `CONVERSION_STORAGE__clientId` も指定します。同じ接続で接続文字列とMI設定を混在させません。
+Queueトリガー用の接続・有効化設定も必要です。[共通の配置手順](../../../docs/development.md#8-managed-identity閉域storage結果通知)に従って設定してください。
 
 - `POST /api/jobs?filename=sample.xlsx&format=png`：ファイルを登録してジョブIDを取得
 - `GET /api/jobs/{jobId}`：状態

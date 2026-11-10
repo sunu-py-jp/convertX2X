@@ -438,9 +438,9 @@ Apache POI・PDFBoxなどの依存ライブラリ、Maven Wrapper、ダウンロ
 
 ## Managed Identity・結果通知・保持期間
 
-接続文字列に加えて、制御用Storageの `CONVERSION_STORAGE__blobServiceUri`・`CONVERSION_STORAGE__queueServiceUri` と任意の `__clientId` でManaged Identityを使えます。入力・出力の登録先にも `CONVERSION_INPUT_STORAGE_<ALIAS>__blobServiceUri` / `CONVERSION_OUTPUT_STORAGE_<ALIAS>__blobServiceUri` を使えます。同じ登録で接続文字列とMIを混在させません。
+制御用Storageは、接続文字列の代わりに `CONVERSION_STORAGE__blobServiceUri`・`CONVERSION_STORAGE__queueServiceUri` の両方と任意の `CONVERSION_STORAGE__clientId` でManaged Identityを使えます。この場合も非同期機能は有効になります。Queueトリガー用の `CONVERSION_QUEUE_CONNECTION_STRING__queueServiceUri`・`__credential=managedidentity` と有効化設定も必要で、設定スクリプトが導出します。入力・出力の登録先にも `CONVERSION_INPUT_STORAGE_<ALIAS>__blobServiceUri` / `CONVERSION_OUTPUT_STORAGE_<ALIAS>__blobServiceUri` を使えます。同じ登録で接続文字列とMIを混在させません。
 
-`CONVERSION_CREATE_RESOURCES=false` はコンテナー・Queueの自動作成を省略します。必要なリソースは配置前に用意してください。結果Queueは事前登録し、version 2の `notification.queue` で選択します。通知の送信待ちは永続化し、重複通知をeventIdで識別できます。
+`CONVERSION_CREATE_RESOURCES=false` はコンテナー・Queueの自動作成を省略します。必要なリソースは配置前に用意してください。この場合、アプリによるリソース作成の権限は不要ですが、入力・状態・結果・通知に必要な読み書き権限は必要です。結果Queueは事前登録し、version 2の `notification.queue` で選択します。通知の送信待ちは永続化し、重複通知をeventIdで識別できます。
 
 `CONVERSION_RESULT_RETENTION_DAYS`・`CONVERSION_STATE_RETENTION_DAYS` は既定0（自動削除無効）です。状態保持を有効にする場合は、結果保持も有効にし、それより長く設定します。期限切れ結果は清掃後に `410 JOB_RESULT_EXPIRED` になります。未完了のHTTP受付が残った場合も、保持設定に従って期限切れとして処理します。通常のQueue待ち・実行中のジョブを期限切れ成果物として削除しません。
 

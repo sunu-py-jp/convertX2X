@@ -10,9 +10,10 @@ Apache PDFBoxだけで動作し、LibreOfficeやネイティブ実行ファイ�
 | 同上 | 非同期HTTPまたは直接QueueでPDF・reportをBlobへ保存する |
 
 PDFは元のOffice印刷結果の完全な再現ではありません。ExcelとWordは文字・表を
-検索可能なPDFへ再配置します。PowerPointは表示スライドを1ページずつ画像化し、
+検索可能なPDFへ再配置します。PowerPointは変換対象のスライドを1ページずつ画像化し、
 描画した文字を非表示のテキストとして重ねるため、PDFビューアーで日本語も検索できます。
-画像に含まれる文字のOCRは行いません。
+`.pptx` の非表示スライドは除外します。旧形式 `.ppt` は非表示スライドもPDFの表示と
+検索用テキストに含まれます。画像に含まれる文字のOCRは行いません。
 
 ## ドキュメント
 
@@ -32,7 +33,8 @@ python3 scripts/run_local.py
 
 Playgroundは <http://localhost:7074/api/playground> です。同期HTTPだけなら
 変換用Storageは不要です。非同期を使う場合は `local.settings.json` に
-`CONVERSION_STORAGE_CONNECTION_STRING` を設定します。
+`CONVERSION_STORAGE_CONNECTION_STRING`、またはManaged IdentityのBlob・Queue接続を
+設定します。[設定方法](docs/usage.md#azureへの配置)を参照してください。
 
 ## ライセンス
 

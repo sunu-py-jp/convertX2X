@@ -1,6 +1,6 @@
 # convertX2X
 
-変換用途ごとのAzure Functionsをまとめたコレクションです。必要な機能を独立したFunction Appへ配置し、同期HTTP・非同期HTTP・Queueから利用できます。
+変換用途ごとのAzure Functionsをまとめたコレクションです。必要な機能を独立したFunction Appへ配置し、その機能が対応するHTTP・Queue・CLIから利用できます。
 
 ## できること
 
@@ -11,12 +11,12 @@
 | Excel → 画像・PDF | XLSX・XLSのセル・画像・図形を配置を保ってPNG・PDFへ | [API資料](docs/APIDocs/excel2img/index.html) |
 | Office → PDF | Excel・Word・PowerPoint → Document Intelligence向けPDF | [API資料](docs/APIDocs/office2pdf/index.html) |
 | Markdown → PDF | Markdown・画像入りZIP → 検索可能な日本語PDF | [API資料](docs/APIDocs/md2pdf/index.html) |
-| Movie → Audio | 動画ファイル・URL・Blob → AAC音声をコピーしたM4A | [API資料](docs/APIDocs/movie2audio/index.html) |
-| HTML → PowerPoint | 静的HTML・素材入りZIP → 編集可能な文字・表・SVG図形を持つPPTX | [API資料](docs/APIDocs/html2pptx/index.html) |
+| Movie → Audio | 動画ファイル・URL・Blob → AACコピーのM4A、または音声変換したM4A・WAV | [API資料](docs/APIDocs/movie2audio/index.html) |
+| HTML → PowerPoint | HTML・素材入りZIP → 編集可能な文字・表・SVG図形を持つPPTX。対応するCSSアニメーションも反映 | [API資料](docs/APIDocs/html2pptx/index.html) |
 
 画像・Office・Markdown変換はJava 21、Movie → AudioはNode.js 22 / 24と同梱FFmpeg、HTML → PowerPointはNode.js 24と同梱Chromiumで実装しています。各機能に簡易Playgroundがあります。Movie → Audioは、書き込み用SASで指定したBlobへの保存にも対応します。
 
-非同期対応の機能は `CONVERSION_STORAGE_CONNECTION_STRING` 設定時に有効になります。外部システムからQueueへ直接依頼でき、入力・出力に別のStorageアカウントを登録することもできます。HTML → PowerPointは現在、同期HTTPとCLIに対応しています。
+非同期対応の機能は、接続文字列またはManaged Identity用の制御Storage設定が揃うと有効になります。外部システムからQueueへ直接依頼でき、入力・出力に別のStorageアカウントを登録することもできます。HTML → PowerPointは現在、同期HTTPとCLIに対応しています。
 
 ## ドキュメント
 

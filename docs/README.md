@@ -27,5 +27,6 @@ Office → Markdownの[画像・図形・テキストボックスの合成対応
 - [配布物のライセンス確認](development.md#third-party-licenses)：第三者の原文、依存更新、ソースとビルド成果物の保持・検証
 - [機能追加・変更のルール](../CONTRIBUTING.md)
 - [API資料の表示方法](APIDocs/README.md)と[更新手順](APIDocs/maintenance.md)
+- [convertX2Xスキル](../.agents/skills/convertx2x/SKILL.md)：このリポジトリのAPIを利用・変更する際の参照先と、HTML資料を生成する際の注意点。リポジトリ内の `.agents/skills/` に配置
 
 [Officeの初期設計メモ](designs/office2md.md)と[HTML → PowerPointの設計・検証記録](designs/html2pptx.md)は検討経緯を含む資料です。現在の仕様は上記のAPI資料・利用ガイドを基準にしてください。

@@ -60,7 +60,7 @@
 
 <h2 id="errors">対応外の例：2本目がAACでも第1音声を優先</h2>
 <section class="sample-case" aria-label="対応外の音声と音声なしのエラー例">
-<p>第1音声がPCM、第2音声がAACの動画を送ると、<code>422 UNSUPPORTED_AUDIO_CODEC</code>になりました。後ろにあるAACへ切り替えたり、PCMをAACへ再エンコードしたりはしません。</p>
+<p>この例では既定のcopyモードで、第1音声がPCM、第2音声がAACの動画を送ると、<code>422 UNSUPPORTED_AUDIO_CODEC</code>になりました。後ろにあるAACへ切り替えたり、PCMをAACへ再エンコードしたりはしません。</p>
 <div class="sample-links"><a href="examples/first-pcm-second-aac.mkv" download>PCM + AACの入力MKV</a><a href="examples/first-pcm-second-aac-error.json">実際のエラー応答</a><a href="examples/silent-video.mp4" download>音声なしの入力MP4</a><a href="examples/silent-error.json">音声なしのエラー応答</a></div>
 <figure class="example-figure"><a href="examples/error-playground.png"><img src="examples/error-playground.png" alt="最初の音声がPCMのMKVを同期実行し、UNSUPPORTED_AUDIO_CODECと表示された実際のPlayground画面。音声のダウンロードは表示されていない。" loading="lazy" width="1360" height="1091"></a><figcaption>実際のHTTP 422を表示した画面です。音声がない動画では、別途 <code>422 NO_AUDIO_STREAM</code> を確認しました。</figcaption></figure>
 </section>
@@ -74,7 +74,7 @@
   --output audio.m4a</code></pre>
 <p>入力をダウンロードして実行できます。AzureのURLでは <code>x-functions-key</code> が必要です。ローカル環境の起動は<a href="../../../functions/movie2audio/docs/usage.md#ローカルで起動する">利用ガイド</a>、非同期機能は<a href="jobs.html">非同期HTTP</a>を参照してください。</p>
 <details class="sample-details"><summary>自作サンプルと検証スクリプト</summary><ul>
-<li><a href="examples/generate-inputs.py">入力動画の生成</a>：Pillowとエンコード可能なFFmpegが必要です。音声は合成したテスト音です。同梱の本番用FFmpegは抽出専用のため、この入力生成には使えません。</li>
+<li><a href="examples/generate-inputs.py">入力動画の生成</a>：Pillowとエンコード可能なFFmpegが必要です。音声は合成したテスト音です。同梱の本番用FFmpegには、この入力生成に必要な映像エンコーダーがないため使えません。</li>
 <li><a href="examples/run-examples.py">実際のHTTP呼び出しとAAC照合</a>：macOS Apple Silicon / Linux x64の同梱FFprobeを使用します。</li>
 <li><a href="examples/capture-playground.mjs">実際のPlayground撮影</a>：PlaywrightとChromeを使用します。</li>
 <li><a href="examples/run-direct-queue.mjs">実際の直接Queue呼び出し</a>：FunctionsとAzuriteが必要です。Azuriteは <code>--skipApiVersionCheck</code> を指定し、Functionsにはローカルエミュレーター接続を設定します。自分で作成した検証用Blobのみ実行後に削除します。</li>

@@ -18,10 +18,10 @@
 <article class="article">
 <p class="eyebrow">Movie → Audio → Blob</p>
 <h1>抽出した音声をBlobへ保存</h1>
-<p class="lead">動画ファイルまたはHTTPS URLと、書き込み先のBlob SAS URLを受け取り、完成したM4Aを指定先へ保存します。保存完了後にJSONを返す同期APIです。</p>
+<p class="lead">動画ファイルまたはHTTPS URLと、書き込み先のBlob SAS URLを受け取り、完成したM4A/WAVを指定先へ保存します。保存完了後にJSONを返す同期APIです。</p>
 <div class="hero-meta"><span class="pill accent">POST /convert-to-blob</span><span class="pill">単一Blob SAS</span><span class="pill">既存Blobは上書きしない</span></div>
 <h2 id="overview">保存の流れ</h2>
-<div class="flow" aria-label="動画から音声を抽出しBlobへ保存する流れ"><span>動画 + 保存先SAS</span><b aria-hidden="true">→</b><span>AACを抽出</span><b aria-hidden="true">→</b><span>BlobへPUT</span><b aria-hidden="true">→</b><span>201 JSON</span></div>
+<div class="flow" aria-label="動画から音声を抽出しBlobへ保存する流れ"><span>動画 + 保存先SAS</span><b aria-hidden="true">→</b><span>AACコピー / 音声変換</span><b aria-hidden="true">→</b><span>BlobへPUT</span><b aria-hidden="true">→</b><span>201 JSON</span></div>
 <p>入力を一時ファイルに保存し、共通のFFmpeg処理で既定では最初のAAC音声をM4Aへコピーします。クエリでtranscodeとWAVも選択できます。音声と容量を検証した完成済みファイルをストリームで送信し、Blobの作成成功を確認してから応答します。Queue受付・バックグラウンドジョブではありません。</p>
 <div class="callout"><strong>SAS URLに認証情報が含まれます。</strong><br>接続文字列、Storageのアカウントキー、任意の認証ヘッダーを追加で渡す必要はありません。Function Appを呼び出す <code>x-functions-key</code> は別の認証情報で、保存先へ転送しません。</div>
 <h2 id="enable">保存先を管理者が許可する</h2>
@@ -93,13 +93,13 @@
   }
 }</code></pre>
 <p><code>Content-Type: application/json</code>、<code>Cache-Control: no-store</code> で返します。<code>blobUrl</code> はSASクエリを除いた識別用URLで、読み取り権限を付与するURLではありません。必要な読み取り権限は利用側で別に用意します。<code>etag</code> はStorageが返した作成結果です。有効なETagを取得できない場合は、このフィールドを省略します。</p>
-<p>上の例では、コンテナーは <code>results</code>、Blob名は <code>jobs/job-123/audio.m4a</code> です。アプリはフォルダー名・ジョブID・接尾辞を追加しません。保存内容は常にM4Aで、BlobのContent-Typeを <code>audio/mp4</code> に設定します。</p>
+<p>上の例では、コンテナーは <code>results</code>、Blob名は <code>jobs/job-123/audio.m4a</code> です。アプリはフォルダー名・ジョブID・接尾辞を追加しません。保存内容は指定した音声形式で、BlobのContent-TypeはM4Aなら <code>audio/mp4</code>、WAVなら <code>audio/wav</code> です。Blob名の拡張子では形式を選びません。WAVを保存するときは音声オプションと保存先のBlob名をそれぞれ指定してください。</p>
 <h2 id="overwrite">既存ファイルと再試行</h2>
 <p>書き込みは <code>Put Blob</code>、<code>x-ms-blob-type: BlockBlob</code>、<code>If-None-Match: *</code> で行います。既存Blobの上書きはせず、Storageの前提条件エラーを <code>409 OUTPUT_BLOB_EXISTS</code> として返します。呼び出し側で依頼ごとに一意なBlob名を選び、そのBlob専用のSASを発行してください。</p>
 <p>アップロード中の通信切断やタイムアウトでは、Storage側で保存が完了している可能性があります。アプリは自動リトライ、HEADによる存在確認、失敗時のBlob削除をしません。結果が不明なときは保存先を利用側の権限で確認し、同じ名前への再送が409になっても、前回の成果物と同一だと決めつけないでください。</p>
 <h2 id="security">接続と処理の境界</h2>
 <p>ホスト許可リストとSASの範囲を検証し、DNSの全結果が公開IPであることを確認します。実接続にも検証済みIPを使い、元のホスト名に対するTLS証明書検証を維持します。リダイレクト、プロキシ、Cookie、任意の認証ヘッダー、自動リトライは使いません。</p>
-<p>入力・抽出・出力は既存APIと同じ上限とNode.jsプロセス内1件の実行枠を共有します。既定180秒、最大210秒の共通期限にBlobへのアップロード完了も含みます。完成済みM4Aは一時ディスクからストリームでPUTし、成功・失敗後に一時ファイルを削除します。保存先に接続できるStorageのネットワーク設定も必要です。</p>
+<p>入力・抽出・出力は既存APIと同じ上限とNode.jsプロセス内1件の実行枠を共有します。既定180秒、最大210秒の共通期限にBlobへのアップロード完了も含みます。完成済みM4A/WAVは一時ディスクからストリームでPUTし、成功・失敗後に一時ファイルを削除します。保存先に接続できるStorageのネットワーク設定も必要です。</p>
 <h2 id="errors">失敗レスポンス</h2>
 <p>エラーは既存APIと同じ <code>{"error":{"code":"...","message":"..."}}</code> です。入力・抽出のエラーは<a href="settings.html#errors">共通の一覧</a>、保存先の設定・SAS・競合・通信エラーは以下で判定します。</p>
 <div class="table-wrap"><table><thead><tr><th scope="col">HTTP</th><th scope="col">code</th><th scope="col">内容</th></tr></thead><tbody>
@@ -120,7 +120,7 @@
 
 <p>ジョブIDを受け取って後から結果を取得する場合は <a href="jobs.html">非同期HTTP</a>、他システムから登録済みBlobを処理する場合は <a href="queue.html">直接Queue</a> を使います。SAS保存APIは同期専用です。</p>
 <p>音声形式の選択は<a href="http.html#audio-options">共通の音声オプション</a>を参照してください。URL・SASの本文形式は変更せず、受付URLのクエリで指定します。</p>
-<footer class="page-footer"><p>最終確認：2026-09-15。<a href="../../../functions/movie2audio/docs/usage.md">利用ガイド</a> · <a href="../../movie2audio.md">開発者向け実装ガイド</a></p></footer>
+<footer class="page-footer"><p>資料照合：2026-11-09。<a href="../../../functions/movie2audio/docs/usage.md">利用ガイド</a> · <a href="../../movie2audio.md">開発者向け実装ガイド</a></p></footer>
 </article>
 <aside class="toc" aria-label="このページの目次"><p class="toc-title">このページの内容</p><nav id="page-toc"></nav></aside>
 </div>

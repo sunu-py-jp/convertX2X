@@ -1,7 +1,7 @@
 {
   "version": 1,
   "converter": "html2pptx",
-  "slideCount": 3,
+  "slideCount": 4,
   "width": 1280,
   "height": 720,
   "slides": [
@@ -46,11 +46,25 @@
         "gradients": 0,
         "images": 0
       }
+    },
+    {
+      "slide": 4,
+      "textBoxes": 19,
+      "shapes": 25,
+      "tables": 0,
+      "images": 0,
+      "convertedSvgCount": 4,
+      "svg": {
+        "shapes": 6,
+        "text": 0,
+        "gradients": 0,
+        "images": 0
+      }
     }
   ],
-  "elapsedMs": 3322,
-  "outputBytes": 75275,
-  "sha256": "a1592e86db1ba421a104b502492c3811cd897829ce5775ede7f52861ac365d5d",
+  "elapsedMs": 3217,
+  "outputBytes": 81020,
+  "sha256": "a86277c0cde837976beb311c9741ccf3e39a4f2ae782a3ee8876ba4c6198b364",
   "animations": {
     "policy": "native-or-static",
     "nativeEffects": [
@@ -168,6 +182,43 @@
         "durationMs": 1000,
         "delayMs": 400,
         "keyframeCount": 33
+      },
+      {
+        "id": "animation-8",
+        "slide": 4,
+        "animationName": "separateFade",
+        "element": {
+          "tag": "div",
+          "id": "combined-supported"
+        },
+        "sampling": {
+          "method": "computed-css-timing",
+          "sampleCount": 62,
+          "easingApproximation": true
+        },
+        "sourceAnimations": [
+          {
+            "id": "animation-8",
+            "animationName": "separateFade",
+            "durationMs": 800,
+            "delayMs": 150
+          },
+          {
+            "id": "animation-9",
+            "animationName": "separateMove",
+            "durationMs": 1400,
+            "delayMs": 400
+          }
+        ],
+        "status": "native",
+        "targetShapeId": "31",
+        "channels": [
+          "opacity",
+          "y"
+        ],
+        "durationMs": 1650,
+        "delayMs": 150,
+        "keyframeCount": 62
       }
     ],
     "staticEffects": [
@@ -190,6 +241,34 @@
           "id": ""
         },
         "animationName": "decorativeFloat"
+      },
+      {
+        "id": "animation-10",
+        "reason": "unsupported-properties",
+        "slide": 4,
+        "element": {
+          "tag": "div",
+          "id": "combined-fallback"
+        },
+        "animationName": "separateMove",
+        "groupId": "animation-10",
+        "causeAnimationId": "animation-11",
+        "durationMs": 1400,
+        "delayMs": 400
+      },
+      {
+        "id": "animation-11",
+        "reason": "unsupported-properties",
+        "slide": 4,
+        "element": {
+          "tag": "div",
+          "id": "combined-fallback"
+        },
+        "animationName": "separateColor",
+        "groupId": "animation-10",
+        "causeAnimationId": "animation-11",
+        "durationMs": 1600,
+        "delayMs": 200
       }
     ]
   },
@@ -217,6 +296,38 @@
       },
       "animationName": "decorativeFloat",
       "message": "無限アニメーションは、再生方向を考慮した1回分の終端の見た目で固定しました。"
+    },
+    {
+      "code": "ANIMATION_STATIC_FALLBACK",
+      "id": "animation-10",
+      "reason": "unsupported-properties",
+      "slide": 4,
+      "element": {
+        "tag": "div",
+        "id": "combined-fallback"
+      },
+      "animationName": "separateMove",
+      "groupId": "animation-10",
+      "causeAnimationId": "animation-11",
+      "durationMs": 1400,
+      "delayMs": 400,
+      "message": "PPTXのアニメーションに変換できないCSSプロパティを含むため、終端の見た目で固定しました。"
+    },
+    {
+      "code": "ANIMATION_STATIC_FALLBACK",
+      "id": "animation-11",
+      "reason": "unsupported-properties",
+      "slide": 4,
+      "element": {
+        "tag": "div",
+        "id": "combined-fallback"
+      },
+      "animationName": "separateColor",
+      "groupId": "animation-10",
+      "causeAnimationId": "animation-11",
+      "durationMs": 1600,
+      "delayMs": 200,
+      "message": "PPTXのアニメーションに変換できないCSSプロパティを含むため、終端の見た目で固定しました。"
     },
     {
       "code": "FONTS_NOT_EMBEDDED",

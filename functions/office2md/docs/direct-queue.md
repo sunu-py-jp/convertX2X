@@ -28,7 +28,7 @@
 | `jobId` | 通常のハイフン付きUUID。新しい変換では新しいIDを使う |
 | `input.container` / `input.blobName` | アップロード済みOfficeファイルのBlob参照 |
 | `input.storage` | 入力用Storageの登録名。省略・nullは `default` |
-| `output.container` | 成果物の保存先コンテナー。存在しなければ非公開で作成 |
+| `output.container` | 成果物の保存先コンテナー。`CONVERSION_CREATE_RESOURCES=true` の場合は存在しなければ非公開で作成 |
 | `output.prefix` | 保存先の接頭辞。省略・null・空文字はコンテナー直下 |
 | `output.storage` | 出力用Storageの登録名。省略・nullは `default` |
 | `filename` | 任意のファイル名。省略時は入力Blobの末尾名。`.xlsx` / `.xls` / `.docx` / `.pptx` が必要 |
@@ -41,7 +41,7 @@ QueueメッセージはBase64を1回だけ適用します。Java SDKなら `Queu
 
 ## Storageの登録
 
-Queueと状態Blobは、常に `CONVERSION_STORAGE_CONNECTION_STRING` が指す制御用Storageを使います。`default` は入力・出力ともこのStorageです。別Storageを使う場合は、Functionsの実行環境に次の設定を追加します。
+Queueと状態Blobは、接続文字列またはManaged IdentityのBlob・Queue接続で設定した制御用Storageを使います。`default` は入力・出力ともこのStorageです。別Storageを使う場合は、Functionsの実行環境に次の設定を追加します。
 
 | 環境変数 | JSONの指定 | 用途 |
 | --- | --- | --- |
@@ -90,7 +90,7 @@ HTTPの `/result`、`/report`、`/images/{assetName}` も利用できます。`/
 `version: 1` の既存依頼は引き続き使用できます。以下の拡張は `version: 2` を指定します。未知のキー・重複キー・型違いは引き続き拒否し、新しいフィールドをversion 1へ混ぜることはできません。
 
 - `input.expectedETag`：任意。原本のETagを引用符も含めて指定し、不一致は `INPUT_VERSION_MISMATCH`。省略時も実際に読み取ったETagを記録します。
-- `imageMode`：任意。`"ignore"`（既定）は元の埋め込み画像とMarkdown参照を残し、OCRしません。`"ocr"` は設定済みのDocument Intelligenceで元画像をOCRし、その画像位置へ文字を補います。version 1は従来どおりOCRしません。未設定でのOCR指定は `OCR_NOT_CONFIGURED` です。
+- `imageMode`：任意。`"ignore"`（既定）は単独画像または合成画像とMarkdown参照を残し、OCRしません。合成に取り込んだ元画像の独立ファイル・参照は出力しません。`"ocr"` は設定済みのDocument Intelligenceで合成前の元画像の可視領域をOCRし、画像参照の後へ文字を補います。version 1は従来どおりOCRしません。未設定でのOCR指定は `OCR_NOT_CONFIGURED` です。
 - `metadata`：任意の文字列マップ。最大16項目、キー64文字・値512文字・全体8KiB以下。IDやrevisionの引き継ぎに使い、秘密情報は含めません。
 - `notification.queue`：任意。管理者が登録した結果Queueのエイリアス。未登録先は拒否します。
 
@@ -120,13 +120,15 @@ HTTPの `/result`、`/report`、`/images/{assetName}` も利用できます。`/
 }
 ```
 
+OCRの確認先は単独画像では `blocks[].ocr.status`、合成画像では `blocks[].sourceImages[].ocr.status` です。`sourceImages[]` は元画像の由来と処理状態であり、元画像のダウンロードパスではありません。取得する画像は `assets[].path` またはMarkdownの参照を使います。
+
 Officeの成果物にはMarkdown・report・画像一式と、それらの参照・サイズ・SHA-256を持つManifestがあります。通知には大量の画像一覧を埋め込まず、確定した成果物の参照を返します。
 
 `source`・`archive`・`completed` は事前登録が必要です。ETagは例をそのまま使わず、実際の原本から取得します。入力版が一致しても、その結果を最新として採用できるかは利用側で現在のrevisionと照合してください。
 
 結果通知はversion 1のイベントで、`eventId`、`jobId`、`status`、`input`（実際の`eTag`）、`metadata`、`result`、`error`、`completedAt`を持ちます。失敗の `error` は固定の `code` と `retryable: false` を返します。ここでfalseはジョブが終端状態である意味です。一時障害の内部再試行中とは区別し、再実行が必要なら新しいjobIdを使います。
 
-通知送信待ちは保存し、失敗時は通知だけを再送します。通知は重複し得るため、受信側でeventIdを照合します。イベントのJSONにはBase64を1回適用します。不正JSONなどjobId・通知先を確定できない依頼には通知できません。
+通知送信待ちは保存し、失敗時は通知だけを再送します。通知は重複し得るため、受信側でeventIdを照合します。イベントのJSONにはBase64を1回適用します。受信側は1回デコードし、SDKが自動デコードする場合は手動で重ねてデコードしません。不正JSONなどjobId・通知先を確定できない依頼には通知できません。
 
 成果物にはサイズ・SHA-256と実際の入力版を記録します。ETagは内容のハッシュではありません。再試行は別の保存先を使い、全出力が揃ってから成功状態を確定します。保存先を推測したり、Blob一覧から途中成果物を拾ったりしないでください。
 

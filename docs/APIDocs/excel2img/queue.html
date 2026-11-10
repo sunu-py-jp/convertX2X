@@ -20,10 +20,10 @@
     &quot;sheet&quot;: &quot;業務フロー&quot;,
     &quot;range&quot;: &quot;A1:L30&quot;
   }
-}</code></pre><p>UTF-8 JSON、最大48KiB。ファイル本体や資格情報は含めません。optionsを省略するとPNG、全表示シート、印刷範囲優先です。同じjobIdでオプションだけを変えると競合になります。</p>
+}</code></pre><p>デコード後のUTF-8 JSONは最大48KiBです。送信時はBase64を1回だけ適用します。Java SDKでは<code>QueueMessageEncoding.BASE64</code>を設定し、JSON文字列をそのまま渡してください。FunctionsホストがBase64をデコードしてワーカーへ渡します。事前にBase64化した文字列をSDKで再度エンコードしないでください。</p><p>ファイル本体や資格情報は含めません。optionsを省略するとPNG、全表示シート、印刷範囲優先です。同じjobIdでオプションだけを変えると競合になります。</p>
 <h2 id="output">出力</h2><pre><code>rendered/{jobId}/results/{attemptId}/pages/page-001.png
 rendered/{jobId}/results/{attemptId}/report.json
 rendered/{jobId}/results/{attemptId}/manifest.json</code></pre><p>PDFの場合はPNG群が<code>document.pdf</code>になります。manifestに成果物パス・MIME型・サイズ・ETag・SHA-256を記録します。</p>
 <h2 id="v2">入力版と結果通知</h2><p>version 2では<code>input.expectedETag</code>、最大16件の文字列<code>metadata</code>、登録済みQueueへの<code>notification.queue</code>を追加できます。結果通知は最低1回配送です。</p>
 <h2 id="storage">認証と再試行</h2><p>Storageはアプリで登録した別名だけを指定します。入力は<code>CONVERSION_INPUT_STORAGE_&lt;ALIAS&gt;</code>、出力は<code>CONVERSION_OUTPUT_STORAGE_&lt;ALIAS&gt;</code>、Managed Identityでは<code>__blobServiceUri</code>を使います。接続文字列を依頼JSONへ入れません。</p><p>一時障害は再試行し、確定的なエラーは失敗として記録します。最終的な失敗は<code>excel2img-jobs-poison</code>の処理で確定します。</p>
-<footer class="page-footer"><span>2026-10-20 · Java 21 / POI / Java2D / PDFBox</span><a href="index.html">機能概要</a></footer></article><aside class="toc"><p class="toc-title">このページの内容</p><nav id="page-toc"></nav></aside></div></main></body></html>
+<footer class="page-footer"><span>資料照合：2026-11-09 · Java 21 / POI / Java2D / PDFBox</span><a href="index.html">機能概要</a></footer></article><aside class="toc"><p class="toc-title">このページの内容</p><nav id="page-toc"></nav></aside></div></main></body></html>
