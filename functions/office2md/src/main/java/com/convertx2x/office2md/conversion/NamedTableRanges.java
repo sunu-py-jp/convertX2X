@@ -33,7 +33,7 @@ final class NamedTableRanges {
         for (Name name : workbook.getAllNames()) {
             String label = name.getNameName();
             if (label == null || label.isBlank() || label.toLowerCase(Locale.ROOT).startsWith("_xlnm.")
-                    || name.isDeleted() || name.isHidden() || name.isFunctionName()) continue;
+                    || name.isHidden() || name.isFunctionName()) continue;
             String formula = name.getRefersToFormula();
             if (formula == null || formula.isBlank() || formula.length() > 512 || formula.indexOf('[') >= 0
                     || formula.indexOf(']') >= 0) continue;
@@ -49,6 +49,9 @@ final class NamedTableRanges {
                     if (lastSheet != null || name.getSheetIndex() != sheetIndex) continue;
                 } else if (!firstSheet.equals(sheet.getSheetName())
                         || (lastSheet != null && !lastSheet.equals(firstSheet))) continue;
+                // XSSFName.isDeleted() parses formulas and can throw for unresolved names.
+                // Check only literal-area candidates, inside the per-name fallback below.
+                if (name.isDeleted()) continue;
                 result.add(new Defined(label, new CellRangeAddress(first.getRow(), last.getRow(),
                         first.getCol(), last.getCol())));
             } catch (RuntimeException ignored) {

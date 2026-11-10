@@ -419,7 +419,9 @@ class ExcelMarkdownServiceTest {
             cell(sheet, 0, 0, "隠し表"); cell(sheet, 1, 0, "隠し明細");
             cell(sheet, 4, 0, "複数領域表"); cell(sheet, 5, 0, "複数明細");
             cell(sheet, 8, 0, "外部表"); cell(sheet, 9, 0, "外部明細");
-            xmlName(namedRange(book, sheet, "Hidden_Name", "'名前の安全性'!$A$1:$B$2", false)).setHidden(true);
+            CTDefinedName hidden = xmlName(namedRange(book, sheet, "Hidden_Name", "'名前の安全性'!$A$1:$B$2", false));
+            hidden.setHidden(true);
+            hidden.setStringValue("REPT(LOCAL_YEAR_FORMAT,4)&LOCAL_DATE_SEPARATOR");
             xmlName(namedRange(book, sheet, "Multi_Area", "'名前の安全性'!$A$5:$B$6", false))
                     .setStringValue("'名前の安全性'!$A$5:$B$6,'名前の安全性'!$A$9:$B$10");
             xmlName(namedRange(book, sheet, "External_Name", "'名前の安全性'!$A$9:$B$10", false))
@@ -431,6 +433,50 @@ class ExcelMarkdownServiceTest {
                 for (String name : List.of("Hidden\\_Name", "Multi\\_Area", "External\\_Name"))
                     assertFalse(md.contains(name), md);
                 for (String value : List.of("隠し明細", "複数明細", "外部明細")) assertTrue(md.contains(value), md);
+            }
+        }
+    }
+    @ParameterizedTest
+    @ValueSource(strings={"LOCAL.YEAR_FORMAT", "TEXT(TODAY(),LOCAL.YEAR_FORMAT)",
+            "REPT(LOCAL_YEAR_FORMAT,4)&LOCAL_DATE_SEPARATOR&REPT(LOCAL_MONTH_FORMAT,2)", "#REF!"})
+    void unresolvedDefinedNamesDoNotPreventTablesOrCachedValuesFromConverting(String expression) throws Exception {
+        try (XSSFWorkbook book = new XSSFWorkbook()) {
+            XSSFSheet sheet = book.createSheet("入力"); table(sheet, 0, 1, 0, 1);
+            cell(sheet, 0, 0, "項目"); cell(sheet, 0, 1, "値");
+            cell(sheet, 1, 0, "保存済み表示");
+            XSSFCell cached = (XSSFCell) cell(sheet, 1, 1, "");
+            // Keep the foreign expression and its saved result exactly as an imported XLSX can.
+            cached.getCTCell().addNewF().setStringValue("TEXT(TODAY(),LOCAL_YEAR_FORMAT)");
+            cached.getCTCell().setT(org.openxmlformats.schemas.spreadsheetml.x2006.main.STCellType.STR);
+            cached.getCTCell().setV("2026年");
+            colorRow(sheet, 0, 0, 1, IndexedColors.GREY_25_PERCENT.getIndex());
+            xmlName(namedRange(book, sheet, "Unresolved_Name", "'入力'!$A$1:$B$2", false))
+                    .setStringValue(expression);
+            namedRange(book, sheet, "Valid_Table", "'入力'!$A$1:$B$2", false);
+            try (ConversionResult result = convert(book)) {
+                assertEquals("# [入力] シート\n\n**Valid\\_Table**\n\n"
+                        + "| 項目 | 値 |\n| --- | --- |\n| 保存済み表示 | 2026年 |\n", markdown(result));
+                List<JsonNode> tables = tableBlocks(result);
+                assertEquals(1, tables.size());
+                assertEquals("A1:B2", tables.getFirst().path("range").asText());
+                assertFalse(report(result).toString().contains("Unresolved_Name"));
+            }
+        }
+    }
+    @Test void deletedReferenceIsNotConfusedWithAnExistingSheetNamedRef() throws Exception {
+        try (XSSFWorkbook book = new XSSFWorkbook()) {
+            XSSFSheet sheet = book.createSheet("#REF"); table(sheet, 0, 1, 0, 1);
+            cell(sheet, 0, 0, "項目"); cell(sheet, 0, 1, "値");
+            cell(sheet, 1, 0, "明細"); cell(sheet, 1, 1, "保持する値");
+            colorRow(sheet, 0, 0, 1, IndexedColors.GREY_25_PERCENT.getIndex());
+            xmlName(namedRange(book, sheet, "Deleted_Name", "'#REF'!$A$1:$B$2", false))
+                    .setStringValue("#REF!$A$1:$B$2");
+            namedRange(book, sheet, "Valid_Table", "'#REF'!$A$1:$B$2", false);
+            try (ConversionResult result = convert(book)) {
+                String md = markdown(result);
+                assertTrue(md.contains("**Valid\\_Table**\n\n| 項目 | 値 |\n| --- | --- |\n| 明細 | 保持する値 |"), md);
+                assertFalse(md.contains("Deleted\\_Name"), md);
+                assertEquals(1, tableBlocks(result).size());
             }
         }
     }
