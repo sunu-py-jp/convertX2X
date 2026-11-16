@@ -28,5 +28,6 @@ Office → Markdownの[画像・図形・テキストボックスの合成対応
 - [機能追加・変更のルール](../CONTRIBUTING.md)
 - [API資料の表示方法](APIDocs/README.md)と[更新手順](APIDocs/maintenance.md)
 - [convertX2Xスキル](../.agents/skills/convertx2x/SKILL.md)：このリポジトリのAPIを利用・変更する際の参照先と、HTML資料を生成する際の注意点。リポジトリ内の `.agents/skills/` に配置
+- [HTML2PPTX入力生成スキル](../.agents/skills/html2pptx-authoring/SKILL.md)：AI向けのHTML資料生成、デザイン原則、編集可能な図解、素材同梱、変換後の確認。フォルダ単位で持ち運び可能
 
 [Officeの初期設計メモ](designs/office2md.md)と[HTML → PowerPointの設計・検証記録](designs/html2pptx.md)は検討経緯を含む資料です。現在の仕様は上記のAPI資料・利用ガイドを基準にしてください。

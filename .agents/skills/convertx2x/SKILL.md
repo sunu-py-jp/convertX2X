@@ -31,16 +31,9 @@ description: convertX2Xの変換APIを利用・変更する際に仕様と資料
 
 ## HTML2PPTX向けのHTMLを生成するとき
 
-まず[利用ガイド](../../../functions/html2pptx/docs/usage.md)の入力・画像・アニメーションの節を読む。具体例が必要な場合だけ[サンプル一覧](../../../functions/html2pptx/examples/catalog.json)から近い入力を選ぶ。専用の図形テンプレートへ限定する必要はない。
+専用の [html2pptx-authoringスキル](../html2pptx-authoring/SKILL.md) を使う。入力条件、不要なセカンダリを減らすデザイン方針、画像・SVG・アニメーション、実変換の確認を扱う。この専用スキルはフォルダ単位で別プロジェクトへ渡せる。
 
-- UTF-8のHTMLを生成し、ページごとに入れ子でない `data-slide` 要素を使う。自動改ページはない。既定1280×720 CSS px以外は `pptx-slide-width` / `pptx-slide-height` のmetaを両方指定し、各ページに内容を収める。
-- フォントは変換時にNoto Sans JPへ統一される。このフォントで設計し、端末へフォントが埋め込まれるとは説明しない。
-- HTML単体ではCSS/SVGをインライン化し、PNG/JPEGはdata URIで含める。相対CSSや画像を使うなら、ルートの `index.html` または `index.htm` 1つと素材をZIPにする。外部URL・Webフォント・入力JavaScript・イベント属性には依存しない。
-- 文字・表・図形はHTML/SVGで作り、スライド全体や図を画像で代替しない。元から画像であるPNG/JPEGは画像として保持できる。画像のblurは加工PNGになり、ぼかし量は編集できない。その他の画像加工の対応範囲は利用ガイドで確認する。
-- CSS `@keyframes` のフェードイン・2D移動・拡縮・回転は、対応範囲ならPowerPointの動きになる。同じ要素の複数指定は、すべて対応できる場合だけ合成する。未対応の動きが1つでもあれば要素全体を終端で固定する前提で設計する。
-- 無限ループは最初の1回分の終端で固定される。有限・無限とも方向を考慮し、終端が透明なら表示されない。クリック・ホバー・スクロールで完成させる前提や、transitionの変更先の推測には依存しない。
-- 同期HTTPはHTML/ZIPの生バイト列を送り、既定でPPTXとreportのZIPを受け取る。固定理由や警告を確認したい場合は、reportを含まない `format=pptx` を選ばない。
-- HTMLのスクリーンショット、生成PPTXの静止描画、PowerPointでの再生は別々に確認する。Quick Lookの自由形状の表示差や、LibreOfficeの静止描画だけでアニメーション再生を検証済みとしない。
+仕様変更時は [利用ガイド](../../../functions/html2pptx/docs/usage.md) と専用スキルのreferencesを照合する。専用スキルは外部のデザインスキルをインストールせずに使え、Web用の実行コードやフォント配信を入力へ持ち込まない。
 
 ## 実装・資料を変更するとき
 

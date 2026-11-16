@@ -1,0 +1,4 @@
+interface:
+  display_name: "HTML2PPTX用スライド生成"
+  short_description: "編集可能なPowerPointへ変換しやすいHTML資料を生成・検証する"
+  default_prompt: "$html2pptx-authoring を使って、要件と参考資料からhtml2pptxに入力できる編集可能なHTMLスライドを作ってください。"

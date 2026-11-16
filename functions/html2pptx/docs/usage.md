@@ -16,6 +16,8 @@ Storageの設定によってジョブAPIが有効になる仕組みはありま�
 
 ## 入力HTMLとスライド
 
+AIに入力HTMLを生成させる場合は、[html2pptx-authoringスキル](../../../.agents/skills/html2pptx-authoring/SKILL.md)を利用できます。特定のレイアウトへ固定せず、不要な副題・装飾を抑えるデザイン方針、対応する表現、実変換の確認をまとめています。
+
 入力はUTF-8の `.html` / `.htm`、またはルートに `index.html` / `index.htm` のどちらか1つを含むZIPです。
 
 ```html
