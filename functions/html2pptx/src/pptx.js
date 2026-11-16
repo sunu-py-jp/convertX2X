@@ -6,6 +6,7 @@ import { nativeSvgGroup } from './svg-native.js';
 import { ConversionError } from './errors.js';
 import { FONT_FAMILY } from './fonts.js';
 import { applyNativeAnimations } from './pptx-animations.js';
+import { collapseSingleShapeGroup } from './pptx-groups.js';
 
 const P='http://schemas.openxmlformats.org/presentationml/2006/main';
 const A='http://schemas.openxmlformats.org/drawingml/2006/main';
@@ -99,7 +100,7 @@ export async function finalizePptx(buffer,page,{layouts,imageSources=[],limits,a
       if(!group) fail('OUTPUT_INVALID','SVGの図形を生成できませんでした。');
       const outerTransform=list(group,A,'xfrm')[0];
       for(const attribute of ['rot','flipH','flipV']) if(transform.hasAttribute(attribute)) outerTransform.setAttribute(attribute,transform.getAttribute(attribute));
-      const replacement=doc.importNode(group,true);
+      const replacement=doc.importNode(collapseSingleShapeGroup(group),true);
       pic.parentNode.replaceChild(replacement,pic);
       for(const objects of targets.values()){const at=objects.indexOf(pic);if(at>=0)objects[at]=replacement;}
       nextId=result.nextId; convertedSvgCount++;

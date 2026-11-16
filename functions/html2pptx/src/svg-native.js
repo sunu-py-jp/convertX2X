@@ -601,6 +601,22 @@ function pathGeometry(d, matrix, bounds, sx, sy, options = {}) {
     else throw unsupported(`Unsupported SVG path command: ${op}.`);
   });
   const w = Math.max(1, integer(bounds.width * sx)), h = Math.max(1, integer(bounds.height * sy));
+  // Filled stroke outlines can themselves be exact rectangles. Store these as
+  // native rectangles too: Apple's multi-page preview can cache a custom-path
+  // group incorrectly and show its underline on a later slide. Inspect the
+  // final integer geometry, not the SVG tag or its bounding box. Restrict this
+  // to fill-only shapes so changing the path start cannot shift stroke dashes.
+  if (options.rectangle && !options.pathOnly && commands.length === 5 && commands[4] === '<a:close/>') {
+    const points = commands.slice(0, 4).map((command, index) => {
+      const match = command.match(/^<a:(moveTo|lnTo)><a:pt x="(-?\d+)" y="(-?\d+)"\/><\/a:\1>$/);
+      return match && match[1] === (index ? 'lnTo' : 'moveTo') ? [Number(match[2]), Number(match[3])] : null;
+    });
+    if (points.every(Boolean) && new Set(points.map(p => p.join(','))).size === 4
+        && points.every(([x, y]) => (x === 0 || x === w) && (y === 0 || y === h))
+        && points.every(([x, y], i) => (x === points[(i + 1) % 4][0]) !== (y === points[(i + 1) % 4][1]))) {
+      return '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom>';
+    }
+  }
   const path = `<a:path w="${w}" h="${h}" fill="${options.fill || 'norm'}" stroke="${options.stroke === false ? 0 : 1}">${commands.join('')}</a:path>`;
   return options.pathOnly ? path : customGeometry(path);
 }
@@ -620,7 +636,7 @@ function geometryXml(item, sx, sy) {
     const rx = Math.min(item.rx, item.width / 2) * m[0] * sx, ry = Math.min(item.ry, item.height / 2) * m[3] * sy;
     if (Math.abs(rx - ry) < Math.max(rx, ry) * 0.001) return `<a:prstGeom prst="roundRect"><a:avLst><a:gd name="adj" fmla="val ${integer(clamp(rx / Math.min(item.bounds.width * sx, item.bounds.height * sy) * 100000, 0, 50000))}"/></a:avLst></a:prstGeom>`;
   }
-  return pathGeometry(geometryPath(item), m, item.bounds, sx, sy);
+  return pathGeometry(geometryPath(item), m, item.bounds, sx, sy, { rectangle: !item.style.stroke });
 }
 
 /** Serializes measured SVG elements as native DrawingML, without bitmap fallbacks. */
