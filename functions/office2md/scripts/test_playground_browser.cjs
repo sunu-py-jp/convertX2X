@@ -42,7 +42,7 @@ async function main() {
   await fs.mkdir(work, { recursive: true });
   let base = arg('--base'), server, mode = 'normal', polled = 0, jobImageMode = 'ignore';
   const external = [], pageErrors = [], requests = [], report = [];
-  const limits = { asyncEnabled: true, supportedFormats: ['xlsx', 'xls', 'docx', 'pptx'], supportedOutputs: ['markdown'], ocrEnabled: true, supportedImageModes: ['ignore', 'ocr'], maxInputBytes: 104857600, maxSections: 0, maxReadItems: 0, maxTableCells: 0, maxMarkdownBytes: 20971520, maxImages: 0, maxImageBytes: 20971520, maxOutputBytes: 314572800, maxShapes: 0, maxGroupDepth: 16, maxImagePixels: 20000000 };
+  const limits = { asyncEnabled: true, supportedFormats: ['xlsx', 'xls', 'docx', 'doc', 'pptx', 'ppt'], supportedOutputs: ['markdown'], ocrEnabled: true, supportedImageModes: ['ignore', 'ocr'], maxInputBytes: 104857600, maxSections: 0, maxReadItems: 0, maxTableCells: 0, maxMarkdownBytes: 20971520, maxImages: 0, maxImageBytes: 20971520, maxOutputBytes: 314572800, maxShapes: 0, maxGroupDepth: 16, maxImagePixels: 20000000 };
   const id = '3b6e6d68-41bc-4c78-b186-a8d6bb75d449', jobPath = `/api/jobs/${id}`;
   // Hand-authored JSON escapes exercise the preview parser independently of the Java serializer.
   const jsonImageLabel = String.raw`{"type":"長方形","text":"引用\u0022日本語\u0022 \u005B表示\u005D (URL)\nC:\u005Ctemp\u005Ca.png \u0026 \u003Cscript\u003E \u002A強調\u002A \u005F下線\u005F \u0060code\u0060","x":20.125,"y":100,"width":120,"height":40}`;

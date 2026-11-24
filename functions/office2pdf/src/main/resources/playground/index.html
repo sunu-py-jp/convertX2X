@@ -14,7 +14,7 @@
     <section class="card controls">
       <h2>変換</h2>
       <form id="form">
-        <label class="drop"><input id="file" type="file" accept=".xlsx,.xls,.docx,.pptx,.ppt" required><strong id="file-name">Officeファイルを選択</strong><span id="file-hint">XLSX / XLS / DOCX / PPTX / PPT</span></label>
+        <label class="drop"><input id="file" type="file" accept=".xlsx,.xls,.docx,.doc,.pptx,.ppt" required><strong id="file-name">Officeファイルを選択</strong><span id="file-hint">XLSX / XLS / DOCX / DOC / PPTX / PPT</span></label>
         <fieldset><legend>実行方法</legend><label><input type="radio" name="mode" value="convert" checked> 同期HTTP</label><label><input id="async" type="radio" name="mode" value="jobs"> 非同期ジョブ</label></fieldset>
         <details><summary>AzureのFunctionキー</summary><label class="key">x-functions-key<input id="key" type="password" autocomplete="off"></label></details>
         <button id="submit" type="submit">PDFに変換</button>

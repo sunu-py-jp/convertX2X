@@ -1,5 +1,6 @@
 package com.convertx2x.office2pdf;
 
+import com.convertx2x.office2pdf.conversion.OfficePdfService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.microsoft.azure.functions.HttpMethod;
@@ -13,7 +14,6 @@ import com.microsoft.azure.functions.annotation.HttpTrigger;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -50,7 +50,7 @@ public class PlaygroundFunctions {
             authLevel = AuthorizationLevel.ANONYMOUS, route = "playground/config") HttpRequestMessage<Optional<String>> request) {
         Map<String, Object> values = new LinkedHashMap<>();
         values.put("asyncEnabled", config.asyncEnabled());
-        values.put("supportedFormats", List.of("xlsx", "xls", "docx", "pptx", "ppt"));
+        values.put("supportedFormats", OfficePdfService.supportedFormats());
         values.put("maxInputBytes", config.limits().maxInputBytes());
         values.put("maxOutputBytes", config.limits().maxOutputBytes());
         values.put("maxPages", config.limits().maxPages());

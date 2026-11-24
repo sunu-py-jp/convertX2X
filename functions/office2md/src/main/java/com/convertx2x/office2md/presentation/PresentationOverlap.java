@@ -3,8 +3,8 @@ package com.convertx2x.office2md.presentation;
 import org.apache.poi.sl.draw.DrawSimpleShape;
 import org.apache.poi.sl.draw.Drawable;
 import org.apache.poi.sl.draw.geom.Outline;
-import org.apache.poi.xslf.usermodel.XSLFConnectorShape;
-import org.apache.poi.xslf.usermodel.XSLFSimpleShape;
+import org.apache.poi.sl.usermodel.ConnectorShape;
+import org.apache.poi.sl.usermodel.SimpleShape;
 import java.awt.Graphics2D;
 import java.awt.Shape;
 import java.awt.geom.*;
@@ -30,7 +30,7 @@ final class PresentationOverlap {
     }
 
     static boolean intersects(Rectangle2D picture, AffineTransform pictureTransform,
-                              XSLFSimpleShape shape, AffineTransform shapeTransform) {
+                              SimpleShape<?, ?> shape, AffineTransform shapeTransform) {
         if (picture == null || picture.getWidth() <= 0 || picture.getHeight() <= 0
                 || !finite(pictureTransform) || !finite(shapeTransform)) return false;
         Rectangle2D outer = pictureTransform.createTransformedShape(picture).getBounds2D();
@@ -49,7 +49,7 @@ final class PresentationOverlap {
                     Math.max(0, picture.getWidth() - 2 * EPSILON), Math.max(0, picture.getHeight() - 2 * EPSILON));
             for (Outline outline : new Geometry(shape).outlines(graphics)) {
                 Shape local = toPicture.createTransformedShape(outline.getOutline());
-                if (shape instanceof XSLFConnectorShape || new Area(local).isEmpty()) {
+                if (shape instanceof ConnectorShape<?, ?> || new Area(local).isEmpty()) {
                     if (lineIntersects(local, interior)) return true;
                 } else {
                     Area intersection = new Area(local);
@@ -94,7 +94,7 @@ final class PresentationOverlap {
     }
 
     private static final class Geometry extends DrawSimpleShape {
-        Geometry(XSLFSimpleShape shape) { super(shape); }
+        Geometry(SimpleShape<?, ?> shape) { super(shape); }
         Collection<Outline> outlines(Graphics2D graphics) { return computeOutlines(graphics); }
     }
     private PresentationOverlap() { }

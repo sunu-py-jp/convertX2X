@@ -56,6 +56,15 @@ final class PresentationConnections {
         return List.copyOf(edges);
     }
 
+    /**
+     * A connector of a format whose saved endpoints are not available. It is reported exactly like a
+     * DrawingML connector without stCxn/endCxn, so the caller may fill both ends from boundary contact.
+     * Markers use the DrawingML names (none, triangle, stealth, arrow, oval, diamond).
+     */
+    static Edge unattached(String id, String startArrow, String endArrow) {
+        return new Edge(id, null, null, startArrow, endArrow, direction(startArrow, endArrow), "unresolved", "MISSING_ENDPOINT");
+    }
+
     private static Endpoint endpoint(CTConnection connection, Map<Long, List<XSLFShape>> targets) {
         if (connection == null || connection.xgetId() == null) return new Endpoint(null, "MISSING_ENDPOINT");
         long targetId;

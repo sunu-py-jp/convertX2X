@@ -3,7 +3,7 @@ package com.convertx2x.office2md.presentation;
 import com.convertx2x.office2md.conversion.ConversionLimits;
 import com.convertx2x.office2md.conversion.ConversionWorkspace;
 import org.apache.poi.sl.draw.Drawable;
-import org.apache.poi.xslf.usermodel.XSLFShape;
+import org.apache.poi.sl.usermodel.Shape;
 import org.apache.poi.xslf.usermodel.XSLFSlide;
 import org.apache.xmlbeans.XmlObject;
 import org.openxmlformats.schemas.drawingml.x2006.main.CTSolidColorFillProperties;
@@ -20,9 +20,9 @@ import java.util.List;
 
 /** Draws sanitized leaves with their parent transforms, without masters, notes or external content. */
 final class PresentationRenderer {
-    record Layer(XSLFShape shape, AffineTransform parent, byte[] preparedPicture, Rectangle2D pictureBounds) {
-        Layer(XSLFShape shape, AffineTransform parent) { this(shape, parent, null, null); }
-        static Layer picture(XSLFShape shape, byte[] preparedPicture, Rectangle2D bounds) {
+    record Layer(Shape<?, ?> shape, AffineTransform parent, byte[] preparedPicture, Rectangle2D pictureBounds) {
+        Layer(Shape<?, ?> shape, AffineTransform parent) { this(shape, parent, null, null); }
+        static Layer picture(Shape<?, ?> shape, byte[] preparedPicture, Rectangle2D bounds) {
             return new Layer(shape, new AffineTransform(), preparedPicture, bounds);
         }
     }
@@ -66,7 +66,7 @@ final class PresentationRenderer {
         }
     }
 
-    static byte[] png(XSLFShape shape, Rectangle2D bounds, AffineTransform parent, ConversionLimits limits) throws IOException {
+    static byte[] png(Shape<?, ?> shape, Rectangle2D bounds, AffineTransform parent, ConversionLimits limits) throws IOException {
         return png(List.of(new Layer(shape, parent)), bounds, limits);
     }
 

@@ -31,7 +31,7 @@
 | `output.container` | 成果物の保存先コンテナー。`CONVERSION_CREATE_RESOURCES=true` の場合は存在しなければ非公開で作成 |
 | `output.prefix` | 保存先の接頭辞。省略・null・空文字はコンテナー直下 |
 | `output.storage` | 出力用Storageの登録名。省略・nullは `default` |
-| `filename` | 任意のファイル名。省略時は入力Blobの末尾名。`.xlsx` / `.xls` / `.docx` / `.pptx` が必要 |
+| `filename` | 任意のファイル名。省略時は入力Blobの末尾名。`.xlsx` / `.xls` / `.docx` / `.doc` / `.pptx` / `.ppt` が必要 |
 
 UTF-8 JSON本体は48 KiB以下です。未知のフィールド、重複キー、文字列から数値への暗黙変換は受け付けません。`options`、`output.mode`、接続文字列、SAS、任意のURLは契約にありません。Blobのパスに `.` / `..` の区間や制御文字は指定できません。
 

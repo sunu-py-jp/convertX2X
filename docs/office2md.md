@@ -29,7 +29,19 @@ Javaのルートパッケージは `com.convertx2x.office2md` です。`conversi
 
 ## 共通入口と形式別の変換
 
-`OfficeMarkdownService` が入力サイズ・拡張子・形式シグネチャを検査し、Excelは `ExcelMarkdownService`、Wordは `WordMarkdownConverter`、PowerPointは `PowerPointMarkdownConverter` へ渡します。形式別コンバーターはOOXMLの本文パーツ型なども検査し、拡張子を変えた別形式やマクロ有効形式を受け付けません。入力は `.xlsx` / `.xls` / `.docx` / `.pptx` が対象で、`.doc` / `.ppt` / PDFは対象外です。
+`OfficeMarkdownService` が入力サイズ・拡張子・形式シグネチャを検査し、拡張子ごとに登録した [OfficeMarkdownConverter](../functions/office2md/src/main/java/com/convertx2x/office2md/conversion/OfficeMarkdownConverter.java) の実装へ渡します。対応形式の一覧（エラーメッセージ・Playgroundの `supportedFormats`）はこの登録から作るため、形式の追加は「実装を1つ足して登録する」だけで済み、既存形式のコンバーターには手を入れません。形式別コンバーターは本文パーツ型やコンテナーの内容も検査し、拡張子を変えた別形式やマクロを含むファイルを受け付けません。入力は `.xlsx` / `.xls` / `.docx` / `.doc` / `.pptx` / `.ppt` が対象で、PDFは対象外です。
+
+| 拡張子 | 入口 | 共通処理 | 形式固有の読み取り |
+| --- | --- | --- | --- |
+| `.xlsx` / `.xls` | `ExcelMarkdownService` | （POIの共通ブックモデルで両形式を処理） | — |
+| `.docx` | `WordMarkdownConverter` | [WordMarkdownWriter](../functions/office2md/src/main/java/com/convertx2x/office2md/word/WordMarkdownWriter.java)（`[page n]`・ブロックと行番号・表・上限・通知の重複排除）、[WordListNumbers](../functions/office2md/src/main/java/com/convertx2x/office2md/word/WordListNumbers.java)（番号の採番と表示） | XMLの走査、`WordStyles`・`WordNumbering`・`WordDrawings` |
+| `.doc` | `LegacyWordMarkdownConverter` | 同上 | HWPFの段落・Run・表・画像、[LegacyWordInline](../functions/office2md/src/main/java/com/convertx2x/office2md/word/LegacyWordInline.java)（フィールドと制御文字の解釈） |
+| `.pptx` | `PowerPointMarkdownConverter` | [SlideMarkdownReader](../functions/office2md/src/main/java/com/convertx2x/office2md/presentation/SlideMarkdownReader.java)（読み順・Markdown・図の構成・接続の推定・参考画像）、`PresentationText.assemble`（箇条書きと番号）、`PresentationRenderer`・`PresentationOverlap` | [OoxmlSlideDialect](../functions/office2md/src/main/java/com/convertx2x/office2md/presentation/OoxmlSlideDialect.java)（DrawingMLのXML） |
+| `.ppt` | `LegacyPowerPointMarkdownConverter` | 同上 | [BinarySlideDialect](../functions/office2md/src/main/java/com/convertx2x/office2md/presentation/BinarySlideDialect.java)（描画レコード） |
+
+PowerPointは、POIの形式共通モデル（`org.apache.poi.sl.usermodel`）で読める内容を `SlideMarkdownReader` が処理し、形式ごとに保存方法が違う情報だけを [SlideDialect](../functions/office2md/src/main/java/com/convertx2x/office2md/presentation/SlideDialect.java) へ問い合わせます。非表示・プレースホルダー・位置と回転・代替テキスト・表のヘッダー・接続線の保存情報・背景などです。`.ppt` は接続線の接続先をPOIから取得できないため、`BinarySlideDialect` はすべての線を「接続先なし」として返し、共通処理が線端と図形境界の接触から接続を推定します。
+
+Wordは `.docx` がXML、`.doc` がバイナリの文書モデルで、走査は形式ごとに行います。段落・表・ページ区切りをMarkdownへ書き出す処理と番号の採番は共通クラスを通るため、両形式のMarkdown構造・`report.json` のブロック・上限の扱いは同じです。`.doc` の脚注・テキストボックス・コメント・図形は読み取らず、内容があれば `LEGACY_WORD_CONTENT_OMITTED` を警告します。
 
 出力はMarkdown・画像・reportです。Office2MDのPDF出力は廃止し、PDF用ライブラリ・フォントの取り込みも削除しました。同期HTTPはZIP、非同期の `/result` はMarkdown、`/archive` は成果物一式のZIPです。
 
@@ -206,7 +218,9 @@ Queue JSONは [ConversionJobRequest](../functions/office2md/src/main/java/com/co
 | --- | --- | --- |
 | 共通の形式選択、メタデータ・設定互換 | `OfficeMarkdownService`、`AppConfig` | [OfficeMarkdownServiceTest](../functions/office2md/src/test/java/com/convertx2x/office2md/conversion/OfficeMarkdownServiceTest.java) |
 | Wordの構造・履歴・番号・脚注・図形 | `word` パッケージ | [WordMarkdownConverterTest](../functions/office2md/src/test/java/com/convertx2x/office2md/word/WordMarkdownConverterTest.java) |
-| PPTXの本文・図形文字・接続・参考PNG・JSON・座標・取消線・外部参照 | `presentation` パッケージ | [PowerPointMarkdownConverterTest](../functions/office2md/src/test/java/com/convertx2x/office2md/presentation/PowerPointMarkdownConverterTest.java)、[PresentationConnectionsTest](../functions/office2md/src/test/java/com/convertx2x/office2md/presentation/PresentationConnectionsTest.java) |
+| `.doc` の段落・表・改ページ・フィールド・リンク・除外文字・番号定義 | `LegacyWordMarkdownConverter`、`LegacyWordInline` | [LegacyWordMarkdownConverterTest](../functions/office2md/src/test/java/com/convertx2x/office2md/word/LegacyWordMarkdownConverterTest.java)、[LegacyWordInlineTest](../functions/office2md/src/test/java/com/convertx2x/office2md/word/LegacyWordInlineTest.java) |
+| `.ppt` のタイトル・本文・表・画像・接続の推定・非表示スライド・コンテナー検査 | `LegacyPowerPointMarkdownConverter`、`BinarySlideDialect` | [LegacyPowerPointMarkdownConverterTest](../functions/office2md/src/test/java/com/convertx2x/office2md/presentation/LegacyPowerPointMarkdownConverterTest.java) |
+| PowerPoint共通の読み順・図形文字・接続・参考PNG・JSON・座標・取消線と、PPTXの外部参照 | `SlideMarkdownReader`、`OoxmlSlideDialect` ほか `presentation` パッケージ | [PowerPointMarkdownConverterTest](../functions/office2md/src/test/java/com/convertx2x/office2md/presentation/PowerPointMarkdownConverterTest.java)、[PresentationConnectionsTest](../functions/office2md/src/test/java/com/convertx2x/office2md/presentation/PresentationConnectionsTest.java) |
 | Excel・Wordの図形文字・接続・参考PNG・JSON・外接矩形 | 形式別図形抽出、共有描画処理 | [ExcelDrawingAltTextTest](../functions/office2md/src/test/java/com/convertx2x/office2md/drawing/ExcelDrawingAltTextTest.java)、[WordMarkdownConverterTest](../functions/office2md/src/test/java/com/convertx2x/office2md/word/WordMarkdownConverterTest.java) |
 | 表検出・左右展開・結合・読み順 | `BorderTables`、`TableExpansion`、`MergedRanges`、`ExcelMarkdownService` | [TableExpansionTest](../functions/office2md/src/test/java/com/convertx2x/office2md/conversion/TableExpansionTest.java)、[ExcelMarkdownServiceTest](../functions/office2md/src/test/java/com/convertx2x/office2md/conversion/ExcelMarkdownServiceTest.java) |
 | 表示形式・太字・リンク・取消線 | `CellMarkdown`、`Markdown` | 同上の表示値・書式・リンク・削除優先ケース |

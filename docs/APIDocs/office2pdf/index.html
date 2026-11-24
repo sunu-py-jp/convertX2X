@@ -11,11 +11,11 @@
 <h2 id="formats">対応形式</h2>
 <div class="table-wrap"><table><thead><tr><th>入力</th><th>PDF化の方法</th><th>区切り</th></tr></thead><tbody>
 <tr><td><code>.xlsx / .xls</code></td><td>表示シートの値を検索可能な表へ再配置。空列を挟む左右の関連列も同じ表へ取り込む</td><td>表示シート</td></tr>
-<tr><td><code>.docx</code></td><td>本文・見出し・箇条書き・表・対応画像を本文順に再配置</td><td>1文書</td></tr>
+<tr><td><code>.docx / .doc</code></td><td>本文・見出し・箇条書き・表・対応画像を本文順に再配置。<code>.doc</code> はWord 97-2003形式で、フィールドは保存済みの表示だけを使う</td><td>1文書</td></tr>
 <tr><td><code>.pptx / .ppt</code></td><td>スライドをJava2Dで描画し、1スライドをPDFの1ページへ配置。描画した文字を検索用の非表示テキストとして重ねる</td><td>PPTXは表示スライド、旧PPTは非表示を含む全スライド</td></tr>
 </tbody></table></div>
 <p><code>.pptx</code> の非表示スライドは除外します。旧形式 <code>.ppt</code> の非表示スライド除外は未対応のため、非表示スライドもPDFの表示と検索用テキストに含まれます。</p>
-<p>Excel数式は再計算せず保存済み値を使います。外部参照やリンク先は取得しません。暗号化ファイル、Wordの旧形式<code>.doc</code>、マクロ有効形式は対象外です。</p>
+<p>Excel数式は再計算せず保存済み値を使います。外部参照やリンク先は取得しません。暗号化ファイル、マクロ有効形式、Word 95以前の形式は対象外です。<code>.doc</code> は中身がWord 97-2003形式のファイルだけを受け付け、<code>.docx</code> などを改名したファイルは <code>UNSUPPORTED_FORMAT</code> になります。</p>
 <h2 id="output">出力</h2>
 <pre><code>document.pdf
 report.json</code></pre>

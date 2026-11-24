@@ -18,8 +18,9 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
 
 /** Converts populated cells into compact searchable tables without recalculating formulas. */
-final class ExcelPdfConverter {
-    void convert(byte[] input, NormalizedPdfWriter pdf, ConversionWorkspace workspace) throws IOException {
+final class ExcelPdfConverter implements OfficePdfConverter {
+    @Override
+    public void convert(byte[] input, NormalizedPdfWriter pdf, ConversionWorkspace workspace) throws IOException {
         try (Workbook workbook = WorkbookFactory.create(new ByteArrayInputStream(input))) {
             DataFormatter formatter = new DataFormatter(java.util.Locale.JAPAN);
             formatter.setUseCachedValuesForFormulaCells(true);

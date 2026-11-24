@@ -75,7 +75,7 @@ class ConversionFunctionsTest {
         assertFalse(config.toString().contains("secret"));
         HttpResponseMessage capabilities = new PlaygroundFunctions(config).capabilities(request("/api/capabilities", "", Map.of(), Map.of()));
         assertTrue(capabilities.getBody().toString().contains("\"maxPages\":0"));
-        assertTrue(capabilities.getBody().toString().contains("\"supportedFormats\":[\"xlsx\",\"xls\",\"docx\",\"pptx\",\"ppt\"]"));
+        assertTrue(capabilities.getBody().toString().contains("\"supportedFormats\":[\"xlsx\",\"xls\",\"docx\",\"doc\",\"pptx\",\"ppt\"]"));
         assertTrue(capabilities.getBody().toString().contains("\"maxImagePixels\":20000000"));
         assertFalse(capabilities.getBody().toString().contains("secret"));
         var functions = new ConversionFunctions(config, converter, () -> { throw new IllegalStateException("AccountKey=secret"); });

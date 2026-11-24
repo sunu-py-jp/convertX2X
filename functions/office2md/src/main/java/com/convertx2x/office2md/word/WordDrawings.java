@@ -959,7 +959,8 @@ final class WordDrawings {
             return switch(value) { case "white" -> Color.WHITE; case "black" -> Color.BLACK; case "red" -> Color.RED; case "blue" -> Color.BLUE; case "green" -> Color.GREEN; default -> fallback; };
         } catch (IllegalArgumentException ignored) { return fallback; }
     }
-    private static String[] imageFormat(byte[] bytes, String type) {
+    /** Extension and content type from the image signature, else from the declared type. Shared by every Word reader. */
+    static String[] imageFormat(byte[] bytes, String type) {
         if (bytes.length >= 8 && bytes[0] == (byte)137 && bytes[1] == 80 && bytes[2] == 78 && bytes[3] == 71) return new String[]{"png","image/png"};
         if (bytes.length >= 3 && bytes[0] == (byte)255 && bytes[1] == (byte)216 && bytes[2] == (byte)255) return new String[]{"jpg","image/jpeg"};
         if (bytes.length >= 2 && bytes[0] == 'B' && bytes[1] == 'M') return new String[]{"bmp","image/bmp"};

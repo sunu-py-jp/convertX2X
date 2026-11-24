@@ -432,7 +432,7 @@
         && ['maxSections', 'maxReadItems', 'maxTableCells', 'maxImages', 'maxShapes'].every(key => Number.isSafeInteger(data[key]) && data[key] >= 0));
       config = data; $('config-status').dataset.state = 'ready'; $('config-status').textContent = '接続済み';
       $('config-message').textContent = config.asyncEnabled ? '同期 / 非同期を利用できます' : '同期のみ · 非同期はStorage設定で有効';
-      $('file-hint').textContent = `XLSX / XLS / DOCX / PPTX · 最大 ${sizeLabel(config.maxInputBytes)}` + (config.maxSections ? ` · ${config.maxSections} シート／スライド` : '');
+      $('file-hint').textContent = `XLSX / XLS / DOCX / DOC / PPTX / PPT · 最大 ${sizeLabel(config.maxInputBytes)}` + (config.maxSections ? ` · ${config.maxSections} シート／スライド` : '');
       $('retry-config').hidden = true;
       $('error-message').hidden = true;
       if (selectedFile) selectFile(selectedFile);
@@ -446,7 +446,7 @@
     resetResult(); selectedFile = null; $('file-input').value = ''; $('elapsed').hidden = true;
     $('dropzone').classList.remove('has-file'); $('selected-name').textContent = 'Officeファイルをドロップ'; $('selected-meta').textContent = 'またはクリックしてファイルを選択';
     try {
-      check(/\.(?:xlsx?|docx|pptx)$/i.test(file.name), 'XLSX・XLS・DOCX・PPTXファイルを選んでください。');
+      check(/\.(?:xlsx?|docx?|pptx?)$/i.test(file.name), 'XLSX・XLS・DOCX・DOC・PPTX・PPTファイルを選んでください。');
       check(file.size > 0, 'ファイルが空です。');
       check(!config || file.size <= config.maxInputBytes, `ファイルサイズの上限は${sizeLabel(config?.maxInputBytes || 100 * MiB)}です。`);
       selectedFile = file; $('selected-name').textContent = file.name; $('selected-meta').textContent = `${sizeLabel(file.size)} · クリックして変更`; $('dropzone').classList.add('has-file'); status('idle', '変換の準備ができました', '「Markdownに変換」を押してください。');

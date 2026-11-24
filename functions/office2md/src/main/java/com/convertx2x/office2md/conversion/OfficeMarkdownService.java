@@ -1,9 +1,15 @@
 package com.convertx2x.office2md.conversion;
 
+import com.convertx2x.office2md.presentation.LegacyPowerPointMarkdownConverter;
 import com.convertx2x.office2md.presentation.PowerPointMarkdownConverter;
+import com.convertx2x.office2md.word.LegacyWordMarkdownConverter;
 import com.convertx2x.office2md.word.WordMarkdownConverter;
 import com.convertx2x.office2md.ocr.OcrClient;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Semaphore;
 import org.apache.poi.EncryptedDocumentException;
@@ -12,11 +18,12 @@ import org.apache.poi.poifs.filesystem.FileMagic;
 /** One format-neutral entry point for HTTP and Queue. Input files never supply a network destination. */
 public final class OfficeMarkdownService {
     private static final Semaphore SLOT = new Semaphore(1, true);
+    private static final List<String> EXTENSIONS = List.copyOf(formats(ConversionLimits.defaults()).keySet());
     private final ConversionLimits limits;
     private final OcrClient ocrClient;
-    private final ExcelMarkdownService excel;
-    private final WordMarkdownConverter word;
-    private final PowerPointMarkdownConverter presentation;
+    /** Extension to converter, in the order shown to clients. A format is added by registering its converter. */
+    private final Map<String, OfficeMarkdownConverter> formats;
+    private final String supported;
 
     public OfficeMarkdownService(ConversionLimits limits) {
         this(limits, OcrClient.disabled());
@@ -25,10 +32,25 @@ public final class OfficeMarkdownService {
     public OfficeMarkdownService(ConversionLimits limits, OcrClient ocrClient) {
         this.limits = Objects.requireNonNull(limits);
         this.ocrClient = Objects.requireNonNull(ocrClient);
-        excel = new ExcelMarkdownService(limits);
-        word = new WordMarkdownConverter(limits);
-        presentation = new PowerPointMarkdownConverter(limits);
+        formats = formats(limits);
+        supported = String.join(" / ", formats.keySet().stream().map(extension -> "." + extension).toList())
+                + " に対応しています。";
     }
+
+    private static Map<String, OfficeMarkdownConverter> formats(ConversionLimits limits) {
+        OfficeMarkdownConverter excel = new ExcelMarkdownService(limits);
+        Map<String, OfficeMarkdownConverter> formats = new LinkedHashMap<>();
+        formats.put("xlsx", excel);
+        formats.put("xls", excel);
+        formats.put("docx", new WordMarkdownConverter(limits));
+        formats.put("doc", new LegacyWordMarkdownConverter(limits));
+        formats.put("pptx", new PowerPointMarkdownConverter(limits));
+        formats.put("ppt", new LegacyPowerPointMarkdownConverter(limits));
+        return Collections.unmodifiableMap(formats);
+    }
+
+    /** Extensions accepted by {@link #convert}, without the leading dot. */
+    public static List<String> supportedFormats() { return EXTENSIONS; }
 
     public void validate(byte[] input, String filename) {
         if (input == null || input.length == 0)
@@ -36,8 +58,8 @@ public final class OfficeMarkdownService {
         if (input.length > limits.maxInputBytes())
             throw ConversionWorkspace.limit("INPUT_BYTES_LIMIT", "入力ファイルのサイズが上限を超えました。");
         String extension = extension(filename);
-        if (!java.util.Set.of("xlsx", "xls", "docx", "pptx").contains(extension))
-            throw new ConversionException(415, "UNSUPPORTED_FORMAT", ".xlsx / .xls / .docx / .pptx に対応しています。");
+        if (!formats.containsKey(extension))
+            throw new ConversionException(415, "UNSUPPORTED_FORMAT", supported);
         FileMagic magic;
         try { magic = FileMagic.valueOf(input); }
         catch (IllegalArgumentException failure) {
@@ -68,12 +90,7 @@ public final class OfficeMarkdownService {
             throw new ConversionException(503, "CONVERSION_INTERRUPTED", "変換が中断されました。", failure);
         }
         try {
-            return switch (extension(filename)) {
-                case "xlsx", "xls" -> excel.convert(input, filename, imageMode, ocrClient);
-                case "docx" -> word.convert(input, filename, imageMode, ocrClient);
-                case "pptx" -> presentation.convert(input, filename, imageMode, ocrClient);
-                default -> throw new IllegalStateException("Validated format is unavailable");
-            };
+            return formats.get(extension(filename)).convert(input, filename, imageMode, ocrClient);
         } catch (ConversionException failure) {
             throw failure;
         } catch (EncryptedDocumentException failure) {

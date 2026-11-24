@@ -6,6 +6,7 @@ import com.convertx2x.office2md.conversion.ConversionLimits;
 import com.convertx2x.office2md.conversion.ConversionResult;
 import com.convertx2x.office2md.conversion.ConversionWorkspace;
 import com.convertx2x.office2md.conversion.Markdown;
+import com.convertx2x.office2md.conversion.OfficeMarkdownConverter;
 import com.convertx2x.office2md.conversion.ImageMode;
 import com.convertx2x.office2md.ocr.OcrClient;
 import java.io.ByteArrayInputStream;
@@ -35,7 +36,7 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
 /** DOCX semantic conversion. Does not evaluate fields, update links, or calculate pagination. */
-public final class WordMarkdownConverter {
+public final class WordMarkdownConverter implements OfficeMarkdownConverter {
     private static final String DOCUMENT_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml";
     private final ConversionLimits limits;
     public WordMarkdownConverter(ConversionLimits limits) { this.limits = Objects.requireNonNull(limits); }
@@ -44,6 +45,7 @@ public final class WordMarkdownConverter {
         return convert(input, filename, ImageMode.IGNORE, OcrClient.disabled());
     }
 
+    @Override
     public ConversionResult convert(byte[] input, String filename, ImageMode imageMode, OcrClient ocrClient) {
         if (input == null || input.length == 0) throw new ConversionException(400, "EMPTY_INPUT", "入力ファイルが空です。");
         if (input.length > limits.maxInputBytes()) throw ConversionWorkspace.limit("INPUT_BYTES_LIMIT", "入力ファイルのサイズが上限を超えています。");
@@ -97,26 +99,20 @@ public final class WordMarkdownConverter {
     }
 
     private static final class Reader {
-        /** XML 1.0 cannot contain this noncharacter, so source text cannot collide with it. */
-        private static final String PAGE_BREAK = "\uFDD0";
+        private static final String PAGE_BREAK = WordMarkdownWriter.PAGE_BREAK;
         private final XWPFDocument document;
         private final ConversionWorkspace workspace;
         private final WordStyles styles;
         private final WordNumbering numbering;
         private final WordDrawings drawings;
         private final String section = "document";
-        private final StringBuilder output = new StringBuilder();
+        private final WordMarkdownWriter writer;
         private final LinkedHashMap<String, Note> notes = new LinkedHashMap<>();
-        private final Set<String> noticeKeys = new HashSet<>();
         private final Deque<Boolean> fieldResults = new ArrayDeque<>();
         private int paragraphNumber;
         private int tableNumber;
-        private long tableCells;
         private long readItems;
         private long textCharacters;
-        private int outputLine = 1;
-        private int pageNumber = 1;
-        private boolean documentContent;
         private record Note(String key, int id, boolean endnote) { }
         private record Visit(Node node, int depth) { }
 
@@ -125,12 +121,13 @@ public final class WordMarkdownConverter {
             styles = new WordStyles(document);
             numbering = new WordNumbering(document, styles, workspace);
             drawings = new WordDrawings(workspace);
+            writer = new WordMarkdownWriter(workspace, section);
         }
         String convert() {
             Node body = document.getDocument().getBody().getDomNode();
             checkTree(body);
-            append(output, "[page 1]\n\n");
-            outputLine = 3;
+            StringBuilder output = writer.output();
+            writer.begin();
             body(body, document.getPackagePart(), output, false);
             Set<String> emitted = new HashSet<>();
             // A note may reference another note; each definition is emitted once and all limits are shared.
@@ -186,30 +183,7 @@ public final class WordMarkdownConverter {
             }
         }
         private void emit(StringBuilder destination, String text, String type, String range, boolean note) {
-            if (!note && text.contains(PAGE_BREAK)) {
-                String[] pages = text.split(PAGE_BREAK, -1);
-                for (int index = 0; index < pages.length; index++) {
-                    if (index > 0) nextPage(destination);
-                    if (!pages[index].isBlank()) emit(destination, pages[index], type, range, false);
-                }
-                return;
-            }
-            int line = outputLine;
-            append(destination, text.stripTrailing() + "\n\n");
-            if (!note) {
-                int lines = (int) text.stripTrailing().chars().filter(c -> c == '\n').count();
-                workspace.block(Map.of("type", type, "section", section, "range", range,
-                        "markdownStartLine", line, "markdownEndLine", line + lines));
-                outputLine += lines + 2;
-                documentContent = true;
-            }
-        }
-        private void nextPage(StringBuilder destination) {
-            // A break-before marker on the first paragraph still starts page 1.
-            if (!documentContent && pageNumber == 1) return;
-            pageNumber++;
-            append(destination, "[page " + pageNumber + "]\n\n");
-            outputLine += 2;
+            writer.emit(destination, text, type, range, note);
         }
         private String paragraph(Node p, PackagePart part, String range, boolean cell, boolean pages) {
             String prefix = numbering.prefix(p, section, range);
@@ -379,20 +353,10 @@ public final class WordMarkdownConverter {
                 width = Math.max(width, cells.size());
             }
             if (width == 0 || values.isEmpty()) return composed ? drawings.finishTable("") : "";
-            tableCells += (long) width * (values.size() + (header ? 0 : 1));
-            workspace.limits().checkTableCells(tableCells);
-            StringBuilder out = new StringBuilder();
-            int start = 0;
-            if (header) { tableRow(out, values.getFirst(), width); start = 1; }
-            else tableRow(out, List.of(), width);
-            append(out, "|" + " --- |".repeat(width) + "\n");
-            for (int i = start; i < values.size(); i++) tableRow(out, values.get(i), width);
-            String markdown = out.toString().stripTrailing();
+            String markdown = writer.table(values, width, header);
             return composed ? drawings.finishTable(markdown) : markdown;
         }
-        private void checkTableWidth(long width, int rows, boolean header) {
-            workspace.limits().checkTableCells(tableCells + width * (rows + (header ? 0L : 1L)));
-        }
+        private void checkTableWidth(long width, int rows, boolean header) { writer.checkTableWidth(width, rows, header); }
         private int boundedSpan(String value, int fallback) {
             int number = integer(value, fallback);
             if (number < 0) throw ConversionWorkspace.limit("TABLE_CELLS_LIMIT", "表のセル範囲が有効ではありません。");
@@ -428,20 +392,7 @@ public final class WordMarkdownConverter {
             }
             return out.toString();
         }
-        private void tableRow(StringBuilder out, List<String> cells, int width) {
-            append(out, "|");
-            for (int i = 0; i < width; i++) append(out, " " + (i < cells.size() ? cells.get(i) : "") + " |");
-            append(out, "\n");
-        }
-        private void append(StringBuilder target, String value) {
-            if ((long) target.length() + value.length() > workspace.limits().maxMarkdownBytes())
-                throw ConversionWorkspace.limit("MARKDOWN_BYTES_LIMIT", "Markdown のサイズが上限を超えています。");
-            target.append(value);
-        }
-        private void notice(String code, String range, String message, boolean info) {
-            if (!noticeKeys.add(code + "|" + range)) return;
-            if (info) workspace.info(code, section, range, message);
-            else workspace.warning(code, section, range, message);
-        }
+        private void append(StringBuilder target, String value) { writer.append(target, value); }
+        private void notice(String code, String range, String message, boolean info) { writer.notice(code, range, message, info); }
     }
 }

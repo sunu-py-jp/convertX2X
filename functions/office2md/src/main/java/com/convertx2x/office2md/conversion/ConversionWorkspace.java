@@ -278,7 +278,7 @@ public final class ConversionWorkspace implements AutoCloseable {
         report.put("specVersion", 1);
         String format = filename.toLowerCase(Locale.ROOT).replaceFirst("^.*\\.", "");
         report.put("source", Map.of("filename", filename, "sha256", sourceHash, "format", format));
-        report.put("sectionKind", switch (format) { case "docx" -> "document"; case "pptx" -> "slide"; default -> "sheet"; });
+        report.put("sectionKind", switch (format) { case "docx", "doc" -> "document"; case "pptx", "ppt" -> "slide"; default -> "sheet"; });
         report.put("sectionCount", sectionCount);
         report.put("warnings", warnings);
         report.put("information", information);

@@ -7,9 +7,9 @@
 | 機能 | 入力 → 出力 | Docs |
 | --- | --- | --- |
 | PowerPoint / PDF → 画像 | PPTX・PPT・PDF → PNG・JPEG・ZIP | [API資料](docs/APIDocs/ppt-pdf-to-images/index.html) |
-| Office → Markdown | Excel・Word・PowerPoint → Markdown・画像、任意で埋め込み画像をOCR | [API資料](docs/APIDocs/office2md/index.html) |
+| Office → Markdown | Excel・Word・PowerPoint（XLSX・XLS・DOCX・DOC・PPTX・PPT）→ Markdown・画像、任意で埋め込み画像をOCR | [API資料](docs/APIDocs/office2md/index.html) |
 | Excel → 画像・PDF | XLSX・XLSのセル・画像・図形を配置を保ってPNG・PDFへ | [API資料](docs/APIDocs/excel2img/index.html) |
-| Office → PDF | Excel・Word・PowerPoint → Document Intelligence向けPDF | [API資料](docs/APIDocs/office2pdf/index.html) |
+| Office → PDF | Excel・Word・PowerPoint（XLSX・XLS・DOCX・DOC・PPTX・PPT）→ Document Intelligence向けPDF | [API資料](docs/APIDocs/office2pdf/index.html) |
 | Markdown → PDF | Markdown・画像入りZIP → 検索可能な日本語PDF | [API資料](docs/APIDocs/md2pdf/index.html) |
 | Movie → Audio | 動画ファイル・URL・Blob → AACコピーのM4A、または音声変換したM4A・WAV | [API資料](docs/APIDocs/movie2audio/index.html) |
 | HTML → PowerPoint | HTML・素材入りZIP → 編集可能な文字・表・SVG図形を持つPPTX。対応するCSSアニメーションも反映 | [API資料](docs/APIDocs/html2pptx/index.html) |

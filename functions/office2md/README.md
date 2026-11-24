@@ -1,6 +1,6 @@
 # office2md
 
-[convertX2X](../../README.md) のOffice文書をMarkdownへ変換するAzure Functionsアプリです。Excel（XLSX・XLS）、Word（DOCX）、PowerPoint（PPTX）から、`document.md`・`report.json`・`images/` の画像を取り出し、指定時に埋め込み画像のOCRテキストを補います。Java 21とApache POIを使用します。
+[convertX2X](../../README.md) のOffice文書をMarkdownへ変換するAzure Functionsアプリです。Excel（XLSX・XLS）、Word（DOCX・DOC）、PowerPoint（PPTX・PPT）から、`document.md`・`report.json`・`images/` の画像を取り出し、指定時に埋め込み画像のOCRテキストを補います。Java 21とApache POIを使用します。
 
 同期HTTP・非同期HTTP・外部システムからの直接Queue依頼が、共通の変換処理を使います。ブラウザでMarkdownと画像を確認できるPlaygroundも含みます。
 

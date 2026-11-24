@@ -14,8 +14,9 @@ import org.apache.poi.sl.usermodel.SlideShowFactory;
 import org.apache.poi.xslf.usermodel.XSLFSlide;
 
 /** Renders slides with POI and retains the rendered text as a searchable PDF layer. */
-final class PowerPointPdfConverter {
-    void convert(byte[] input, NormalizedPdfWriter pdf, ConversionWorkspace workspace) throws IOException {
+final class PowerPointPdfConverter implements OfficePdfConverter {
+    @Override
+    public void convert(byte[] input, NormalizedPdfWriter pdf, ConversionWorkspace workspace) throws IOException {
         try (SlideShow<?, ?> show = SlideShowFactory.create(new ByteArrayInputStream(input))) {
             Dimension page = show.getPageSize();
             double scale = 2d;

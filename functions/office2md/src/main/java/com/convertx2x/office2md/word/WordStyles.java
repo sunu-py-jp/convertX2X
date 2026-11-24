@@ -74,7 +74,8 @@ final class WordStyles {
         }
         return headingName(id);
     }
-    private static int headingName(String name) {
+    /** Heading level 1-6 of a style named "heading N" or "見出し N"; 0 otherwise. Shared by every Word reader. */
+    static int headingName(String name) {
         Matcher m = HEADING.matcher(name);
         return m.matches() ? Integer.parseInt(m.group(1)) : 0;
     }

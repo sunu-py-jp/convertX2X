@@ -430,7 +430,7 @@ def run(args, work, tools):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--input", type=Path, help="Convert this real .xlsx/.xls/.docx/.pptx through every route instead of generating the smoke fixture")
+    parser.add_argument("--input", type=Path, help="Convert this real .xlsx/.xls/.docx/.doc/.pptx/.ppt through every route instead of generating the smoke fixture")
     parser.add_argument("--result-dir", type=Path, help="Preserve actual result ZIPs/Markdown/report/images and public job timings in this empty directory")
     parser.add_argument("--package-dir", type=Path, default=ROOT / "target" / "azure-functions" / "office2md-local")
     parser.add_argument("--port", type=int, default=7073)
@@ -459,8 +459,8 @@ def main():
         parser.error("Run ./mvnw package first, or select the staged app with --package-dir.")
     args.package_dir = args.package_dir.resolve()
     if args.input:
-        if not args.input.is_file() or args.input.suffix.lower() not in (".xlsx", ".xls", ".docx", ".pptx"):
-            parser.error("--input must be an existing .xlsx, .xls, .docx or .pptx file.")
+        if not args.input.is_file() or args.input.suffix.lower() not in (".xlsx", ".xls", ".docx", ".doc", ".pptx", ".ppt"):
+            parser.error("--input must be an existing .xlsx, .xls, .docx, .doc, .pptx or .ppt file.")
         if not 0 < args.input.stat().st_size <= DEFAULT_INPUT_BYTES:
             parser.error("--input must fit the isolated test host's default 100 MiB input limit.")
         args.input = args.input.resolve()

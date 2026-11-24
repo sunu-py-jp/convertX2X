@@ -53,14 +53,21 @@ final class PresentationSpatialMetadata {
         var saved = nonVisual == null ? null : nonVisual.getCNvCxnSpPr();
         if (saved != null && (saved.getStCxn() != null || saved.getEndCxn() != null))
             return new VisualArrow(false, null);
-        if (!edge.direction().equals("start-to-end") && !edge.direction().equals("end-to-start"))
-            return new VisualArrow(false, null);
-
         var properties = xml.getSpPr();
         var preset = properties == null ? null : properties.getPrstGeom();
-        if (preset == null || preset.getPrst() == null || !STRAIGHT_PRESETS.contains(preset.getPrst().toString()))
-            return new VisualArrow(true, null);
-        Rectangle2D anchor = connector.getAnchor();
+        boolean straight = preset != null && preset.getPrst() != null && STRAIGHT_PRESETS.contains(preset.getPrst().toString());
+        return visualArrow(connector.getAnchor(), straight, edge, slideTransform);
+    }
+
+    /**
+     * The visible bearing of a connector that has no saved attachment. {@code straight} tells whether its
+     * geometry is a straight line from the first to the last corner of {@code anchor}.
+     */
+    static VisualArrow visualArrow(Rectangle2D anchor, boolean straight, PresentationConnections.Edge edge,
+                                   AffineTransform slideTransform) {
+        if (!edge.direction().equals("start-to-end") && !edge.direction().equals("end-to-start"))
+            return new VisualArrow(false, null);
+        if (!straight) return new VisualArrow(true, null);
         if (anchor == null || !finite(anchor.getX()) || !finite(anchor.getY())
                 || !finite(anchor.getWidth()) || !finite(anchor.getHeight())) return new VisualArrow(true, null);
         Point2D start = slideTransform.transform(new Point2D.Double(anchor.getMinX(), anchor.getMinY()), null);

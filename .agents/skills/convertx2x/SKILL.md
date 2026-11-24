@@ -27,6 +27,7 @@ description: convertX2Xの変換APIを利用・変更する際に仕様と資料
 - HTML2PPTX以外の6機能は非同期にも対応する。接続文字列またはManaged Identity用の制御Storage設定を使い、起動前にQueueバインドの設定を導出する。詳細は[共通の配置手順](../../../docs/development.md)。HTML2PPTXへStorageを設定してもQueue機能は有効にならない。
 - 直接Queueには入力Blob参照のJSONを送り、Base64を1回だけ適用する。SDKの自動エンコードと手動処理を重ねない。機能ごとの `docs/direct-queue.md` でversion・options・通知契約を確認する。Queue本文へファイル本体やSAS・接続文字列を入れない。
 - Office2MDで画像と重なる描画要素を合成した場合、Markdownが指す合成PNGを使う。元画像が別成果物として残るとは限らない。OCRの処理状態・モデル・エラーコードは、合成元では `blocks[].sourceImages[].ocr`、独立画像では `blocks[].ocr` を参照する。認識した文字列はreport内にはなく、`document.md` の画像参照に続く「画像内の文字（OCR）:」以下に出力される。
+- Office2MDとOffice2PDFは旧形式の `.doc`（Word 97-2003）も受け付け、Office2MDは `.ppt` も受け付ける。拡張子と中身が一致しないファイルは415になるため、改名で形式を合わせない。Office2MDの `.doc` は脚注・テキストボックス・コメント・図形を出力せず、`.ppt` の接続関係は線端の接触からの推定である点を、`.docx` / `.pptx` の結果と区別する。
 - Excelの数式は保存済み値を使う。再計算や外部参照の取得を追加して不足を補わない。Office2PDFの旧 `.ppt` では非表示スライドも出力される制限を、PPTXの除外仕様と区別する。
 
 ## HTML2PPTX向けのHTMLを生成するとき

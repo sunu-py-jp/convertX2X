@@ -13,15 +13,25 @@ PowerPointのPDFを検索可能にした変更経緯・実装詳細・検証結�
 ```text
 HTTP / Queue
     ↓
-OfficePdfService（入力検証・同時実行1）
-    ├─ ExcelPdfConverter
-    ├─ WordPdfConverter
-    └─ PowerPointPdfConverter
+OfficePdfService（入力検証・同時実行1・拡張子ごとのOfficePdfConverter登録）
+    ├─ ExcelPdfConverter          （.xlsx / .xls）
+    ├─ WordPdfConverter           （.docx）─┐
+    ├─ LegacyWordPdfConverter     （.doc） ─┴─ WordFlow（見出し・箇条書き・表・画像の配置）
+    └─ PowerPointPdfConverter     （.pptx / .ppt）
           ↓
 NormalizedPdfWriter（PDFBox）
           ↓
 document.pdf + report.json
 ```
+
+各形式の読み取りは `OfficePdfConverter` インターフェースの実装で、`OfficePdfService` が拡張子ごとに
+1つ登録します。対応形式の一覧（エラーメッセージ・`/api/capabilities` の `supportedFormats`）は
+この登録から作るため、形式の追加は「実装を1つ足して登録する」だけで済み、既存形式の読み取りには
+手を入れません。
+
+Wordは `.docx`（XWPF）と `.doc`（HWPF）で文書モデルが異なるため、読み取りだけを別クラスに分け、
+見出しレベルの判定・箇条書きの記号・表の題名・画像の配置と警告は `WordFlow` を共有します。
+`.doc` の文字列は `LegacyWordText` がフィールド命令と制御文字を取り除き、保存済みの表示だけを残します。
 
 ExcelとWordはPDFBoxの文字・罫線として出力します。PowerPointはApache POIの
 Java2D描画結果を1スライド1画像でPDFへ配置し、POIが描画した文字を同じ位置へ
@@ -47,6 +57,11 @@ Functionsホストにフォントがない場合の描画を安定させます�
   行わず、POIが描画できないSmartArt・グラフなどの文字も検索対象にならない場合がある。
 - 非表示スライドを除外するのは `.pptx` のみ。旧形式 `.ppt` の非表示スライドは
   PDFの表示と検索用テキストに含む。
+- `.doc` はWord 97-2003形式のみ。拡張子と中身が一致しないファイルとWord 95以前の形式は
+  `UNSUPPORTED_FORMAT` とし、`.docx` の読み取りへ回さない。フィールドは実行しない。
+- `.doc` のテスト用ファイルは `src/test/resources/legacy/` にあり、macOSの `textutil` で生成した。
+  見出しスタイル・箇条書き・隠し文字・フィールド・画像を含む実ファイルでの確認は未実施で、
+  該当の判定は `LegacyWordTextTest`・`LegacyWordPdfConverterTest` の単体テストで確認している。
 - 内容個数の固定上限は置かず、バイト数・画素数・任意ページ上限だけを持つ。
 - 1インスタンス内の重い変換は1件ずつ実行する。
 

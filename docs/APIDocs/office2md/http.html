@@ -22,7 +22,7 @@
 <div class="endpoint"><span class="method post">POST</span><code>/api/convert?filename=sample.docx</code></div>
 <p>ファイル本体をリクエストの生バイト列として送ります。処理が完了すると <code>document.zip</code> を返します。変換用のStorage接続は不要です。AzureのFunctionsホスト用Storageは<a href="settings.html#storage">別途設定</a>します。</p>
 <h2 id="request">リクエスト</h2>
-<div class="table-wrap"><table><thead><tr><th scope="col">項目</th><th scope="col">必須</th><th scope="col">指定内容</th></tr></thead><tbody><tr><td>ボディ</td><td>必須</td><td>空でないOfficeファイルの生バイト列。Base64・JSON・multipartではない</td></tr><tr><td><code>filename</code></td><td>指定を推奨</td><td>クエリに実際の拡張子を含む名前。<code>.xlsx / .xls / .docx / .pptx</code></td></tr><tr><td><code>imageMode</code></td><td>任意</td><td><code>ignore</code>（既定）または <code>ocr</code>。どちらも単独画像または合成画像のファイルとMarkdown参照を残す。合成元の独立ファイル・参照は出力しない。ocrだけ元画像の可視領域から文字を追加</td></tr><tr><td><code>x-file-name</code></td><td>代替</td><td>filenameクエリが存在しない場合のファイル名ヘッダー</td></tr><tr><td><code>Content-Type</code></td><td>推奨</td><td><code>application/octet-stream</code></td></tr><tr><td><code>x-functions-key</code></td><td>Azure上で必須</td><td>Function認証用キー。非同期も使う場合はアプリ共通のホストキー</td></tr></tbody></table></div>
+<div class="table-wrap"><table><thead><tr><th scope="col">項目</th><th scope="col">必須</th><th scope="col">指定内容</th></tr></thead><tbody><tr><td>ボディ</td><td>必須</td><td>空でないOfficeファイルの生バイト列。Base64・JSON・multipartではない</td></tr><tr><td><code>filename</code></td><td>指定を推奨</td><td>クエリに実際の拡張子を含む名前。<code>.xlsx / .xls / .docx / .doc / .pptx / .ppt</code></td></tr><tr><td><code>imageMode</code></td><td>任意</td><td><code>ignore</code>（既定）または <code>ocr</code>。どちらも単独画像または合成画像のファイルとMarkdown参照を残す。合成元の独立ファイル・参照は出力しない。ocrだけ元画像の可視領域から文字を追加</td></tr><tr><td><code>x-file-name</code></td><td>代替</td><td>filenameクエリが存在しない場合のファイル名ヘッダー</td></tr><tr><td><code>Content-Type</code></td><td>推奨</td><td><code>application/octet-stream</code></td></tr><tr><td><code>x-functions-key</code></td><td>Azure上で必須</td><td>Function認証用キー。非同期も使う場合はアプリ共通のホストキー</td></tr></tbody></table></div>
 <div class="callout warning"><p>filenameを省略し、代替ヘッダーもなければ <code>workbook.xlsx</code> として扱います。Word・PowerPointは実際の拡張子を必ず指定してください。</p>
 </div>
 <p>ファイル名はパス部分を除いた末尾名を使います。HTTP受付では200文字以内で、制御文字や <code>.</code> / <code>..</code> は受け付けません。クエリにfilenameがあればヘッダーより優先し、空値の場合は既定名へ戻ります。</p>
@@ -86,7 +86,9 @@ Content-Type: application/json; charset=utf-8
     &quot;xlsx&quot;,
     &quot;xls&quot;,
     &quot;docx&quot;,
-    &quot;pptx&quot;
+    &quot;doc&quot;,
+    &quot;pptx&quot;,
+    &quot;ppt&quot;
   ],
   &quot;supportedOutputs&quot;: [
     &quot;markdown&quot;

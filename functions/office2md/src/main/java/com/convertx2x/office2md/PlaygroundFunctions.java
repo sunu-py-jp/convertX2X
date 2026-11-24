@@ -1,5 +1,6 @@
 package com.convertx2x.office2md;
 
+import com.convertx2x.office2md.conversion.OfficeMarkdownService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.microsoft.azure.functions.*;
@@ -61,7 +62,7 @@ public class PlaygroundFunctions {
         // Explicit public fields only. Never serialize AppConfig, which contains a connection string.
         Map<String, Object> options = new LinkedHashMap<>();
         options.put("asyncEnabled", config.asyncEnabled());
-        options.put("supportedFormats", List.of("xlsx", "xls", "docx", "pptx"));
+        options.put("supportedFormats", OfficeMarkdownService.supportedFormats());
         options.put("supportedOutputs", List.of("markdown"));
         options.put("ocrEnabled", config.ocr().configured());
         options.put("supportedImageModes", config.ocr().configured() ? List.of("ignore", "ocr") : List.of("ignore"));

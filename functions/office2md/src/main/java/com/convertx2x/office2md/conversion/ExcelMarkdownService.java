@@ -17,7 +17,7 @@ import org.apache.poi.ss.util.CellReference;
 import org.apache.poi.xssf.usermodel.*;
 
 /** Shared synchronous conversion core; at most one workbook is rendered per Java process. */
-public class ExcelMarkdownService {
+public class ExcelMarkdownService implements OfficeMarkdownConverter {
     private static final Semaphore CONVERSION_SLOT = new Semaphore(1, true);
     private final ConversionLimits limits;
     public ExcelMarkdownService(ConversionLimits limits) { this.limits = Objects.requireNonNull(limits); }
@@ -41,6 +41,7 @@ public class ExcelMarkdownService {
         return convert(input, filename, ImageMode.IGNORE, OcrClient.disabled());
     }
 
+    @Override
     public ConversionResult convert(byte[] input, String filename, ImageMode imageMode, OcrClient ocrClient) {
         validate(input, filename);
         try { CONVERSION_SLOT.acquire(); }
